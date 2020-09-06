@@ -21,6 +21,7 @@ const todos = async (parent, args, context) => {
   // const userId = authenticate(context);
   try {
     // const user = await User.findOne({ _id: userId }).lean();
+    const db = await context.connectToDatabase();
     console.log('looking for todos: ', todosData);
     return todosData;
   } catch (err) {
