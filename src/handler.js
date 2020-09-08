@@ -2,12 +2,11 @@ const { GraphQLServerLambda } = require('graphql-yoga');
 const mongoose = require('mongoose');
 const Query = require('./resolvers/Query/index');
 const Mutation = require('./resolvers/Mutation/index');
+const Scalars = require('./resolvers/Scalars/index');
 const config = require('./config/config');
 const typeDefs = require('./type-defs');
 
-// NOTE: I'm not entirely sure this is ever used b/c we're passing the 
-// connectToDatabase() function into the context, and it only gets called 
-// in the resolvers... do the resolvers have access to cachedDb variable?
+
 let cachedDb = null;
 
 async function connectToDatabase() {
@@ -29,7 +28,8 @@ async function connectToDatabase() {
 
 const resolvers = {
   Query,
-  Mutation
+  Mutation,
+  ...Scalars,
 };
 
 const context = req => ({

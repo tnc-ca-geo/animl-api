@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "graphql-yoga": "^1.18.3",
+    "moment": "^2.27.0",
     "mongoose": "^5.10.3",
     "serverless": "^1.81.1",
     "serverless-dotenv-plugin": "^3.0.0",

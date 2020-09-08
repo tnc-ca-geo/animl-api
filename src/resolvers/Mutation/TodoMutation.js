@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const TodoModel = require('../../db/models/Todo');
 // const { authenticate } = require('../../utils/utils');
-const { ObjectId } = mongoose.Types;
+// const { ObjectId } = mongoose.Types;   // TODO: figure out how IDs work
 
 const createTodo = async (_, { input }, context) => {
   console.log('Saving todo with input payload: ', input);
