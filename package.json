@@ -11,6 +11,7 @@
   "author": "Nathaniel Rindlaub",
   "license": "ISC",
   "dependencies": {
+    "graphql-type-json": "^0.3.2",
     "graphql-yoga": "^1.18.3",
     "moment": "^2.27.0",
     "mongoose": "^5.10.3",

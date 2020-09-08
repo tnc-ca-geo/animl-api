@@ -11,6 +11,7 @@ const PointSchema = new Schema({
 let LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
   altitude: { type: String },
+  name: { type: String },
   // azimuth: { type: Number },
 });
 

@@ -52,7 +52,7 @@ let ImageSchema = new Schema({
   imageHeight: { type: Number },
   mimeType: { type: String },
   userSetData: { type: Map, of: String },
-  // camera: { type: shared.CameraSchema, required: true },
+  camera: { type: shared.CameraSchema, required: true },
   location: { type: shared.LocationSchema },
   labels: { type: [LabelSchema] },
   // deployment: {

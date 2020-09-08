@@ -1,10 +1,12 @@
-const Date = require('./objects/Date');
+const Scalars = require('./objects/Scalars');
 const DummyInput = require('./inputs/DummyInput');
 const DummyObject = require('./objects/DummyObject');
 const Todo = require('./objects/Todo');
 const TodoInput = require('./inputs/TodoInput');
 const Image = require('./objects/Image');
 const ImageInput = require('./inputs/ImageInput');
+const Camera = require('./objects/Camera');
+const Location = require('./objects/Location');
 const CreateImagePayload = require('./payloads/CreateImagePayload');
 const Mutation = require('./root/Mutation');
 const Query = require('./root/Query');
@@ -14,7 +16,7 @@ const Query = require('./root/Query');
 // https://github.com/prisma-labs/graphql-yoga/tree/master/examples/modular-resolvers
 
 const typeDefStrings = [
-  Date,
+  Scalars,
   DummyInput,
   DummyObject,
   Image,
@@ -22,12 +24,12 @@ const typeDefStrings = [
   CreateImagePayload,
   Todo,
   TodoInput,
+  Camera,
+  Location,
   Mutation,
   Query,
 ];
 
 const typeDefs = typeDefStrings.join('');
-
-console.log(typeDefs);
 
 module.exports = typeDefs;

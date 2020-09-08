@@ -16,7 +16,11 @@ async function connectToDatabase() {
     return cachedDb;
   }
 
-  const options = { useNewUrlParser: true, useUnifiedTopology: true };
+  const options = {
+    useCreateIndex: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  };
   const mongoClient = await mongoose.connect( config.MONGO_DB_URL, options);
   mongoose.connection.on('error', (err) => {
     console.log('Mongoose default connection error: ' + err);
