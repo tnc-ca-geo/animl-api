@@ -1,3 +1,5 @@
+org: nathanielrindlaub
+app: animl
 service: animl-graphql-api
 
 plugins:
