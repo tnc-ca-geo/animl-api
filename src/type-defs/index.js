@@ -1,8 +1,4 @@
 const Scalars = require('./objects/Scalars');
-const DummyInput = require('./inputs/DummyInput');
-const DummyObject = require('./objects/DummyObject');
-const Todo = require('./objects/Todo');
-const TodoInput = require('./inputs/TodoInput');
 const Image = require('./objects/Image');
 const ImageInput = require('./inputs/ImageInput');
 const Camera = require('./objects/Camera');
@@ -17,13 +13,9 @@ const Query = require('./root/Query');
 
 const typeDefStrings = [
   Scalars,
-  DummyInput,
-  DummyObject,
   Image,
   ImageInput,
   CreateImagePayload,
-  Todo,
-  TodoInput,
   Camera,
   Location,
   Mutation,

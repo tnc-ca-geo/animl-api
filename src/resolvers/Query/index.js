@@ -1,8 +1,6 @@
-const HelloQuery = require('./HelloQuery');
-const TodoQuery = require('./TodoQuery');
+const ImageQuery = require('./ImageQuery');
 
 module.exports = {
-  ...HelloQuery,
-  ...TodoQuery
+  ...ImageQuery,
 };
 

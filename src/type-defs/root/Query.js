@@ -1,8 +1,6 @@
 module.exports = `
   type Query {
-    hello(name: String): String!
-    dummyQuery(itemId: ID!): DummyObject!
-    todos: [Todo!]!
-    todo(_id: ID!): Todo!
+    image(_id: ID!): Image
+    images(createdStart: Date, createdEnd: Date, cameras: [String!]): [Image]
   }
 `;
