@@ -23,7 +23,7 @@ const getUserSetData = (input) => {
 
 // Parse string coordinates to decimal degrees
 // input e.g. - `34 deg 6' 25.59" N`
-const parseCoordinates = (input) => {
+const parseCoordinates = (md) => {
   function parse(stringCoord) {
     let deg, min, sec;
     [deg, min, sec] = stringCoord.match(/[+-]?(\d*\.)?\d+/g);
@@ -32,9 +32,16 @@ const parseCoordinates = (input) => {
     return cardinal === 'S' || cardinal === 'W' ? degrees * -1 : degrees;
   }
 
-  return input.GPSLongitude && input.GPSLatitude
-    ? [parse(input.GPSLongitude), parse(input.GPSLatitude)]
-    : null;
+  if (!md.GPSLongitude || !md.GPSLatitude) {
+    return null;
+  }
+  else if (typeof md.GPSLongitude === 'string') {
+    return [parse(md.GPSLongitude), parse(md.GPSLatitude)];
+  }
+  else {
+    return [md.GPSLongitude, md.GPSLatitude];
+  }
+
 };
 
 // Map image metadata to image schema
@@ -59,8 +66,10 @@ const mapMetaToModel = (md) => {
     objectKey: md.prodKey,
     dateAdded: moment(),
     dateTimeOriginal: md.dateTimeOriginal,
-    camera: camera,
+    cameraSn: md.serialNumber,
+    make: md.make,
     // optional fields
+    ...(md.model && { model: md.model }),
     ...(md.key && { originalFileName: md.key }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
     ...(md.imageHeight && { imageHeight: md.imageHeight }),

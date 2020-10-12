@@ -15,14 +15,7 @@ let LocationSchema = new Schema({
   // azimuth: { type: Number },
 });
 
-let CameraSchema = new Schema({
-  make: { type: String, default: 'unknown', required: true },
-  model: { type: String },
-  serialNumber: { type: String, required: true },
-});
-
 module.exports = {
   PointSchema,
   LocationSchema,
-  CameraSchema,
 };

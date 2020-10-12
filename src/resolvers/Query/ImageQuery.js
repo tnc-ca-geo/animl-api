@@ -40,7 +40,7 @@ const image = async (parent, { _id }, context) => {
   try {
     const db = await context.connectToDatabase();
     const image = await Image.findOne({_id})
-    console.log('found image: ', todo)
+    console.log('found image: ', image)
     return image;
   } catch (err) {
     throw new Error(err);

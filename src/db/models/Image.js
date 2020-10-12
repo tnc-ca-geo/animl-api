@@ -51,7 +51,11 @@ let ImageSchema = new Schema({
   imageHeight: { type: Number },
   mimeType: { type: String },
   userSetData: { type: Map, of: String },
-  camera: { type: shared.CameraSchema, required: true },
+  // ref property allows us to use populate()
+  // https://mongoosejs.com/docs/populate.html
+  cameraSn: { type: String, required: true, ref: 'Camera' },
+  make: { type: String, default: 'unknown', required: true },
+  model: { type: String },
   location: { type: shared.LocationSchema },
   labels: { type: [LabelSchema] },
   // deployment: {
@@ -61,7 +65,7 @@ let ImageSchema = new Schema({
 });
 
 ImageSchema.index(
-  { 'camera.serialNumber': 1, dateTimeOriginal: -1 },
+  { 'cameraSn': 1, dateTimeOriginal: -1 },
   { unique: true, sparse: true }
 );
 
