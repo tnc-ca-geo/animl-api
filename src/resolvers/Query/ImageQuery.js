@@ -23,12 +23,13 @@ const buildFilter = (args) => {
 
 const images = async (parent, args, context) => {
   try {
-    const db = await context.connectToDatabase();;
+    const db = await context.connectToDatabase();
     const filter = buildFilter(args);
     console.log('Finding image with filter: ', filter);
     const query = Image.find(filter);
     const images = await query.exec();
     console.log('Found images: ', images);
+    // TODO: experiement with popuplate() on cameraSn field
     return images;
   } catch (err) {
     throw new Error(err);

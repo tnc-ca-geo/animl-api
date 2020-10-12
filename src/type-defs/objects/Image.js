@@ -10,7 +10,9 @@ module.exports = `
     imageWidth: Int
     imageHeight: Int
     mimeType: String
-    camera: Camera!
+    cameraSn: Camera!
+    make: String!
+    model: String,
     userSetData: JSONObject
     location: Location
   }`;

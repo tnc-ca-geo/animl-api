@@ -1,8 +1,8 @@
 module.exports = `
   type Camera {
-    _id: ID!
+    _id: String!
     make: String!
     model: String
-    serialNumber: String!
-    images: [Image!]
   }`;
+
+// images: [Image!]
