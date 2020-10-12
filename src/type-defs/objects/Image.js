@@ -10,7 +10,7 @@ module.exports = `
     imageWidth: Int
     imageHeight: Int
     mimeType: String
-    cameraSn: Camera!
+    cameraSn: String!
     make: String!
     model: String,
     userSetData: JSONObject
@@ -21,3 +21,6 @@ module.exports = `
 // TODO: add the following: 
 // location: { type: shared.LocationSchema },
 // labels: { type: [LabelSchema] },
+
+// TODO: decide if we want to populate() cameraSn field when returning 
+// an Image - in which case I think we use cameraSn: Camera!
