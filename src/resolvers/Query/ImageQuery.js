@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
 const Image = require('../../db/models/Image');
 
+// TODO: make sure I have resolvers to match all possible nested queries 
+// in resolver chain (i.e., if request asks for images { camera { make }}
+// make sure camera is handled in resolver chain (maybe with populate()?)
+
 const buildFilter = (args) => {
   let filter = {};
   if (args.cameras) {
     filter = {
       ...filter,
-      'camera.serialNumber': args.cameras,
+      'cameraSn': args.cameras,
     }
   }
   if (args.createdStart && args.createdEnd) {
