@@ -68,7 +68,7 @@ AWS_PROFILE=serverless-admin
 STAGE=dev
 ```
 
-### `Local testing and deployment`
+### Local testing and deployment
 - To test the Lambda locally with serverless-offline, run: 
 ```
 npm run start
