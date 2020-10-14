@@ -5,7 +5,7 @@ trap data stored in MongoDB.
 ## `Related repos`
 
 - Animl base program      http://github.com/tnc-ca-geo/animl-base
-- Animl lambda function   http://github.com/tnc-ca-geo/animl-lambda
+- Animl ingest function   http://github.com/tnc-ca-geo/animl-ingest
 - Animl ML resources      http://github.com/tnc-ca-geo/animl-ml
 - Animl desktop app       https://github.com/tnc-ca-geo/animl-desktop
 
