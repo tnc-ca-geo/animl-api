@@ -1,5 +1,5 @@
 # Animl API
-A AWS Lambda-based, GraphQl interface for performing CRUD operations on camera 
+An AWS Lambda-based, GraphQl interface for performing CRUD operations on camera 
 trap data stored in MongoDB.
 
 ## `Related repos`
@@ -26,30 +26,32 @@ perform manual labeling
 
 This repository contains an AWS Lambda-based, GraphQl API for storing and 
 fetching cameratrap data from a MongoDB database. The stack and and it's 
-associated deployment resources are managed with the Serverless Framework. 
-The stack includes:
+associated deployment resources are managed with the 
+[Serverless Framework](serverless.com/). The stack includes:
 - [Graphql Yoga](https://github.com/prisma-labs/graphql-yoga), which itself is 
 based on [Apollo GraphQL Server](https://www.apollographql.com/docs/apollo-server/)
-- [MongoDb Atlas](https://www.mongodb.com/cloud/atlas) via 
+- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) via 
 [Mongoose](https://mongoosejs.com/)
 
 ## `Development`
 
 ### Prerequisits
 The instructions below assume you have the following tools globally installed:
+- Node & npm
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
-- aws-cli
+- [aws-cli](https://aws.amazon.com/cli/)
 
 ### Create "serverless-admin" AWS config profile
 Good instructions 
 [here](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/).
 
-### Make a project direcory and clone this repo
+### Make a project direcory, clone this repo, and install dependencies
 ```
 mkdir animl-api
 cd animl-api
 git clone https://github.com/tnc-ca-geo/animl-api.git
 cd animl-api
+npm install
 ```
 
 ### Add a .env file
