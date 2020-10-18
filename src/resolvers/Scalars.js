@@ -1,7 +1,9 @@
 const moment = require('moment');
 const { GraphQLScalarType } = require('graphql');
 const { Kind } = require('graphql/language');
-const config = require('../../config/config');
+const GraphQLJSON = require('graphql-type-json');
+const JSONObject = GraphQLJSON.GraphQLJSONObject;
+const config = require('../config/config');
 
 // Good explanation of the difference between 
 // parseValue(), serialize(), and parseLiteral() here:
@@ -26,5 +28,7 @@ const Date = new GraphQLScalarType({
 });
 
 module.exports = {
+  JSONObject,
   Date,
-}
+};
+

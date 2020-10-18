@@ -1,79 +1,92 @@
-const mongoose = require('mongoose');
-const shared = require('./shared');
-const Schema = mongoose.Schema;
+const moment = require('moment');
+const Image = require('../schemas/Image');
+const utils = require('./utils');
+const config = require('../../config/config');
 
-/*
- * ValidationSchema
- * reviewed - has the image been reviewed by a user
- * validated - the prediction was validated by a user
- *            (true = correct prediction, false = incorrect prediction)
- */
+const sanitizeMetadata = (md) => {
+  let sanitized = {};
+  // If second char in key is uppercase,
+  // assume it's an acronym (like GPSLatitude) & leave it,
+  // else camel case
+  for (let key in md) {
+    const newKey = !(key.charAt(1) == key.charAt(1).toUpperCase())
+      ? key.charAt(0).toLowerCase() + key.slice(1)
+      : key;
+    sanitized[newKey] = md[key];
+  }
+  const dto = moment(sanitized.dateTimeOriginal, config.TIME_FORMATS.EXIF);
+  sanitized.dateTimeOriginal = dto;
+  return sanitized;
+};
 
-let ValidationSchema = new Schema({
-  reviewed: { type: Boolean, default: false, required: true },
-  validated: { type: Boolean, default: false, required: true },
-  reviewDate: { type: Date },
-  user: { type: Schema.Types.ObjectId, ref: 'User' },
-});
+const buildFilter = (args) => {
+  let filter = {};
+  if (args.cameras) {
+    filter = {
+      ...filter,
+      'cameraSn': args.cameras,
+    }
+  }
+  if (args.createdStart && args.createdEnd) {
+    filter = {
+      ...filter,
+      dateTimeOriginal: {
+        $gte: args.createdStart,
+        $lt: args.createdEnd
+      },
+    }
+  }
+  return filter;
+};
 
-/*
- * LabelSchema
- * category - the actual label (e.g. "skunk")
- * conf - confidence of prediction
- * bbox - [x, y, boxWidth, boxHeight], normalized
- */
+const generateImageModel = ({ connectToDb }) => ({
+  queryById: async (_id) => {
+    try {
+      console.log('Finding image with _id: ', _id)
+      const db = await connectToDb();
+      const image = await Image.findOne({_id});
+      console.log('found image: ', image);
+      return image;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+  queryByFilter: async (filterArgs) => {
+    try {
+      const db = await connectToDb();
+      const filter = buildFilter(filterArgs);
+      console.log('Finding image with filter: ', filter);
+      const query = Image.find(filter);
+      const images = await query.exec();
+      console.log('Found images: ', images);
+      return images;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+  createImage: async (input) => {
+    try {
+      console.log('Saving image image with input: ', input);
+      const db = await connectToDb();
+      const md = sanitizeMetadata(input.md);
+      const newImage = utils.mapMetaToModel(md);
+      await newImage.save();
+      console.log('Successfully saved image: ', newImage);
+      return newImage;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+ });
 
-let LabelSchema = new Schema({
-  type: { type: String, enum: ['manual', 'ml'], requried: true },
-  category: { type: String, default: 'none', required: true },
-  conf: { type: Number },
-  bbox: { type: [Number] },
-  labeledDate: { type: Date, default: Date.now, required: true },
-  validation: { type: ValidationSchema, requried: true },
-  model: { type: Schema.Types.ObjectId, ref: 'Model' },
-  // might need to add a field for user if it's a manual label
-});
+module.exports = generateImageModel;
 
-/*
- * ImageSchema
- * filePath  - rel path to image accessible to front end via cloudfront distro
- * objectKey - to find image in s3
- * userSetData  - user configured EXIF data
- */
-
-let ImageSchema = new Schema({
-  hash: { type: String, required: true },
-  bucket: { type: String, required: true },
-  objectKey: { type: String, required: true },
-  dateAdded: { type: Date, default: Date.now, required: true },
-  dateTimeOriginal: { type: Date, required: true },
-  originalFileName: { type: String },
-  imageWidth: { type: Number },
-  imageHeight: { type: Number },
-  mimeType: { type: String },
-  userSetData: { type: Map, of: String },
-  // ref property allows us to use populate()
-  // https://mongoosejs.com/docs/populate.html
-  cameraSn: { type: String, required: true, ref: 'Camera' },
-  make: { type: String, default: 'unknown', required: true },
-  model: { type: String },
-  location: { type: shared.LocationSchema },
-  labels: { type: [LabelSchema] },
-  // deployment: {
-  //   type: Schema.Types.ObjectId,
-  //   ref: 'Deployment',
-  // },
-});
-
-ImageSchema.index(
-  { 'cameraSn': 1, dateTimeOriginal: -1 },
-  { unique: true, sparse: true }
-);
-
-// ImageSchema.index({ deployment: 1 });
-
-ImageSchema.on('index', (e) => {
-  console.log('Indexing error', e);
-});
-
-module.exports = mongoose.model('Image', ImageSchema);
+// TODO: pass user into model generators to perform authorization at the 
+// data fetching level. e.g.:
+// export const generateImageModel = ({ user }) => ({
+//   getAll: () => {
+//     if(!user || !user.roles.includes('admin')) return null;
+//     return fetch('http://myurl.com/users');
+//    },
+//   ...
+// });

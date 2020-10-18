@@ -5,7 +5,7 @@
   "main": "src/handler.js",
   "scripts": {
     "start": "serverless offline --useSeparateProcesses --env dev",
-    "deploy-stage": "sls deploy --stage dev",
+    "deploy-dev": "sls deploy --stage dev",
     "deploy-prod": "sls deploy --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

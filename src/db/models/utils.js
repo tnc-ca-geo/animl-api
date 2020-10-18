@@ -1,5 +1,5 @@
 const moment = require('moment');
-const ImageModel = require('../../db/models/Image');
+const Image = require('../schemas/Image');
 
 // Unpack user-set exif tags
 const getUserSetData = (input) => {
@@ -60,7 +60,7 @@ const mapMetaToModel = (md) => {
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
   };
 
-  const image = new ImageModel({
+  const image = new Image({
     hash: md.hash,
     bucket: md.prodBucket,
     objectKey: md.prodKey,
