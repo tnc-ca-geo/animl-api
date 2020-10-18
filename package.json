@@ -4,7 +4,7 @@
   "description": "Lambda-based graphQL API for camera trap data managment platform",
   "main": "src/handler.js",
   "scripts": {
-    "start": "serverless offline --useSeparateProcesses",
+    "start": "serverless offline --useSeparateProcesses --env dev",
     "deploy-stage": "sls deploy --stage dev",
     "deploy-prod": "sls deploy --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1"

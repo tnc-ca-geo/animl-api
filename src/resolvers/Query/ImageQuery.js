@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 const Image = require('../../db/models/Image');
 
-// TODO: make sure I have resolvers to match all possible nested queries 
-// in resolver chain (i.e., if request asks for images { camera { make }}
-// make sure camera is handled in resolver chain (maybe with populate()?)
-
 const buildFilter = (args) => {
   let filter = {};
   if (args.cameras) {
@@ -33,7 +29,6 @@ const images = async (parent, args, context) => {
     const query = Image.find(filter);
     const images = await query.exec();
     console.log('Found images: ', images);
-    // TODO: experiement with popuplate() on cameraSn field
     return images;
   } catch (err) {
     throw new Error(err);

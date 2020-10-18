@@ -6,7 +6,7 @@ module.exports = `
 
   type Location {
     _id: ID!
-    geometry: Point!,
-    altitude: String,
-    name: String,
+    geometry: Point!
+    altitude: String
+    name: String
   }`;

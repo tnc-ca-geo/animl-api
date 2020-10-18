@@ -2,6 +2,7 @@ const { GraphQLServerLambda } = require('graphql-yoga');
 const mongoose = require('mongoose');
 const Query = require('./resolvers/Query/index');
 const Mutation = require('./resolvers/Mutation/index');
+const Fields = require('./resolvers/Fields/index');
 const Scalars = require('./resolvers/Scalars/index');
 const config = require('./config/config');
 const typeDefs = require('./type-defs');
@@ -33,6 +34,7 @@ async function connectToDatabase() {
 const resolvers = {
   Query,
   Mutation,
+  ...Fields,
   ...Scalars,
 };
 

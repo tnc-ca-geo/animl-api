@@ -3,6 +3,5 @@ module.exports = `
     _id: String!
     make: String!
     model: String
+    images: [Image]
   }`;
-
-// images: [Image!]

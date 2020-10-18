@@ -3,6 +3,31 @@ const config = require('../../config/config');
 const utils = require('./utils');
 const CameraModel = require('../../db/models/Camera');
 
+const detectObjects = async (image) => {
+  // TODO: hardcoded return value is just for testing 
+  // integrate with megadetector endpoint here
+  console.log('Detecting objects...');
+  setTimeout(() => {
+    const objects = [
+      {
+        type: 'ml',
+        category: 'skunk',
+        conf: 87.1,
+        bbox: [1, 2],
+        labeledDate: moment(),
+        validation: {
+          reviewed: false,
+          validated: false,
+        }
+      }
+    ];
+    objects.forEach((object) => {
+      image.labels.push(object);
+    });
+    image.save();
+  }, 1000);
+};
+
 const createCamera = async (image) => {
   const existingCam = await CameraModel.find({ _id: image.cameraSn });
   if (existingCam.length === 0) {
@@ -45,6 +70,8 @@ const createImage = async (_, { input }, context) => {
     await newImage.save();
     console.log('Successfully saved image: ', newImage);
     await createCamera(newImage);
+    await detectObjects(newImage);
+
     // return value must match CreateImagePayload schema
     return { image: newImage };
   } catch (err) {

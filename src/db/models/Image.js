@@ -18,6 +18,7 @@ let ValidationSchema = new Schema({
 
 /*
  * LabelSchema
+ * category - the actual label (e.g. "skunk")
  * conf - confidence of prediction
  * bbox - [x, y, boxWidth, boxHeight], normalized
  */
