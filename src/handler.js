@@ -23,6 +23,8 @@ async function connectToDb() {
     useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    // TODO: double check auto indexing is off in prod environment
+    ...((process.env.STAGE === 'prod') && { autoIndex: false }),
   };
   const mongoClient = await mongoose.connect( config.MONGO_DB_URL, options);
   mongoose.connection.on('error', (err) => {
