@@ -56,10 +56,20 @@ const generateImageModel = ({ connectToDb }) => ({
       const db = await connectToDb();
       const filter = buildFilter(filterArgs);
       console.log('Finding image with filter: ', filter);
-      const query = Image.find(filter);
-      const images = await query.exec();
-      console.log('Found images: ', images);
-      return images;
+
+      // const query = Image.find(filter);
+      // const images = await query.exec();
+
+      // TODO: break up filter args and pagination args into separate
+      // input params
+      const options = (filterArgs.offset >= 0 && filterArgs.limit)
+        ? { offset: filterArgs.offset, limit: filterArgs.limit }
+        : { pagination: false };
+
+      console.log('and pagination options: ', options);
+      const result = await Image.paginate(filter, options);
+      // console.log('Result: ', result);
+      return result;
     } catch (err) {
       throw new Error(err);
     }

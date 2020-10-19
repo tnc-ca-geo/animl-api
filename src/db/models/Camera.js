@@ -1,7 +1,11 @@
 const Camera = require('../schemas/Camera');
 
+// TODO: I don't know that we need to try to reconnect to the DB before 
+// every single db operation. It would be worth experiementing w/ only 
+// connecting once in the context creation function...
+
 const generateCameraModel = ({ connectToDb }) => ({
-  
+
   getAll: async () => { 
     console.log('Getting all cameras');
     try {

@@ -1,4 +1,4 @@
 module.exports = `
-type CreateImagePayload {
-  image: Image
-}`
+  type CreateImagePayload {
+    image: Image
+  }`

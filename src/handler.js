@@ -31,7 +31,7 @@ async function connectToDb() {
   console.log('successful connection');
   cachedDb = mongoClient;
   return cachedDb;
-}
+};
 
 const resolvers = {
   Query,
@@ -61,7 +61,7 @@ const context = ({ req }) => {
   ...req,
   // user,
   models: {
-    // pass in user to image model generator once we implement authentication
+    // TODO: pass in user to image model generator once we implement user auth
     // Image: generateImageModel({ user }),
     Image: generateImageModel({ connectToDb }),
     Camera: generateCameraModel({ connectToDb }),

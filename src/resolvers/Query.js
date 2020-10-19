@@ -1,7 +1,14 @@
 const Query = {
   images: async (_, args, context) => {
     console.log('resolving Query.images() with args: ', args);
-    return context.models.Image.queryByFilter(args);
+    // return context.models.Image.queryByFilter(args);
+    const result = await context.models.Image.queryByFilter(args);
+    // reurn ImageConnection 
+    return {
+      offset: result.offset,
+      hasMore: result.hasNextPage,
+      images: result.docs,
+    }
   },
   image: async (_, { _id }, context) => {
     // Example role checking:

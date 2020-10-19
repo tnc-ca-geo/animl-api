@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 const shared = require('./shared');
 const Schema = mongoose.Schema;
 
@@ -75,5 +76,7 @@ ImageSchema.index(
 ImageSchema.on('index', (e) => {
   console.log('Indexing error', e);
 });
+
+ImageSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Image', ImageSchema);

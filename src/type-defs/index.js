@@ -7,7 +7,7 @@ const Location = require('./objects/Location');
 const Scalars = require('./objects/Scalars');
 
 const CreateImagePayload = require('./payloads/CreateImagePayload');
-
+const ImageConnection = require('./payloads/ImageConnection');
 const Mutation = require('./root/Mutation');
 const Query = require('./root/Query');
 
@@ -23,6 +23,7 @@ const typeDefStrings = [
   Location,
   Scalars,
   CreateImagePayload,
+  ImageConnection,
   Mutation,
   Query,
 ];
