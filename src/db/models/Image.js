@@ -44,7 +44,7 @@ const generateImageModel = ({ connectToDb }) => ({
   queryById: async (_id) => {
     try {
       console.log('Finding image with _id: ', _id)
-      const db = await connectToDb();
+      // const db = await connectToDb();
       const image = await Image.findOne({_id});
       console.log('found image: ', image);
       return image;
@@ -54,7 +54,7 @@ const generateImageModel = ({ connectToDb }) => ({
   },
   queryByFilter: async (input) => {
     try {
-      const db = await connectToDb();
+      // const db = await connectToDb();
       const options = {
         query: buildFilter(input),
         limit: input.limit,
@@ -73,7 +73,7 @@ const generateImageModel = ({ connectToDb }) => ({
   createImage: async (input) => {
     try {
       console.log('Saving image image with input: ', input);
-      const db = await connectToDb();
+      // const db = await connectToDb();
       const md = sanitizeMetadata(input.md);
       const newImage = utils.mapMetaToModel(md);
       await newImage.save();

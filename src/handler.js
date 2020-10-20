@@ -41,9 +41,11 @@ const resolvers = {
   ...Scalars,
 };
 
-console.log('resolvers: ', resolvers);
+// console.log('resolvers: ', resolvers);
 
-const context = ({ req }) => {
+const context = async ({ req }) => {
+  await connectToDb();
+
 // TODO: authorize use and pass into model generator functions
 // https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers
 
@@ -64,8 +66,8 @@ const context = ({ req }) => {
   models: {
     // TODO: pass in user to image model generator once we implement user auth
     // Image: generateImageModel({ user }),
-    Image: generateImageModel({ connectToDb }),
-    Camera: generateCameraModel({ connectToDb }),
+    Image: generateImageModel(),
+    Camera: generateCameraModel(),
   }
  };
 
