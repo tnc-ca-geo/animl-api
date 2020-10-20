@@ -1,5 +1,5 @@
 module.exports = `
   type Mutation {
-    createImage(input: ImageInput!): CreateImagePayload
+    createImage(input: CreateImageInput!): CreateImagePayload
   }
 `;

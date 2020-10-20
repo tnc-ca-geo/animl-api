@@ -1,13 +1,7 @@
 module.exports = `
   type Query {
     image(_id: ID!): Image
-    images(
-      limit: Int
-      offset: Int
-      createdStart: Date
-      createdEnd: Date
-      cameras: [String!]
-    ): ImageConnection
+    images(input: QueryImageInput!): ImageConnection
     cameras(_ids: [String!]): [Camera]
   }
 `;

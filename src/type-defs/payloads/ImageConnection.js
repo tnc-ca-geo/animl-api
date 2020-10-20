@@ -1,6 +1,5 @@
 module.exports = `
   type ImageConnection {
-    offset: Int!
-    hasMore: Boolean!
+    pageInfo: PageInfo
     images: [Image]!
   }`

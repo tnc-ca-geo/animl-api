@@ -18,7 +18,6 @@ async function connectToDb() {
     console.log('Using cached database instance');
     return cachedDb;
   }
-
   const options = {
     useCreateIndex: true,
     useNewUrlParser: true,

@@ -1,9 +1,11 @@
-const ImageInput = require('./inputs/ImageInput');
+const CreateImageInput = require('./inputs/CreateImageInput');
+const QueryImageInput = require('./inputs/QueryImageInput');
 
 const Camera = require('./objects/Camera');
 const Image = require('./objects/Image');
 const Labels = require('./objects/Labels');
 const Location = require('./objects/Location');
+const PageInfo = require('./objects/PageInfo');
 const Scalars = require('./objects/Scalars');
 
 const CreateImagePayload = require('./payloads/CreateImagePayload');
@@ -16,11 +18,13 @@ const Query = require('./root/Query');
 // https://github.com/prisma-labs/graphql-yoga/tree/master/examples/modular-resolvers
 
 const typeDefStrings = [
-  ImageInput,
+  CreateImageInput,
+  QueryImageInput,
   Camera,
   Image,
   Labels,
   Location,
+  PageInfo,
   Scalars,
   CreateImagePayload,
   ImageConnection,

@@ -1,4 +1,4 @@
 module.exports = `
-  input ImageInput {
+  input CreateImageInput {
     md: JSONObject!
 }`;

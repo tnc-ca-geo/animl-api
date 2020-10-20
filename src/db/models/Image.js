@@ -19,20 +19,21 @@ const sanitizeMetadata = (md) => {
   return sanitized;
 };
 
-const buildFilter = (args) => {
+const buildFilter = (input) => {
+  console.log('input.createdStart: ', input.createdStart);
   let filter = {};
-  if (args.cameras) {
+  if (input.cameras) {
     filter = {
       ...filter,
-      'cameraSn': args.cameras,
+      'cameraSn': { $in: input.cameras },
     }
   }
-  if (args.createdStart && args.createdEnd) {
+  if (input.createdStart && input.createdEnd) {
     filter = {
       ...filter,
-      dateTimeOriginal: {
-        $gte: args.createdStart,
-        $lt: args.createdEnd
+      'dateTimeOriginal': {
+        $gte: input.createdStart.toDate(),
+        $lt: input.createdEnd.toDate()
       },
     }
   }
@@ -51,24 +52,19 @@ const generateImageModel = ({ connectToDb }) => ({
       throw new Error(err);
     }
   },
-  queryByFilter: async (filterArgs) => {
+  queryByFilter: async (input) => {
     try {
       const db = await connectToDb();
-      const filter = buildFilter(filterArgs);
-      console.log('Finding image with filter: ', filter);
-
-      // const query = Image.find(filter);
-      // const images = await query.exec();
-
-      // TODO: break up filter args and pagination args into separate
-      // input params
-      const options = (filterArgs.offset >= 0 && filterArgs.limit)
-        ? { offset: filterArgs.offset, limit: filterArgs.limit }
-        : { pagination: false };
-
-      console.log('and pagination options: ', options);
-      const result = await Image.paginate(filter, options);
-      // console.log('Result: ', result);
+      const options = {
+        query: buildFilter(input),
+        limit: input.limit,
+        paginatedField: input.paginatedField,
+        sortAscending: input.sortAscending,
+        next: input.next,
+        previous: input.previous,
+      };
+      console.log('Query images options: ', options);
+      const result = await Image.paginate(options);
       return result;
     } catch (err) {
       throw new Error(err);

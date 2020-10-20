@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const mongoosePaginate = require('mongoose-paginate-v2');
+const MongoPaging = require('mongo-cursor-pagination');
 const shared = require('./shared');
 const Schema = mongoose.Schema;
 
@@ -67,7 +67,7 @@ let ImageSchema = new Schema({
 });
 
 ImageSchema.index(
-  { 'cameraSn': 1, dateTimeOriginal: -1 },
+  { cameraSn: 1, dateTimeOriginal: -1 },
   { unique: true, sparse: true }
 );
 
@@ -77,6 +77,6 @@ ImageSchema.on('index', (e) => {
   console.log('Indexing error', e);
 });
 
-ImageSchema.plugin(mongoosePaginate);
+ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
 module.exports = mongoose.model('Image', ImageSchema);

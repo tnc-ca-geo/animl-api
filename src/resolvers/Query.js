@@ -1,13 +1,23 @@
 const Query = {
   images: async (_, args, context) => {
     console.log('resolving Query.images() with args: ', args);
-    // return context.models.Image.queryByFilter(args);
-    const result = await context.models.Image.queryByFilter(args);
+    const {
+      results,
+      previous,
+      hasPrevious,
+      next,
+      hasNext 
+    } = await context.models.Image.queryByFilter(args.input);
+
     // reurn ImageConnection 
     return {
-      offset: result.offset,
-      hasMore: result.hasNextPage,
-      images: result.docs,
+      pageInfo: {
+        previous,
+        hasPrevious, 
+        next,
+        hasNext, 
+      },
+      images: results
     }
   },
   image: async (_, { _id }, context) => {

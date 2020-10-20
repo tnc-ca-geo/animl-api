@@ -16,9 +16,8 @@ const Date = new GraphQLScalarType({
   parseValue(value) {
     return moment(value, config.TIME_FORMATS.EXIF);
   },
-  // Preparing the return value to be sent to client
+  // Prep return value to be sent to client
   serialize(value) {
-    console.log('serializing date value: ', value);
     return value.getTime();
   },
   // Parse input when the type of input is "inline" (AST)
