@@ -40,7 +40,7 @@ const buildFilter = (input) => {
   return filter;
 };
 
-const generateImageModel = ({ connectToDb }) => ({
+const generateImageModel = () => ({
   queryById: async (_id) => {
     try {
       console.log('Finding image with _id: ', _id)

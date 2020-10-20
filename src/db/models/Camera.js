@@ -4,7 +4,7 @@ const Camera = require('../schemas/Camera');
 // every single db operation. It would be worth experiementing w/ only 
 // connecting once in the context creation function...
 
-const generateCameraModel = ({ connectToDb }) => ({
+const generateCameraModel = () => ({
 
   getAll: async () => { 
     console.log('Getting all cameras');
