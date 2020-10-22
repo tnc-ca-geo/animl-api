@@ -33,6 +33,7 @@ let LabelSchema = new Schema({
   validation: { type: ValidationSchema, requried: true },
   model: { type: Schema.Types.ObjectId, ref: 'Model' },
   // might need to add a field for user if it's a manual label
+  // user: { type: Schema.Types.ObjectId, ref: 'User' },
 });
 
 /*

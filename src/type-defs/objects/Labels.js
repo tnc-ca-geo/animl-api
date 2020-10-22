@@ -8,7 +8,7 @@ module.exports = `
   type Labels {
     type: String!
     category: String!
-    conf: Int
+    conf: Float
     bbox: [Int!]
     labeledDate: Date!
     validation: Validation!
