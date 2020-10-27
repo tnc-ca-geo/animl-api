@@ -27,12 +27,12 @@ const buildFilter = (input) => {
       'cameraSn': { $in: input.cameras },
     }
   }
-  if (input.createdStart && input.createdEnd) {
+  if (input.createdStart || input.createdEnd) {
     filter = {
       ...filter,
       'dateTimeOriginal': {
-        $gte: input.createdStart.toDate(),
-        $lt: input.createdEnd.toDate()
+        ...(input.createdStart && { $gte: input.createdStart.toDate() }),
+        ...(input.createdEnd && { $lt: input.createdEnd.toDate() }),
       },
     }
   }
