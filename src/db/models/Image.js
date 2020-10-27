@@ -21,18 +21,30 @@ const sanitizeMetadata = (md) => {
 
 const buildFilter = (input) => {
   let filter = {};
+  // cameras
   if (input.cameras) {
     filter = {
       ...filter,
       'cameraSn': { $in: input.cameras },
     }
   }
+  // created date
   if (input.createdStart || input.createdEnd) {
     filter = {
       ...filter,
       'dateTimeOriginal': {
         ...(input.createdStart && { $gte: input.createdStart.toDate() }),
         ...(input.createdEnd && { $lt: input.createdEnd.toDate() }),
+      },
+    }
+  }
+  // date added
+  if (input.addedStart || input.addedEnd) {
+    filter = {
+      ...filter,
+      'dateAdded': {
+        ...(input.addedStart && { $gte: input.addedStart.toDate() }),
+        ...(input.addedEnd && { $lt: input.addedEnd.toDate() }),
       },
     }
   }

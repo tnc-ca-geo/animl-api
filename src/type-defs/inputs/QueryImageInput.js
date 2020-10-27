@@ -7,5 +7,7 @@ module.exports = `
     previous: String
     createdStart: Date
     createdEnd: Date
+    addedStart: Date
+    addedEnd: Date
     cameras: [String!]
   }`;
