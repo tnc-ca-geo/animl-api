@@ -1,13 +1,9 @@
 const Query = {
   images: async (_, args, context) => {
     console.log('resolving Query.images() with args: ', args);
-    const {
-      results,
-      previous,
-      hasPrevious,
-      next,
-      hasNext 
-    } = await context.models.Image.queryByFilter(args.input);
+    const count = await context.models.Image.countImages(args.input);
+    const response = await context.models.Image.queryByFilter(args.input);
+    const { previous, hasPrevious, next, hasNext, results } = response;
 
     // reurn ImageConnection 
     return {
@@ -15,7 +11,8 @@ const Query = {
         previous,
         hasPrevious, 
         next,
-        hasNext, 
+        hasNext,
+        count,
       },
       images: results
     }

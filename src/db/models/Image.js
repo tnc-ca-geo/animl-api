@@ -41,10 +41,14 @@ const buildFilter = (input) => {
 };
 
 const generateImageModel = () => ({
+  countImages: async (input) => {
+    const query = buildFilter(input);
+    const count = await Image.where(query).countDocuments();
+    return count;
+  },
   queryById: async (_id) => {
     try {
       console.log('Finding image with _id: ', _id)
-      // const db = await connectToDb();
       const image = await Image.findOne({_id});
       console.log('found image: ', image);
       return image;
@@ -54,7 +58,6 @@ const generateImageModel = () => ({
   },
   queryByFilter: async (input) => {
     try {
-      // const db = await connectToDb();
       const options = {
         query: buildFilter(input),
         limit: input.limit,
@@ -73,7 +76,6 @@ const generateImageModel = () => ({
   createImage: async (input) => {
     try {
       console.log('Saving image image with input: ', input);
-      // const db = await connectToDb();
       const md = sanitizeMetadata(input.md);
       const newImage = utils.mapMetaToModel(md);
       await newImage.save();
@@ -86,6 +88,8 @@ const generateImageModel = () => ({
  });
 
 module.exports = generateImageModel;
+
+
 
 // TODO: pass user into model generators to perform authorization at the 
 // data fetching level. e.g.:
