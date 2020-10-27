@@ -20,7 +20,6 @@ const sanitizeMetadata = (md) => {
 };
 
 const buildFilter = (input) => {
-  console.log('input.createdStart: ', input.createdStart);
   let filter = {};
   if (input.cameras) {
     filter = {
@@ -41,21 +40,22 @@ const buildFilter = (input) => {
 };
 
 const generateImageModel = () => ({
+
   countImages: async (input) => {
     const query = buildFilter(input);
     const count = await Image.where(query).countDocuments();
     return count;
   },
+
   queryById: async (_id) => {
     try {
-      console.log('Finding image with _id: ', _id)
       const image = await Image.findOne({_id});
-      console.log('found image: ', image);
       return image;
     } catch (err) {
       throw new Error(err);
     }
   },
+
   queryByFilter: async (input) => {
     try {
       const options = {
@@ -66,25 +66,24 @@ const generateImageModel = () => ({
         next: input.next,
         previous: input.previous,
       };
-      console.log('Query images options: ', options);
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
       throw new Error(err);
     }
   },
+
   createImage: async (input) => {
     try {
-      console.log('Saving image image with input: ', input);
       const md = sanitizeMetadata(input.md);
       const newImage = utils.mapMetaToModel(md);
       await newImage.save();
-      console.log('Successfully saved image: ', newImage);
       return newImage;
     } catch (err) {
       throw new Error(err);
     }
   },
+  
  });
 
 module.exports = generateImageModel;
