@@ -21,6 +21,7 @@ const sanitizeMetadata = (md) => {
 
 const buildFilter = (input) => {
   let filter = {};
+
   // cameras
   if (input.cameras) {
     filter = {
@@ -28,6 +29,7 @@ const buildFilter = (input) => {
       'cameraSn': { $in: input.cameras },
     }
   }
+
   // created date
   if (input.createdStart || input.createdEnd) {
     filter = {
@@ -38,6 +40,7 @@ const buildFilter = (input) => {
       },
     }
   }
+
   // date added
   if (input.addedStart || input.addedEnd) {
     filter = {
@@ -48,6 +51,15 @@ const buildFilter = (input) => {
       },
     }
   }
+
+  // labels
+  if (input.labels) {
+    filter = {
+      ...filter,
+      'labels.category': { $in: input.labels },
+    }
+  }
+
   return filter;
 };
 
@@ -55,8 +67,8 @@ const generateImageModel = () => ({
 
   countImages: async (input) => {
     const query = buildFilter(input);
-    console.log('input.addedStart: ', input.addedStart)
-    console.log('input.addedStart.toDate(): ', input.addedStart.toDate())
+    // console.log('input.addedStart: ', input.addedStart)
+    // console.log('input.addedStart.toDate(): ', input.addedStart.toDate())
     console.log('query: ', query)
     const count = await Image.where(query).countDocuments();
     return count;

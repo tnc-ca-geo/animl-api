@@ -10,4 +10,5 @@ module.exports = `
     addedStart: Date
     addedEnd: Date
     cameras: [String!]
+    labels: [String]
   }`;
