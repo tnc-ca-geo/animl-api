@@ -5,13 +5,17 @@ module.exports = `
     reviewDate: Date!
   }
 
-  type Labels {
+  type Label {
     type: String!
     category: String!
     conf: Float
     bbox: [Int!]
     labeledDate: Date!
     validation: Validation!
+  }
+
+  type LabelList {
+    categories: [String]
   }
 `;
 

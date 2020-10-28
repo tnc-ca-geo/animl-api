@@ -55,6 +55,9 @@ const generateImageModel = () => ({
 
   countImages: async (input) => {
     const query = buildFilter(input);
+    console.log('input.addedStart: ', input.addedStart)
+    console.log('input.addedStart.toDate(): ', input.addedStart.toDate())
+    console.log('query: ', query)
     const count = await Image.where(query).countDocuments();
     return count;
   },
@@ -80,6 +83,17 @@ const generateImageModel = () => ({
       };
       const result = await Image.paginate(options);
       return result;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
+  getLabels: async (input) => {
+    try {
+      const categories = await Image.distinct('labels.category');
+      // const labels = images.map((image) => image.labels.category);
+      console.log('distinct labels: ', categories);
+      return { categories };
     } catch (err) {
       throw new Error(err);
     }

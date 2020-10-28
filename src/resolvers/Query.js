@@ -21,6 +21,10 @@ const Query = {
     // if (!context.user || !context.user.roles.includes('admin')) return null;
     return context.models.Image.queryById(_id);
   },
+
+  labels: async (_, __, context) => {
+    return context.models.Image.getLabels();
+  },
   
   cameras: async (_, { _ids }, context) => {
     return (_ids) 

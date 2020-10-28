@@ -16,7 +16,7 @@ module.exports = `
     model: String,
     userSetData: JSONObject
     location: Location
-    labels: [Labels]
+    labels: [Label]
   }`;
 
 // TODO: add the following: 

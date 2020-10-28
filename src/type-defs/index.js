@@ -3,7 +3,7 @@ const QueryImageInput = require('./inputs/QueryImageInput');
 
 const Camera = require('./objects/Camera');
 const Image = require('./objects/Image');
-const Labels = require('./objects/Labels');
+const Label = require('./objects/Label');
 const Location = require('./objects/Location');
 const PageInfo = require('./objects/PageInfo');
 const Scalars = require('./objects/Scalars');
@@ -22,7 +22,7 @@ const typeDefStrings = [
   QueryImageInput,
   Camera,
   Image,
-  Labels,
+  Label,
   Location,
   PageInfo,
   Scalars,
