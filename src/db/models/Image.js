@@ -19,48 +19,49 @@ const sanitizeMetadata = (md) => {
   return sanitized;
 };
 
-const buildFilter = (input) => {
-  let filter = {};
+const buildFilter = ({
+  cameras,
+  createdStart,
+  createdEnd,
+  addedStart,
+  addedEnd,
+  labels,
+}) => {
 
-  // cameras
-  if (input.cameras) {
-    filter = {
-      ...filter,
-      'cameraSn': { $in: input.cameras },
-    }
+  let camerasFilter = {};
+  if (cameras) {
+    camerasFilter = {'cameraSn': { $in: cameras }}
   }
 
-  // created date
-  if (input.createdStart || input.createdEnd) {
-    filter = {
-      ...filter,
-      'dateTimeOriginal': {
-        ...(input.createdStart && { $gte: input.createdStart.toDate() }),
-        ...(input.createdEnd && { $lt: input.createdEnd.toDate() }),
-      },
-    }
+  let dateCreatedFilter =  {};
+  if (createdStart || createdEnd) {
+    dateCreatedFilter = {'dateTimeOriginal': {
+      ...(createdStart && { $gte: createdStart.toDate() }),
+      ...(createdEnd && { $lt: createdEnd.toDate() }),
+    }};
   }
 
-  // date added
-  if (input.addedStart || input.addedEnd) {
-    filter = {
-      ...filter,
-      'dateAdded': {
-        ...(input.addedStart && { $gte: input.addedStart.toDate() }),
-        ...(input.addedEnd && { $lt: input.addedEnd.toDate() }),
-      },
-    }
+  let dateAddedFilter = {};
+  if (addedStart || addedEnd) {
+    dateAddedFilter = {'dateAdded': {
+      ...(addedStart && { $gte: addedStart.toDate() }),
+      ...(addedEnd && { $lt: addedEnd.toDate() }),
+    }};
   }
 
-  // labels
-  if (input.labels) {
-    filter = {
-      ...filter,
-      'labels.category': { $in: input.labels },
-    }
-  }
+  let labelsFilter = {};
+  if (labels) {
+    labelsFilter = labels.includes('none')
+      ? { $or: [{'labels.category': { $in: labels }}, { labels: { $size: 0 }}]}
+      : { 'labels.category': { $in: labels } };
+  };
 
-  return filter;
+  return {
+    ...camerasFilter,
+    ...dateCreatedFilter,
+    ...dateAddedFilter,
+    ...labelsFilter,
+  };
 };
 
 const generateImageModel = () => ({
@@ -100,11 +101,13 @@ const generateImageModel = () => ({
     }
   },
 
-  getLabels: async (input) => {
+  getLabels: async () => {
     try {
       const categories = await Image.distinct('labels.category');
-      // const labels = images.map((image) => image.labels.category);
-      console.log('distinct labels: ', categories);
+      const labellessImage = await Image.findOne({labels: { $size: 0 }});
+      if (labellessImage) {
+        categories.push('none');
+      }
       return { categories };
     } catch (err) {
       throw new Error(err);
