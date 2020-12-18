@@ -7,6 +7,7 @@ const Label = require('./objects/Label');
 const Location = require('./objects/Location');
 const PageInfo = require('./objects/PageInfo');
 const Scalars = require('./objects/Scalars');
+const View = require('./objects/View');
 
 const CreateImagePayload = require('./payloads/CreateImagePayload');
 const ImageConnection = require('./payloads/ImageConnection');
@@ -26,6 +27,7 @@ const typeDefStrings = [
   Location,
   PageInfo,
   Scalars,
+  View,
   CreateImagePayload,
   ImageConnection,
   Mutation,

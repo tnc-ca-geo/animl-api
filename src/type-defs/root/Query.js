@@ -4,6 +4,7 @@ module.exports = `
     images(input: QueryImageInput!): ImageConnection
     labels: LabelList
     cameras(_ids: [String!]): [Camera]
+    views: [View]
   }
 `;
 

@@ -47,7 +47,7 @@ const generateCameraModel = () => ({
         console.log('Camera record already exists: ', existingCam);
       }
     }
-  } 
+  }
  });
 
  module.exports = generateCameraModel;

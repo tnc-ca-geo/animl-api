@@ -1,5 +1,6 @@
 const { GraphQLServerLambda } = require('graphql-yoga');
 const mongoose = require('mongoose');
+const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
 const Query = require('./resolvers/Query');
@@ -66,6 +67,7 @@ const context = async ({ req }) => {
   models: {
     // TODO: pass in user to image model generator once we implement user auth
     // Image: generateImageModel({ user }),
+    View: generateViewModel(),
     Image: generateImageModel(),
     Camera: generateCameraModel(),
   }

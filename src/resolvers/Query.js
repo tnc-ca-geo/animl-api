@@ -31,6 +31,10 @@ const Query = {
       ? context.models.Camera.queryByIds(_ids)
       : context.models.Camera.getAll();
   },
+
+  views: async (_, __, context) => {
+    return context.models.View.getViews();
+  },
 };
 
 module.exports = Query;
