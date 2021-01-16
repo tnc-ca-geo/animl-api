@@ -9,7 +9,6 @@ const generateCameraModel = () => ({
   getAll: async () => { 
     console.log('Getting all cameras');
     try {
-      // const db = await connectToDb();
       const cameras = await Camera.find({});
       console.log('Found cameras: ', cameras);
       return cameras;
@@ -21,7 +20,6 @@ const generateCameraModel = () => ({
   queryByIds: async (_ids) => {
     console.log('Getting cameras by Ids: ', _ids);
     try {
-      // const db = await connectToDb();
       cameras = await Camera.find({ _id: { $in: _ids } });
       console.log('Found cameras: ', cameras);
       return cameras;

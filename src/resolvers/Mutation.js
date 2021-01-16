@@ -35,6 +35,16 @@ const Mutation = {
     // return value must match CreateImagePayload schema
     return { image: newImage };
   },
+  createView: async (_, { input }, context) => {
+    const newView = await context.models.View.createView(input);
+    return { view: newView };
+  },
+  // updateViewFilters: async (_, { input }, context) => {
+  //   // find view
+  //   // replace it's filters
+  //   // save
+  //   return { view: view };
+  // },
 };
 
 module.exports = Mutation;

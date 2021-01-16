@@ -1,8 +1,6 @@
 module.exports = `
-  type View {
-    _id: String!
+  input CreateViewInput {
+    filters: JSONObject!
     name: String!
-    filters: Filters!
     description: String
-  }
-`;
+}`;

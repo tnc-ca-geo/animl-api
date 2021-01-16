@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 let FiltersSchema = new Schema({
-  cameras: { type: [String] },
-  labels: { type: [String] },
+  cameras: { type: [String], default: undefined },
+  labels: { type: [String], default: undefined },
   createdStart: { type: Date },
   createdEnd: { type: Date },
   addedStart: { type: Date },

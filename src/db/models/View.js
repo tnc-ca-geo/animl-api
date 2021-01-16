@@ -8,7 +8,7 @@ const defaultViewConfig = {
   name: 'All images',
   filters: {},
   description: `Default view of all images. This view is not editable.`,
-}
+};
 
 const generateViewModel = () => ({
 
@@ -16,6 +16,7 @@ const generateViewModel = () => ({
     try {
       console.log('Creating new view: ', input.name);
       const newView = new View(input)
+      console.log(newView);
       await newView.save();
       return newView;
     } catch (err) {
@@ -27,7 +28,7 @@ const generateViewModel = () => ({
     return async () => {
       try {
         const views = await View.find({});
-        console.log('found views: ', views)
+        console.log('found views: ', views);
         if (views.length === 0) {
           defaultView = await this.createView(defaultViewConfig);
           views.push(defaultView);

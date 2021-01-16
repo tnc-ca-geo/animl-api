@@ -1,7 +1,9 @@
 const CreateImageInput = require('./inputs/CreateImageInput');
+const CreateViewInput = require('./inputs/CreateViewInput');
 const QueryImageInput = require('./inputs/QueryImageInput');
 
 const Camera = require('./objects/Camera');
+const Filters = require('./objects/Filters');
 const Image = require('./objects/Image');
 const Label = require('./objects/Label');
 const Location = require('./objects/Location');
@@ -10,6 +12,7 @@ const Scalars = require('./objects/Scalars');
 const View = require('./objects/View');
 
 const CreateImagePayload = require('./payloads/CreateImagePayload');
+const CreateViewPayload = require('./payloads/CreateViewPayload');
 const ImageConnection = require('./payloads/ImageConnection');
 const Mutation = require('./root/Mutation');
 const Query = require('./root/Query');
@@ -20,8 +23,10 @@ const Query = require('./root/Query');
 
 const typeDefStrings = [
   CreateImageInput,
+  CreateViewInput,
   QueryImageInput,
   Camera,
+  Filters,
   Image,
   Label,
   Location,
@@ -29,6 +34,7 @@ const typeDefStrings = [
   Scalars,
   View,
   CreateImagePayload,
+  CreateViewPayload,
   ImageConnection,
   Mutation,
   Query,
