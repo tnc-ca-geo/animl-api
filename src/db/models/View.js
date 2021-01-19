@@ -25,11 +25,12 @@ const generateViewModel = () => ({
   },
 
   get getViews() {  // use object getter so we can reference this.createView
-    return async () => {
+    return async (_ids) => {
+      const query = _ids ? { _id: { $in: _ids } } : {};
       try {
-        const views = await View.find({});
+        const views = await View.find(query);
         console.log('found views: ', views);
-        if (views.length === 0) {
+        if (!_ids && views.length === 0) {
           defaultView = await this.createView(defaultViewConfig);
           views.push(defaultView);
         }
@@ -39,6 +40,22 @@ const generateViewModel = () => ({
       }
     }
   },
+
+  get updateView() {
+    return async (input) => {
+      try {
+        const views = await this.getViews([input._id]);
+        const view = views[0];
+        for (let [key, newVal] of Object.entries(input.diffs)) {
+          view[key] = newVal;
+        }
+        await view.save();
+        return view;
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  }
   
  });
 

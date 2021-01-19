@@ -29,22 +29,18 @@ const detectObjects = async (image) => {
 const Mutation = {
   createImage: async (_, { input }, context) => {
     const newImage = await context.models.Image.createImage(input);
-    console.log('trying to create camera from Mutation.createImage() with image: ', newImage)
     await context.models.Camera.createCamera(newImage);
     await detectObjects(newImage);
-    // return value must match CreateImagePayload schema
-    return { image: newImage };
+    return { image: newImage }; // return values must match payload schema
   },
   createView: async (_, { input }, context) => {
     const newView = await context.models.View.createView(input);
     return { view: newView };
   },
-  // updateViewFilters: async (_, { input }, context) => {
-  //   // find view
-  //   // replace it's filters
-  //   // save
-  //   return { view: view };
-  // },
+  updateView: async (_, { input }, context) => {
+    const view = await context.models.View.updateView(input);
+    return { view: view };
+  },
 };
 
 module.exports = Mutation;

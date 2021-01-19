@@ -1,27 +1,11 @@
 const Camera = require('../schemas/Camera');
 
-// TODO: I don't know that we need to try to reconnect to the DB before 
-// every single db operation. It would be worth experiementing w/ only 
-// connecting once in the context creation function...
-
 const generateCameraModel = () => ({
 
-  getAll: async () => { 
-    console.log('Getting all cameras');
+  getCameras: async (_ids) => {
+    const query = _ids ? { _id: { $in: _ids } } : {};
     try {
-      const cameras = await Camera.find({});
-      console.log('Found cameras: ', cameras);
-      return cameras;
-    } catch (err) {
-      throw new Error(err);
-    }
-   },
-
-  queryByIds: async (_ids) => {
-    console.log('Getting cameras by Ids: ', _ids);
-    try {
-      cameras = await Camera.find({ _id: { $in: _ids } });
-      console.log('Found cameras: ', cameras);
+      cameras = await Camera.find(query);
       return cameras;
     } catch (err) {
       throw new Error(err);

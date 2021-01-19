@@ -27,13 +27,11 @@ const Query = {
   },
   
   cameras: async (_, { _ids }, context) => {
-    return (_ids) 
-      ? context.models.Camera.queryByIds(_ids)
-      : context.models.Camera.getAll();
+    return context.models.Camera.getCameras(_ids);
   },
 
-  views: async (_, __, context) => {
-    return context.models.View.getViews();
+  views: async (_, { _ids }, context) => {
+    return context.models.View.getViews(_ids);
   },
 };
 
