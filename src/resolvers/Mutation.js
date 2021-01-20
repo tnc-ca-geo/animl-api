@@ -41,6 +41,10 @@ const Mutation = {
     const view = await context.models.View.updateView(input);
     return { view: view };
   },
+  deleteView: async (_, { input }, context) => {
+    const res = await context.models.View.deleteView(input);
+    return { success: res.ok };
+  }
 };
 
 module.exports = Mutation;

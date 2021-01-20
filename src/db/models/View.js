@@ -41,19 +41,25 @@ const generateViewModel = () => ({
     }
   },
 
-  get updateView() {
-    return async (input) => {
-      try {
-        const views = await this.getViews([input._id]);
-        const view = views[0];
-        for (let [key, newVal] of Object.entries(input.diffs)) {
-          view[key] = newVal;
-        }
-        await view.save();
-        return view;
-      } catch (err) {
-        throw new Error(err);
+  updateView: async (input) => {
+    try {
+      const views = await View.find({ _id: input._id });
+      const view = views[0];
+      for (let [key, newVal] of Object.entries(input.diffs)) {
+        view[key] = newVal;
       }
+      await view.save();
+      return view;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
+  deleteView: async (input) => {
+    try {
+      return await View.deleteOne({ _id: input._id });
+    } catch (err) {
+      throw new Error(err);
     }
   }
   
