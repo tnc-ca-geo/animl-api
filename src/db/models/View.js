@@ -15,7 +15,7 @@ const generateViewModel = () => ({
   createView: async (input) => {
     try {
       console.log('Creating new view: ', input.name);
-      const newView = new View(input)
+      const newView = new View(input);
       console.log(newView);
       await newView.save();
       return newView;
