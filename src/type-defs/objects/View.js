@@ -4,5 +4,6 @@ module.exports = `
     name: String!
     filters: Filters!
     description: String
+    editable: Boolean!
   }
 `;

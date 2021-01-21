@@ -8,6 +8,7 @@ const defaultViewConfig = {
   name: 'All images',
   filters: {},
   description: `Default view of all images. This view is not editable.`,
+  editable: false,
 };
 
 const generateViewModel = () => ({
@@ -45,6 +46,9 @@ const generateViewModel = () => ({
     try {
       const views = await View.find({ _id: input._id });
       const view = views[0];
+      if (!view.editable) {
+        throw new Error(`View ${view.name} is not editable`);
+      }
       for (let [key, newVal] of Object.entries(input.diffs)) {
         view[key] = newVal;
       }
@@ -57,12 +61,16 @@ const generateViewModel = () => ({
 
   deleteView: async (input) => {
     try {
+      const views = await View.find({ _id: input._id });
+      if (!views[0].editable) {
+        throw new Error(`View ${view.name} is not editable`);
+      }
       return await View.deleteOne({ _id: input._id });
     } catch (err) {
       throw new Error(err);
     }
   }
-  
+
  });
 
 module.exports = generateViewModel;
