@@ -1,6 +1,7 @@
 const moment = require('moment');
 const Image = require('../schemas/Image');
 
+
 // Unpack user-set exif tags
 const getUserSetData = (input) => {
   const userDataMap = {
@@ -45,7 +46,7 @@ const parseCoordinates = (md) => {
 };
 
 // Map image metadata to image schema
-const mapMetaToModel = (md) => {
+const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
 
@@ -81,6 +82,21 @@ const mapMetaToModel = (md) => {
   return image;
 };
 
+// TODO: accomodate users as label authors as well as models
+const createLabelRecord = (detection, model) => {
+  const label = {
+    type: 'ml',
+    category: detection.category,
+    conf: detection.conf,
+    bbox: detection.bbox,
+    labeledDate: moment(),
+    validation: { reviewed: false, validated: false },
+    ...(model._id && { model: model._id }),
+  };
+  return label;
+};
+
 module.exports = {
-  mapMetaToModel,
+  createImageRecord,
+  createLabelRecord,
 };

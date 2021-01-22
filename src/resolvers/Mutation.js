@@ -30,9 +30,14 @@ const Mutation = {
   createImage: async (_, { input }, context) => {
     const newImage = await context.models.Image.createImage(input);
     await context.models.Camera.createCamera(newImage);
-    await detectObjects(newImage);
+    // TODO: check for & initiate automation sequence(s)
+    // await detectObjects(newImage);
     return { image: newImage }; // return values must match payload schema
   },
+  // TODO: implement updateImage resolver (or add/update/delete Label resolvers?)
+  // createLabel: async (_, { input }, context) => {
+  //   // ...
+  // },
   createView: async (_, { input }, context) => {
     const newView = await context.models.View.createView(input);
     return { view: newView };

@@ -12,9 +12,9 @@ const generateCameraModel = () => ({
     }
   },
 
-  get createCamera() {  // use object getter so we can reference this.queryByIds
+  get createCamera() {  // use object getter so we can reference this.getCameras
     return async (image) => {
-      const existingCam = await this.queryByIds([ image.cameraSn ]);
+      const existingCam = await this.getCameras([ image.cameraSn ]);
       if (existingCam.length === 0) {
         console.log('Creating new camera document');
         const newCamera = new Camera({

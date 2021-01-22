@@ -1,5 +1,6 @@
 const moment = require('moment');
 const Image = require('../schemas/Image');
+const inference = require('../../automation/inference');
 const utils = require('./utils');
 const config = require('../../config/config');
 
@@ -117,8 +118,18 @@ const generateImageModel = () => ({
   createImage: async (input) => {
     try {
       const md = sanitizeMetadata(input.md);
-      const newImage = utils.mapMetaToModel(md);
+      const newImage = utils.createImageRecord(md);
       await newImage.save();
+
+      // Just putting this here temporarily for testing. should all be abstracted:
+      // TODO: get Model record from db
+      const model = { name: 'megadetector' };
+      const detections = await inference.callMegadetector(newImage);
+      const newLabels = detections.map((det) => utils.createLabelRecord(det, model));
+      newImage.labels = newImage.labels.concat(newLabels);
+      console.log('newImage before saving: ', newImage)
+      await newImage.save();
+
       return newImage;
     } catch (err) {
       throw new Error(err);

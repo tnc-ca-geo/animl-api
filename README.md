@@ -62,6 +62,7 @@ called `.env.prod` and one called `.env.dev` with the following variables:
 ```
 # MongoDB
 MONGO_DB_URL=<MongoDB Atlas url>
+MEGADETECTOR_API_KEY=<Megadetector API key>
 
 #AWS
 REGION=us-west-1

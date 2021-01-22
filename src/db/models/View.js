@@ -3,7 +3,6 @@ const View = require('../schemas/View');
 // const utils = require('./utils');
 // const config = require('../../config/config');
 
-
 const defaultViewConfig = {
   name: 'All images',
   filters: {},

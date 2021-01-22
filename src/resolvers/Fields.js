@@ -14,7 +14,7 @@ const Image = {
   // Field level resolver for Image.camera()
   camera: async (parent, __, context) => {
     console.log('Image.camera() resolver firing');
-    const cameras = await context.models.Camera.queryByIds([parent.cameraSn]);
+    const cameras = await context.models.Camera.getCameras([parent.cameraSn]);
     return cameras[0];
   }
 };
