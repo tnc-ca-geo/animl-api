@@ -28,13 +28,11 @@ const detectObjects = async (image) => {
 
 const Mutation = {
   createImage: async (_, { input }, context) => {
-    const newImage = await context.models.Image.createImage(input);
+    const newImage = await context.models.Image.createImage(input, context);
     await context.models.Camera.createCamera(newImage);
-    // TODO: check for & initiate automation sequence(s)
-    // await detectObjects(newImage);
     return { image: newImage }; // return values must match payload schema
   },
-  // TODO: implement updateImage resolver (or add/update/delete Label resolvers?)
+  // TODO: implement createLabel resolver - accomodate both ml & user-created labels.
   // createLabel: async (_, { input }, context) => {
   //   // ...
   // },

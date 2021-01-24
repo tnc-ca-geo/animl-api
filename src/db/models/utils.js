@@ -1,6 +1,67 @@
 const moment = require('moment');
 const Image = require('../schemas/Image');
+const config = require('../../config/config');
 
+const buildFilter = ({
+  cameras,
+  createdStart,
+  createdEnd,
+  addedStart,
+  addedEnd,
+  labels,
+}) => {
+
+  let camerasFilter = {};
+  if (cameras) {
+    camerasFilter = {'cameraSn': { $in: cameras }}
+  }
+
+  let dateCreatedFilter =  {};
+  if (createdStart || createdEnd) {
+    dateCreatedFilter = {'dateTimeOriginal': {
+      ...(createdStart && { $gte: createdStart.toDate() }),
+      ...(createdEnd && { $lt: createdEnd.toDate() }),
+    }};
+  }
+
+  let dateAddedFilter = {};
+  if (addedStart || addedEnd) {
+    dateAddedFilter = {'dateAdded': {
+      ...(addedStart && { $gte: addedStart.toDate() }),
+      ...(addedEnd && { $lt: addedEnd.toDate() }),
+    }};
+  }
+
+  let labelsFilter = {};
+  if (labels) {
+    labelsFilter = labels.includes('none')
+      ? { $or: [{'labels.category': { $in: labels }}, { labels: { $size: 0 }}]}
+      : { 'labels.category': { $in: labels } };
+  };
+
+  return {
+    ...camerasFilter,
+    ...dateCreatedFilter,
+    ...dateAddedFilter,
+    ...labelsFilter,
+  };
+};
+
+const sanitizeMetadata = (md) => {
+  let sanitized = {};
+  // If second char in key is uppercase,
+  // assume it's an acronym (like GPSLatitude) & leave it,
+  // else camel case
+  for (let key in md) {
+    const newKey = !(key.charAt(1) == key.charAt(1).toUpperCase())
+      ? key.charAt(0).toLowerCase() + key.slice(1)
+      : key;
+    sanitized[newKey] = md[key];
+  }
+  const dto = moment(sanitized.dateTimeOriginal, config.TIME_FORMATS.EXIF);
+  sanitized.dateTimeOriginal = dto;
+  return sanitized;
+};
 
 // Unpack user-set exif tags
 const getUserSetData = (input) => {
@@ -83,20 +144,22 @@ const createImageRecord = (md) => {
 };
 
 // TODO: accomodate users as label authors as well as models
-const createLabelRecord = (detection, model) => {
+const createLabelRecord = (input, modelId) => {
   const label = {
     type: 'ml',
-    category: detection.category,
-    conf: detection.conf,
-    bbox: detection.bbox,
+    category: input.category,
+    conf: input.conf,
+    bbox: input.bbox,
     labeledDate: moment(),
     validation: { reviewed: false, validated: false },
-    ...(model._id && { model: model._id }),
+    ...(modelId && { model: modelId }),
   };
   return label;
 };
 
 module.exports = {
+  buildFilter,
+  sanitizeMetadata,
   createImageRecord,
   createLabelRecord,
 };

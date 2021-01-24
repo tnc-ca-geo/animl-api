@@ -11,7 +11,7 @@ const Schema = mongoose.Schema;
  */
 
 let ImageSchema = new Schema({
-  hash: { type: String, required: true },
+  hash: { type: String, required: true }, // TODO: should hash be the _id?
   bucket: { type: String, required: true },
   objectKey: { type: String, required: true },
   dateAdded: { type: Date, default: Date.now, required: true },

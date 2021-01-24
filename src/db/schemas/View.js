@@ -1,18 +1,14 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-let AutomationActionSchema = new Schema({
-  type: { type: String, enum: ['run-inference', 'send-alert'], required: true },
-  // reference model record
-  // think about how what we need to actually request inference from models. 
-  // might not need to save a ton of info in DB. 
-  // model: { type: String, enum: ['megadetector', 'mira'] }
-  // alertRecipient: ...
-});
-
 let AutomationRuleSchema = new Schema({
   event: { type: String, enum: ['image-added', 'label-added'], required: true },
-  action: { type: AutomationActionSchema, required: true },
+  label: { type: String },
+  action: {
+    type: { type: String, enum: ['run-inference', 'send-alert'], required: true },
+    model: { type: Schema.Types.ObjectId, ref: 'Model' },
+    alertRecipient: { type: String },
+  },
 });
 
 let FiltersSchema = new Schema({

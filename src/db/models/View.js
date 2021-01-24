@@ -1,5 +1,7 @@
 const moment = require('moment');
 const View = require('../schemas/View');
+const Model = require('../schemas/Model');
+
 // const utils = require('./utils');
 // const config = require('../../config/config');
 
@@ -24,11 +26,11 @@ const generateViewModel = () => ({
     }
   },
 
-  get getViews() {  // use object getter so we can reference this.createView
+  get getViews() {
     return async (_ids) => {
       const query = _ids ? { _id: { $in: _ids } } : {};
       try {
-        const views = await View.find(query);
+        const views = await View.find(query).populate('automationRules.action.model');
         console.log('found views: ', views);
         if (!_ids && views.length === 0) {
           defaultView = await this.createView(defaultViewConfig);

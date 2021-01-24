@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
+const automation = require('./automation');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
 const Fields = require('./resolvers/Fields');
@@ -70,7 +71,8 @@ const context = async ({ req }) => {
     View: generateViewModel(),
     Image: generateImageModel(),
     Camera: generateCameraModel(),
-  }
+  },
+  automation: automation,
  };
 
 };

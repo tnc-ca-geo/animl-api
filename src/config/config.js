@@ -9,6 +9,8 @@ const CONFIG = {
   MEGADETECTOR_API_KEY,
   MEGADETECTOR_URL: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect',
   MEGADETECTOR_CONF_THRESHOLD: 0.8,
+  // TODO: get clarity on categories. Is there a 'group' category?
+  // https://github.com/microsoft/CameraTraps/blob/master/detection/run_tf_detector.py
   MEGADETECTOR_CATEGORIES: [
     {id: 0, name: 'empty'},
     {id: 1, name: 'animal'},
