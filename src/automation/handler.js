@@ -2,7 +2,7 @@
 const moment = require('moment');
 const _ = require('lodash');
 const { call } = require('./inference');
-const utils = require('../db/models/utils');
+const utils = require('../api/db/models/utils');
 
 const includedInView = (image, view) => {
   const filters = view.filters;
@@ -56,17 +56,21 @@ const includedInView = (image, view) => {
 };
 
 const executeRule = {
-  'run-inference': async (rule, image, context) => {
+  'run-inference': async (rule, image) => {
+    console.log(`requesting inferences from ${rule.action.model.name}`)
     try {
       const detections = await call[rule.action.model.name](image);
       // create labels
       if (detections.length) {
+        console.log(`detections recieved: `, detections);
         detections.forEach(async (det) => {
           det.modelId = rule.action.model._id;
-          await context.models.Image.createLabel(
-            { imageId: image._id, label: det },
-            context,
-          );
+          // TODO: call graphQL api with createLabel mutation
+          // await context.models.Image.createLabel(
+          //   { imageId: image._id, label: det },
+          //   context,
+          // );
+
         });
       }
     } catch (err) {
@@ -105,17 +109,26 @@ const buildCallstack = (event, image, label, views) => {
   return _.uniqWith(callstack, _.isEqual); // remove dupes
 };
 
-const initiate = async (payload, context) => {
-  const { event, image, label } = payload;
-  const views = await context.models.View.getViews();
+const initiate = async (payload) => {
+  const { event, image, label, views } = payload;
   let callstack = buildCallstack(event, image, label, views);
   if (callstack.length) {
     callstack.forEach(async (rule) => {
-      await executeRule[rule.action.type](rule, image, context);
+      await executeRule[rule.action.type](rule, image);
     });
   }
 };
 
-module.exports = {
-  initiate,
+// TESTING automation lambda
+exports.automation = async (event) => {
+  try {
+    for (const record of event.Records) {
+      const messageAttributes = record.messageAttributes;
+      console.log('Message Attributtes -->  ', messageAttributes.AttributeNameHere.stringValue);
+      console.log('Message Body -->  ', record.body);
+      initiate(JSON.parse(record.body))
+    }
+  } catch (error) {
+    console.log(error);
+  }
 };

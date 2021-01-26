@@ -1,8 +1,10 @@
-org: nathanielrindlaub
+org: animl
 app: animl
-service: animl-graphql-api
+service: animl-api
 
 plugins:
+  # TODO: figure out serverless-offline-sqs
+  # - serverless-offline-sqs
   - serverless-offline
   - serverless-dotenv-plugin
 
@@ -12,6 +14,12 @@ provider:
   stage: ${env:STAGE}
   region: ${env:REGION}
   profile: ${env:AWS_PROFILE}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource:
+        - Fn::GetAtt: [ automationQueue, Arn ]
   # Only necessary for private endpoints
   # apiKeys:
   #   - name: lambdaApolloKey
@@ -19,16 +27,33 @@ provider:
 
 functions:
   graphql:
-    handler: src/handler.server
+    handler: src/api/handler.server
     events:
     - http:
         path: /
         method: post
         cors: true
   playground:
-    handler: src/handler.playground
+    handler: src/api/handler.playground
     events:
     - http:
         path: /
         method: get
         cors: true
+  automation:
+    handler: src/automation/handler.automation
+    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - automationQueue
+              - Arn
+          batchSize: 1
+
+resources:
+  Resources:
+    automationQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: automationQueue

@@ -1,6 +1,6 @@
 const moment = require('moment');
 const Image = require('../schemas/Image');
-const config = require('../../config/config');
+const config = require('../../../config/config');
 
 const buildFilter = ({
   cameras,

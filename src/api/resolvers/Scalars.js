@@ -3,7 +3,7 @@ const { GraphQLScalarType } = require('graphql');
 const { Kind } = require('graphql/language');
 const GraphQLJSON = require('graphql-type-json');
 const JSONObject = GraphQLJSON.GraphQLJSONObject;
-const config = require('../config/config');
+const config = require('../../config/config');
 
 // Good explanation of the difference between 
 // parseValue(), serialize(), and parseLiteral() here:

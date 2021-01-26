@@ -12,6 +12,7 @@
   "author": "Nathaniel Rindlaub",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.831.0",
     "graphql-type-json": "^0.3.2",
     "graphql-yoga": "^1.18.3",
     "lodash": "^4.17.20",
@@ -20,6 +21,7 @@
     "mongoose": "^5.10.3",
     "serverless": "^1.81.1",
     "serverless-dotenv-plugin": "^3.0.0",
-    "serverless-offline": "^6.7.0"
+    "serverless-offline": "^6.7.0",
+    "serverless-offline-sqs": "^4.1.1"
   }
 }

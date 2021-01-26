@@ -3,12 +3,11 @@ const mongoose = require('mongoose');
 const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
-const automation = require('./automation');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
 const Fields = require('./resolvers/Fields');
 const Scalars = require('./resolvers/Scalars');
-const config = require('./config/config');
+const config = require('../config/config');
 const typeDefs = require('./type-defs');
 
 
@@ -72,7 +71,6 @@ const context = async ({ req }) => {
     Image: generateImageModel(),
     Camera: generateCameraModel(),
   },
-  automation: automation,
  };
 
 };
@@ -82,7 +80,6 @@ const lambda = new GraphQLServerLambda({
   resolvers,
   context: context,
 });
-
 
 exports.playground = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
