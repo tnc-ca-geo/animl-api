@@ -16,9 +16,7 @@ const generateViewModel = () => ({
 
   createView: async (input) => {
     try {
-      console.log('Creating new view: ', input.name);
       const newView = new View(input);
-      console.log(newView);
       await newView.save();
       return newView;
     } catch (err) {
@@ -31,7 +29,6 @@ const generateViewModel = () => ({
       const query = _ids ? { _id: { $in: _ids } } : {};
       try {
         const views = await View.find(query).populate('automationRules.action.model');
-        console.log('found views: ', views);
         if (!_ids && views.length === 0) {
           defaultView = await this.createView(defaultViewConfig);
           views.push(defaultView);

@@ -6,10 +6,11 @@ const Mutation = {
     await context.models.Camera.createCamera(newImage);
     return { image: newImage }; // return values must match payload schema
   },
-  // TODO: implement createLabel resolver - accomodate both ml & user-created labels.
-  // createLabel: async (_, { input }, context) => {
-  //   // ...
-  // },
+  createLabel: async (_, { input }, context) => {
+    // TODO: accomodate both ml & user-created labels
+    const image = await context.models.Image.createLabel(input, context);
+    return { image: image };
+  },
   createView: async (_, { input }, context) => {
     const newView = await context.models.View.createView(input);
     return { view: newView };

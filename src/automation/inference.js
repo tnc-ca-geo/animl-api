@@ -6,9 +6,9 @@ const config = require('../config/config');
 const call = {
   megadetector: async (image) => {
     // get image from S3, read in as buffer of binary data
-    const imageUrl = config.IMAGES_URL + 'images/' + image.hash + '.jpg';
+    const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
     const img = await agent.get(imageUrl);
-    imgBuffer = Buffer.from(img.body, 'binary');
+    const imgBuffer = Buffer.from(img.body, 'binary');
     let res;
     try {
       res = await agent

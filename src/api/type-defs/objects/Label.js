@@ -9,7 +9,7 @@ module.exports = `
     type: String!
     category: String!
     conf: Float
-    bbox: [Int!]
+    bbox: [Float!]
     labeledDate: Date!
     validation: Validation!
   }

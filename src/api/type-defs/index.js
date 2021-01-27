@@ -1,4 +1,5 @@
 const CreateImageInput = require('./inputs/CreateImageInput');
+const CreateLabelInput = require('./inputs/CreateLabelInput');
 const CreateViewInput = require('./inputs/CreateViewInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 const QueryImageInput = require('./inputs/QueryImageInput');
@@ -14,6 +15,7 @@ const Scalars = require('./objects/Scalars');
 const View = require('./objects/View');
 
 const CreateImagePayload = require('./payloads/CreateImagePayload');
+const CreateLabelPayload = require('./payloads/CreateLabelPayload');
 const CreateViewPayload = require('./payloads/CreateViewPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 const ImageConnection = require('./payloads/ImageConnection');
@@ -28,6 +30,7 @@ const Query = require('./root/Query');
 
 const typeDefStrings = [
   CreateImageInput,
+  CreateLabelInput,
   CreateViewInput,
   DeleteViewInput,
   QueryImageInput,
@@ -41,6 +44,7 @@ const typeDefStrings = [
   Scalars,
   View,
   CreateImagePayload,
+  CreateLabelPayload,
   CreateViewPayload,
   DeleteViewPayload,
   ImageConnection,

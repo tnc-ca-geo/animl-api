@@ -1,30 +1,18 @@
 const Image = require('../schemas/Image');
 const utils = require('./utils');
 const { SQS } = require('aws-sdk');
+const config = require('../../../config/config');
 
 const sqs = new SQS();
 
-const queueForAutomation = async (message, context) => {
-  console.log('queueForAutomation() firing')
+const addToAutomationQueue = async (message, context) => {
   const views = await context.models.View.getViews();
   message.views = views;
-  const region = 'us-west-1';
-  const accountId = '830244800171';
-  const queueName = 'automationQueue';
-  const queueUrl= `https://sqs.${region}.amazonaws.com/${accountId}/${queueName}`
-  console.log('sending message to queue: ', message);
   await sqs.sendMessage({
-    QueueUrl: queueUrl,
+    QueueUrl: config.AUTOMATION_QUEUE_URL,
     MessageBody: JSON.stringify(message),
-    MessageAttributes: {
-      AttributeNameHere: {
-        StringValue: 'Attribute Value Here',
-        DataType: 'String',
-      },
-    },
   }).promise();
-  console.log('success?')
-}
+};
 
 const generateImageModel = () => ({
 
@@ -63,21 +51,16 @@ const generateImageModel = () => ({
   get createLabel() {
     return async (input, context) => {
       const { imageId, label } = input;
-      console.log(`creating label: ${label.category}`);
       try {
-        // get image
         const image = await this.queryById(imageId);
         const newLabel = utils.createLabelRecord(label, label.modelId);
         image.labels.push(newLabel);
         await image.save();
-
-        // TODO: it would great for this to be async. is that advisible in lambda?
-        // await context.automation.initiate({
-        //   event: 'label-added',
-        //   image: image,
-        //   label: newLabel,
-        // }, context);
-
+        await addToAutomationQueue({
+          event: 'label-added',
+          image: image,
+          label: newLabel,
+        }, context);
         return image;
       } catch (err) {
         throw new Error(err);
@@ -103,19 +86,10 @@ const generateImageModel = () => ({
       const md = utils.sanitizeMetadata(input.md);
       const newImage = utils.createImageRecord(md);
       await newImage.save();
-      // TODO: move automation to it's own lambda, invoke it here 
-      // (or set up sqs queue and send message to sqs)
-      // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Lambda.html#invoke-property
-      // await context.automation.initiate({
-      //   event: 'image-added',
-      //   image: newImage
-      // }, context);
-      console.log('context from models.Image.createImage: ', context);
-      await queueForAutomation({
+      await addToAutomationQueue({
         event: 'image-added',
         image: newImage,
       }, context);
-
       return newImage;
     } catch (err) {
       throw new Error(err);
@@ -125,7 +99,6 @@ const generateImageModel = () => ({
  });
 
 module.exports = generateImageModel;
-
 
 
 // TODO: pass user into model generators to perform authorization at the 

@@ -5,7 +5,9 @@ const {
 
 const CONFIG = {
   MONGO_DB_URL,
-  IMAGES_URL: 'https://dcgt63meba0hf.cloudfront.net/',
+  ANIML_IMAGES_URL: 'https://d3pkyb5gv8sihx.cloudfront.net/',
+  ANIML_API_URL: 'https://omu1dx586i.execute-api.us-west-1.amazonaws.com/dev/',
+  AUTOMATION_QUEUE_URL: 'https://sqs.us-west-1.amazonaws.com/830244800171/automationQueue',
   MEGADETECTOR_API_KEY,
   MEGADETECTOR_URL: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect',
   MEGADETECTOR_CONF_THRESHOLD: 0.8,
