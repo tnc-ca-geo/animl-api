@@ -11,7 +11,7 @@ module.exports = `
   }
 
   type AutomationRule {
-    event: [AutomationEvent!]
-    action: [AutomationAction!]
+    event: AutomationEvent!
+    action: AutomationAction!
   }
 `;
