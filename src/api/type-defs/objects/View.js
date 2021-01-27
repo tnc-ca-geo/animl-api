@@ -5,5 +5,6 @@ module.exports = `
     filters: Filters!
     description: String
     editable: Boolean!
+    automationRules: [AutomationRule]
   }
 `;

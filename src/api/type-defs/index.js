@@ -5,6 +5,7 @@ const DeleteViewInput = require('./inputs/DeleteViewInput');
 const QueryImageInput = require('./inputs/QueryImageInput');
 const UpdateViewInput = require('./inputs/UpdateViewInput');
 
+const AutomationRule = require('./objects/AutomationRule');
 const Camera = require('./objects/Camera');
 const Filters = require('./objects/Filters');
 const Image = require('./objects/Image');
@@ -35,6 +36,7 @@ const typeDefStrings = [
   DeleteViewInput,
   QueryImageInput,
   UpdateViewInput,
+  AutomationRule,
   Camera,
   Filters,
   Image,

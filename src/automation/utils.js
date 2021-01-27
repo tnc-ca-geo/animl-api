@@ -53,10 +53,10 @@ const includedInView = (image, view) => {
 };
 
 const ruleApplies = (rule, event, label) => {
-  if (rule.event === event) {
+  if (rule.event.type === event) {
     // TODO: check whether this rule has already been run on this image
-    if ((rule.event === 'label-added' && rule.label === label.category) ||
-        rule.event === 'image-added') {
+    if ((rule.event.type === 'label-added' && rule.event.label === label.category) ||
+        rule.event.type === 'image-added') {
       return true;
     }
   }

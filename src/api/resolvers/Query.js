@@ -1,5 +1,4 @@
 const Query = {
-
   images: async (_, args, context) => {
     const count = await context.models.Image.countImages(args.input);
     const response = await context.models.Image.queryByFilter(args.input);

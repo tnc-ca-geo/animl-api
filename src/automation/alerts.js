@@ -6,11 +6,11 @@ const ses = new SES({apiVersion: '2010-12-01'});
 const makeEmail = (rule, image) => {
   const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
   const body = `HTML email with embedded image. \
-  <img src="${imageUrl}" alt="detected ${rule.label}"/>`
+  <img src="${imageUrl}" alt="detected ${rule.event.label}"/>`
 
   return {
     Destination: {
-      ToAddresses: [rule.alertRecipient],
+      ToAddresses: [rule.action.alertRecipient],
     }, 
     Message: {
       Body: {
@@ -18,7 +18,7 @@ const makeEmail = (rule, image) => {
       }, 
       Subject: {
         Charset: 'UTF-8', 
-        Data: `${rule.label} detected on camera ${cameraSn}`
+        Data: `${rule.event.label} detected on camera ${cameraSn}`
       }
     }, 
     Source: config.EMAIL_ALERT_SENDER, 

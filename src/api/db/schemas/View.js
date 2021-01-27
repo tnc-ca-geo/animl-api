@@ -2,8 +2,10 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 let AutomationRuleSchema = new Schema({
-  event: { type: String, enum: ['image-added', 'label-added'], required: true },
-  label: { type: String },
+  event: {
+    type: { type: String, enum: ['image-added', 'label-added'], required: true },
+    label: { type: String },
+  },
   action: {
     type: { type: String, enum: ['run-inference', 'send-alert'], required: true },
     model: { type: Schema.Types.ObjectId, ref: 'Model' },

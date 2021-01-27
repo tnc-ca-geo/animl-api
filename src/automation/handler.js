@@ -59,6 +59,7 @@ exports.automation = async (event) => {
     for (const record of event.Records) {
       const { event, image, label, views } = JSON.parse(record.body);
       const callstack = utils.buildCallstack(event, image, label, views);
+      console.log('automation callstack: ', callstack)
       await Promise.all(callstack.map(async (rule) => {
         await executeRule[rule.action.type](rule, image);
       }));
