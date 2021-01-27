@@ -20,6 +20,11 @@ provider:
         - sqs:SendMessage
       Resource:
         - Fn::GetAtt: [ automationQueue, Arn ]
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+      Resource: "*"
   # Only necessary for private endpoints
   # apiKeys:
   #   - name: lambdaApolloKey

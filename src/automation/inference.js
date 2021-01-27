@@ -3,7 +3,7 @@ const fs = require('fs');
 const url = require('url');
 const config = require('../config/config');
 
-const call = {
+const runInference = {
   megadetector: async (image) => {
     // get image from S3, read in as buffer of binary data
     const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
@@ -40,5 +40,5 @@ const call = {
 }
 
 module.exports = {
-  call,
+  runInference,
 };

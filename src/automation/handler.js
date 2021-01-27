@@ -1,5 +1,6 @@
 const { GraphQLClient, gql } = require('graphql-request');
-const { call } = require('./inference');
+const { runInference } = require('./inference');
+const { sendEmail } = require('./alerts');
 const utils = require('./utils');
 const config = require('../config/config');
 
@@ -36,7 +37,7 @@ async function requestCreateLabel(input) {
 const executeRule = {
   'run-inference': async (rule, image) => {
     try {
-      const detections = await call[rule.action.model.name](image);
+      const detections = await runInference[rule.action.model.name](image);
       await Promise.all(detections.map(async (det) => {
         det.modelId = rule.action.model._id;
         det.type = 'ml';
@@ -46,8 +47,9 @@ const executeRule = {
       throw new Error(err);
     }
   },
-  'send-alert': (rule, image, models) => {
+  'send-alert': (rule, image) => {
     console.log('sending alert: ', rule);
+    sendEmail(rule, image);
   }
 };
 

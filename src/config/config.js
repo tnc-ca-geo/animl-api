@@ -23,7 +23,7 @@ const CONFIG = {
     EXIF: 'YYYY:MM:DD hh:mm:ss',
     // imageId: 'YYYY-MM-DD:hh-mm-ss',
   },
-  
+  EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
 };
 
 
