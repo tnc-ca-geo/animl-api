@@ -32,6 +32,11 @@ const Query = {
   views: async (_, { _ids }, context) => {
     return context.models.View.getViews(_ids);
   },
+
+  models: async (_, { _ids }, context) => {
+    return context.models.Model.getModels(_ids);
+  },
+  
 };
 
 module.exports = Query;

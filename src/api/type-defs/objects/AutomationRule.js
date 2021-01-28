@@ -6,7 +6,7 @@ module.exports = `
 
   type AutomationAction {
     type: String!
-    model: ID
+    model: Model
     alertRecipient: String
   }
 

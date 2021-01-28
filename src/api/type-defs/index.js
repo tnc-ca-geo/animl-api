@@ -11,6 +11,7 @@ const Filters = require('./objects/Filters');
 const Image = require('./objects/Image');
 const Label = require('./objects/Label');
 const Location = require('./objects/Location');
+const Model = require('./objects/Model');
 const PageInfo = require('./objects/PageInfo');
 const Scalars = require('./objects/Scalars');
 const View = require('./objects/View');
@@ -42,6 +43,7 @@ const typeDefStrings = [
   Image,
   Label,
   Location,
+  Model,
   PageInfo,
   Scalars,
   View,

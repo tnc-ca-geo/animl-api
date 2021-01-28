@@ -26,6 +26,7 @@ const generateViewModel = () => ({
 
   get getViews() {
     return async (_ids) => {
+      console.log('getting views')
       const query = _ids ? { _id: { $in: _ids } } : {};
       try {
         const views = await View.find(query).populate('automationRules.action.model');
@@ -33,6 +34,14 @@ const generateViewModel = () => ({
           defaultView = await this.createView(defaultViewConfig);
           views.push(defaultView);
         }
+        views.forEach((view) => {
+          console.log('view: ', view)
+          if (view.automationRules && view.automationRules.length) {
+            view.automationRules.forEach(rule => {
+              console.log('model id: ', rule.action.model);
+            })
+          }
+        })
         return views;
       } catch (err) {
         throw new Error(err);

@@ -5,7 +5,7 @@ const generateCameraModel = () => ({
   getCameras: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
-      cameras = await Camera.find(query);
+      const cameras = await Camera.find(query);
       return cameras;
     } catch (err) {
       throw new Error(err);

@@ -6,6 +6,7 @@ const config = require('../../../config/config');
 const sqs = new SQS();
 
 const addToAutomationQueue = async (message, context) => {
+  console.log('adding to automation queue');
   const views = await context.models.View.getViews();
   message.views = views;
   await sqs.sendMessage({
@@ -25,6 +26,7 @@ const generateImageModel = () => ({
   queryById: async (_id) => {
     try {
       const image = await Image.findOne({_id});
+      console.log('image: ', image);
       return image;
     } catch (err) {
       throw new Error(err);
@@ -49,6 +51,7 @@ const generateImageModel = () => ({
   },
 
   get createLabel() {
+    console.log('creating label')
     return async (input, context) => {
       const { imageId, label } = input;
       try {
@@ -82,6 +85,7 @@ const generateImageModel = () => ({
   },
 
   createImage: async (input, context) => {
+    console.log('creating image')
     try {
       const md = utils.sanitizeMetadata(input.md);
       const newImage = utils.createImageRecord(md);
