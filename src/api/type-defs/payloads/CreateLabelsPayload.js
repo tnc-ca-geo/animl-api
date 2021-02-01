@@ -1,4 +1,4 @@
 module.exports = `
-  type CreateLabelPayload {
+  type CreateLabelsPayload {
     image: Image
   }`

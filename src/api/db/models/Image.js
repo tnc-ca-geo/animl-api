@@ -6,13 +6,19 @@ const config = require('../../../config/config');
 const sqs = new SQS();
 
 const addToAutomationQueue = async (message, context) => {
-  console.log('adding to automation queue');
+  console.log(`Adding ${message.image.originalFileName} to automation queue`);
+  if (message.label) {
+    console.log(`newly added label: ${message.label.category}`)
+  }
   const views = await context.models.View.getViews();
   message.views = views;
-  await sqs.sendMessage({
+  console.log(`Adding views to sqs message`)
+  const res = await sqs.sendMessage({
     QueueUrl: config.AUTOMATION_QUEUE_URL,
     MessageBody: JSON.stringify(message),
+    MessageGroupId: config.SQS_MESSAGE_GROUP_ID,
   }).promise();
+  console.log('message sent: ', res);
 };
 
 const generateImageModel = () => ({
@@ -50,20 +56,22 @@ const generateImageModel = () => ({
     }
   },
 
-  get createLabel() {
-    console.log('creating label')
+  get createLabels() {
     return async (input, context) => {
-      const { imageId, label } = input;
+      const { imageId, labels } = input;
       try {
         const image = await this.queryById(imageId);
-        const newLabel = utils.createLabelRecord(label, label.modelId);
-        image.labels.push(newLabel);
-        await image.save();
-        await addToAutomationQueue({
-          event: 'label-added',
-          image: image,
-          label: newLabel,
-        }, context);
+        for (label of labels) {
+          const labelRecord = utils.createLabelRecord(label, label.modelId);
+          console.log(`Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
+          image.labels.push(labelRecord);
+          await image.save();
+          await addToAutomationQueue({
+            event: 'label-added',
+            image: image,
+            label: labelRecord,
+          }, context);
+        }
         return image;
       } catch (err) {
         throw new Error(err);
@@ -85,15 +93,16 @@ const generateImageModel = () => ({
   },
 
   createImage: async (input, context) => {
-    console.log('creating image')
     try {
       const md = utils.sanitizeMetadata(input.md);
       const newImage = utils.createImageRecord(md);
+      console.log(`Adding image ${newImage.originalFileName} to db`);
       await newImage.save();
       await addToAutomationQueue({
         event: 'image-added',
         image: newImage,
       }, context);
+      console.log(`createImage success. Returning`);
       return newImage;
     } catch (err) {
       throw new Error(err);

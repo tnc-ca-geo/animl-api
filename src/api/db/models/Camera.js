@@ -16,17 +16,13 @@ const generateCameraModel = () => ({
     return async (image) => {
       const existingCam = await this.getCameras([ image.cameraSn ]);
       if (existingCam.length === 0) {
-        console.log('Creating new camera document');
+        console.log(`Creating new camera record for camera - ${image.cameraSn}`);
         const newCamera = new Camera({
           _id: image.cameraSn,
           make: image.make,
           ...(image.model && { model: image.model }),
         });
         await newCamera.save();
-        console.log('successfully saved camera: ', newCamera);
-      }
-      else {
-        console.log('Camera record already exists: ', existingCam);
       }
     }
   }

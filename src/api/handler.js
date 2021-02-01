@@ -15,9 +15,7 @@ const typeDefs = require('./type-defs');
 let cachedDb = null;
 
 async function connectToDb() {
-  console.log('connecting to database...');
   if (cachedDb) {
-    console.log('Using cached database instance');
     return cachedDb;
   }
   const options = {
@@ -31,7 +29,6 @@ async function connectToDb() {
   mongoose.connection.on('error', (err) => {
     console.log('Mongoose default connection error: ' + err);
   });
-  console.log('successful connection');
   cachedDb = mongoClient;
   return cachedDb;
 };

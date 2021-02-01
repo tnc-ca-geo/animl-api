@@ -6,15 +6,14 @@ const {
 const CONFIG = {
   MONGO_DB_URL,
   ANIML_IMAGES_URL: 'https://d3pkyb5gv8sihx.cloudfront.net/',
-  ANIML_API_URL: 'https://omu1dx586i.execute-api.us-west-1.amazonaws.com/dev/',
-  AUTOMATION_QUEUE_URL: 'https://sqs.us-west-1.amazonaws.com/830244800171/automationQueue',
+  ANIML_API_URL: 'https://tg1ua90f94.execute-api.us-west-1.amazonaws.com/dev/',
+  AUTOMATION_QUEUE_URL: 'https://sqs.us-west-1.amazonaws.com/830244800171/animlAutomationQueue.fifo',
+  SQS_MESSAGE_GROUP_ID: 'animl-automation',
+  MIRA_URL: 'https://cq1k5oauk2.execute-api.us-west-1.amazonaws.com/dev/classify',
   MEGADETECTOR_API_KEY,
   MEGADETECTOR_URL: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect',
   MEGADETECTOR_CONF_THRESHOLD: 0.8,
-  // TODO: get clarity on categories. Is there a 'group' category?
-  // https://github.com/microsoft/CameraTraps/blob/master/detection/run_tf_detector.py
   MEGADETECTOR_CATEGORIES: [
-    {id: 0, name: 'empty'},
     {id: 1, name: 'animal'},
     {id: 2, name: 'person'},
     {id: 3, name: 'vehicle'}

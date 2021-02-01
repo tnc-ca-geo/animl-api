@@ -19,7 +19,9 @@ provider:
       Action:
         - sqs:SendMessage
       Resource:
-        - Fn::GetAtt: [ automationQueue, Arn ]
+        - Fn::GetAtt:
+            - animlAutomationQueue
+            - Arn
     - Effect: Allow
       Action:
         - ses:SendEmail
@@ -38,6 +40,7 @@ functions:
         path: /
         method: post
         cors: true
+    timeout: 20
   playground:
     handler: src/api/handler.playground
     events:
@@ -45,6 +48,7 @@ functions:
         path: /
         method: get
         cors: true
+    timeout: 20
   automation:
     handler: src/automation/handler.automation
     reservedConcurrency: 10 # max number of lambdas to invoke at one time
@@ -52,13 +56,16 @@ functions:
       - sqs:
           arn:
             Fn::GetAtt:
-              - automationQueue
+              - animlAutomationQueue
               - Arn
           batchSize: 1
+    timeout: 20
 
 resources:
   Resources:
-    automationQueue:
+    animlAutomationQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: automationQueue
+        QueueName: animlAutomationQueue.fifo
+        FifoQueue: true
+        ContentBasedDeduplication: true

@@ -7,9 +7,9 @@ module.exports = `
     modelId: ID
   }
 
-  input CreateLabelInput {
+  input CreateLabelsInput {
     imageId: ID!
-    label: LabelData!
+    labels: [LabelData!]
 }`;
 
 // TODO: add userId to LabelData

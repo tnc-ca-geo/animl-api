@@ -18,7 +18,7 @@ const makeEmail = (rule, image) => {
       }, 
       Subject: {
         Charset: 'UTF-8', 
-        Data: `${rule.event.label} detected on camera ${cameraSn}`
+        Data: `${rule.event.label} detected on camera ${image.cameraSn}`
       }
     }, 
     Source: config.EMAIL_ALERT_SENDER, 
@@ -27,8 +27,10 @@ const makeEmail = (rule, image) => {
 
 const sendEmail = async (rule, image) => {
   try {
+    console.log(`Sending alert for ${image.originalFileName}`);
     const email = makeEmail(rule, image);
     const res = await ses.sendEmail(email).promise();
+    return res;
   } catch (err) {
     throw new Error(err);
   }

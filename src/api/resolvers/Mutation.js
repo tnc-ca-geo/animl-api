@@ -7,9 +7,10 @@ const Mutation = {
     return { image: newImage }; // return values must match payload schema
   },
 
-  createLabel: async (_, { input }, context) => {
+  createLabels: async (_, { input }, context) => {
     // TODO: accomodate both ml & user-created labels
-    const image = await context.models.Image.createLabel(input, context);
+    console.log('createLabel mutation firing with input: ', input);
+    const image = await context.models.Image.createLabels(input, context);
     return { image: image };
   },
 

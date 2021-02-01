@@ -1,7 +1,7 @@
 module.exports = `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
-    createLabel(input: CreateLabelInput!): CreateLabelPayload
+    createLabels(input: CreateLabelsInput!): CreateLabelsPayload
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload
     deleteView(input: DeleteViewInput!): DeleteViewPayload
