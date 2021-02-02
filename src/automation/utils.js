@@ -63,7 +63,9 @@ const ruleApplies = (rule, event, label) => {
   return false;
 }
 
-const buildCallstack = (event, image, label, views) => {
+const buildCallstack = async (payload, context) => {
+  const { event, image, label } = payload;
+  const views = await context.models.View.getViews();
   const callstack = views.reduce((callstack, view) => {
     if (includedInView(image, view) && view.automationRules) {
       view.automationRules

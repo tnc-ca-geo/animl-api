@@ -1,25 +1,6 @@
 const Image = require('../schemas/Image');
+const automation = require('../../../automation');
 const utils = require('./utils');
-const { SQS } = require('aws-sdk');
-const config = require('../../../config/config');
-
-const sqs = new SQS();
-
-const addToAutomationQueue = async (message, context) => {
-  console.log(`Adding ${message.image.originalFileName} to automation queue`);
-  if (message.label) {
-    console.log(`newly added label: ${message.label.category}`)
-  }
-  const views = await context.models.View.getViews();
-  message.views = views;
-  console.log(`Adding views to sqs message`)
-  const res = await sqs.sendMessage({
-    QueueUrl: config.AUTOMATION_QUEUE_URL,
-    MessageBody: JSON.stringify(message),
-    MessageGroupId: config.SQS_MESSAGE_GROUP_ID,
-  }).promise();
-  console.log('message sent: ', res);
-};
 
 const generateImageModel = () => ({
 
@@ -61,17 +42,18 @@ const generateImageModel = () => ({
       const { imageId, labels } = input;
       try {
         const image = await this.queryById(imageId);
-        for (label of labels) {
+        for (const label of labels) {
           const labelRecord = utils.createLabelRecord(label, label.modelId);
-          console.log(`Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
+          console.log(`createLabels() - Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
           image.labels.push(labelRecord);
           await image.save();
-          await addToAutomationQueue({
+          await automation.handleEvent({
             event: 'label-added',
             image: image,
             label: labelRecord,
           }, context);
         }
+        console.log(`createLabels success. Returning`);
         return image;
       } catch (err) {
         throw new Error(err);
@@ -96,9 +78,9 @@ const generateImageModel = () => ({
     try {
       const md = utils.sanitizeMetadata(input.md);
       const newImage = utils.createImageRecord(md);
-      console.log(`Adding image ${newImage.originalFileName} to db`);
+      console.log(`createImage() - Adding image ${newImage.originalFileName} to db`);
       await newImage.save();
-      await addToAutomationQueue({
+      await automation.handleEvent({
         event: 'image-added',
         image: newImage,
       }, context);

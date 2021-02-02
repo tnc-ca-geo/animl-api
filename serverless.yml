@@ -17,10 +17,10 @@ provider:
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - sqs:SendMessage
+        - sqs:*
       Resource:
         - Fn::GetAtt:
-            - animlAutomationQueue
+            - inferenceQueue
             - Arn
     - Effect: Allow
       Action:
@@ -49,23 +49,25 @@ functions:
         method: get
         cors: true
     timeout: 20
-  automation:
-    handler: src/automation/handler.automation
+  inference:
+    handler: src/ml/handler.inference
     reservedConcurrency: 10 # max number of lambdas to invoke at one time
     events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - animlAutomationQueue
-              - Arn
-          batchSize: 1
-    timeout: 20
+      - eventBridge:
+          schedule: rate(5 minutes)
+      # - sqs:
+      #     arn:
+      #       Fn::GetAtt:
+      #         - inferenceQueue
+      #         - Arn
+      #     batchSize: 1
+    timeout: 120
 
 resources:
   Resources:
-    animlAutomationQueue:
+    inferenceQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: animlAutomationQueue.fifo
-        FifoQueue: true
-        ContentBasedDeduplication: true
+        QueueName: inferenceQueue
+        # FifoQueue: true
+        # ContentBasedDeduplication: true

@@ -2,31 +2,20 @@ const agent = require('superagent');
 const fs = require('fs');
 const url = require('url');
 const config = require('../config/config');
+const generateImageModel = require('../api/db/models/Image');
 
-const getBBox = (image, models) => {
-  if (!image.labels) {
-    return null;
-  }
-  // TODO: figure out how to account for multiple versions of megadetector
-  const megadetector = models.filter((m) => m.name === 'megadetector')[0]; // ugly
-  const megadetectorLabels = image.labels
-    .filter((label) => label.model === megadetector._id)
-    .sort((a, b) => b.conf - a.conf);
-  return megadetectorLabels[0].bbox;
-};
+// get image from S3, read in as buffer of binary data
+const getImage = async (image) => {
+  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
+  const img = await agent.get(imageUrl);
+  return Buffer.from(img.body, 'binary');
+}
 
 const runInference = {
-  megadetector: async (image, models) => {
 
-    console.log('calling megadetector on image: ', image.originalFileName);
-
-    const megadetector = models.filter((m) => m.name === 'megadetector')[0]; // ugly
-
-    // get image from S3, read in as buffer of binary data
-    const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
-    const img = await agent.get(imageUrl);
-    const imgBuffer = Buffer.from(img.body, 'binary');
-
+  megadetector: async (model, image, label) => {
+    console.log(`calling ${model.name} on image: ${image.originalFileName}`);
+    const imgBuffer = await getImage(image);
     let res;
     try {
       res = await agent
@@ -44,7 +33,7 @@ const runInference = {
     const tmpFile = res.files.detection_result.path;
     let detections = JSON.parse(fs.readFileSync(tmpFile));
     detections = detections[image.hash].map((det) => ({
-      modelId: megadetector._id,
+      modelId: model._id,
       type: 'ml',
       bbox: det.slice(0, 4),
       conf: det[4],
@@ -55,19 +44,12 @@ const runInference = {
     console.log('detections: ', detections);
     return detections;
   },
-  mira: async (image, models) => {
 
-    const mira = models.filter((m) => m.name === 'mira')[0];  // TODO: ugly
-
-    console.log('calling mira on image: ', image.originalFileName);
-
-    const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
-    const img = await agent.get(imageUrl);
-    const imgBuffer = Buffer.from(img.body, 'binary');
-
-    let bbox = getBBox(image, models);
-    bbox = bbox ? bbox : [0,0,1,1];
-
+  mira: async (model, image, label) => {
+    console.log(`calling ${model.name} on image: ${image.originalFileName}`);
+    const imgBuffer = await getImage(image);
+    console.log(`label: `, label)
+    const bbox = label.bbox ? label.bbox : [0,0,1,1];
     let res;
     try {
       res = await agent
@@ -77,6 +59,8 @@ const runInference = {
     } catch (err) {
       throw new Error(err);
     }
+    
+    // TODO: add label reconciling function
 
     res = JSON.parse(res.res.text);
     console.log('res: ', res);
@@ -86,7 +70,7 @@ const runInference = {
         .sort((a, b) => b[1] - a[1])[0];
       console.log(`Top ${model['endpoint_name']} prediction: ${category} - ${conf}`);
       detections.push({
-        modelId: mira._id,
+        modelId: model._id,
         type: 'ml',
         bbox,
         conf,
