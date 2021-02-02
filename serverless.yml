@@ -69,5 +69,14 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: inferenceQueue
-        # FifoQueue: true
-        # ContentBasedDeduplication: true
+        RedrivePolicy:
+          deadLetterTargetArn:
+            "Fn::GetAtt":
+              - inferenceDeadLetterQueue
+              - Arn
+          maxReceiveCount: 5
+    inferenceDeadLetterQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "inferenceDLQ"
+        MessageRetentionPeriod: 1209600 # 14 days in seconds
