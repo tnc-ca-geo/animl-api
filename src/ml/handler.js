@@ -64,9 +64,11 @@ exports.inference = async (event, context) => {
       const detections = await runInference[model.name](model, image, label);
 
       // if successful, make create label request
-      const res = await requestCreateLabels({
-        imageId: image._id, labels: detections
-      });
+      if (detections.length) {
+        const res = await requestCreateLabels({
+          imageId: image._id, labels: detections
+        });
+      }
 
       // remove from queue
       await sqs.deleteMessage({

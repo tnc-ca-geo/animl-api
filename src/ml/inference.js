@@ -60,24 +60,23 @@ const runInference = {
       throw new Error(err);
     }
     
-    // TODO: add label reconciling function
-
     res = JSON.parse(res.res.text);
     console.log('res: ', res);
-    let detections = [];
-    Object.values(res).forEach((classifier) => {
+    return Object.values(res).reduce((detections, classifier) => {
       const [category, conf] = Object.entries(classifier.predictions)
         .sort((a, b) => b[1] - a[1])[0];
       console.log(`Top ${classifier['endpoint_name']} prediction: ${category} - ${conf}`);
-      detections.push({
-        modelId: model._id,
-        type: 'ml',
-        bbox,
-        conf,
-        category
-      })
-    });
-    return detections;
+      if (category !== 'empty') {
+        detections.push({
+          modelId: model._id,
+          type: 'ml',
+          bbox,
+          conf,
+          category
+        });
+      }
+      return detections;
+    }, []);
   },
 }
 
