@@ -38,7 +38,7 @@ const runInference = {
       bbox: det.slice(0, 4),
       conf: det[4],
       category: config.MEGADETECTOR_CATEGORIES.filter((cat) => (
-         cat.id === det[5]
+        cat.id === det[5]
       ))[0].name,
     }));
     console.log('detections: ', detections);
@@ -65,10 +65,10 @@ const runInference = {
     res = JSON.parse(res.res.text);
     console.log('res: ', res);
     let detections = [];
-    Object.values(res).forEach((model) => {
-      const [category, conf] = Object.entries(model.predictions)
+    Object.values(res).forEach((classifier) => {
+      const [category, conf] = Object.entries(classifier.predictions)
         .sort((a, b) => b[1] - a[1])[0];
-      console.log(`Top ${model['endpoint_name']} prediction: ${category} - ${conf}`);
+      console.log(`Top ${classifier['endpoint_name']} prediction: ${category} - ${conf}`);
       detections.push({
         modelId: model._id,
         type: 'ml',

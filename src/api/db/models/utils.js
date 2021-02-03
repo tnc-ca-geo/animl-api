@@ -1,4 +1,5 @@
 const moment = require('moment');
+const _ = require('lodash');
 const Image = require('../schemas/Image');
 const config = require('../../../config/config');
 
@@ -106,6 +107,20 @@ const parseCoordinates = (md) => {
 
 };
 
+const isLabelDupe = (image, newLabel) => {
+  for (const label of image.labels) {
+    const modelMatch = newLabel.modelId === label.model.toString();
+    const labelMatch = newLabel.category === label.category;
+    const confMatch  = newLabel.conf === label.conf;
+    const bboxMatch  = _.isEqual(_.sortBy(newLabel.bbox), _.sortBy(label.bbox));
+    if (modelMatch && labelMatch && confMatch && bboxMatch) {
+      console.log('this label has already been applied, skipping');
+      return true;
+    }
+  }
+  return false;
+};
+
 // Map image metadata to image schema
 const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
@@ -160,6 +175,7 @@ const createLabelRecord = (input, modelId) => {
 module.exports = {
   buildFilter,
   sanitizeMetadata,
+  isLabelDupe,
   createImageRecord,
   createLabelRecord,
 };

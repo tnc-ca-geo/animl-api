@@ -43,6 +43,9 @@ const generateImageModel = () => ({
       try {
         const image = await this.queryById(imageId);
         for (const label of labels) {
+          if (utils.isLabelDupe(image, label)) {
+            return;
+          }
           const labelRecord = utils.createLabelRecord(label, label.modelId);
           console.log(`createLabels() - Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
           image.labels.push(labelRecord);
