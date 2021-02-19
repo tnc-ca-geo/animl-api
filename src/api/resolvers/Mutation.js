@@ -27,7 +27,8 @@ const Mutation = {
   deleteView: async (_, { input }, context) => {
     const res = await context.models.View.deleteView(input);
     return { success: res.ok, viewId: input._id};
-  }
+  },
+
 };
 
 module.exports = Mutation;

@@ -67,7 +67,7 @@ const generateViewModel = () => ({
     } catch (err) {
       throw new Error(err);
     }
-  }
+  },
 
  });
 

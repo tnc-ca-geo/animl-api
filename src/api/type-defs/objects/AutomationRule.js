@@ -11,6 +11,8 @@ module.exports = `
   }
 
   type AutomationRule {
+    _id: ID!
+    name: String!
     event: AutomationEvent!
     action: AutomationAction!
   }

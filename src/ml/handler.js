@@ -56,7 +56,10 @@ exports.inference = async (event, context) => {
     }).promise();
     console.log('response from queue: ', data);
     
-    // const messages = JSON.parse(data.Messages);
+    if (!data.Messages) {
+      return; 
+    }
+    
     for (const message of data.Messages) {
       console.log('message: ', message.Body);
       const { model, image, label } = JSON.parse(message.Body);
@@ -76,8 +79,6 @@ exports.inference = async (event, context) => {
         ReceiptHandle: message.ReceiptHandle /* required */
       }).promise();
     }
-
-    // return res;
 
   } catch (err) {
     console.log('error with inference worker');

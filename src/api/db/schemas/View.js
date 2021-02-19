@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 let AutomationRuleSchema = new Schema({
+  name: { type: String, required: true },
   event: {
     type: { type: String, enum: ['image-added', 'label-added'], required: true },
     label: { type: String },

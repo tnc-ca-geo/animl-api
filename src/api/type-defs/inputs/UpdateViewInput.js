@@ -11,6 +11,8 @@ module.exports = `
   }
 
   input AutomationRuleInput {
+    _id: ID
+    name: String!
     event: AutomationEventInput!
     action: AutomationActionInput!
   }
