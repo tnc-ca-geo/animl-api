@@ -1,5 +1,6 @@
 const utils = require('./utils');
 const { SQS } = require('aws-sdk');
+const { sendEmail } = require('./alerts');
 const config = require('../config/config');
 
 const sqs = new SQS();

@@ -33,11 +33,15 @@ const buildFilter = ({
     }};
   }
 
+  // TODO: test
   let labelsFilter = {};
   if (labels) {
     labelsFilter = labels.includes('none')
-      ? { $or: [{'labels.category': { $in: labels }}, { labels: { $size: 0 }}]}
-      : { 'labels.category': { $in: labels } };
+      ? { $or: [
+          {'objects.labels.category': { $in: labels }},
+          { objects: { $size: 0 }}
+        ]}
+      : { 'objects.labels.category': { $in: labels } };
   };
 
   return {
@@ -108,16 +112,22 @@ const parseCoordinates = (md) => {
 };
 
 const isLabelDupe = (image, newLabel) => {
-  for (const label of image.labels) {
+  const labels = image.objects.reduce((labels, object) => {
+    object.labels.forEach((label) => labels.push(label));
+    return labels;
+  }, []);
+
+  for (const label of labels) {
     const modelMatch = newLabel.modelId === label.model.toString();
     const labelMatch = newLabel.category === label.category;
     const confMatch  = newLabel.conf === label.conf;
-    const bboxMatch  = _.isEqual(_.sortBy(newLabel.bbox), _.sortBy(label.bbox));
+    const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
     if (modelMatch && labelMatch && confMatch && bboxMatch) {
       console.log('this label has already been applied, skipping');
       return true;
     }
   }
+
   return false;
 };
 
@@ -166,7 +176,7 @@ const createLabelRecord = (input, modelId) => {
     conf: input.conf,
     bbox: input.bbox,
     labeledDate: moment(),
-    validation: { reviewed: false, validated: false },
+    // validation: { validated: null }, // if user created, set validation field
     ...(modelId && { model: modelId }),
   };
   return label;

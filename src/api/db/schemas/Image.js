@@ -27,7 +27,7 @@ let ImageSchema = new Schema({
   make: { type: String, default: 'unknown', required: true },
   model: { type: String },
   location: { type: shared.LocationSchema },
-  labels: { type: [shared.LabelSchema] },
+  objects: { type: [shared.ObjectSchema] },
   // deployment: {
   //   type: Schema.Types.ObjectId,
   //   ref: 'Deployment',

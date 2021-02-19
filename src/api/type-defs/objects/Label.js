@@ -1,8 +1,7 @@
 module.exports = `
   type Validation {
-    reviewed: Boolean!
     validated: Boolean!
-    reviewDate: Date!
+    vaidationDate: Date!
   }
 
   type Label {
@@ -20,6 +19,7 @@ module.exports = `
 `;
 
   // TODO: add to Label:
+  // user: { type: Schema.Types.ObjectId, ref: 'User' },
   // model: { type: Schema.Types.ObjectId, ref: 'Model' }
 
   // TODO: add to Validation: 

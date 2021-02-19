@@ -43,12 +43,27 @@ const generateImageModel = () => ({
       try {
         const image = await this.queryById(imageId);
         for (const label of labels) {
+          
           if (utils.isLabelDupe(image, label)) {
             return;
           }
+
           const labelRecord = utils.createLabelRecord(label, label.modelId);
           console.log(`createLabels() - Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
-          image.labels.push(labelRecord);
+          let objExists = false;
+          for (const object of image.objects) {
+            if (_.isEqual(object.bbox, label.bbox)) {
+              object.labels.unshift(labelRecord);
+              objExists = true;
+            }
+          }
+          if (!objExists) {
+            image.objects.unshift({
+              bbox: labelRecord.bbox,
+              labels: [labelRecord],
+            });
+          }
+
           await image.save();
           await automation.handleEvent({
             event: 'label-added',
@@ -66,8 +81,8 @@ const generateImageModel = () => ({
 
   getLabels: async () => {
     try {
-      const categories = await Image.distinct('labels.category');
-      const labellessImage = await Image.findOne({labels: { $size: 0 }});
+      const categories = await Image.distinct('objects.labels.category');
+      const labellessImage = await Image.findOne({ objects: { $size: 0 } });
       if (labellessImage) {
         categories.push('none');
       }
