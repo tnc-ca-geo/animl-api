@@ -18,7 +18,7 @@ let LocationSchema = new Schema({
 /*
  * ValidationSchema
  * validated - the prediction was validated by a user
- *            (true = correct prediction, false = incorrect prediction)
+ *   (true = correct prediction, false = incorrect prediction)
  */
 
 let ValidationSchema = new Schema({
@@ -48,10 +48,15 @@ let LabelSchema = new Schema({
 /*
  * ObjectSchema
  * bbox - [x, y, boxWidth, boxHeight], normalized
+ * locked - a user has reviewed the labels and validated at least one. 
+ *   the most recently added validated label is considered the most 
+ *   accurate. No single-click editing of catagory or bbox allowed unless
+ *   first unlocked.
  */
 
 let ObjectSchema = new Schema({
   bbox: { type: [Number], required: true },
+  locked: { type: Boolean, default: false, required: true },
   labels: { type: [LabelSchema] },
 });
 

@@ -10,11 +10,17 @@ module.exports = `
     conf: Float
     bbox: [Float!]
     labeledDate: Date!
-    validation: Validation!
+    validation: Validation
   }
 
   type LabelList {
     categories: [String]
+  }
+
+  type Object {
+    bbox: [Float!]
+    locked: Boolean!
+    labels: [Label]
   }
 `;
 
