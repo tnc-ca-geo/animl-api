@@ -18,6 +18,7 @@ module.exports = `
   }
 
   type Object {
+    _id: ID!
     bbox: [Float!]
     locked: Boolean!
     labels: [Label]

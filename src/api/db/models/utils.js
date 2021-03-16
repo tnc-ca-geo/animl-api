@@ -34,6 +34,8 @@ const buildFilter = ({
   }
 
   // TODO: test
+  // TODO: decide whether we want to include all labels? only non-invalidated 
+  // ones?
   let labelsFilter = {};
   if (labels) {
     labelsFilter = labels.includes('none')

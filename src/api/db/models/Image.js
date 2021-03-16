@@ -13,7 +13,6 @@ const generateImageModel = () => ({
   queryById: async (_id) => {
     try {
       const image = await Image.findOne({_id});
-      console.log('image: ', image);
       return image;
     } catch (err) {
       throw new Error(err);
@@ -43,7 +42,7 @@ const generateImageModel = () => ({
       try {
         const image = await this.queryById(imageId);
         for (const label of labels) {
-          
+
           if (utils.isLabelDupe(image, label)) {
             return;
           }
@@ -55,11 +54,13 @@ const generateImageModel = () => ({
             if (_.isEqual(object.bbox, label.bbox)) {
               object.labels.unshift(labelRecord);
               objExists = true;
+              break;
             }
           }
           if (!objExists) {
             image.objects.unshift({
               bbox: labelRecord.bbox,
+              locked: false,
               labels: [labelRecord],
             });
           }

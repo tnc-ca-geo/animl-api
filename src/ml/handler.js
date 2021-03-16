@@ -8,16 +8,19 @@ const { SQS } = require('aws-sdk');
 const sqs = new SQS();
 
 async function requestCreateLabels(input) {
-  console.log('calling requesCreateLabel for input: ', input);
+  console.log('calling requestCreateLabel for input: ', input);
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
         image {
-          labels {
-            type
-            category
-            conf
+          objects {
             bbox
+            labels {
+              type
+              category
+              conf
+              bbox
+            }
           }
         }
       }
@@ -35,7 +38,7 @@ async function requestCreateLabels(input) {
     console.log('success calling requestCreateLabels: ', createLabelResponse)
     return createLabelResponse;
   } catch (err) {
-    console.log('error calling requestCreateLabels: ', error)
+    console.log('error calling requestCreateLabels: ', err)
     throw err;
   }
 };
