@@ -46,7 +46,8 @@ const generateImageModel = () => ({
           if (utils.isLabelDupe(image, label)) {
             return;
           }
-
+          // TODO: if label was created on front-end, use ID front-end
+          // generated?
           const labelRecord = utils.createLabelRecord(label, label.modelId);
           console.log(`createLabels() - Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
           let objExists = false;
@@ -58,6 +59,8 @@ const generateImageModel = () => ({
             }
           }
           if (!objExists) {
+            // TODO: if object was created on front-end, use ID front-end
+            // generated?
             image.objects.unshift({
               bbox: labelRecord.bbox,
               locked: false,

@@ -1,5 +1,6 @@
 module.exports = `
   input LabelData {
+    _id: ID
     type: String!
     category: String!
     conf: Float

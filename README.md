@@ -65,7 +65,7 @@ MONGO_DB_URL=<MongoDB Atlas url>
 MEGADETECTOR_API_KEY=<Megadetector API key>
 
 #AWS
-REGION=us-west-1
+REGION=us-west-2
 AWS_PROFILE=serverless-admin
 STAGE=dev
 ```

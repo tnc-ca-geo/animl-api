@@ -173,6 +173,7 @@ const createImageRecord = (md) => {
 // TODO: accomodate users as label authors as well as models
 const createLabelRecord = (input, modelId) => {
   const label = {
+    ...(input._id && { _id: input._id }),
     type: input.type,
     category: input.category,
     conf: input.conf,

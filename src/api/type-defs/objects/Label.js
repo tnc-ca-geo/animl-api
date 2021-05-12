@@ -5,6 +5,7 @@ module.exports = `
   }
 
   type Label {
+    _id: ID!
     type: String!
     category: String!
     conf: Float
