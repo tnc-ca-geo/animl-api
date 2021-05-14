@@ -25,7 +25,7 @@ perform manual labeling
 - Offer an API for advanced querying and analysis of camera trap data
 - Offer tools for exporting ML model training data
 
-This repository contains an AWS Lambda-based, GraphQl API for storing and 
+This repository contains an AWS Lambda-based, GraphQL API for storing and 
 fetching cameratrap data from a MongoDB database. The stack and and it's 
 associated deployment resources are managed with the 
 [Serverless Framework](serverless.com/). The stack includes:
