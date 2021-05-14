@@ -42,8 +42,9 @@ The instructions below assume you have the following tools globally installed:
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
 - [aws-cli](https://aws.amazon.com/cli/)
 
-### Create "serverless-admin" AWS config profile
-Good instructions 
+### Create "animl" AWS config profile
+The name of the profile must be "animl" (because it's referenced in the 
+serverless.yml file). Good instructions 
 [here](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/).
 
 ### Make a project direcory, clone this repo, and install dependencies
@@ -53,21 +54,6 @@ cd animl-api
 git clone https://github.com/tnc-ca-geo/animl-api.git
 cd animl-api
 npm install
-```
-
-### Add a .env file
-We use dotenv to manage secrets, so you'll need to create two .env files: one 
-called `.env.prod` and one called `.env.dev` with the following variables:
-
-```
-# MongoDB
-MONGO_DB_URL=<MongoDB Atlas url>
-MEGADETECTOR_API_KEY=<Megadetector API key>
-
-#AWS
-REGION=us-west-2
-AWS_PROFILE=serverless-admin
-STAGE=dev
 ```
 
 ### Local testing and deployment

@@ -3,6 +3,7 @@ const _ = require('lodash');
 const Image = require('../schemas/Image');
 const config = require('../../../config/config');
 
+
 const buildFilter = ({
   cameras,
   createdStart,
@@ -54,7 +55,7 @@ const buildFilter = ({
   };
 };
 
-const sanitizeMetadata = (md) => {
+const sanitizeMetadata = (md, config) => {
   let sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,

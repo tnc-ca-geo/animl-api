@@ -1,7 +1,6 @@
-const utils = require('./utils');
 const { SQS } = require('aws-sdk');
+const utils = require('./utils');
 const { sendEmail } = require('./alerts');
-const config = require('../config/config');
 
 const sqs = new SQS();
 
@@ -16,7 +15,7 @@ const executeRule = {
       ))[0];
       const message = { model, ...payload };
       return await sqs.sendMessage({
-        QueueUrl: config.INFERENCE_QUEUE_URL,
+        QueueUrl: context.config.INFERENCE_QUEUE_URL,
         MessageBody: JSON.stringify(message),
       }).promise();
     } catch (err) {
@@ -24,10 +23,10 @@ const executeRule = {
       throw new Error(err);
     }
   },
-  'send-alert': async (rule, payload) => {
+  'send-alert': async (rule, payload, context) => {
     console.log(`executeRule['send-alert']() - Sending ${payload.image.originalFileName} alert`);
     try {
-      return await sendEmail(rule, payload.image);
+      return await sendEmail(rule, payload.image, context.config);
     } catch (err) {
       throw new Error(err)
     }

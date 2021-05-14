@@ -1,19 +1,21 @@
 org: animl
 app: animl
 service: animl-api
+# variablesResolutionMode: 20210326
 
 plugins:
-  # TODO: figure out serverless-offline-sqs
-  # - serverless-offline-sqs
+  # - serverless-offline-sqs   # TODO: figure out serverless-offline-sqs
   - serverless-offline
-  - serverless-dotenv-plugin
 
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: ${env:STAGE}
-  region: ${env:REGION}
-  profile: ${env:AWS_PROFILE}
+  stage: ${opt:stage, 'dev'}
+  region: us-west-2
+  profile: animl
+  environment: 
+    REGION: ${self:provider.region}
+    STAGE: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -27,6 +29,11 @@ provider:
         - ses:SendEmail
         - ses:SendRawEmail
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - ssm:GetParameters
+      Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+
   # Only necessary for private endpoints
   # apiKeys:
   #   - name: lambdaApolloKey
@@ -68,7 +75,7 @@ resources:
     inferenceQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: inferenceQueue
+        QueueName: inferenceQueue-${self:provider.stage}
         RedrivePolicy:
           deadLetterTargetArn:
             "Fn::GetAtt":
@@ -78,5 +85,5 @@ resources:
     inferenceDeadLetterQueue:
       Type: "AWS::SQS::Queue"
       Properties:
-        QueueName: "inferenceDLQ"
+        QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds

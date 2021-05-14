@@ -3,7 +3,7 @@ const { GraphQLScalarType } = require('graphql');
 const { Kind } = require('graphql/language');
 const GraphQLJSON = require('graphql-type-json');
 const JSONObject = GraphQLJSON.GraphQLJSONObject;
-const config = require('../../config/config');
+const { getConfig } = require('../../config/config');
 
 // Good explanation of the difference between 
 // parseValue(), serialize(), and parseLiteral() here:
@@ -13,7 +13,8 @@ const Date = new GraphQLScalarType({
   description: 'Date scalar type',
   // Parse input when the type of input is JSON 
   // e.g. input is passed into query as a JSON variable
-  parseValue(value) {
+  async parseValue(value) {
+    const config = await getConfig();
     return moment(value, config.TIME_FORMATS.EXIF);
   },
   // Prep return value to be sent to client
@@ -21,7 +22,8 @@ const Date = new GraphQLScalarType({
     return value.getTime();
   },
   // Parse input when the type of input is "inline" (AST)
-  parseLiteral(ast) {
+  async parseLiteral(ast) {
+    const config = await getConfig();
     return moment(ast.value, config.TIME_FORMATS.EXIF);
   },
 });

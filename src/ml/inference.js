@@ -1,11 +1,8 @@
 const agent = require('superagent');
 const fs = require('fs');
-const url = require('url');
-const config = require('../config/config');
-const generateImageModel = require('../api/db/models/Image');
 
 // get image from S3, read in as buffer of binary data
-const getImage = async (image) => {
+const getImage = async (image, config) => {
   const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
   const img = await agent.get(imageUrl);
   return Buffer.from(img.body, 'binary');
@@ -13,13 +10,14 @@ const getImage = async (image) => {
 
 const runInference = {
 
-  megadetector: async (model, image, label) => {
+  megadetector: async (params) => {
+    const { model, image, label, config } = params;
     console.log(`calling ${model.name} on image: ${image.originalFileName}`);
-    const imgBuffer = await getImage(image);
+    const imgBuffer = await getImage(image, config);
     let res;
     try {
       res = await agent
-        .post(config.MEGADETECTOR_URL)
+        .post(config.MEGADETECTOR_API_URL)
         .query({ confidence: config.MEGADETECTOR_CONF_THRESHOLD })
         .query({ render: 'false' })
         .set('Ocp-Apim-Subscription-Key', config.MEGADETECTOR_API_KEY)
@@ -45,15 +43,16 @@ const runInference = {
     return detections;
   },
 
-  mira: async (model, image, label) => {
+  mira: async (params) => {
+    const { model, image, label, config } = params;
     console.log(`calling ${model.name} on image: ${image.originalFileName}`);
-    const imgBuffer = await getImage(image);
+    const imgBuffer = await getImage(image, config);
     console.log(`label: `, label)
     const bbox = label.bbox ? label.bbox : [0,0,1,1];
     let res;
     try {
       res = await agent
-        .post(config.MIRA_URL)
+        .post(config.MIRA_API_URL)
         .field('bbox', JSON.stringify(bbox))
         .attach('image', imgBuffer, image.hash + '.jpg');
     } catch (err) {

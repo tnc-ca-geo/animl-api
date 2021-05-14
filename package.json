@@ -21,7 +21,6 @@
     "moment": "^2.27.0",
     "mongo-cursor-pagination": "^7.3.1",
     "mongoose": "^5.10.3",
-    "serverless": "^1.81.1",
     "serverless-dotenv-plugin": "^3.0.0",
     "serverless-offline": "^6.7.0",
     "serverless-offline-sqs": "^4.1.1",

@@ -2,8 +2,6 @@ const moment = require('moment');
 const View = require('../schemas/View');
 const Model = require('../schemas/Model');
 
-// const utils = require('./utils');
-// const config = require('../../config/config');
 
 const defaultViewConfig = {
   name: 'All images',

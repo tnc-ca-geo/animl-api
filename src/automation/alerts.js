@@ -1,9 +1,8 @@
 const { SES } = require('aws-sdk');
-const config = require('../config/config');
 
 const ses = new SES({apiVersion: '2010-12-01'});
 
-const makeEmail = (rule, image) => {
+const makeEmail = (rule, image, config) => {
   const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
   const body = `HTML email with embedded image. \
   <img src="${imageUrl}" alt="detected ${rule.event.label}"/>`
@@ -25,10 +24,10 @@ const makeEmail = (rule, image) => {
   };
 };
 
-const sendEmail = async (rule, image) => {
+const sendEmail = async (rule, image, config) => {
   try {
     console.log(`Sending alert for ${image.originalFileName}`);
-    const email = makeEmail(rule, image);
+    const email = makeEmail(rule, image, config);
     const res = await ses.sendEmail(email).promise();
     return res;
   } catch (err) {

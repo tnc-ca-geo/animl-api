@@ -49,7 +49,7 @@ const generateImageModel = () => ({
           // TODO: if label was created on front-end, use ID front-end
           // generated?
           const labelRecord = utils.createLabelRecord(label, label.modelId);
-          console.log(`createLabels() - Adding label ${labelRecord.category} to image: ${image.originalFileName}`);
+          console.log(`createLabels() - Adding label "${labelRecord.category}" to image: ${image.originalFileName}`);
           let objExists = false;
           for (const object of image.objects) {
             if (_.isEqual(object.bbox, label.bbox)) {
@@ -98,9 +98,9 @@ const generateImageModel = () => ({
 
   createImage: async (input, context) => {
     try {
-      const md = utils.sanitizeMetadata(input.md);
+      const md = utils.sanitizeMetadata(input.md, context.config);
       const newImage = utils.createImageRecord(md);
-      console.log(`createImage() - Adding image ${newImage.originalFileName} to db`);
+      console.log(`createImage() - Adding image "${newImage.originalFileName}" to db`);
       await newImage.save();
       await automation.handleEvent({
         event: 'image-added',

@@ -1,13 +1,11 @@
 const { GraphQLClient, gql } = require('graphql-request');
 const { runInference } = require('./inference');
-const utils = require('../automation/utils');
-const config = require('../config/config');
-// const { createLabel } = require('../api/resolvers/Mutation');
+const { getConfig } = require('../config/config');
 const { SQS } = require('aws-sdk');
 
 const sqs = new SQS();
 
-async function requestCreateLabels(input) {
+async function requestCreateLabels(input, config) {
   console.log('calling requestCreateLabel for input: ', input);
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
@@ -35,21 +33,21 @@ async function requestCreateLabels(input) {
     });
     const createLabelResponse = await graphQLClient.request(mutation, variables);
     // console.log(JSON.stringify(createLabelResponse, undefined, 2));
-    console.log('success calling requestCreateLabels: ', createLabelResponse)
+    console.log('success calling requestCreateLabels: ', createLabelResponse);
     return createLabelResponse;
   } catch (err) {
-    console.log('error calling requestCreateLabels: ', err)
+    console.log('error calling requestCreateLabels: ', err);
     throw err;
   }
 };
 
 
-
 exports.inference = async (event, context) => {
   console.log('ML worker waking up:', JSON.stringify(event, null, 2));
-  // poll for messages
 
+  // poll for messages
   try {
+    const config = await getConfig();
     console.log('Polling for messages...');
     const data = await sqs.receiveMessage({
       QueueUrl: config.INFERENCE_QUEUE_URL,
@@ -60,20 +58,28 @@ exports.inference = async (event, context) => {
     console.log('response from queue: ', data);
     
     if (!data.Messages) {
+      console.log('no messages found. returning ');
       return; 
     }
     
     for (const message of data.Messages) {
       console.log('message: ', message.Body);
       const { model, image, label } = JSON.parse(message.Body);
+
       // run inference
-      const detections = await runInference[model.name](model, image, label);
+      const detections = await runInference[model.name]({
+        model,
+        image,
+        label,
+        config
+      });
 
       // if successful, make create label request
       if (detections.length) {
         const res = await requestCreateLabels({
-          imageId: image._id, labels: detections
-        });
+          imageId: image._id,
+          labels: detections,
+        }, config);
       }
 
       // remove from queue
