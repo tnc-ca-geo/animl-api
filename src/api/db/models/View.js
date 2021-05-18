@@ -7,7 +7,12 @@ const defaultViewConfig = {
   name: 'All images',
   filters: {},
   description: `Default view of all images. This view is not editable.`,
-  editable: false,
+  editable: true,
+  automationRules: [{
+    event: { type: 'image-added' },
+    action: { type: 'run-inference', model: '60a3461723a5ffcc27fc8e34'},
+    name: 'Run Megadetector on all new images',
+  }],
 };
 
 const generateViewModel = () => ({
@@ -22,19 +27,17 @@ const generateViewModel = () => ({
     }
   },
 
-  get getViews() {
-    return async (_ids) => {
-      const query = _ids ? { _id: { $in: _ids } } : {};
-      try {
-        const views = await View.find(query);
-        if (!_ids && views.length === 0) {
-          defaultView = await this.createView(defaultViewConfig);
-          views.push(defaultView);
-        }
-        return views;
-      } catch (err) {
-        throw new Error(err);
-      }
+  getViews: async (_ids) => {
+    const query = _ids ? { _id: { $in: _ids } } : {};
+    try {
+      const views = await View.find(query);
+      // if (!_ids && views.length === 0) {
+      //   defaultView = await this.createView(defaultViewConfig);
+      //   views.push(defaultView);
+      // }
+      return views;
+    } catch (err) {
+      throw new Error(err);
     }
   },
 

@@ -16,13 +16,17 @@ const generateCameraModel = () => ({
     return async (image) => {
       const existingCam = await this.getCameras([ image.cameraSn ]);
       if (existingCam.length === 0) {
-        console.log(`Creating new camera record for camera - ${image.cameraSn}`);
-        const newCamera = new Camera({
-          _id: image.cameraSn,
-          make: image.make,
-          ...(image.model && { model: image.model }),
-        });
-        await newCamera.save();
+        try {
+          console.log(`Creating new camera record for camera - ${image.cameraSn}`);
+          const newCamera = new Camera({
+            _id: image.cameraSn,
+            make: image.make,
+            ...(image.model && { model: image.model }),
+          });
+          await newCamera.save();
+        } catch (err) {
+          throw new Error(err);
+        }
       }
     }
   }

@@ -21,14 +21,14 @@ let ModelPerformanceSchema = new Schema({
  * catagories - map of catagory ids to labels (e.g. {0: 'empty', 1: 'animal'})
  */
 
-// TODO: Come up with better name than 'Model'?
+// TODO: Come up with better name than 'Model'? Too confusing
 let ModelSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   version: { type: String, required: true },
   renderThreshold: { type: Number },
   categories: { type: Map },
-  performance: { type: ModelPerformanceSchema, required: true },
+  // performance: { type: ModelPerformanceSchema, required: true },
 });
 
 module.exports = mongoose.model('Model', ModelSchema);

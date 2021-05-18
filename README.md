@@ -72,3 +72,13 @@ npm run deploy-dev
 npm run deploy-prod
 ```
 
+### Seeding db
+A script for seeding the DB with default records can be found at
+```animl-api/src/scripts/seedDB.js```. If the DB hasn't been seeded yet, 
+you can do so by running the following command from the root directory:
+```
+npm run seed-db-dev 
+# or, do seed the production db:
+npm run seed-db-prod
+```
+

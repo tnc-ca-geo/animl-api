@@ -12,6 +12,23 @@ const generateModelModel = () => ({
     }
   },
 
+  createModel: async (model) => {
+    console.log(`Creating new ml model record for  - ${model.name}`);
+    try {
+      const newModel = new Model({
+        name: model.name,
+        version: model.version,
+        ...(model.description && { description: model.description }),
+        ...(model.renderThreshold && { renderThreshold: model.renderThreshold }),
+        ...(model.categories && { categories: model.categories }),
+      });
+      await newModel.save();
+      return newModel;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
  });
 
  module.exports = generateModelModel;
