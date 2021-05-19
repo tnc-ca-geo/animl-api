@@ -31,4 +31,9 @@ let ModelSchema = new Schema({
   // performance: { type: ModelPerformanceSchema, required: true },
 });
 
+ModelSchema.index(
+  { name: 1, version: 1 },
+  { unique: true, sparse: true }
+);
+
 module.exports = mongoose.model('Model', ModelSchema);

@@ -1,7 +1,6 @@
 module.exports = `
   type Image {
     _id: ID!
-    hash: String!
     bucket: String!
     objectKey: String!
     dateAdded: Date!

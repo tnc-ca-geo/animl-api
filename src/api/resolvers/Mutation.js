@@ -1,5 +1,3 @@
-const moment = require('moment');
-
 const Mutation = {
   createImage: async (_, { input }, context) => {
     const newImage = await context.models.Image.createImage(input, context);

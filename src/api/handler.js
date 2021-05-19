@@ -1,4 +1,5 @@
 const { GraphQLServerLambda } = require('graphql-yoga');
+const { formatError } = require('apollo-errors');
 const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
@@ -10,6 +11,10 @@ const Scalars = require('./resolvers/Scalars');
 const typeDefs = require('./type-defs');
 const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('./db/connect');
+
+const options = {
+  formatError
+};
 
 const resolvers = {
   Query,
@@ -52,9 +57,10 @@ const context = async ({ req }) => {
 };
 
 const lambda = new GraphQLServerLambda({
+  options,
   typeDefs,
   resolvers,
-  context: context,
+  context,
 });
 
 exports.playground = (event, context, callback) => {

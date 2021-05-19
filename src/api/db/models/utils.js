@@ -74,7 +74,7 @@ const sanitizeMetadata = (md, config) => {
 // Unpack user-set exif tags
 const getUserSetData = (input) => {
   const userDataMap = {
-    BuckEyeCam: (input) => {
+    'BuckEyeCam': (input) => {
       let userData = {};
       input.comment.split('\n').forEach((item) => {
         if (item.includes('TEXT1') || item.includes('TEXT2')) {
@@ -83,7 +83,7 @@ const getUserSetData = (input) => {
       });
       return userData;
     },
-    RECONYX: (input) => ({
+    'RECONYX': (input) => ({
       userLabel: input.userLabel,
     }),
   };
@@ -137,6 +137,10 @@ const isLabelDupe = (image, newLabel) => {
 // Map image metadata to image schema
 const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
+  // TODO: right now if you try to upload an image that doesn't have a make, 
+  // or if the make isn't Reconyx or BuckeyeCam, it fails. We should either 
+  // have a more formal supported make check and fail sooner or be more flexible 
+  // and allow for images w/out make / alternative makes
   const userSetData = getUserSetData(md);
 
   const camera = {
@@ -151,7 +155,7 @@ const createImageRecord = (md) => {
   };
 
   const image = new Image({
-    hash: md.hash,
+    _id: md.hash,
     bucket: md.prodBucket,
     objectKey: md.prodKey,
     dateAdded: moment(),

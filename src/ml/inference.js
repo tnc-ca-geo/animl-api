@@ -3,8 +3,10 @@ const fs = require('fs');
 
 // get image from S3, read in as buffer of binary data
 const getImage = async (image, config) => {
-  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
+  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image._id + '.jpg';
+  console.log('image url: ', imageUrl);
   const img = await agent.get(imageUrl);
+  console.log('img: ', img);
   return Buffer.from(img.body, 'binary');
 }
 
@@ -14,6 +16,7 @@ const runInference = {
     const { model, image, label, config } = params;
     console.log(`calling ${model.name} on image: ${image.originalFileName}`);
     const imgBuffer = await getImage(image, config);
+    console.log('imgBuffer: ', imgBuffer);
     let res;
     try {
       res = await agent
@@ -21,7 +24,8 @@ const runInference = {
         .query({ confidence: config.MEGADETECTOR_CONF_THRESHOLD })
         .query({ render: 'false' })
         .set('Ocp-Apim-Subscription-Key', config.MEGADETECTOR_API_KEY)
-        .attach(image.hash, imgBuffer, image.hash + '.jpg');
+        .attach(image._id, imgBuffer, image._id + '.jpg');
+      console.log('res: ', res);
     } catch (err) {
       throw new Error(err);
     }
@@ -30,7 +34,7 @@ const runInference = {
     // where the first four floats are the relative coordinates of the bbox
     const tmpFile = res.files.detection_result.path;
     let detections = JSON.parse(fs.readFileSync(tmpFile));
-    detections = detections[image.hash].map((det) => ({
+    detections = detections[image._id].map((det) => ({
       modelId: model._id,
       type: 'ml',
       bbox: det.slice(0, 4),
@@ -54,7 +58,7 @@ const runInference = {
       res = await agent
         .post(config.MIRA_API_URL)
         .field('bbox', JSON.stringify(bbox))
-        .attach('image', imgBuffer, image.hash + '.jpg');
+        .attach('image', imgBuffer, image._id + '.jpg');
     } catch (err) {
       throw new Error(err);
     }

@@ -46,8 +46,7 @@ const generateImageModel = () => ({
           if (utils.isLabelDupe(image, label)) {
             return;
           }
-          // TODO: if label was created on front-end, use ID front-end
-          // generated?
+          // TODO: if label was created on front-end, use ID front-end generated?
           const labelRecord = utils.createLabelRecord(label, label.modelId);
           console.log(`createLabels() - Adding label "${labelRecord.category}" to image: ${image.originalFileName}`);
           let objExists = false;
@@ -59,8 +58,7 @@ const generateImageModel = () => ({
             }
           }
           if (!objExists) {
-            // TODO: if object was created on front-end, use ID front-end
-            // generated?
+            // TODO: if object was created on front-end, use ID front-end generated?
             image.objects.unshift({
               bbox: labelRecord.bbox,
               locked: false,
@@ -109,6 +107,7 @@ const generateImageModel = () => ({
       console.log(`createImage success. Returning`);
       return newImage;
     } catch (err) {
+      console.log('error caught in createImage try/catch: ', err);
       throw new Error(err);
     }
   },

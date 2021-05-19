@@ -3,7 +3,7 @@ const { SES } = require('aws-sdk');
 const ses = new SES({apiVersion: '2010-12-01'});
 
 const makeEmail = (rule, image, config) => {
-  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image.hash + '.jpg';
+  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image._id + '.jpg';
   const body = `HTML email with embedded image. \
   <img src="${imageUrl}" alt="detected ${rule.event.label}"/>`
 
