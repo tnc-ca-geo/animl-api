@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const Camera = require('../schemas/Camera');
 
 const generateCameraModel = () => ({
@@ -8,7 +9,7 @@ const generateCameraModel = () => ({
       const cameras = await Camera.find(query);
       return cameras;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -25,7 +26,7 @@ const generateCameraModel = () => ({
           });
           await newCamera.save();
         } catch (err) {
-          throw new Error(err);
+          throw new ApolloError(err);
         }
       }
     }

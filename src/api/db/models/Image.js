@@ -1,3 +1,5 @@
+const { ApolloError } = require('apollo-server-errors');
+const { DuplicateError } = require('../../errors');
 const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
@@ -15,7 +17,7 @@ const generateImageModel = () => ({
       const image = await Image.findOne({_id});
       return image;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -32,7 +34,7 @@ const generateImageModel = () => ({
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -76,7 +78,7 @@ const generateImageModel = () => ({
         console.log(`createLabels success. Returning`);
         return image;
       } catch (err) {
-        throw new Error(err);
+        throw new ApolloError(err);
       }
     }
   },
@@ -90,7 +92,7 @@ const generateImageModel = () => ({
       }
       return { categories };
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -107,8 +109,10 @@ const generateImageModel = () => ({
       console.log(`createImage success. Returning`);
       return newImage;
     } catch (err) {
-      console.log('error caught in createImage try/catch: ', err);
-      throw new Error(err);
+      if (err.message.includes('duplicate')) {
+        throw new DuplicateError(err);
+      }
+      throw new ApolloError(err);
     }
   },
 

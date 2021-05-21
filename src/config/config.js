@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const { SSM } = require('aws-sdk');
 const ssm = new SSM({ region: process.env.REGION });
 
@@ -55,13 +56,13 @@ module.exports.getConfig = async function getConfig() {
     const ssmParams = await cachedSSMParams;
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');
-      throw new Error(`invalid parameter(s) requested: ${invalParams}`);
+      throw new ApolloError(`invalid parameter(s) requested: ${invalParams}`);
     }
     const remoteConfig = formatSSMParams(ssmParams);
     return { ...localConfig, ...remoteConfig };
   } catch (err) {
     console.log('error getting config: ', err);
-    throw new Error(err);
+    throw new ApolloError(err);
   }
 };
 

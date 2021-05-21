@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const { ApolloError } = require('apollo-server-errors');
 // TODO: consider using multiple connections (one per model)
 // to reduce risk of slow trains 
 // https://mongoosejs.com/docs/connections.html#multiple_connections
@@ -28,6 +28,6 @@ module.exports.connectToDatabase = async function connectToDb(config) {
     return client;
   } catch (err) {
     console.log('error connecting to database: ', err);
-    throw new Error(err);
+    throw new ApolloError(err);
   }
 };

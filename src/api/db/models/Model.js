@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const Model = require('../schemas/Model');
 
 const generateModelModel = () => ({
@@ -8,7 +9,7 @@ const generateModelModel = () => ({
       const models = await Model.find(query);
       return models;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -25,7 +26,7 @@ const generateModelModel = () => ({
       await newModel.save();
       return newModel;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 

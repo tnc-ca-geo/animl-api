@@ -15,6 +15,7 @@ const Query = {
     }
   },
 
+  // TODO: check how this is used &/or if it's necessary:
   image: async (_, { _id }, context) => {
     // Example role checking:
     // if (!context.user || !context.user.roles.includes('admin')) return null;

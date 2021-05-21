@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('../api/db/connect');
 const generateViewModel = require('../api/db/models/View');
@@ -69,7 +70,7 @@ async function createDefaultViews(params) {
         const newViewRecord = await dbModels.View.createView(view);
         newViewRecords.push(newViewRecord);
       } catch (err) {
-        throw new Error(err);
+        throw new ApolloError(err);
       }
     }
     console.log('Successfully created new View records: ', newViewRecords);
@@ -89,7 +90,7 @@ async function createDefaultModels(params) {
         const newModelRecord = await dbModels.Model.createModel(mlModel);
         newModelRecords.push(newModelRecord);
       } catch (err) {
-        throw new Error(err);
+        throw new ApolloError(err);
       }
     }
     console.log('Successfully created new Model records: ', newModelRecords);

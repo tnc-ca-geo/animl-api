@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const moment = require('moment');
 const View = require('../schemas/View');
 const Model = require('../schemas/Model');
@@ -23,7 +24,7 @@ const generateViewModel = () => ({
       await newView.save();
       return newView;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -37,7 +38,7 @@ const generateViewModel = () => ({
       // }
       return views;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -46,7 +47,7 @@ const generateViewModel = () => ({
       const views = await View.find({ _id: input._id });
       const view = views[0];
       if (!view.editable) {
-        throw new Error(`View ${view.name} is not editable`);
+        throw new ApolloError(`View ${view.name} is not editable`);
       }
       for (let [key, newVal] of Object.entries(input.diffs)) {
         view[key] = newVal;
@@ -54,7 +55,7 @@ const generateViewModel = () => ({
       await view.save();
       return view;
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 
@@ -62,11 +63,11 @@ const generateViewModel = () => ({
     try {
       const views = await View.find({ _id: input._id });
       if (!views[0].editable) {
-        throw new Error(`View ${view.name} is not editable`);
+        throw new ApolloError(`View ${view.name} is not editable`);
       }
       return await View.deleteOne({ _id: input._id });
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
 

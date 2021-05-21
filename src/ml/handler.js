@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const { GraphQLClient, gql } = require('graphql-request');
 const { runInference } = require('./inference');
 const { getConfig } = require('../config/config');
@@ -93,6 +94,6 @@ exports.inference = async (event, context) => {
     console.log('error with inference worker');
     // TODO: do we throw a new error here or return one? Unclear how to ensure 
     // failure and keep message in the queue
-    throw new Error(err);
+    throw new ApolloError(err);
   }
 };

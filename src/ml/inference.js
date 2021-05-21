@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const agent = require('superagent');
 const fs = require('fs');
 
@@ -27,7 +28,7 @@ const runInference = {
         .attach(image._id, imgBuffer, image._id + '.jpg');
       console.log('res: ', res);
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   
     // detections are in [ymin, xmin, ymax, xmax, confidence, category], 
@@ -60,7 +61,7 @@ const runInference = {
         .field('bbox', JSON.stringify(bbox))
         .attach('image', imgBuffer, image._id + '.jpg');
     } catch (err) {
-      throw new Error(err);
+      throw new ApolloError(err);
     }
     
     res = JSON.parse(res.res.text);

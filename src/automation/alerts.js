@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const { SES } = require('aws-sdk');
 
 const ses = new SES({apiVersion: '2010-12-01'});
@@ -31,7 +32,7 @@ const sendEmail = async (rule, image, config) => {
     const res = await ses.sendEmail(email).promise();
     return res;
   } catch (err) {
-    throw new Error(err);
+    throw new ApolloError(err);
   }
 };
 

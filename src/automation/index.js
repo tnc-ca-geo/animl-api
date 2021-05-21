@@ -1,3 +1,4 @@
+const { ApolloError } = require('apollo-server-errors');
 const { SQS } = require('aws-sdk');
 const utils = require('./utils');
 const { sendEmail } = require('./alerts');
@@ -20,7 +21,7 @@ const executeRule = {
       }).promise();
     } catch (err) {
       console.log('error running inference: ', err);
-      throw new Error(err);
+      throw new ApolloError(err);
     }
   },
   'send-alert': async (rule, payload, context) => {
@@ -28,7 +29,7 @@ const executeRule = {
     try {
       return await sendEmail(rule, payload.image, context.config);
     } catch (err) {
-      throw new Error(err)
+      throw new ApolloError(err)
     }
   }
 };
@@ -42,7 +43,7 @@ const handleEvent = async (payload, context) => {
       await executeRule[rule.action.type](rule, payload, context)
     )));
   } catch (err) {
-    throw new Error(err);
+    throw new ApolloError(err);
   }
 };
 
