@@ -87,8 +87,10 @@ const getUserSetData = (input) => {
       userLabel: input.userLabel,
     }),
   };
-  const usd = userDataMap[input.make](input);
-  return usd ? usd : {};
+
+  const usd = (input.make && userDataMap[input.make])
+    ? userDataMap[input.make](input)
+    : null;
 };
 
 // Parse string coordinates to decimal degrees
@@ -137,10 +139,6 @@ const isLabelDupe = (image, newLabel) => {
 // Map image metadata to image schema
 const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
-  // TODO: right now if you try to upload an image that doesn't have a make, 
-  // or if the make isn't Reconyx or BuckeyeCam, it fails. We should either 
-  // have a more formal supported make check and fail sooner or be more flexible 
-  // and allow for images w/out make / alternative makes
   const userSetData = getUserSetData(md);
 
   const camera = {
@@ -162,7 +160,7 @@ const createImageRecord = (md) => {
     dateTimeOriginal: md.dateTimeOriginal,
     cameraSn: md.serialNumber,
     make: md.make,
-    // optional fields
+    // optional fields...
     ...(md.model && { model: md.model }),
     ...(md.key && { originalFileName: md.key }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
@@ -175,7 +173,7 @@ const createImageRecord = (md) => {
   return image;
 };
 
-// TODO: accomodate users as label authors as well as models
+// TODO: accommodate users as label authors as well as models
 const createLabelRecord = (input, modelId) => {
   const label = {
     ...(input._id && { _id: input._id }),

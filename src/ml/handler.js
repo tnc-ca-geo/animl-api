@@ -1,4 +1,3 @@
-const { ApolloError } = require('apollo-server-errors');
 const { GraphQLClient, gql } = require('graphql-request');
 const { runInference } = require('./inference');
 const { getConfig } = require('../config/config');
@@ -7,7 +6,7 @@ const { SQS } = require('aws-sdk');
 const sqs = new SQS();
 
 async function requestCreateLabels(input, config) {
-  console.log('calling requestCreateLabel for input: ', input);
+  console.log('requesting create labels: ', input);
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
@@ -34,10 +33,8 @@ async function requestCreateLabels(input, config) {
     });
     const createLabelResponse = await graphQLClient.request(mutation, variables);
     // console.log(JSON.stringify(createLabelResponse, undefined, 2));
-    console.log('success calling requestCreateLabels: ', createLabelResponse);
     return createLabelResponse;
   } catch (err) {
-    console.log('error calling requestCreateLabels: ', err);
     throw err;
   }
 };
@@ -94,6 +91,6 @@ exports.inference = async (event, context) => {
     console.log('error with inference worker');
     // TODO: do we throw a new error here or return one? Unclear how to ensure 
     // failure and keep message in the queue
-    throw new ApolloError(err);
+    throw err;
   }
 };
