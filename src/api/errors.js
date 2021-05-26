@@ -15,6 +15,13 @@ class DuplicateError extends ApolloError {
   }
 };
 
+class DBValidationError extends ApolloError {
+  constructor(message) {
+    super(message, 'DB_VALIDATION_FAILED');
+    Object.defineProperty(this, 'name', { value: 'DBValidationError' });
+  }
+};
+
 // NOTE: The goal here is to coerce all Errors into ApolloErrors
 // with proper error codes before they're returned to the client.
 // This probably won't be necessary with the next update of graphql-yoga
@@ -51,5 +58,6 @@ function formatError (err) {
 
 module.exports = {
   DuplicateError,
+  DBValidationError,
   formatError,
 }

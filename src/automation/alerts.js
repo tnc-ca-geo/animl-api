@@ -1,10 +1,11 @@
 const { ApolloError } = require('apollo-server-errors');
 const { SES } = require('aws-sdk');
+const { buildImgUrl } = require('../api/db/models/utils');
 
 const ses = new SES({apiVersion: '2010-12-01'});
 
 const makeEmail = (rule, image, config) => {
-  const imageUrl = config.ANIML_IMAGES_URL + 'images/' + image._id + '.jpg';
+  const imageUrl = buildImgUrl(image, config);
   const body = `HTML email with embedded image. \
   <img src="${imageUrl}" alt="detected ${rule.event.label}"/>`
 

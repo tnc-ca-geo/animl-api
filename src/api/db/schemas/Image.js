@@ -6,14 +6,14 @@ const Schema = mongoose.Schema;
 /*
  * ImageSchema
  * _id - hash of image generated in animl-ingest
- * objectKey - to find image in s3
  * userSetData  - user configured EXIF data
  */
 
 let ImageSchema = new Schema({
   _id: { type: String, required: true },
   bucket: { type: String, required: true },
-  objectKey: { type: String, required: true },
+  // objectKey: { type: String, required: true },
+  fileTypeExtension: { type: String, required: true },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
   originalFileName: { type: String },

@@ -1,10 +1,11 @@
 const agent = require('superagent');
 const fs = require('fs');
+const { buildImgUrl } = require('../api/db/models/utils');
 
 // get image from S3, read in as buffer of binary data
 const getImage = async (image, config) => {
-  const imageUrl = config.ANIML_IMAGES_URL + image.objectKey;
-  const img = await agent.get(imageUrl);
+  const url = buildImgUrl(image, config)
+  const img = await agent.get(url);
   return Buffer.from(img.body, 'binary');
 }
 

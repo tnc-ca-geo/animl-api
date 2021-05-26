@@ -2,7 +2,7 @@ module.exports = `
   type Image {
     _id: ID!
     bucket: String!
-    objectKey: String!
+    fileTypeExtension: String!
     dateAdded: Date!
     dateTimeOriginal: Date!
     originalFileName: String

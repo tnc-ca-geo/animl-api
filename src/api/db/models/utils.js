@@ -1,8 +1,13 @@
 const moment = require('moment');
 const _ = require('lodash');
 const Image = require('../schemas/Image');
-const config = require('../../../config/config');
 
+const buildImgUrl = (image, config, size = 'original') => {
+  const url = config.ANIML_IMAGES_URL;
+  const id = image._id;
+  const ext = image.fileTypeExtension;
+  return url + size + '/' + id + '-' + size + '.' + ext;
+};
 
 const buildFilter = ({
   cameras,
@@ -155,7 +160,7 @@ const createImageRecord = (md) => {
   const image = new Image({
     _id: md.hash,
     bucket: md.prodBucket,
-    objectKey: md.prodKey,
+    fileTypeExtension: md.fileTypeExtension,
     dateAdded: moment(),
     dateTimeOriginal: md.dateTimeOriginal,
     cameraSn: md.serialNumber,
@@ -189,6 +194,7 @@ const createLabelRecord = (input, modelId) => {
 };
 
 module.exports = {
+  buildImgUrl,
   buildFilter,
   sanitizeMetadata,
   isLabelDupe,

@@ -1,5 +1,5 @@
 const { ApolloError } = require('apollo-server-errors');
-const { DuplicateError } = require('../../errors');
+const { DuplicateError, DBValidationError } = require('../../errors');
 const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
@@ -109,8 +109,11 @@ const generateImageModel = () => ({
       console.log(`createImage success. Returning`);
       return newImage;
     } catch (err) {
-      if (err.message.includes('duplicate')) {
+      if (err.message.toLowerCase().includes('duplicate')) {
         throw new DuplicateError(err);
+      }
+      else if (err.message.toLowerCase().includes('validation')) {
+        throw new DBValidationError(err);
       }
       throw new ApolloError(err);
     }
