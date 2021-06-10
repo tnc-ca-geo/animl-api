@@ -1,7 +1,7 @@
 const { ApolloError } = require('apollo-server-errors');
 const Model = require('../schemas/Model');
 
-const generateModelModel = () => ({
+const generateModelModel = ({ user } = {}) => ({
 
   getModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
@@ -14,6 +14,9 @@ const generateModelModel = () => ({
   },
 
   createModel: async (model) => {
+    if (!hasRole(user, 'product_owner')) {
+      return null;
+    }
     console.log(`Creating new ml model record for  - ${model.name}`);
     try {
       const newModel = new Model({
@@ -34,7 +37,7 @@ const generateModelModel = () => ({
 
  module.exports = generateModelModel;
 
-// TODO: pass user into model generators to perform authorization at the 
+// TODO: pass user into model generators to perform authorization at the
 // data fetching level. e.g.:
 // export const generateCameraModel = ({ user }) => ({
 //   getAll: () => {
