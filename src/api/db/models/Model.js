@@ -1,5 +1,6 @@
 const { ApolloError } = require('apollo-server-errors');
 const Model = require('../schemas/Model');
+const utils = require('./utils');
 
 const generateModelModel = ({ user } = {}) => ({
 
@@ -14,7 +15,7 @@ const generateModelModel = ({ user } = {}) => ({
   },
 
   createModel: async (model) => {
-    if (!hasRole(user, 'product_owner')) {
+    if (!hasRole(user, ['animl_sci_project_owner', 'anim_superuser'])) {
       return null;
     }
     console.log(`Creating new ml model record for  - ${model.name}`);

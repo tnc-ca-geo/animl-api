@@ -194,10 +194,7 @@ const createLabelRecord = (input, modelId) => {
 };
 
 const hasRole = (userInfo, roleName) => {
-    return user
-        && user.animl_auth
-        && user.animl_auth.roles
-        && user.animl_auth.roles.includes(roleName);
+    return userInfo && userInfo['cognito:groups'].includes(roleName)
 };
 
 module.exports = {

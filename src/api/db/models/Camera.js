@@ -1,6 +1,6 @@
 const { ApolloError } = require('apollo-server-errors');
 const Camera = require('../schemas/Camera');
-const { hasRole } = require('./util');
+const { hasRole } = require('./utils');
 
 const generateCameraModel = ({ user } = {}) => ({
 
@@ -15,7 +15,7 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   get createCamera() {  // use object getter so we can reference this.getCameras
-    if (!hasRole(user, 'project_owner')) {
+    if (!hasRole(user, ['animl_sci_project_owner', 'anim_superuser'])) {
       return null;
     }
     return async (image) => {
