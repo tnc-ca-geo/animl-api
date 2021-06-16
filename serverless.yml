@@ -42,7 +42,7 @@ provider:
   apiKeys:
   #   # - name: lambdaApolloKey
   #     # value: ${env:APOLLO_LAMBDA_KEY}
-    - name: animlApiKey
+    - name: animlApiKeyInternal
       value: '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
 
 functions:
