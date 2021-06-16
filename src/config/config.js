@@ -1,6 +1,7 @@
 const { ApolloError } = require('apollo-server-errors');
-const { SSM } = require('aws-sdk');
+const { SSM, SecretsManager } = require('aws-sdk');
 const ssm = new SSM({ region: process.env.REGION });
+const secrets = new SecretsManager({ region: process.env.REGION });
 
 // Local config values
 
@@ -54,12 +55,22 @@ module.exports.getConfig = async function getConfig() {
 
   try {
     const ssmParams = await cachedSSMParams;
+
+    const secretsResponse = await secrets.getSecretValue({
+        SecretId: 'api-key',
+    }).promise();
+    const secret = JSON.parse(secretsResponse.SecretString || '{}');
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');
       throw new ApolloError(`invalid parameter(s) requested: ${invalParams}`);
     }
     const remoteConfig = formatSSMParams(ssmParams);
-    return { ...localConfig, ...remoteConfig };
+    console.log(secret);
+    const secretConfig = {
+        'APIKEY': secret.apikey,
+    }
+    // const secretConfig = formatSSMParams(secret);
+    return { ...localConfig, ...remoteConfig, ...secretConfig };
   } catch (err) {
     console.log('error getting config: ', err);
     throw new ApolloError(err);
