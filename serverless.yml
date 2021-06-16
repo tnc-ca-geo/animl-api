@@ -13,7 +13,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
-  environment: 
+  environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -47,6 +47,8 @@ functions:
         path: /
         method: post
         cors: true
+        authorizor:
+          arn: arn:aws:cognito-idp:us-west-2:830244800171:userpool/us-west-2_9JixUpkYT
     timeout: 20
   playground:
     handler: src/api/handler.playground
@@ -55,6 +57,8 @@ functions:
         path: /
         method: get
         cors: true
+        authorizor:
+          arn: arn:aws:cognito-idp:us-west-2:830244800171:userpool/us-west-2_9JixUpkYT
     timeout: 20
   inference:
     handler: src/ml/handler.inference
