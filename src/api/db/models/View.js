@@ -16,7 +16,7 @@ const defaultViewConfig = {
   }],
 };
 
-const generateViewModel = () => ({
+const generateViewModel = ({ user } = {}) => ({
 
   createView: async (input) => {
     try {
@@ -77,7 +77,7 @@ module.exports = generateViewModel;
 
 
 
-// TODO: pass user into model generators to perform authorization at the 
+// TODO: pass user into model generators to perform authorization at the
 // data fetching level. e.g.:
 // export const generateViewModel = ({ user }) => ({
 //   getAll: () => {

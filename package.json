@@ -21,6 +21,7 @@
     "graphql-request": "^3.4.0",
     "graphql-type-json": "^0.3.2",
     "graphql-yoga": "^1.18.3",
+    "jwt-simple": "^0.5.6",
     "lodash": "^4.17.20",
     "moment": "^2.27.0",
     "mongo-cursor-pagination": "^7.3.1",
