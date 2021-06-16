@@ -1,7 +1,7 @@
 const jwt = require('jwt-simple');
 
 function getUserInfo(req) {
-    const token = req.headers.authorization;
+    const token = req.headers.Authorization || req.headers.authorization;
     if (!token) {
         return {};
     }

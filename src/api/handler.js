@@ -20,7 +20,7 @@ const resolvers = {
   ...Scalars,
 };
 
-const context = async ({ req }) => {
+const context = async ({ event: req }) => {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
