@@ -40,7 +40,7 @@ const buildFilter = ({
   }
 
   // TODO: test
-  // TODO: decide whether we want to include all labels? only non-invalidated 
+  // TODO: decide whether we want to include all labels? only non-invalidated
   // ones?
   let labelsFilter = {};
   if (labels) {
@@ -193,6 +193,11 @@ const createLabelRecord = (input, modelId) => {
   return label;
 };
 
+const hasRole = (userInfo, targetRoles = []) => {
+    const cognitoGroups = userInfo && userInfo['cognito:groups'] || [];
+    return cognitoGroups.some((role) => targetRoles.includes(role));
+};
+
 module.exports = {
   buildImgUrl,
   buildFilter,
@@ -200,4 +205,5 @@ module.exports = {
   isLabelDupe,
   createImageRecord,
   createLabelRecord,
+  hasRole,
 };

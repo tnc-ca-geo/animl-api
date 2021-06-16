@@ -13,7 +13,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
-  environment: 
+  environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -74,6 +74,10 @@ functions:
         path: /
         method: get
         cors: true
+        #authorizer:
+        #    name: CognitoAuthN
+        #    type: COGNITO_USER_POOLS
+        #    arn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
     timeout: 20
   inference:
     handler: src/ml/handler.inference
