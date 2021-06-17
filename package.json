@@ -30,5 +30,8 @@
     "serverless-offline": "^6.7.0",
     "serverless-offline-sqs": "^4.1.1",
     "superagent": "^6.1.0"
+  },
+  "devDependencies": {
+    "serverless": "^2.46.0"
   }
 }
