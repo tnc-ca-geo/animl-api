@@ -1,3 +1,5 @@
+const utils = require('../db/models/utils');
+
 const Mutation = {
   createImage: async (_, { input }, context) => {
     // NOTE: This is currently parsed twice to check for camera authorization
