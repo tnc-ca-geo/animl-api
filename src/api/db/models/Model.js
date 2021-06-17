@@ -15,9 +15,9 @@ const generateModelModel = ({ user } = {}) => ({
   },
 
   createModel: async (model) => {
-    if (!hasRole(user, ['animl_superuser'])) {
-      return null;
-    }
+    // if (!hasRole(user, ['animl_superuser'])) {
+    //   return null;
+    // }
     console.log(`Creating new ml model record for  - ${model.name}`);
     try {
       const newModel = new Model({
