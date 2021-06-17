@@ -15,7 +15,7 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   get createCamera() {  // use object getter so we can reference this.getCameras
-    if (!hasRole(user, ['animl_sci_project_owner', 'anim_superuser'])) {
+    if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
       return null;
     }
     return async (image) => {
