@@ -5,7 +5,7 @@ function getUserInfo(req) {
     if (!token) {
         return {};
     }
-    return jwt.decode(token, null, true /* API Gateway handles verification */);
+    return jwt.decode(token.replace("Bearer", ""), null, true /* API Gateway handles verification */);
 }
 
 module.exports = {
