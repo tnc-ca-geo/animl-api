@@ -1,7 +1,11 @@
 const Mutation = {
   createImage: async (_, { input }, context) => {
-    const newImage = await context.models.Image.createImage(input, context);
+    // NOTE: This is currently parsed twice to check for camera authorization
+    const md = utils.sanitizeMetadata(input.md, context.config);
+    let newImage = utils.createImageRecord(md);
     await context.models.Camera.createCamera(newImage);
+
+    newImage = await context.models.Image.createImage(input, context);
     return { image: newImage }; // return values must match payload schema
   },
 
