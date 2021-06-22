@@ -65,7 +65,6 @@ module.exports.getConfig = async function getConfig() {
       throw new ApolloError(`invalid parameter(s) requested: ${invalParams}`);
     }
     const remoteConfig = formatSSMParams(ssmParams);
-    console.log(secret);
     const secretConfig = {
         'APIKEY': secret.apikey,
     }
