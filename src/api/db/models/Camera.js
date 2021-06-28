@@ -1,7 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
 const Camera = require('../schemas/Camera');
+const { hasRole } = require('./utils');
 
-const generateCameraModel = () => ({
+const generateCameraModel = ({ user } = {}) => ({
 
   getCameras: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
@@ -14,6 +15,9 @@ const generateCameraModel = () => ({
   },
 
   get createCamera() {  // use object getter so we can reference this.getCameras
+    if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
+      return null;
+    }
     return async (image) => {
       const existingCam = await this.getCameras([ image.cameraSn ]);
       if (existingCam.length === 0) {
@@ -35,7 +39,7 @@ const generateCameraModel = () => ({
 
  module.exports = generateCameraModel;
 
-// TODO: pass user into model generators to perform authorization at the 
+// TODO: pass user into model generators to perform authorization at the
 // data fetching level. e.g.:
 // export const generateCameraModel = ({ user }) => ({
 //   getAll: () => {

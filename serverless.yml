@@ -13,7 +13,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
-  environment: 
+  environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -33,11 +33,17 @@ provider:
       Action:
         - ssm:GetParameters
       Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: "*"  
 
   # Only necessary for private endpoints
-  # apiKeys:
-  #   - name: lambdaApolloKey
-  #     value: ${env:APOLLO_LAMBDA_KEY}
+  apiKeys:
+  #   # - name: lambdaApolloKey
+  #     # value: ${env:APOLLO_LAMBDA_KEY}
+    - name: animlApiKeyInternal
+      value: '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
 
 functions:
   graphql:
@@ -47,6 +53,19 @@ functions:
         path: /
         method: post
         cors: true
+    - http:
+        path: /internal
+        method: post
+        cors: true
+        private: true
+    - http:
+        path: /external
+        method: post
+        cors: true
+        authorizer:
+            name: CognitoAuthN
+            type: COGNITO_USER_POOLS
+            arn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
     timeout: 20
   playground:
     handler: src/api/handler.playground
@@ -55,6 +74,10 @@ functions:
         path: /
         method: get
         cors: true
+        #authorizer:
+        #    name: CognitoAuthN
+        #    type: COGNITO_USER_POOLS
+        #    arn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
     timeout: 20
   inference:
     handler: src/ml/handler.inference
@@ -72,6 +95,14 @@ functions:
 
 resources:
   Resources:
+    apiKey:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Description: API Key that will allow access for the APIs
+        GenerateSecretString:
+            GenerateStringKey: apikey
+            SecretStringTemplate: '{"user": "api"}'
+        Name: api-key
     inferenceQueue:
       Type: AWS::SQS::Queue
       Properties:
@@ -87,3 +118,9 @@ resources:
       Properties:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
+    # secretParam:
+    #   Type: "AWS::SSM::Parameter"
+    #   Properties:
+    #     Name: animl-api-key
+    #     Value: !Sub '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
+    #     Type: String

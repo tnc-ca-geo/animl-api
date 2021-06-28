@@ -11,6 +11,7 @@ const Scalars = require('./resolvers/Scalars');
 const typeDefs = require('./type-defs');
 const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('./db/connect');
+const { getUserInfo } = require('./auth/authorization');
 
 const resolvers = {
   Query,
@@ -19,30 +20,32 @@ const resolvers = {
   ...Scalars,
 };
 
-const context = async ({ req }) => {
+const context = async ({ event: req }) => {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
-// TODO: authorize user and pass into model generator functions
-// https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers
+  // Authorize user and pass into model generator functions
+  // https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers
+  const user = await getUserInfo(req, config);
 
- return {
-  ...req,
-  config,
-  models: {
-    View: generateViewModel(),
-    Image: generateImageModel(),
-    Camera: generateCameraModel(),
-    Model: generateModelModel(),
-  },
- };
+  return {
+    ...req,
+    user,
+    config,
+    models: {
+      View: generateViewModel({ user }),
+      Image: generateImageModel({ user }),
+      Camera: generateCameraModel({ user }),
+      Model: generateModelModel({ user }),
+    },
+  };
 };
 
 const lambda = new GraphQLServerLambda({
   typeDefs,
   resolvers,
   context,
-  options: { 
+  options: {
     formatError,
   },
 });

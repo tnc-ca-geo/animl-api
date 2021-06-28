@@ -4,7 +4,7 @@ const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
 
-const generateImageModel = () => ({
+const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
     const query = utils.buildFilter(input);
@@ -124,7 +124,7 @@ const generateImageModel = () => ({
 module.exports = generateImageModel;
 
 
-// TODO: pass user into model generators to perform authorization at the 
+// TODO: pass user into model generators to perform authorization at the
 // data fetching level. e.g.:
 // export const generateImageModel = ({ user }) => ({
 //   getAll: () => {

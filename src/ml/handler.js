@@ -27,9 +27,9 @@ async function requestCreateLabels(input, config) {
   const variables = { input: input };
   try {
     const graphQLClient = new GraphQLClient(config.ANIML_API_URL, {
-      // headers: {
-      //   authorization: 'Bearer MY_TOKEN',
-      // },
+      headers: {
+        'x-api-key': config.APIKEY,
+      },
     });
     const createLabelResponse = await graphQLClient.request(mutation, variables);
     // console.log(JSON.stringify(createLabelResponse, undefined, 2));
