@@ -3,6 +3,7 @@ const CreateLabelsInput = require('./inputs/CreateLabelsInput');
 const CreateViewInput = require('./inputs/CreateViewInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 const QueryImageInput = require('./inputs/QueryImageInput');
+const UpdateObjectsInput = require('./inputs/UpdateObjectsInput');
 const UpdateViewInput = require('./inputs/UpdateViewInput');
 
 const AutomationRule = require('./objects/AutomationRule');
@@ -21,6 +22,7 @@ const CreateLabelsPayload = require('./payloads/CreateLabelsPayload');
 const CreateViewPayload = require('./payloads/CreateViewPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 const ImageConnection = require('./payloads/ImageConnection');
+const UpdateObjectsPayload = require('./payloads/UpdateObjectsPayload');
 const UpdateViewPayload = require('./payloads/UpdateViewPayload');
 
 const Mutation = require('./root/Mutation');
@@ -36,6 +38,7 @@ const typeDefStrings = [
   CreateViewInput,
   DeleteViewInput,
   QueryImageInput,
+  UpdateObjectsInput,
   UpdateViewInput,
   AutomationRule,
   Camera,
@@ -52,6 +55,7 @@ const typeDefStrings = [
   CreateViewPayload,
   DeleteViewPayload,
   ImageConnection,
+  UpdateObjectsPayload,
   UpdateViewPayload,
   Mutation,
   Query,

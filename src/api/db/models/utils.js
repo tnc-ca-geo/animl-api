@@ -194,8 +194,8 @@ const createLabelRecord = (input, modelId) => {
 };
 
 const hasRole = (userInfo, targetRoles = []) => {
-    const cognitoGroups = userInfo && userInfo['cognito:groups'] || [];
-    return cognitoGroups.some((role) => targetRoles.includes(role));
+  const cognitoGroups = userInfo && userInfo['cognito:groups'] || [];
+  return cognitoGroups.some((role) => targetRoles.includes(role));
 };
 
 module.exports = {

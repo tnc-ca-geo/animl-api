@@ -69,6 +69,7 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           await image.save();
+          // TODO: maybe we don't kick off automation events if it was added by a user?
           await automation.handleEvent({
             event: 'label-added',
             image: image,
@@ -83,7 +84,7 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  getLabels: async () => {
+  getLabels: async () => {  // TODO: this should be called getAllCategories or something like that
     try {
       const categories = await Image.distinct('objects.labels.category');
       const labellessImage = await Image.findOne({ objects: { $size: 0 } });
@@ -116,6 +117,22 @@ const generateImageModel = ({ user } = {}) => ({
         throw new DBValidationError(err);
       }
       throw new ApolloError(err);
+    }
+  },
+
+  get updateObjects() {
+    return async (input, context) => {
+      const { imageId, objects } = input;
+      try {
+        const image = await this.queryById(imageId);
+        console.log(`updateObjects() - Updating image "${image.originalFileName}"`);
+        image.objects = objects;
+        await image.save();
+        console.log(`updateObjects success. Returning`);
+        return image;
+      } catch (err) {
+        throw new ApolloError(err);
+      }
     }
   },
 

@@ -1,10 +1,17 @@
 module.exports = `
+  input ValidationInput {
+    validated: Boolean!,
+    validationDate: Date,
+    user: ID,
+  }
+
   input LabelData {
     _id: ID
     type: String!
     category: String!
     conf: Float
     bbox: [Float!]!
+    validation: ValidationInput
     modelId: ID
   }
 

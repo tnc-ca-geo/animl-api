@@ -33,6 +33,11 @@ const Mutation = {
     return { success: res.ok, viewId: input._id};
   },
 
+  updateObjects: async (_, { input }, context) => {
+    const image = await context.models.Image.updateObjects(input);
+    return { image: image };
+  },
+
 };
 
 module.exports = Mutation;

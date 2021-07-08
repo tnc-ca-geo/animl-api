@@ -5,5 +5,6 @@ module.exports = `
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload
     deleteView(input: DeleteViewInput!): DeleteViewPayload
+    updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
   }
 `;
