@@ -4,7 +4,6 @@ const BEARER_TOKEN_PATTERN = /^Bearer [-_=.0-9a-zA-Z]+$/i;
 
 async function getUserInfo(req, config) {
     const token = req.headers.Authorization || req.headers.authorization;
-    console.log('token: ', token);
     const api_key = req.headers['x-api-key'];
     // if x-api-key header is present, call was to /internal path
     // and was made by an internal lambda

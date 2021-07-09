@@ -2,22 +2,22 @@ module.exports = `
   input ValidationInput {
     validated: Boolean!,
     validationDate: Date,
-    user: ID,
+    userId: ID!,
   }
 
-  input LabelData {
+  input LabelInput {
     _id: ID
     type: String!
     category: String!
     conf: Float
     bbox: [Float!]!
+    labeledDate: Date
     validation: ValidationInput
     modelId: ID
+    userId: ID
   }
 
   input CreateLabelsInput {
     imageId: ID!
-    labels: [LabelData!]
+    labels: [LabelInput!]
 }`;
-
-// TODO: add userId to LabelData

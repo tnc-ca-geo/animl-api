@@ -45,7 +45,7 @@ const formatSSMParams = (ssmParams) => {
   return formattedParams;
 };
 
-module.exports.getConfig = async function getConfig() {
+const getConfig = async function getConfig() {
   if (!cachedSSMParams) {
     cachedSSMParams = ssm.getParameters({
       Names: ssmNames,
@@ -74,5 +74,10 @@ module.exports.getConfig = async function getConfig() {
     console.log('error getting config: ', err);
     throw new ApolloError(err);
   }
+};
+
+module.exports = {
+  localConfig,
+  getConfig,
 };
 

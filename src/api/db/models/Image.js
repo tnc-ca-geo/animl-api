@@ -3,6 +3,7 @@ const { DuplicateError, DBValidationError } = require('../../errors');
 const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
+const { labels } = require('../../resolvers/Query');
 
 const generateImageModel = ({ user } = {}) => ({
 
@@ -44,13 +45,11 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         const image = await this.queryById(imageId);
         for (const label of labels) {
-
           if (utils.isLabelDupe(image, label)) {
             return;
           }
-          // TODO: if label was created on front-end, use ID front-end generated?
+
           const labelRecord = utils.createLabelRecord(label, label.modelId);
-          console.log(`createLabels() - Adding label "${labelRecord.category}" to image: ${image.originalFileName}`);
           let objExists = false;
           for (const object of image.objects) {
             if (_.isEqual(object.bbox, label.bbox)) {
@@ -60,7 +59,6 @@ const generateImageModel = ({ user } = {}) => ({
             }
           }
           if (!objExists) {
-            // TODO: if object was created on front-end, use ID front-end generated?
             image.objects.unshift({
               bbox: labelRecord.bbox,
               locked: false,
@@ -69,7 +67,7 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           await image.save();
-          // TODO: maybe we don't kick off automation events if it was added by a user?
+
           await automation.handleEvent({
             event: 'label-added',
             image: image,
@@ -84,7 +82,9 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  getLabels: async () => {  // TODO: this should be called getAllCategories or something like that
+  // TODO: this should be called getAllCategories or something like that
+  // TODO: only return catagories for non-invalidated labels
+  getLabels: async () => {
     try {
       const categories = await Image.distinct('objects.labels.category');
       const labellessImage = await Image.findOne({ objects: { $size: 0 } });
@@ -101,13 +101,11 @@ const generateImageModel = ({ user } = {}) => ({
     try {
       const md = utils.sanitizeMetadata(input.md, context.config);
       const newImage = utils.createImageRecord(md);
-      console.log(`createImage() - Adding image "${newImage.originalFileName}" to db`);
       await newImage.save();
       await automation.handleEvent({
         event: 'image-added',
         image: newImage,
       }, context);
-      console.log(`createImage success. Returning`);
       return newImage;
     } catch (err) {
       if (err.message.toLowerCase().includes('duplicate')) {
@@ -125,10 +123,17 @@ const generateImageModel = ({ user } = {}) => ({
       const { imageId, objects } = input;
       try {
         const image = await this.queryById(imageId);
-        console.log(`updateObjects() - Updating image "${image.originalFileName}"`);
+        console.log('updating objects on image: ', image.originalFileName);
+        console.log('new objects: ', objects);
+        objects.forEach((object) => {
+          console.log('new labels: ', object.labels);
+          object.labels.forEach((label) => {
+            console.log('label: ', label);
+            console.log('validation: ', label.validation)
+          })
+        });
         image.objects = objects;
         await image.save();
-        console.log(`updateObjects success. Returning`);
         return image;
       } catch (err) {
         throw new ApolloError(err);

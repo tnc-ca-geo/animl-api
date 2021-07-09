@@ -67,7 +67,7 @@ const buildCallstack = async (payload, context) => {
   const { event, image, label } = payload;
   const views = await context.models.View.getViews();
   const callstack = views.reduce((callstack, view) => {
-    if (includedInView(image, view) && view.automationRules) {
+    if (includedInView(image, view) && view.automationRules.length > 0) {
       view.automationRules
         .filter((rule) => ruleApplies(rule, event, label))
         .forEach((rule) => callstack.push(rule));

@@ -128,7 +128,7 @@ const isLabelDupe = (image, newLabel) => {
   }, []);
 
   for (const label of labels) {
-    const modelMatch = newLabel.modelId === label.model.toString();
+    const modelMatch = newLabel.modelId === label.modelId.toString();
     const labelMatch = newLabel.category === label.category;
     const confMatch  = newLabel.conf === label.conf;
     const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
@@ -179,7 +179,7 @@ const createImageRecord = (md) => {
 };
 
 // TODO: accommodate users as label authors as well as models
-const createLabelRecord = (input, modelId) => {
+const createLabelRecord = (input, authorId) => {
   const label = {
     ...(input._id && { _id: input._id }),
     type: input.type,
@@ -188,7 +188,8 @@ const createLabelRecord = (input, modelId) => {
     bbox: input.bbox,
     labeledDate: moment(),
     // validation: { validated: null }, // if user created, set validation field
-    ...(modelId && { model: modelId }),
+    ...((authorId && input.type === 'ml') && { modelId: authorId }),
+    ...((authorId && input.type === 'manual') && { userId: authorId }),
   };
   return label;
 };

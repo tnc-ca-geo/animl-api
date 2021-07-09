@@ -1,7 +1,8 @@
 module.exports = `
   type Validation {
     validated: Boolean!
-    vaidationDate: Date!
+    validationDate: Date!
+    userId: ID!
   }
 
   type Label {
@@ -9,9 +10,11 @@ module.exports = `
     type: String!
     category: String!
     conf: Float
-    bbox: [Float!]
+    bbox: [Float!]!
     labeledDate: Date!
     validation: Validation
+    modelId: ID
+    userId: ID
   }
 
   type LabelList {
@@ -25,10 +28,3 @@ module.exports = `
     labels: [Label]
   }
 `;
-
-  // TODO: add to Label:
-  // user: { type: Schema.Types.ObjectId, ref: 'User' },
-  // model: { type: Schema.Types.ObjectId, ref: 'Model' }
-
-  // TODO: add to Validation: 
-  // user: { type: Schema.Types.ObjectId, ref: 'User' },

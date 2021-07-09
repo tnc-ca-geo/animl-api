@@ -27,9 +27,7 @@ const context = async ({ event: req }) => {
   // Authorize user and pass into model generator functions
   // https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers
   const user = await getUserInfo(req, config);
-  
-  console.log('user: ', user);
-  
+    
   return {
     ...req,
     user,

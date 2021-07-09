@@ -3,7 +3,7 @@ module.exports = `
     _id: ID!
     bbox: [Float!]!,
     locked:  Boolean!,
-    labels: [LabelData],
+    labels: [LabelInput],
   }
 
   input UpdateObjectsInput {

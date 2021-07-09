@@ -23,8 +23,8 @@ let LocationSchema = new Schema({
 
 let ValidationSchema = new Schema({
   validated: { type: Boolean, default: false, required: true },
-  validationDate: { type: Date },
-  user: { type: Schema.Types.ObjectId, ref: 'User' },
+  validationDate: { type: Date, default: Date.now, required: true },
+  userId: { type: String },
 });
 
 /*
@@ -41,8 +41,8 @@ let LabelSchema = new Schema({
   bbox: { type: [Number] },
   labeledDate: { type: Date, default: Date.now, required: true },
   validation: { type: ValidationSchema },
-  model: { type: Schema.Types.ObjectId, ref: 'Model' }, // if type === 'ml'
-  user: { type: Schema.Types.ObjectId, ref: 'User' }, // if type === 'manual'
+  modelId: { type: Schema.Types.ObjectId, ref: 'Model' }, // if type === 'ml'
+  userId: { type: String }, // if type === 'manual'
 });
 
 /*
