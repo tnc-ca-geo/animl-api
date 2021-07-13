@@ -41,16 +41,36 @@ const buildFilter = ({
 
   // TODO: test
   // TODO: decide whether we want to include all labels? only non-invalidated
-  // ones?
+  // ones? if object is locked?
   let labelsFilter = {};
   if (labels) {
     labelsFilter = labels.includes('none')
-      ? { $or: [
-          {'objects.labels.category': { $in: labels }},
-          { objects: { $size: 0 }}
+      ? {$or: [
+          {'objects.labels': {$elemMatch: {
+            category: {$in: labels},
+            // validation: {$exists: true}, // might not need this
+            'validation.validated': {$not: {$eq: false}}
+          }}},
+          // { $and: [ 
+          //   {'objects.labels.category': { $in: labels }},
+          //   {'objects.labels.validation': { $exists: true }},
+          //   {'objects.labels.validation.validated': { $not: { $eq: false } }},
+          // ]},
+          {objects: {$size: 0}}  // image has no objects
         ]}
-      : { 'objects.labels.category': { $in: labels } };
+      : {'objects.labels': {$elemMatch: {
+          category: {$in: labels},
+          // validation: {$exists: true}, // might not need this
+          'validation.validated': {$not: {$eq: false}}
+        }}};
+      // {$and: [ 
+      //     {'objects.labels.category': { $in: labels }},
+      //     {'objects.labels.validation': { $exists: true }},
+      //     {'objects.labels.validation.validated': { $not: { $eq: false }}},
+      //   ]};
   };
+  
+
 
   return {
     ...camerasFilter,

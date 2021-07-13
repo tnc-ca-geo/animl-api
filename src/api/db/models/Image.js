@@ -43,7 +43,14 @@ const generateImageModel = ({ user } = {}) => ({
   // TODO: only return catagories for non-invalidated labels
   getLabels: async () => {
     try {
-      const categories = await Image.distinct('objects.labels.category');
+      const categoriesAggregate = await Image.aggregate([
+        {$unwind: '$objects'},
+        {$unwind: '$objects.labels'},
+        {$match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
+        {$group: {_id: null, uniqueCategories: {$addToSet: "$objects.labels.category"}}}
+      ]);
+      console.log('categoriesAggregate: ', categoriesAggregate);
+      let categories = categoriesAggregate[0].uniqueCategories;
       const labellessImage = await Image.findOne({ objects: { $size: 0 } });
       if (labellessImage) {
         categories.push('none');
