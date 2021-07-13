@@ -40,6 +40,14 @@ const runInference = {
         cat.id === det[5]
       ))[0].name,
     }));
+    if (detections.length === 0) {
+      detections.push({
+        modelId: model._id,
+        type: 'ml',
+        bbox: [0, 0, 1, 1],
+        category: 'empty',
+      });
+    }
     console.log('detections: ', detections);
     return detections;
   },
