@@ -39,39 +39,36 @@ const buildFilter = ({
     }};
   }
 
-  // TODO: test
-  // TODO: decide whether we want to include all labels? only non-invalidated
-  // ones? if object is locked?
   let labelsFilter = {};
   if (labels) {
-    labelsFilter = labels.includes('none')
-      ? {$or: [
-          {'objects.labels': {$elemMatch: {
+    labelsFilter = {$or: [
+      // has an object that is locked,
+      // and it has a label that is both validated and included in filters
+      // NOTE: this is still not perfect: I'm not sure how to determine 
+      // whether the FIRST validated label is included in the filters. Right 
+      // now if there is ANY label that is both validated and is in filters, 
+      // the image will pass the filter
+      {objects: {$elemMatch: {
+          locked: true,
+          labels: {$elemMatch: {
+            'validation.validated': true,
             category: {$in: labels},
-            // validation: {$exists: true}, // might not need this
-            'validation.validated': {$not: {$eq: false}}
-          }}},
-          // { $and: [ 
-          //   {'objects.labels.category': { $in: labels }},
-          //   {'objects.labels.validation': { $exists: true }},
-          //   {'objects.labels.validation.validated': { $not: { $eq: false } }},
-          // ]},
-          {objects: {$size: 0}}  // image has no objects
-        ]}
-      : {'objects.labels': {$elemMatch: {
-          category: {$in: labels},
-          // validation: {$exists: true}, // might not need this
-          'validation.validated': {$not: {$eq: false}}
-        }}};
-      // {$and: [ 
-      //     {'objects.labels.category': { $in: labels }},
-      //     {'objects.labels.validation': { $exists: true }},
-      //     {'objects.labels.validation.validated': { $not: { $eq: false }}},
-      //   ]};
+          }}
+      }}},
+      // has an object is not locked, but it has label that is 
+      // not-invalidated and included in filters
+      {'objects.labels': {$elemMatch: {
+        category: {$in: labels},
+        'validation.validated': {$not: {$eq: false}}
+      }}},
+    ]};
+
+    // or the image has no objects
+    if (labels.includes('none')) {
+      console.log('labels incldues none, filter: ', labelsFilter);
+    }
   };
   
-
-
   return {
     ...camerasFilter,
     ...dateCreatedFilter,
