@@ -15,9 +15,11 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   get createCamera() {  // use object getter so we can reference this.getCameras
+    console.log('createCamera() firing from Camera.model. User: ', user)
     if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
       return null;
     }
+    
     return async (image) => {
       const existingCam = await this.getCameras([ image.cameraSn ]);
       if (existingCam.length === 0) {

@@ -19,5 +19,6 @@ module.exports = `
 
   input CreateLabelsInput {
     imageId: ID!
+    objectId: ID
     labels: [LabelInput!]
 }`;
