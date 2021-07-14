@@ -204,7 +204,7 @@ const createImageRecord = (md) => {
     make: md.make,
     // optional fields...
     ...(md.model && { model: md.model }),
-    ...(md.key && { originalFileName: md.key }),
+    ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
     ...(md.imageHeight && { imageHeight: md.imageHeight }),
     ...(md.MIMEType && { mimeType: md.MIMEType }),
