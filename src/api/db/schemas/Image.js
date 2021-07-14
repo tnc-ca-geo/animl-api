@@ -26,12 +26,13 @@ let ImageSchema = new Schema({
   cameraSn: { type: String, required: true, ref: 'Camera' },
   make: { type: String, default: 'unknown', required: true },
   model: { type: String },
-  location: { type: shared.LocationSchema },
+  location: { type: shared.LocationSchema },  // TODO: do we need this if it will be stored on deployement?
   objects: { type: [shared.ObjectSchema] },
-  // deployment: {
-  //   type: Schema.Types.ObjectId,
-  //   ref: 'Deployment',
-  // },
+  deployment: {
+    type: Schema.Types.ObjectId,
+    ref: 'Deployment',
+    required: true,
+  },
 });
 
 ImageSchema.index(
@@ -39,7 +40,7 @@ ImageSchema.index(
   { unique: true, sparse: true }
 );
 
-// ImageSchema.index({ deployment: 1 });
+ImageSchema.index({ deployment: 1 });
 
 ImageSchema.on('index', (e) => {
   console.log('Indexing error', e);
