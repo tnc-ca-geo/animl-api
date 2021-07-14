@@ -11,4 +11,5 @@ module.exports = `
     addedEnd: Date
     cameras: [String!]
     labels: [String]
+    reviewed: Boolean
   }`;

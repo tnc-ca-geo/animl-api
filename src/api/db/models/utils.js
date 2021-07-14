@@ -16,6 +16,9 @@ const buildFilter = ({
   addedStart,
   addedEnd,
   labels,
+  hasLockedObjects,
+  hasUnlockedObjects,
+  reviewed,
 }) => {
 
   let camerasFilter = {};
@@ -37,6 +40,13 @@ const buildFilter = ({
       ...(addedStart && { $gte: addedStart.toDate() }),
       ...(addedEnd && { $lt: addedEnd.toDate() }),
     }};
+  }
+
+  let reviewedFilter = {};
+  if (!reviewed) {
+    // exclude reviewed images (images that have all locked objects)
+    // equivalant to: incldue images that have at least one unlocked object
+    reviewedFilter = {'objects.locked': false};
   }
 
   let labelsFilter = {};
@@ -73,6 +83,7 @@ const buildFilter = ({
     ...camerasFilter,
     ...dateCreatedFilter,
     ...dateAddedFilter,
+    ...reviewedFilter,
     ...labelsFilter,
   };
 };
