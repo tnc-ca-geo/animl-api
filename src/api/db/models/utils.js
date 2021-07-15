@@ -1,6 +1,9 @@
 const moment = require('moment');
 const _ = require('lodash');
+const ObjectId = require('mongoose').Types.ObjectId; 
 const Image = require('../schemas/Image');
+
+// TODO: this file is getting unwieldy, break up 
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config.ANIML_IMAGES_URL;
@@ -11,19 +14,26 @@ const buildImgUrl = (image, config, size = 'original') => {
 
 const buildFilter = ({
   cameras,
+  deployments,
   createdStart,
   createdEnd,
   addedStart,
   addedEnd,
   labels,
-  hasLockedObjects,
-  hasUnlockedObjects,
   reviewed,
 }) => {
 
   let camerasFilter = {};
   if (cameras) {
     camerasFilter = {'cameraSn': { $in: cameras }}
+  }
+
+  let deploymentsFilter = {};
+  if (deployments) {
+    const deploymentIds = deployments.map((depString) => (
+      new ObjectId(depString))  // have to cast string id to ObjectId
+    );
+    deploymentsFilter = {'deployment': { $in: deploymentIds }}
   }
 
   let dateCreatedFilter =  {};
@@ -81,6 +91,7 @@ const buildFilter = ({
   
   return {
     ...camerasFilter,
+    ...deploymentsFilter,
     ...dateCreatedFilter,
     ...dateAddedFilter,
     ...reviewedFilter,
@@ -205,7 +216,7 @@ const createImageRecord = (md) => {
     dateTimeOriginal: md.dateTimeOriginal,
     cameraSn: md.serialNumber,
     make: md.make,
-    deployment: md.deploymentId,
+    deployment: md.deployment,
     // optional fields...
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),

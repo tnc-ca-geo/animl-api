@@ -14,7 +14,7 @@ const Mutation = {
       : null;
 
     // if existing cam, find deployment
-    md.deploymentId = newCam 
+    md.deployment = newCam 
       ? newCam.deployments[0]._id
       : utils.mapImageToDeployment(md, existingCam[0]);
 

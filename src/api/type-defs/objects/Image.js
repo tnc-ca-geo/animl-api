@@ -15,11 +15,11 @@ module.exports = `
     model: String,
     userSetData: JSONObject
     location: Location
+    deployment: ID
     objects: [Object]
   }`;
 
-// TODO: add the following: 
-// location: { type: shared.LocationSchema },
+// TODO: make deployment id non-nullable (ID!)
 
 // TODO: decide if we want to populate() cameraSn field when returning 
 // an Image - in which case I think we use cameraSn: Camera!

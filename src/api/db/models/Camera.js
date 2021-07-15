@@ -51,8 +51,8 @@ const generateCameraModel = ({ user } = {}) => ({
       const images = Image.find({cameraSn: camera._id});
       for (const img of images) {
         const newDep = mapImageToDeployment(img, camera);
-        if (img.deploymentId !== newDep) {
-          img.deploymentId = newDep
+        if (img.deployment !== newDep) {
+          img.deployment = newDep
           await img.save();
         }
       }
@@ -122,16 +122,6 @@ const generateCameraModel = ({ user } = {}) => ({
       }
     }
   },
-  
-
-  // TODO: add CUD resolvers for deployments
-  // createDeployment(input: {cameraId, deployment})
-  //    will have to updateImgsDeploymentIds
-  // updateDeployment(input: {cameraId, deploymentId, diffs})
-  //    if startDate changed, will have to updateImgsDeploymentIds
-  // deleteDeployment(input: {cameraId, deploymentId})
-  //    will have to updateImgsDeploymentIds
-
 
  });
 

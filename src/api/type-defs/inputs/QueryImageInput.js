@@ -10,6 +10,7 @@ module.exports = `
     addedStart: Date
     addedEnd: Date
     cameras: [String!]
+    deployments: [String!]
     labels: [String]
     reviewed: Boolean
   }`;
