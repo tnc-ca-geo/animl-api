@@ -59,8 +59,6 @@ const Mutation = {
   },
 
   createLabels: async (_, { input }, context) => {
-    // TODO: accomodate both ml & user-created labels
-    console.log('createLabel mutation firing with input: ', input);
     const image = await context.models.Image.createLabels(input, context);
     return { image: image };
   },
@@ -75,10 +73,21 @@ const Mutation = {
     return { image: image };
   },
 
-  // TODO: add CUD resolvers for deployments
-  // createDeployment(input: {cameraId, deployment})
-  // updateDeployment(input: {cameraId, deploymentId, diffs})
-  // deleteDeployment(input: {cameraId, deploymentId, diffs})
+  createDeployment: async (_, { input }, context) => {
+    console.log('createDeployment mutation firing with input: ', input);
+    const camera = await context.models.Camera.createDeployment(input, context);
+    return { camera: camera };
+  },
+
+  updateDeployment: async (_, { input }, context) => {
+    const camera = await context.models.Camera.updateDeployment(input, context);
+    return { camera: camera };
+  },
+
+  deleteDeployment: async (_, { input }, context) => {
+    const camera = await context.models.Camera.deleteDeployment(input, context);
+    return { camera: camera };
+  },
 
 };
 

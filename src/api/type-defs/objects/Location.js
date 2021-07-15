@@ -1,7 +1,7 @@
 module.exports = `
   type Point {
     type: String!
-    coordinates: [Int!]!
+    coordinates: [Float!]!
   }
 
   type Location {

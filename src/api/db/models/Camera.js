@@ -1,6 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
+const { image } = require('../../resolvers/Query');
 const Camera = require('../schemas/Camera');
-const { hasRole } = require('./utils');
+const Image = require('../schemas/Image');
+const { hasRole, mapImageToDeployment } = require('./utils');
 
 const generateCameraModel = ({ user } = {}) => ({
 
@@ -38,17 +40,96 @@ const generateCameraModel = ({ user } = {}) => ({
         throw new ApolloError(err);
       }
     };
-  }
-  // TODO: add updateImgsDeploymentIds(i)
+  },
+
+  // TODO: add remapImagesToDeployments(i)
   //    get all images that belong to camera
   //    iterate throught them, mapImageToDeployment, if different update image 
+
+  reMapImagesToDeps: async (camera) => {
+    try {
+      const images = Image.find({cameraSn: camera._id});
+      for (const img of images) {
+        const newDep = mapImageToDeployment(img, camera);
+        if (img.deploymentId !== newDep) {
+          img.deploymentId = newDep
+          await img.save();
+        }
+      }
+    } catch (err) {
+      throw new ApolloError(err);
+    }
+  },
+
+  get createDeployment() {
+    return async (input, context) => {
+      console.log('createDeployment() - creating deployment with input: ', input);
+      const { cameraId, deployment } = input;
+      try {
+        const camera = await this.getCameras([cameraId]);
+        camera.deployments.push(deployment);
+        await camera.save();
+        await reMapImagesToDeps(camera);
+        return camera;
+      } catch (err) {
+        throw new ApolloError(err);
+      }
+    }
+  },
+
+  get updateDeployment() {
+    return async (input, context) => {
+      console.log('updateDeployment() - updating deployment with input: ', input);
+      const { cameraId, deploymentId, diffs } = input;
+      try {
+        const camera = await this.getCameras([cameraId]);
+        console.log('updateDeployment() - found the camera: ', camera);
+        const deployment = camera.deployments.find((dep) => (
+          dep._id.toString() === deploymentId.toString()
+        ));
+        console.log('updateDeployment() - found the deployment: ', deployment);
+        for (let [key, newVal] of Object.entries(diffs)) {
+          deployment[key] = newVal;
+        }
+        await camera.save();
+        if (Object.keys(diffs).includes('startDate')) {
+          console.log('updateDeployment() - startDate was changed, so remapping images to deps');
+          await reMapImagesToDeps(camera);
+        }
+        return camera;
+      } catch (err) {
+        throw new ApolloError(err);
+      }
+    }
+  },
+
+  get deleteDeployment() {
+    return async (input, context) => {
+      console.log('deleteDeployment() - deleting deployment with input: ', input);
+      const { cameraId, deploymentId } = input;
+      try {
+        const camera = await this.getCameras([cameraId]);
+        console.log('deleteDeployment() - found the camera: ', camera);
+        const newDeps = camera.deployments.filter((dep) => (
+          dep._id.toString() === deploymentId.toString()
+        ));
+        camera.deployments = newDeps;
+        await camera.save();
+        await reMapImagesToDeps(camera);
+        return camera
+      } catch (err) {
+        throw new ApolloError(err);
+      }
+    }
+  },
+  
 
   // TODO: add CUD resolvers for deployments
   // createDeployment(input: {cameraId, deployment})
   //    will have to updateImgsDeploymentIds
   // updateDeployment(input: {cameraId, deploymentId, diffs})
   //    if startDate changed, will have to updateImgsDeploymentIds
-  // deleteDeployment(input: {cameraId, deploymentId, diffs})
+  // deleteDeployment(input: {cameraId, deploymentId})
   //    will have to updateImgsDeploymentIds
 
 
