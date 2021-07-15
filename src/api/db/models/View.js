@@ -32,6 +32,7 @@ const generateViewModel = ({ user } = {}) => ({
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
       const views = await View.find(query);
+      console.log('found views: ', views)
       // if (!_ids && views.length === 0) {
       //   defaultView = await this.createView(defaultViewConfig);
       //   views.push(defaultView);

@@ -183,6 +183,7 @@ const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
 
+  // TODO: are we even using this? do we need it?
   const camera = {
     serialNumber: md.serialNumber,
     make: md.make,
@@ -194,6 +195,8 @@ const createImageRecord = (md) => {
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
   };
 
+  console.log('creating Image Record with md: ', md)
+
   const image = new Image({
     _id: md.hash,
     bucket: md.prodBucket,
@@ -202,6 +205,7 @@ const createImageRecord = (md) => {
     dateTimeOriginal: md.dateTimeOriginal,
     cameraSn: md.serialNumber,
     make: md.make,
+    deployment: md.deploymentId,
     // optional fields...
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
@@ -238,6 +242,48 @@ const hasRole = (userInfo, targetRoles = []) => {
   return cognitoGroups.some((role) => targetRoles.includes(role));
 };
 
+// TODO: accomodate user-created deployments with no startDate?
+const findDeployment = (image, camera) => {
+  // find most recent deployment start date
+  const imgCreated = image.dateTimeOriginal;
+  const defaultDep = camera.deployments.find((dep) => dep.name === 'default');
+  
+  let mostRecentDep = { deploymentId: null, timeElapsed: null };
+  for (const dep of camera.deployments) {
+    if (dep.name !== 'default') {
+      const timeElapsed = imgCreated.diff(moment(dep.startDate));
+      // if time elapsed is negative, image was taken before the dep began
+      if (timeElapsed >= 0 &&
+          (mostRecentDep.timeElapsed === null || 
+           mostRecentDep.timeElapsed > timeElapsed)) {
+        mostRecentDep = { deploymentId: dep._id, timeElapsed };
+      }
+    }
+  }
+
+  return mostRecentDep.deploymentId !== null
+    ? mostRecentDep.deploymentId
+    : defaultDep._id;
+}
+
+
+const mapImageToDeployment = (image, camera) => {
+  console.log('mapImageToDeployment()');
+
+  if (camera.deployments.length === 0) {
+    throw new ApolloError('Camera has no deployments');
+  }
+
+  if (camera.deployments.length === 1) {
+    console.log('only one deployment found on camera, returning it');
+    return camera.deployments[0]._id;
+  }
+
+  console.log('multiple deployments found on camera, finding most recent');
+  const deploymentId = findDeployment(image, camera);
+  return deploymentId;
+};
+
 module.exports = {
   buildImgUrl,
   buildFilter,
@@ -246,4 +292,5 @@ module.exports = {
   createImageRecord,
   createLabelRecord,
   hasRole,
+  mapImageToDeployment,
 };

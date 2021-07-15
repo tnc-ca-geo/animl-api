@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const shared = require('./shared');
 
 let DeploymentSchema = new Schema({
-  _id: { type: String, required: true },
   name: { type: String, required: true },
   description: { type: String },
   location: { type: shared.LocationSchema },
-  endDate: { type: Date },
+  startDate: { type: Date },
+  editable: { type: Boolean },
 });
 
 let CameraSchema = new Schema({

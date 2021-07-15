@@ -21,10 +21,8 @@ const resolvers = {
 };
 
 const context = async ({ event: req }) => {
-  console.log('recieved req: ', req);
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
-  console.log('connected to db')
 
   // Authorize user and pass into model generator functions
   // https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers

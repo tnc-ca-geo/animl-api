@@ -1,14 +1,25 @@
 const utils = require('../db/models/utils');
 
+// TODO: Split this out by entity type
+
 const Mutation = {
   createImage: async (_, { input }, context) => {
-    console.log('createImage mutation resolver firing')
-    // NOTE: This is currently parsed twice to check for camera authorization
     const md = utils.sanitizeMetadata(input.md, context.config);
-    let newImage = utils.createImageRecord(md);
-    await context.models.Camera.createCamera(newImage);
 
-    newImage = await context.models.Image.createImage(input, context);
+    // find camera record (or create new one)
+    const cameraSn = md.serialNumber;
+    const existingCam = await context.models.Camera.getCameras([cameraSn]);
+    const newCam = (existingCam.length === 0)
+      ? await context.models.Camera.createCamera(md)
+      : null;
+
+    // if existing cam, find deployment
+    md.deploymentId = newCam 
+      ? newCam.deployments[0]._id
+      : utils.mapImageToDeployment(md, existingCam[0]);
+
+    // create image record
+    newImage = await context.models.Image.createImage(md, context);
     return { image: newImage }; // return values must match payload schema
   },
 
@@ -63,6 +74,11 @@ const Mutation = {
     const image = await context.models.Image.deleteLabel(input);
     return { image: image };
   },
+
+  // TODO: add CUD resolvers for deployments
+  // createDeployment(input: {cameraId, deployment})
+  // updateDeployment(input: {cameraId, deploymentId, diffs})
+  // deleteDeployment(input: {cameraId, deploymentId, diffs})
 
 };
 

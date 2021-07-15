@@ -63,10 +63,10 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  createImage: async (input, context) => {
+  createImage: async (md, context) => {
     try {
       console.log('createImage() - createImage in Image.model firing ')
-      const md = utils.sanitizeMetadata(input.md, context.config);
+      // const md = utils.sanitizeMetadata(input.md, context.config);
       const newImage = utils.createImageRecord(md);
       await newImage.save();
       await automation.handleEvent({
