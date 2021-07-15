@@ -17,11 +17,13 @@ let AutomationRuleSchema = new Schema({
 
 let FiltersSchema = new Schema({
   cameras: { type: [String], default: undefined },
+  deployments: { type: [String], default: undefined },
   labels: { type: [String], default: undefined },
   createdStart: { type: Date },
   createdEnd: { type: Date },
   addedStart: { type: Date },
   addedEnd: { type: Date },
+  reviewed: { type: Boolean },
 });
 
 let ViewSchema = new Schema({
