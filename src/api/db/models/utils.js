@@ -53,7 +53,7 @@ const buildFilter = ({
   }
 
   let reviewedFilter = {};
-  if (!reviewed) {
+  if (reviewed === false) {
     // exclude reviewed images (images that have all locked objects)
     // equivalant to: incldue images that have at least one unlocked object
     reviewedFilter = {'objects.locked': false};
