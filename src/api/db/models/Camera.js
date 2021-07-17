@@ -48,7 +48,8 @@ const generateCameraModel = ({ user } = {}) => ({
 
   reMapImagesToDeps: async (camera) => {
     try {
-      const images = Image.find({cameraSn: camera._id});
+      const images = await Image.find({cameraSn: camera._id});
+      console.log('reMapImagesToDeps() - found images: ', images);
       for (const img of images) {
         const newDep = mapImageToDeployment(img, camera);
         if (img.deployment !== newDep) {
@@ -66,10 +67,12 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log('createDeployment() - creating deployment with input: ', input);
       const { cameraId, deployment } = input;
       try {
-        const camera = await this.getCameras([cameraId]);
+        let camera = await this.getCameras([cameraId]);
+        camera = camera[0];
+        console.log('createDeployment() - found camera: ', camera);
         camera.deployments.push(deployment);
         await camera.save();
-        await reMapImagesToDeps(camera);
+        await this.reMapImagesToDeps(camera);
         return camera;
       } catch (err) {
         throw new ApolloError(err);
@@ -94,7 +97,7 @@ const generateCameraModel = ({ user } = {}) => ({
         await camera.save();
         if (Object.keys(diffs).includes('startDate')) {
           console.log('updateDeployment() - startDate was changed, so remapping images to deps');
-          await reMapImagesToDeps(camera);
+          await this.reMapImagesToDeps(camera);
         }
         return camera;
       } catch (err) {
@@ -115,7 +118,7 @@ const generateCameraModel = ({ user } = {}) => ({
         ));
         camera.deployments = newDeps;
         await camera.save();
-        await reMapImagesToDeps(camera);
+        await this.reMapImagesToDeps(camera);
         return camera
       } catch (err) {
         throw new ApolloError(err);

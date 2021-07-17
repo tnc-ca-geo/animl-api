@@ -256,7 +256,9 @@ const hasRole = (userInfo, targetRoles = []) => {
 // TODO: accomodate user-created deployments with no startDate?
 const findDeployment = (image, camera) => {
   // find most recent deployment start date
-  const imgCreated = image.dateTimeOriginal;
+  const imgCreated = !moment.isMoment(image.dateTimeOriginal) 
+    ? moment(image.dateTimeOriginal)
+    : image.dateTimeOriginal;
   const defaultDep = camera.deployments.find((dep) => dep.name === 'default');
   
   let mostRecentDep = { deploymentId: null, timeElapsed: null };
@@ -280,6 +282,8 @@ const findDeployment = (image, camera) => {
 
 const mapImageToDeployment = (image, camera) => {
   console.log('mapImageToDeployment()');
+  console.log('image: ', image);
+  console.log('camera: ', camera)
 
   if (camera.deployments.length === 0) {
     throw new ApolloError('Camera has no deployments');
