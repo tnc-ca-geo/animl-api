@@ -206,8 +206,6 @@ const createImageRecord = (md) => {
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
   };
 
-  console.log('creating Image Record with md: ', md)
-
   const image = new Image({
     _id: md.hash,
     bucket: md.prodBucket,
@@ -232,8 +230,6 @@ const createImageRecord = (md) => {
 
 // TODO: accommodate users as label authors as well as models
 const createLabelRecord = (input, authorId) => {
-  console.log('createLabelRecord() - creating record with input: ', input);
-  console.log('and authroId: ', authorId)
   const label = {
     ...(input._id && { _id: input._id }),
     type: input.type,
@@ -281,20 +277,14 @@ const findDeployment = (image, camera) => {
 
 
 const mapImageToDeployment = (image, camera) => {
-  console.log('mapImageToDeployment()');
-  console.log('image: ', image);
-  console.log('camera: ', camera)
-
   if (camera.deployments.length === 0) {
     throw new ApolloError('Camera has no deployments');
   }
 
   if (camera.deployments.length === 1) {
-    console.log('only one deployment found on camera, returning it');
     return camera.deployments[0]._id;
   }
 
-  console.log('multiple deployments found on camera, finding most recent');
   const deploymentId = findDeployment(image, camera);
   return deploymentId;
 };

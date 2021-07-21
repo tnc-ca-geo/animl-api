@@ -42,14 +42,9 @@ const generateCameraModel = ({ user } = {}) => ({
     };
   },
 
-  // TODO: add remapImagesToDeployments(i)
-  //    get all images that belong to camera
-  //    iterate throught them, mapImageToDeployment, if different update image 
-
   reMapImagesToDeps: async (camera) => {
     try {
       const images = await Image.find({cameraSn: camera._id});
-      console.log('reMapImagesToDeps() - found images: ', images);
       for (const img of images) {
         const newDep = mapImageToDeployment(img, camera);
         if (img.deployment !== newDep) {
@@ -64,12 +59,10 @@ const generateCameraModel = ({ user } = {}) => ({
 
   get createDeployment() {
     return async (input, context) => {
-      console.log('createDeployment() - creating deployment with input: ', input);
       const { cameraId, deployment } = input;
       try {
         let camera = await this.getCameras([cameraId]);
         camera = camera[0];
-        console.log('createDeployment() - found camera: ', camera);
         camera.deployments.push(deployment);
         await camera.save();
         await this.reMapImagesToDeps(camera);
@@ -82,22 +75,21 @@ const generateCameraModel = ({ user } = {}) => ({
 
   get updateDeployment() {
     return async (input, context) => {
-      console.log('updateDeployment() - updating deployment with input: ', input);
       const { cameraId, deploymentId, diffs } = input;
       try {
-        const camera = await this.getCameras([cameraId]);
-        console.log('updateDeployment() - found the camera: ', camera);
+        let camera = await this.getCameras([cameraId]);
+        camera = camera[0];
         const deployment = camera.deployments.find((dep) => (
           dep._id.toString() === deploymentId.toString()
         ));
-        console.log('updateDeployment() - found the deployment: ', deployment);
-        for (let [key, newVal] of Object.entries(diffs)) {
-          deployment[key] = newVal;
-        }
-        await camera.save();
-        if (Object.keys(diffs).includes('startDate')) {
-          console.log('updateDeployment() - startDate was changed, so remapping images to deps');
-          await this.reMapImagesToDeps(camera);
+        if (deployment.name !== 'default') {
+          for (let [key, newVal] of Object.entries(diffs)) {
+            deployment[key] = newVal;
+          }
+          await camera.save();
+          if (Object.keys(diffs).includes('startDate')) {
+            await this.reMapImagesToDeps(camera);
+          }
         }
         return camera;
       } catch (err) {
@@ -108,13 +100,12 @@ const generateCameraModel = ({ user } = {}) => ({
 
   get deleteDeployment() {
     return async (input, context) => {
-      console.log('deleteDeployment() - deleting deployment with input: ', input);
       const { cameraId, deploymentId } = input;
       try {
-        const camera = await this.getCameras([cameraId]);
-        console.log('deleteDeployment() - found the camera: ', camera);
+        let camera = await this.getCameras([cameraId]);
+        camera = camera[0];
         const newDeps = camera.deployments.filter((dep) => (
-          dep._id.toString() === deploymentId.toString()
+          dep._id.toString() !== deploymentId.toString()
         ));
         camera.deployments = newDeps;
         await camera.save();

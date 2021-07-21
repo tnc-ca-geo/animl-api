@@ -20,7 +20,7 @@ const Mutation = {
 
     // create image record
     newImage = await context.models.Image.createImage(md, context);
-    return { image: newImage }; // return values must match payload schema
+    return { image: newImage };
   },
 
   createView: async (_, { input }, context) => {
