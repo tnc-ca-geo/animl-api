@@ -84,7 +84,7 @@ functions:
     reservedConcurrency: 10 # max number of lambdas to invoke at one time
     events:
       - eventBridge:
-          schedule: rate(5 minutes)
+          schedule: rate(1 minute)
       # - sqs:
       #     arn:
       #       Fn::GetAtt:
