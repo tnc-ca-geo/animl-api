@@ -25,6 +25,7 @@ let cachedSSMParams = null;
 
 const ssmNames = [
   `mongo-db-url-${process.env.STAGE}`,
+  `animl-frontend-url-${process.env.STAGE}`,
   `animl-api-url-${process.env.STAGE}`,
   `animl-images-url-${process.env.STAGE}`,
   `inference-queue-url-${process.env.STAGE}`,

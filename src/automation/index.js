@@ -9,6 +9,7 @@ const executeRule = {
   'run-inference': async (rule, payload, context) => {
     console.log(`executeRule['run-inference']() - Sending ${payload.image.originalFileName} to inference queue`);
 
+    // TODO: send MIRA requests to separate queue
     try {
       const models = await context.models.Model.getModels();
       const model = models.filter((m) => (
@@ -27,7 +28,8 @@ const executeRule = {
   'send-alert': async (rule, payload, context) => {
     console.log(`executeRule['send-alert']() - Sending ${payload.image.originalFileName} alert`);
     try {
-      return await sendEmail(rule, payload.image, context.config);
+      console.log('image data: ', payload.image);
+      return await sendEmail(rule, payload.image, context);
     } catch (err) {
       throw new ApolloError(err)
     }

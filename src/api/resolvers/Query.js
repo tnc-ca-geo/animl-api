@@ -3,7 +3,7 @@ const Query = {
     const count = await context.models.Image.countImages(args.input);
     const response = await context.models.Image.queryByFilter(args.input);
     const { previous, hasPrevious, next, hasNext, results } = response;
-    return {  // reurn ImageConnection 
+    return {  // reurn ImagesConnection 
       pageInfo: {
         previous,
         hasPrevious, 
@@ -15,27 +15,26 @@ const Query = {
     }
   },
 
-  // TODO: check how this is used &/or if it's necessary:
-  image: async (_, { _id }, context) => {
+  image: async (_, args, context) => {
     // Example role checking:
     // if (!context.user || !context.user.roles.includes('admin')) return null;
-    return context.models.Image.queryById(_id);
+    return await context.models.Image.queryById(args.input._id);
   },
 
   labels: async (_, __, context) => {
-    return context.models.Image.getLabels();
+    return await context.models.Image.getLabels();
   },
   
   cameras: async (_, { _ids }, context) => {
-    return context.models.Camera.getCameras(_ids);
+    return await context.models.Camera.getCameras(_ids);
   },
 
   views: async (_, { _ids }, context) => {
-    return context.models.View.getViews(_ids);
+    return await context.models.View.getViews(_ids);
   },
 
   models: async (_, { _ids }, context) => {
-    return context.models.Model.getModels(_ids);
+    return await context.models.Model.getModels(_ids);
   },
   
 };

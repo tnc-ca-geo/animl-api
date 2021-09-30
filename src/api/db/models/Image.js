@@ -4,6 +4,7 @@ const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
 const { labels } = require('../../resolvers/Query');
+const { __Directive } = require('graphql');
 
 const generateImageModel = ({ user } = {}) => ({
 

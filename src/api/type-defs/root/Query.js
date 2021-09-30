@@ -1,7 +1,7 @@
 module.exports = `
   type Query {
-    image(_id: ID!): Image
-    images(input: QueryImageInput!): ImageConnection
+    image(input: QueryImageInput!): Image
+    images(input: QueryImagesInput!): ImagesConnection
     labels: LabelList
     cameras(_ids: [String!]): [Camera]
     views(_ids: [String!]): [View]

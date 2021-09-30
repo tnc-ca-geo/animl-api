@@ -1,5 +1,5 @@
 module.exports = `
-  type ImageConnection {
+  type ImagesConnection {
     pageInfo: PageInfo
     images: [Image]!
   }`

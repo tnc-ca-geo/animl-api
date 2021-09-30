@@ -10,6 +10,7 @@ const DeleteObjectInput = require('./inputs/DeleteObjectInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 
 const QueryImageInput = require('./inputs/QueryImageInput');
+const QueryImagesInput = require('./inputs/QueryImagesInput');
 
 const UpdateDeploymentInput = require('./inputs/UpdateDeploymentInput');
 const UpdateLabelInput = require('./inputs/UpdateLabelInput');
@@ -39,7 +40,7 @@ const DeleteLabelPayload = require('./payloads/DeleteLabelPayload');
 const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
-const ImageConnection = require('./payloads/ImageConnection');
+const ImagesConnection = require('./payloads/ImagesConnection');
 
 const UpdateDeploymentPayload = require('./payloads/UpdateDeploymentPayload');
 const UpdateLabelPayload = require('./payloads/UpdateLabelPayload');
@@ -65,6 +66,7 @@ const typeDefStrings = [
   DeleteObjectInput,
   DeleteViewInput,
   QueryImageInput,
+  QueryImagesInput,
   UpdateDeploymentInput,
   UpdateLabelInput,
   UpdateObjectInput,
@@ -89,7 +91,7 @@ const typeDefStrings = [
   DeleteLabelPayload,
   DeleteObjectPayload,
   DeleteViewPayload,
-  ImageConnection,
+  ImagesConnection,
   UpdateDeploymentPayload,
   UpdateLabelPayload,
   UpdateObjectPayload,
