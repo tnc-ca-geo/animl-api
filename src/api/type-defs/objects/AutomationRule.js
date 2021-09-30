@@ -7,7 +7,7 @@ module.exports = `
   type AutomationAction {
     type: String!
     model: ID
-    alertRecipient: String
+    alertRecipients: [String]
   }
 
   type AutomationRule {

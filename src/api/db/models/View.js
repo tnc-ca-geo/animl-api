@@ -3,19 +3,6 @@ const moment = require('moment');
 const View = require('../schemas/View');
 const Model = require('../schemas/Model');
 
-
-const defaultViewConfig = {
-  name: 'All images',
-  filters: {},
-  description: `Default view of all images. This view is not editable.`,
-  editable: true,
-  automationRules: [{
-    event: { type: 'image-added' },
-    action: { type: 'run-inference', model: '60a3461723a5ffcc27fc8e34'},
-    name: 'Run Megadetector on all new images',
-  }],
-};
-
 const generateViewModel = ({ user } = {}) => ({
 
   createView: async (input) => {
@@ -32,11 +19,6 @@ const generateViewModel = ({ user } = {}) => ({
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
       const views = await View.find(query);
-      console.log('found views: ', views)
-      // if (!_ids && views.length === 0) {
-      //   defaultView = await this.createView(defaultViewConfig);
-      //   views.push(defaultView);
-      // }
       return views;
     } catch (err) {
       throw new ApolloError(err);

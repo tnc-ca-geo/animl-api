@@ -7,7 +7,7 @@ module.exports = `
   input AutomationActionInput {
     type: String!
     model: ID,
-    alertRecipient: String,
+    alertRecipients: [String],
   }
 
   input AutomationRuleInput {

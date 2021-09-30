@@ -11,7 +11,7 @@ let AutomationRuleSchema = new Schema({
     type: { type: String, enum: ['run-inference', 'send-alert'], required: true },
     // TODO: rename this modelId
     model: { type: Schema.Types.ObjectId, ref: 'Model' },
-    alertRecipient: { type: String },
+    alertRecipients: { type: [String] },
   },
 });
 

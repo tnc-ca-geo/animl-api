@@ -22,7 +22,7 @@ const makeEmail = async (rule, image, context) => {
   
     return {
       Destination: {
-        ToAddresses: [rule.action.alertRecipient],
+        ToAddresses: rule.action.alertRecipients,
       }, 
       Message: {
         Body: {
