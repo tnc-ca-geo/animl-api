@@ -13,7 +13,7 @@ const localConfig = {
     { id: 3, name: 'vehicle' },
   ],
   TIME_FORMATS: {
-    EXIF: 'YYYY:MM:DD hh:mm:ss',
+    EXIF: 'YYYY:MM:DD HH:mm:ss',
   },
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
 };

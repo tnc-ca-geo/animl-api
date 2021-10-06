@@ -44,14 +44,30 @@ const generateCameraModel = ({ user } = {}) => ({
 
   reMapImagesToDeps: async (camera) => {
     try {
-      const images = await Image.find({cameraSn: camera._id});
-      for (const img of images) {
-        const newDep = mapImageToDeployment(img, camera);
-        if (img.deployment !== newDep) {
-          img.deployment = newDep
-          await img.save();
+      // build array of operations from camera.deployments:
+      // for each deployment, build filter, update, then perform bulkWrite
+      let operations = [];
+      for (const [index, dep] of camera.deployments.entries()) {
+        const createdStart = dep.startDate ? dep.startDate : null;
+        const createdEnd = camera.deployments[index + 1] 
+          ? camera.deployments[index + 1].startDate
+          : null;
+
+        let filter = { cameraSn: camera._id };
+        if (createdStart || createdEnd) {
+          filter.dateTimeOriginal = {
+            ...(createdStart && { $gte: createdStart }),
+            ...(createdEnd && { $lt: createdEnd }),
+          }
         }
-      }
+        const update = { deployment: dep._id }
+        operations.push({
+          updateMany: { filter, update }
+        });
+      };
+
+      await Image.bulkWrite(operations);
+
     } catch (err) {
       throw new ApolloError(err);
     }
