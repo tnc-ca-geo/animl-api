@@ -27,8 +27,6 @@
     "mongo-cursor-pagination": "^7.3.1",
     "mongoose": "^5.10.3",
     "serverless-dotenv-plugin": "^3.0.0",
-    "serverless-offline": "^6.7.0",
-    "serverless-offline-sqs": "^4.1.1",
     "superagent": "^6.1.0"
   },
   "devDependencies": {

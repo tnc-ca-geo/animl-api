@@ -3,10 +3,6 @@ app: animl
 service: animl-api
 # variablesResolutionMode: 20210326
 
-plugins:
-  # - serverless-offline-sqs   # TODO: figure out serverless-offline-sqs
-  - serverless-offline
-
 provider:
   name: aws
   runtime: nodejs12.x
@@ -37,11 +33,7 @@ provider:
       Action:
         - secretsmanager:GetSecretValue
       Resource: "*"  
-
-  # Only necessary for private endpoints
   apiKeys:
-  #   # - name: lambdaApolloKey
-  #     # value: ${env:APOLLO_LAMBDA_KEY}
     - name: animlApiKeyInternal
       value: '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
 
