@@ -6,10 +6,10 @@ const Image = require('../schemas/Image');
 // TODO: this file is getting unwieldy, break up 
 
 const buildImgUrl = (image, config, size = 'original') => {
-  const url = config.ANIML_IMAGES_URL;
+  const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
-  return url + size + '/' + id + '-' + size + '.' + ext;
+  return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 };
 
 const buildFilter = ({
@@ -110,7 +110,7 @@ const sanitizeMetadata = (md, config) => {
       : key;
     sanitized[newKey] = md[key];
   }
-  const dto = moment(sanitized.dateTimeOriginal, config.TIME_FORMATS.EXIF);
+  const dto = moment(sanitized.dateTimeOriginal, config['TIME_FORMATS']['EXIF']);
   sanitized.dateTimeOriginal = dto;
   return sanitized;
 };

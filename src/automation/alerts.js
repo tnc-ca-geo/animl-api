@@ -5,7 +5,8 @@ const { buildImgUrl } = require('../api/db/models/utils');
 const ses = new SES({apiVersion: '2010-12-01'});
 
 const buildFrontendUrl = (image, config) => {
-  return `https://${config.ANIML_FRONTEND_URL}/?img=${image._id}`
+  const url = config['/FRONTEND/URL'];
+  return `https://${url}/?img=${image._id}`
 };
 
 const makeEmail = async (rule, image, context) => {
@@ -33,7 +34,7 @@ const makeEmail = async (rule, image, context) => {
           Data: `${rule.event.label} detected at ${deployment.name}`
         }
       }, 
-      Source: context.config.EMAIL_ALERT_SENDER, 
+      Source: context.config['EMAIL_ALERT_SENDER'], 
     };
   } catch (err) {
     throw new ApolloError(err);

@@ -26,9 +26,9 @@ async function requestCreateLabels(input, config) {
   `
   const variables = { input: input };
   try {
-    const graphQLClient = new GraphQLClient(config.ANIML_API_URL, {
+    const graphQLClient = new GraphQLClient(config['/API/URL'], {
       headers: {
-        'x-api-key': config.APIKEY,
+        'x-api-key': config['APIKEY'],
       },
     });
     const createLabelResponse = await graphQLClient.request(mutation, variables);
@@ -48,7 +48,7 @@ exports.inference = async (event, context) => {
     const config = await getConfig();
     console.log('Polling for messages...');
     const data = await sqs.receiveMessage({
-      QueueUrl: config.INFERENCE_QUEUE_URL,
+      QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
       MaxNumberOfMessages: 10,
       VisibilityTimeout: 10,
       WaitTimeSeconds: 20
@@ -82,7 +82,7 @@ exports.inference = async (event, context) => {
 
       // remove from queue
       await sqs.deleteMessage({
-        QueueUrl: config.INFERENCE_QUEUE_URL,
+        QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
         ReceiptHandle: message.ReceiptHandle /* required */
       }).promise();
     }

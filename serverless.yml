@@ -34,8 +34,8 @@ provider:
         - secretsmanager:GetSecretValue
       Resource: "*"  
   apiKeys:
-    - name: animlApiKeyInternal
-      value: '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
+    - name: animlApiKeyInternal-${self:provider.stage}
+      value: '{{resolve:secretsmanager:api-key-${self:provider.stage}:SecretString:apikey}}'
 
 functions:
   graphql:
@@ -87,6 +87,8 @@ functions:
 
 resources:
   Resources:
+
+    # Secrets Manager secret for API key 
     apiKey:
       Type: AWS::SecretsManager::Secret
       Properties:
@@ -94,7 +96,9 @@ resources:
         GenerateSecretString:
             GenerateStringKey: apikey
             SecretStringTemplate: '{"user": "api"}'
-        Name: api-key
+        Name: api-key-${self:provider.stage}
+
+    # Inference SQS queue
     inferenceQueue:
       Type: AWS::SQS::Queue
       Properties:
@@ -105,14 +109,40 @@ resources:
               - inferenceDeadLetterQueue
               - Arn
           maxReceiveCount: 5
+    
+    # Inference - dead-letter SQS queue
     inferenceDeadLetterQueue:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
-    # secretParam:
-    #   Type: "AWS::SSM::Parameter"
-    #   Properties:
-    #     Name: animl-api-key
-    #     Value: !Sub '{{resolve:secretsmanager:api-key:SecretString:apikey}}'
-    #     Type: String
+
+    # SSM Param - API URL
+    SSMParameterApiurl:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Animl API url
+        Name: /api/url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${opt:stage, self:provider.stage, 'dev'}/internal/
+
+    # SSM Param - inference queue url 
+    SSMParameterInferencequeue:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Inference queue url
+        Name: /ml/inference-queue-url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: !Ref inferenceQueue
+
+    # SSM Param - Megadetector API url
+    SSMParameterMegadetectorapiurl:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Megadetector API url
+        Name: /ml/megadetector-api-url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect'
+
+    # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
+    # contain secret keys so need to be created manually in the AWS console

@@ -179,7 +179,7 @@ const generateImageModel = ({ user } = {}) => ({
           const labelRecord = utils.createLabelRecord(label, authorId);
 
           if (objectId) {
-            console.log('objectId specified, so finding that object and saving label to it')
+            // objectId specified, so finding that object and saving label to it
             const object = image.objects.find((obj) => (
               obj._id.toString() === objectId.toString()
             ));

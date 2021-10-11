@@ -18,10 +18,10 @@ const runInference = {
     let res;
     try {
       res = await agent
-        .post(config.MEGADETECTOR_API_URL)
-        .query({ confidence: config.MEGADETECTOR_CONF_THRESHOLD })
+        .post(config['/ML/MEGADETECTOR_API_URL'])
+        .query({ confidence: config['MEGADETECTOR_CONF_THRESHOLD'] })
         .query({ render: 'false' })
-        .set('Ocp-Apim-Subscription-Key', config.MEGADETECTOR_API_KEY)
+        .set('Ocp-Apim-Subscription-Key', config['/ML/MEGADETECTOR_API_KEY'])
         .attach(image._id, imgBuffer, image._id + '.jpg');
     } catch (err) {
       throw err;
@@ -36,7 +36,7 @@ const runInference = {
       type: 'ml',
       bbox: det.slice(0, 4),
       conf: det[4],
-      category: config.MEGADETECTOR_CATEGORIES.filter((cat) => (
+      category: config['MEGADETECTOR_CATEGORIES'].filter((cat) => (
         cat.id === det[5]
       ))[0].name,
     }));
@@ -61,7 +61,7 @@ const runInference = {
     let res;
     try {
       res = await agent
-        .post(config.MIRA_API_URL)
+        .post(config['/ML/MIRA_API_URL'])
         .field('bbox', JSON.stringify(bbox))
         .attach('image', imgBuffer, image._id + '.jpg');
     } catch (err) {

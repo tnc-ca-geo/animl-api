@@ -23,15 +23,16 @@ const localConfig = {
 
 let cachedSSMParams = null;
 
+// TODO: Update all of these with new SSM param names
 const ssmNames = [
-  `mongo-db-url-${process.env.STAGE}`,
-  `animl-frontend-url-${process.env.STAGE}`,
-  `animl-api-url-${process.env.STAGE}`,
-  `animl-images-url-${process.env.STAGE}`,
-  `inference-queue-url-${process.env.STAGE}`,
-  `mira-api-url-${process.env.STAGE}`,
-  `megadetector-api-url`,
-  `megadetector-api-key`,
+  `/db/mongo-db-url-${process.env.STAGE}`,
+  `/frontend/url-${process.env.STAGE}`,
+  `/api/url-${process.env.STAGE}`,
+  `/images/url-${process.env.STAGE}`,
+  `/ml/inference-queue-url-${process.env.STAGE}`,
+  `/ml/mira-api-url-${process.env.STAGE}`,
+  `/ml/megadetector-api-url-${process.env.STAGE}`,
+  `/ml/megadetector-api-key`,
 ];
 
 const formatSSMParams = (ssmParams) => {
@@ -58,7 +59,7 @@ const getConfig = async function getConfig() {
     const ssmParams = await cachedSSMParams;
 
     const secretsResponse = await secrets.getSecretValue({
-        SecretId: 'api-key',
+        SecretId: `api-key-${process.env.STAGE}`,
     }).promise();
     const secret = JSON.parse(secretsResponse.SecretString || '{}');
     if (ssmParams.InvalidParameters.length > 0) {

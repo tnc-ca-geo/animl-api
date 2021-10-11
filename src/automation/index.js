@@ -17,7 +17,7 @@ const executeRule = {
       ))[0];
       const message = { model, ...payload };
       return await sqs.sendMessage({
-        QueueUrl: context.config.INFERENCE_QUEUE_URL,
+        QueueUrl: context.config['/ML/INFERENCE_QUEUE_URL'],
         MessageBody: JSON.stringify(message),
       }).promise();
     } catch (err) {
@@ -40,10 +40,11 @@ const handleEvent = async (payload, context) => {
   console.log(`automation.handleEvent() - Handling ${payload.image.originalFileName} event ${payload.event}`);
   try {
     const callstack = await utils.buildCallstack(payload, context);
-    console.log('automation.handleEvent() - callstack: ', callstack);
-    await Promise.all(callstack.map(async (rule) => (
-      await executeRule[rule.action.type](rule, payload, context)
-    )));
+    if (callstack.length > 0) {
+      await Promise.all(callstack.map(async (rule) => (
+        await executeRule[rule.action.type](rule, payload, context)
+      )));
+    }
   } catch (err) {
     throw new ApolloError(err);
   }

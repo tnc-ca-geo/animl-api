@@ -12,7 +12,11 @@ const includedInView = (image, view) => {
   }
   // check label filter
   if (filters.labels) {
-    const imgLabels = image.labels.map((label) => label.category);
+    let imgLabels = [];
+    for (const obj of image.objects) {
+      const labels = obj.labels.map((label) => label.category);
+      imgLabels = imgLabels.concat(labels);
+    }
     if (!imgLabels.length && !filters.labels.includes('none')) {
       // if the image has no labels, and filters.labels !include 'none', fail
       return false;
@@ -55,7 +59,8 @@ const includedInView = (image, view) => {
 const ruleApplies = (rule, event, label) => {
   if (rule.event.type === event) {
     // TODO: check whether this rule has already been run on this image
-    if ((rule.event.type === 'label-added' && rule.event.label === label.category) ||
+    if ((rule.event.type === 'label-added' && 
+        rule.event.label === label.category) ||
         rule.event.type === 'image-added') {
       return true;
     }
@@ -66,13 +71,13 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   const { event, image, label } = payload;
   const views = await context.models.View.getViews();
-  const callstack = views.reduce((callstack, view) => {
+  let callstack = views.reduce((applicableRules, view) => {
     if (includedInView(image, view) && view.automationRules.length > 0) {
       view.automationRules
         .filter((rule) => ruleApplies(rule, event, label))
-        .forEach((rule) => callstack.push(rule));
+        .forEach((rule) => applicableRules.push(rule));
     }
-    return callstack;
+    return applicableRules;
   }, []);
   return _.uniqWith(callstack, _.isEqual); // remove dupes
 };

@@ -12,7 +12,8 @@ module.exports.connectToDatabase = async function connectToDb(config) {
     // If no connection promise is cached, create a new one.
     // We cache the promise instead of the connection itself to prevent race 
     // conditions where connect is called more than once.
-    cachedConnectionPromise = mongoose.connect(config.MONGO_DB_URL, {
+    const uri = config['/DB/MONGO_DB_URL'];
+    cachedConnectionPromise = mongoose.connect(uri, {
       useCreateIndex: true,
       useNewUrlParser: true,
       useUnifiedTopology: true,

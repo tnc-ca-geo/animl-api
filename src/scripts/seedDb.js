@@ -1,8 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
-const { getConfig } = require('../../config/config');
-const { connectToDatabase } = require('../db/connect');
-const generateViewModel = require('../db/models/View');
-const generateModelModel = require('../db/models/Model');
+const { getConfig } = require('../config/config');
+const { connectToDatabase } = require('../api/db/connect');
+const generateViewModel = require('../api/db/models/View');
+const generateModelModel = require('../api/db/models/Model');
 
 let defaultModelsConfig = [
   {

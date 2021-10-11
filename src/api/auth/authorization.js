@@ -7,7 +7,7 @@ async function getUserInfo(req, config) {
     const api_key = req.headers['x-api-key'];
     // if x-api-key header is present, call was to /internal path
     // and was made by an internal lambda
-    if (api_key == config.APIKEY) {
+    if (api_key == config['APIKEY']) {
         return {
             "cognito:groups": [
               "animl_superuser"
