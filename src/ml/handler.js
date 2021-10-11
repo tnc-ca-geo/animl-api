@@ -6,7 +6,6 @@ const { SQS } = require('aws-sdk');
 const sqs = new SQS();
 
 async function requestCreateLabels(input, config) {
-  console.log('requesting create labels: ', input);
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
@@ -41,27 +40,21 @@ async function requestCreateLabels(input, config) {
 
 
 exports.inference = async (event, context) => {
-  console.log('ML worker waking up:', JSON.stringify(event, null, 2));
-
   // poll for messages
   try {
     const config = await getConfig();
-    console.log('Polling for messages...');
     const data = await sqs.receiveMessage({
       QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
       MaxNumberOfMessages: 10,
       VisibilityTimeout: 10,
       WaitTimeSeconds: 20
     }).promise();
-    console.log('response from queue: ', data);
     
     if (!data.Messages) {
-      console.log('no messages found. returning ');
       return; 
     }
     
     for (const message of data.Messages) {
-      console.log('message: ', message.Body);
       const { model, image, label } = JSON.parse(message.Body);
 
       // run inference
@@ -88,7 +81,6 @@ exports.inference = async (event, context) => {
     }
 
   } catch (err) {
-    console.log('error with inference worker');
     // TODO: do we throw a new error here or return one? Unclear how to ensure 
     // failure and keep message in the queue
     throw err;

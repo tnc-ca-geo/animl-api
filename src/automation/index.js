@@ -7,8 +7,6 @@ const sqs = new SQS();
 
 const executeRule = {
   'run-inference': async (rule, payload, context) => {
-    console.log(`executeRule['run-inference']() - Sending ${payload.image.originalFileName} to inference queue`);
-
     // TODO: send MIRA requests to separate queue
     try {
       const models = await context.models.Model.getModels();
@@ -21,14 +19,11 @@ const executeRule = {
         MessageBody: JSON.stringify(message),
       }).promise();
     } catch (err) {
-      console.log('error running inference: ', err);
       throw new ApolloError(err);
     }
   },
   'send-alert': async (rule, payload, context) => {
-    console.log(`executeRule['send-alert']() - Sending ${payload.image.originalFileName} alert`);
     try {
-      console.log('image data: ', payload.image);
       return await sendEmail(rule, payload.image, context);
     } catch (err) {
       throw new ApolloError(err)
@@ -37,7 +32,6 @@ const executeRule = {
 };
 
 const handleEvent = async (payload, context) => {
-  console.log(`automation.handleEvent() - Handling ${payload.image.originalFileName} event ${payload.event}`);
   try {
     const callstack = await utils.buildCallstack(payload, context);
     if (callstack.length > 0) {

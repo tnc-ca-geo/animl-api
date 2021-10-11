@@ -22,7 +22,6 @@ const resolvers = {
 
 const context = async ({ event: req }) => {
   const config = await getConfig();
-  console.log('config: ', config)
   const dbClient = await connectToDatabase(config);
 
   // Authorize user and pass into model generator functions

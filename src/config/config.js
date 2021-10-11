@@ -73,7 +73,6 @@ const getConfig = async function getConfig() {
     // const secretConfig = formatSSMParams(secret);
     return { ...localConfig, ...remoteConfig, ...secretConfig };
   } catch (err) {
-    console.log('error getting config: ', err);
     throw new ApolloError(err);
   }
 };

@@ -82,11 +82,6 @@ const buildFilter = ({
         'validation.validated': {$not: {$eq: false}}
       }}},
     ]};
-
-    // or the image has no objects
-    if (labels.includes('none')) {
-      console.log('labels incldues none, filter: ', labelsFilter);
-    }
   };
   
   return {
@@ -181,7 +176,7 @@ const isLabelDupe = (image, newLabel) => {
     const confMatch  = newLabel.conf === label.conf;
     const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
     if (modelMatch && labelMatch && confMatch && bboxMatch) {
-      console.log('this label has already been applied, skipping');
+      // label has already been applied, skipping
       return true;
     }
   }

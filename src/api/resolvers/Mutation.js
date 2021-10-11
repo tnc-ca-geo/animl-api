@@ -74,7 +74,6 @@ const Mutation = {
   },
 
   createDeployment: async (_, { input }, context) => {
-    console.log('createDeployment mutation firing with input: ', input);
     const camera = await context.models.Camera.createDeployment(input, context);
     return { camera: camera };
   },
