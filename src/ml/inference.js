@@ -4,8 +4,17 @@ const { buildImgUrl } = require('../api/db/models/utils');
 
 // get image from S3, read in as buffer of binary data
 const getImage = async (image, config) => {
+  console.log('getImage() firing: ', );
   const url = buildImgUrl(image, config)
-  const img = await agent.get(url);
+  let img;
+  try {
+    img = await agent.get(url).buffer(true);
+    console.log('img: ', img);
+    console.log('img.body: ', img.body);
+  } catch (err) {
+    console.log('error trying to get image from s3: ', err);
+    throw err;
+  }
   return Buffer.from(img.body, 'binary');
 }
 

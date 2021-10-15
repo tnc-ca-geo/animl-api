@@ -66,7 +66,6 @@ const generateImageModel = ({ user } = {}) => ({
 
   createImage: async (md, context) => {
     try {
-      console.log('createImage() - createImage in Image.model firing ')
       // const md = utils.sanitizeMetadata(input.md, context.config);
       const newImage = utils.createImageRecord(md);
       await newImage.save();
@@ -86,32 +85,8 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  // get updateObjects() {
-  //   return async (input, context) => {
-  //     const { imageId, objects } = input;
-  //     try {
-  //       const image = await this.queryById(imageId);
-  //       console.log('updating objects on image: ', image.originalFileName);
-  //       console.log('new objects: ', objects);
-  //       objects.forEach((object) => {
-  //         console.log('new labels: ', object.labels);
-  //         object.labels.forEach((label) => {
-  //           console.log('label: ', label);
-  //           console.log('validation: ', label.validation)
-  //         })
-  //       });
-  //       image.objects = objects;
-  //       await image.save();
-  //       return image;
-  //     } catch (err) {
-  //       throw new ApolloError(err);
-  //     }
-  //   }
-  // },
-
   get createObject() {
     return async (input, context) => {
-      console.log('createObject() - creating object with input: ', input);
       const { imageId, object } = input;
       try {
         const image = await this.queryById(imageId);
@@ -126,15 +101,12 @@ const generateImageModel = ({ user } = {}) => ({
 
   get updateObject() {
     return async (input, context) => {
-      console.log('updateObject() - updating object with input: ', input);
       const { imageId, objectId, diffs } = input;
       try {
         const image = await this.queryById(imageId);
-        console.log('updateObject() - found the image: ', image);
         const object = image.objects.find((obj) => (
           obj._id.toString() === objectId.toString()
         ));
-        console.log('updateObject() - found the object: ', object);
         for (let [key, newVal] of Object.entries(diffs)) {
           object[key] = newVal;
         }
@@ -148,7 +120,6 @@ const generateImageModel = ({ user } = {}) => ({
 
   get deleteObject() {
     return async (input, context) => {
-      console.log('deleteObject() - deleting object with input: ', input);
       const { imageId, objectId } = input;
       try {
         const image = await this.queryById(imageId);
@@ -166,7 +137,6 @@ const generateImageModel = ({ user } = {}) => ({
 
   get createLabels() {
     return async (input, context) => {
-      console.log('createLabels() - creating labels firing with input: ', input);
       const { imageId, objectId, labels } = input;
       try {
         const image = await this.queryById(imageId);
@@ -213,7 +183,6 @@ const generateImageModel = ({ user } = {}) => ({
             }, context);
           }
         }
-        console.log(`createLabels success. Returning`);
         return image;
       } catch (err) {
         throw new ApolloError(err);
