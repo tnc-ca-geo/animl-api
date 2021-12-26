@@ -10,6 +10,9 @@
     "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
     "seed-db-dev": "STAGE=dev npm run seed-db",
     "seed-db-prod": "STAGE=prod npm run seed-db",
+    "export-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/exportDb.js",
+    "export-db-dev": "STAGE=dev npm run export-db",
+    "export-db-prod": "STAGE=prod npm run export-db",
     "update-docs": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/updateDocuments.js",
     "update-docs-dev": "STAGE=dev npm run update-docs",
     "update-docs-prod": "STAGE=prod npm run update-docs",
@@ -19,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "apollo-server-errors": "^2.5.0",
+    "app-root-path": "^3.0.0",
     "aws-sdk": "^2.834.0",
     "graphql": "^15.5.0",
     "graphql-request": "^3.4.0",
