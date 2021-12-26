@@ -46,9 +46,7 @@ const generateImageModel = ({ user } = {}) => ({
       const categoriesAggregate = await Image.aggregate([
         {$unwind: '$objects'},
         {$unwind: '$objects.labels'},
-        {$match: {'objects.labels.validation.validated': {
-          $not: {$eq: false}}}
-        },
+        {$match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
         {$group: {_id: null, uniqueCategories: {
           $addToSet: "$objects.labels.category"
         }}}
@@ -149,7 +147,8 @@ const generateImageModel = ({ user } = {}) => ({
           const labelRecord = utils.createLabelRecord(label, authorId);
 
           if (objectId) {
-            // objectId specified, so finding that object and saving label to it
+            // objectId specified, 
+            //so finding that object and saving label to it
             const object = image.objects.find((obj) => (
               obj._id.toString() === objectId.toString()
             ));

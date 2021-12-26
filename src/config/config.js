@@ -3,7 +3,9 @@ const { SSM, SecretsManager } = require('aws-sdk');
 const ssm = new SSM({ region: process.env.REGION });
 const secrets = new SecretsManager({ region: process.env.REGION });
 
-// Local config values
+/* 
+ *  Local config values
+ */
 
 const localConfig = {
   MEGADETECTOR_CONF_THRESHOLD: 0.8,
@@ -18,8 +20,10 @@ const localConfig = {
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
 };
 
-// Remote config values & secrets to be fetched 
-// from SSM Parameter Store
+/* 
+ *  Remote config values & secrets to be fetched 
+ *  from SSM Parameter Store
+ */
 
 let cachedSSMParams = null;
 
