@@ -1,4 +1,18 @@
-// TODO: specify list of collections in config somewhere
+// TODO: fetch config
 
-// TODO: Iterate through collections, run the following command for each
-// mongoimport --uri mongodb+srv://animlDB:<PASSWORD>@cluster0.bqyly.mongodb.net/animl-dev --collection images --type json --file ./animl-dev-images.json --mode=upsert
+// TODO: prompt user - Importing data will overwrite existing data and cannot be undone. Create a backup before importing?
+  // if yes, export backup
+
+// TODO: prompt user for path to json backups folder,
+  // validate w/ fs.existsSync and check that there are .json files in it
+
+// TODO: prompt user - import multiple collections or single collection? 
+
+// TODO: if single collection, prompt user for name of collection
+
+// TODO: prompt user for mode? upsert v/ insert?
+
+// TODO: prompt user - last warning. Continue Y/N?
+
+// TODO: Iterate through collections to import and execute the following:
+  // mongoimport --uri mongodb+srv://animlDB:<PASSWORD>@cluster0.bqyly.mongodb.net/<DATABASE> --collection <DATABASE> --type json --file <FILE> --mode=upsert
