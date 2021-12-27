@@ -30,6 +30,7 @@
     "graphql-yoga": "^1.18.3",
     "jwt-simple": "^0.5.6",
     "lodash": "^4.17.20",
+    "luxon": "^2.2.0",
     "moment": "^2.27.0",
     "mongo-cursor-pagination": "^7.3.1",
     "mongoose": "^5.10.3",
