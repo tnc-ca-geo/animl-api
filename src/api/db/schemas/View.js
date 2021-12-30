@@ -24,6 +24,7 @@ let FiltersSchema = new Schema({
   addedStart: { type: Date },
   addedEnd: { type: Date },
   reviewed: { type: Boolean },
+  custom: { type: String },
 });
 
 let ViewSchema = new Schema({

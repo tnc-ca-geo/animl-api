@@ -8,5 +8,6 @@ module.exports = `
     addedStart: Date
     addedEnd: Date
     reviewed: Boolean
+    custom: String
   }
 `;

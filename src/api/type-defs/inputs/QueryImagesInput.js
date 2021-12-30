@@ -13,4 +13,5 @@ module.exports = `
     deployments: [String!]
     labels: [String]
     reviewed: Boolean
+    custom: String
   }`;

@@ -33,6 +33,7 @@
     "luxon": "^2.2.0",
     "moment": "^2.27.0",
     "mongo-cursor-pagination": "^7.3.1",
+    "mongodb-query-parser": "^2.4.3",
     "mongoose": "^5.10.3",
     "prompt": "^1.2.0",
     "serverless-dotenv-plugin": "^3.0.0",

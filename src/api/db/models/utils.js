@@ -1,6 +1,7 @@
 const moment = require('moment');
 const _ = require('lodash');
-const ObjectId = require('mongoose').Types.ObjectId; 
+const ObjectId = require('mongoose').Types.ObjectId;
+const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
 
 // TODO: this file is getting unwieldy, break up 
@@ -21,6 +22,7 @@ const buildFilter = ({
   addedEnd,
   labels,
   reviewed,
+  custom,
 }) => {
 
   let camerasFilter = {};
@@ -82,7 +84,14 @@ const buildFilter = ({
         'validation.validated': {$not: {$eq: false}}
       }}},
     ]};
-  };
+  }
+
+  let customFilter = {};
+  if (custom) {
+    customFilter = parser.isFilterValid(custom);
+  }
+
+
   
   return {
     ...camerasFilter,
@@ -91,6 +100,7 @@ const buildFilter = ({
     ...dateAddedFilter,
     ...reviewedFilter,
     ...labelsFilter,
+    ...customFilter,
   };
 };
 
