@@ -105,3 +105,26 @@ npm run deploy-dev
 ```
 npm run deploy-prod
 ```
+
+## `Data managment`
+There are a handful of scripts in the `src/scripts/` directory to assist with 
+managing data in both the production and dev databases.
+
+### `Creating backups`
+To create a complete JSON export of all collections in a DB, run:
+```
+npm run export-db-dev   // export dev db
+npm run export-db-prod  // export prod db
+```
+
+### `Importing data from a backups`
+TODO: write and test `importDb.js`
+
+### `Updating documents in MongoDB`
+`updateDocuments.js` is a working template for writing targeted data updates. 
+It can be adapted to perform specific deletions/updates. You can run it with 
+the following: 
+```
+npm run update-docs-dev   // update dev db
+npm run update-docs-prod  // update prod db
+```

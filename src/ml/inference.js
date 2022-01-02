@@ -9,8 +9,6 @@ const getImage = async (image, config) => {
   let img;
   try {
     img = await agent.get(url).buffer(true);
-    console.log('img: ', img);
-    console.log('img.body: ', img.body);
   } catch (err) {
     console.log('error trying to get image from s3: ', err);
     throw err;
@@ -65,7 +63,6 @@ const runInference = {
     const { model, image, label, config } = params;
     console.log(`requesting inference from ${model.name} on image: ${image.originalFileName}`);
     const imgBuffer = await getImage(image, config);
-    console.log(`label: `, label)
     const bbox = label.bbox ? label.bbox : [0,0,1,1];
     let res;
     try {
