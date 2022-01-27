@@ -1,4 +1,5 @@
 const utils = require('../db/models/utils');
+const retry = utils.retryWrapper;
 
 // TODO: Split this out by entity type
 
@@ -10,7 +11,7 @@ const Mutation = {
     const cameraSn = md.serialNumber;
     const existingCam = await context.models.Camera.getCameras([cameraSn]);
     const newCam = (existingCam.length === 0)
-      ? await context.models.Camera.createCamera(md)
+      ? await retry(context.models.Camera.createCamera, md)
       : null;
 
     // if existing cam, find deployment
@@ -19,22 +20,22 @@ const Mutation = {
       : utils.mapImageToDeployment(md, existingCam[0]);
 
     // create image record
-    newImage = await context.models.Image.createImage(md, context);
+    newImage = await retry(context.models.Image.createImage, md, context);
     return { image: newImage };
   },
 
   createView: async (_, { input }, context) => {
-    const newView = await context.models.View.createView(input);
+    const newView = await retry(context.models.View.createView, input);
     return { view: newView };
   },
 
   updateView: async (_, { input }, context) => {
-    const view = await context.models.View.updateView(input);
+    const view = await retry(context.models.View.updateView, input);
     return { view: view };
   },
 
   deleteView: async (_, { input }, context) => {
-    const res = await context.models.View.deleteView(input);
+    const res = await retry(context.models.View.deleteView, input);
     return { success: res.ok, viewId: input._id};
   },
 
@@ -44,47 +45,63 @@ const Mutation = {
   // },
 
   createObject: async (_, { input }, context) => {
-    const image = await context.models.Image.createObject(input);
+    const image = await retry(context.models.Image.createObject, input);
     return { image: image };
   },
 
   updateObject: async (_, { input }, context) => {
-    const image = await context.models.Image.updateObject(input);
+    const image = await retry(context.models.Image.updateObject, input);
     return { image: image };
   },
 
   deleteObject: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteObject(input);
+    const image = await retry(context.models.Image.deleteObject, input);
     return { image: image };
   },
 
   createLabels: async (_, { input }, context) => {
-    const image = await context.models.Image.createLabels(input, context);
+    const image = await retry(
+      context.models.Image.createLabels,
+      input,
+      context
+    );
     return { image: image };
   },
 
   updateLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.updateLabel(input);
+    const image = await retry(context.models.Image.updateLabel, input);
     return { image: image };
   },
 
   deleteLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteLabel(input);
+    const image = await retry(context.models.Image.deleteLabel, input);
     return { image: image };
   },
 
   createDeployment: async (_, { input }, context) => {
-    const camera = await context.models.Camera.createDeployment(input, context);
+    const camera = await retry(
+      context.models.Camera.createDeployment,
+      input,
+      contex
+    );
     return { camera: camera };
   },
 
   updateDeployment: async (_, { input }, context) => {
-    const camera = await context.models.Camera.updateDeployment(input, context);
+    const camera = await retry(
+      context.models.Camera.updateDeployment,
+      input,
+      context
+    );
     return { camera: camera };
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const camera = await context.models.Camera.deleteDeployment(input, context);
+    const camera = await retry(
+      context.models.Camera.deleteDeployment,
+      input,
+      context
+    );
     return { camera: camera };
   },
 

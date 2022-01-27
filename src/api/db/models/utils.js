@@ -3,8 +3,19 @@ const _ = require('lodash');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
+const retry = require('async-retry');
+
 
 // TODO: this file is getting unwieldy, break up 
+
+const retryWrapper = (fn, input, context) => {
+  return retry(async (bail, attempt) => {
+    if (attempt > 1) {
+      console.log(`Retrying operation! Attempt #: ${attempt}`);
+    }
+    return await fn(input, context);
+  }, { retries: 3 });
+}
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config['/IMAGES/URL'];
@@ -303,4 +314,5 @@ module.exports = {
   createLabelRecord,
   hasRole,
   mapImageToDeployment,
+  retryWrapper,
 };

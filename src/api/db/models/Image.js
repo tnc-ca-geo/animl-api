@@ -102,9 +102,13 @@ const generateImageModel = ({ user } = {}) => ({
       const { imageId, objectId, diffs } = input;
       try {
         const image = await this.queryById(imageId);
+        console.log(`Found image, version number: ${image.__v}`);
         const object = image.objects.find((obj) => (
           obj._id.toString() === objectId.toString()
         ));
+        if (!object) {
+          throw `Could not find object "${objectId}" on image "${imageId}"`;
+        }
         for (let [key, newVal] of Object.entries(diffs)) {
           object[key] = newVal;
         }
