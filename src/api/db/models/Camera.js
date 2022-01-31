@@ -48,7 +48,7 @@ const generateCameraModel = ({ user } = {}) => ({
       // for each deployment, build filter, update, then perform bulkWrite
       let operations = [];
       for (const [index, dep] of camera.deployments.entries()) {
-        const createdStart = dep.startDate ? dep.startDate : null;
+        const createdStart = dep.startDate || null;
         const createdEnd = camera.deployments[index + 1] 
           ? camera.deployments[index + 1].startDate
           : null;
@@ -61,9 +61,7 @@ const generateCameraModel = ({ user } = {}) => ({
           }
         }
         const update = { deployment: dep._id }
-        operations.push({
-          updateMany: { filter, update }
-        });
+        operations.push({ updateMany: { filter, update } });
       };
 
       await Image.bulkWrite(operations);

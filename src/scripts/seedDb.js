@@ -1,6 +1,7 @@
 const { ApolloError } = require('apollo-server-errors');
 const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('../api/db/connect');
+const generateProjectModel = require('../api/db/models/Project');
 const generateViewModel = require('../api/db/models/View');
 const generateModelModel = require('../api/db/models/Model');
 
@@ -38,6 +39,13 @@ let defaultViewsConfig = [{
   }],
 }];
 
+let defaultProjectsConfig = [{
+  _id: 'default_project',
+  name: 'Default project',
+  description: 'Default project',
+  timezone: 'America/Los_Angeles',
+}];
+
 function getDefaultModelId(defaultModelsConfig, newModelRecords) {
   const defaultModelConfig = defaultModelsConfig.find((model) => (
     model.defaultModel
@@ -56,46 +64,77 @@ async function createDefaultViews(params) {
     defaultViewsConfig,
     defaultModelsConfig,
   } = params;
-  let newViewRecords = [];
 
+  console.log('Creaing default views...');
   const existingViews = await dbModels.View.getViews();
-  if (existingViews.length === 0) {
-    for (const view of defaultViewsConfig) {
-      if (view.name === 'All images') {
-        console.log('default view automation rules: ', view.automationRules)
-        const modelId = getDefaultModelId(defaultModelsConfig, newModelRecords);
-        view.automationRules[0].action.model = modelId;
-      }
-      try {
-        const newViewRecord = await dbModels.View.createView(view);
-        newViewRecords.push(newViewRecord);
-      } catch (err) {
-        throw new ApolloError(err);
-      }
-    }
-    console.log('Successfully created new View records: ', newViewRecords);
+  if (existingViews.length !== 0) {
+    console.log('Found exising views in db; skipping: ', existingViews);
+    return;
   }
+
+  let newViewRecords = [];
+  for (const view of defaultViewsConfig) {
+    if (view.name === 'All images') {
+      console.log('default view automation rules: ', view.automationRules)
+      const modelId = getDefaultModelId(defaultModelsConfig, newModelRecords);
+      view.automationRules[0].action.model = modelId;
+    }
+    try {
+      const newViewRecord = await dbModels.View.createView(view);
+      newViewRecords.push(newViewRecord);
+    } catch (err) {
+      throw new ApolloError(err);
+    }
+  }
+  console.log('Successfully created new View records: ', newViewRecords);
   return newViewRecords;
 };
 
 async function createDefaultModels(params) {
   const { dbModels, defaultModelsConfig } = params;
-  let newModelRecords = [];
   
+  console.log('Creaing default models...');
   const existingModels = await dbModels.Model.getModels();
-  console.log('exising models found in db: ', existingModels);
-  if (existingModels.length === 0) {
-    for (const mlModel of defaultModelsConfig) {
-      try {
-        const newModelRecord = await dbModels.Model.createModel(mlModel);
-        newModelRecords.push(newModelRecord);
-      } catch (err) {
-        throw new ApolloError(err);
-      }
-    }
-    console.log('Successfully created new Model records: ', newModelRecords);
+  if (existingModels.length !== 0) {
+    console.log('Found exising models in db; skipping: ', existingModels);
+    return;
   }
+
+  let newModelRecords = [];
+  for (const mlModel of defaultModelsConfig) {
+    try {
+      const newModelRecord = await dbModels.Model.createModel(mlModel);
+      newModelRecords.push(newModelRecord);
+    } catch (err) {
+      throw new ApolloError(err);
+    }
+  }
+  console.log('Successfully created new Model records: ', newModelRecords);
   return newModelRecords;
+};
+
+async function createDefaultProjects(params) {
+  const { dbModels, defaultProjectsConfig } = params;
+  
+  console.log('Creaing default projects...');
+  const existingProjects = await dbModels.Project.getProjects();
+  if (existingProjects.length !== 0) {
+    console.log('Found exising projects in db; skipping: ', existingProjects);
+    return;
+  }
+
+  let newProjectRecords = [];
+  for (const project of defaultProjectsConfig) {
+    try {
+      const newProjectRecord = await dbModels.Project.createProject(project);
+      newProjectRecords.push(newProjectRecord);
+    } catch (err) {
+      throw new ApolloError(err);
+    }
+  }
+
+  console.log('Successfully created new Project records: ', newProjectRecords);
+  return newProjectRecords;
 };
 
 async function seedDB() {
@@ -104,9 +143,16 @@ async function seedDB() {
 
   try {
     const dbModels = {
+      Project: generateProjectModel(),
       View: generateViewModel(),
       Model: generateModelModel(),
     };
+
+    // create default project records
+    const newProjectRecords = await createDefaultProjects({
+      dbModels,
+      defaultProjectsConfig,
+    });
   
     // create default ml model records
     const newModelRecords = await createDefaultModels({
