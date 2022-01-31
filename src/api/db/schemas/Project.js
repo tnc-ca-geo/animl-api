@@ -6,6 +6,7 @@ let ProjectSchema = new Schema({
   name: { type: String, required: true },
   timezone: { type: String, default: 'America/Los_Angeles', required: true },
   description: { type: String },
+  registeredCameras: { type: [{ type: String, required: true, ref: 'Camera' }] },
 });
 
 module.exports = mongoose.model('Project', ProjectSchema);
