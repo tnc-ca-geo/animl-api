@@ -9,7 +9,7 @@ const { __Directive } = require('graphql');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    const query = utils.buildFilter(input);
+    const query = utils.buildFilter(input, user);
     const count = await Image.where(query).countDocuments();
     return count;
   },
@@ -26,7 +26,7 @@ const generateImageModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
     try {
       const options = {
-        query: utils.buildFilter(input),
+        query: utils.buildFilter(input, user),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,

@@ -33,6 +33,7 @@ let ImageSchema = new Schema({
     ref: 'Deployment',
     required: true,
   },
+  project: { type: String, required: true, ref: 'Project' },
 });
 
 ImageSchema.index(

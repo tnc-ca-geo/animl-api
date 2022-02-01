@@ -50,7 +50,9 @@ async function updateDocuments() {
 
     // TODO: create backup of db with exportDb.js
 
-    const query = { 'objects.labels': { $size: 0 } };
+    // const query = { 'objects.labels': { $size: 0 } };
+    const query = {};
+
     const matchingImageIds = await Image.find(query).select('_id');
     const matchCount = matchingImageIds.length
     console.log('number of images w/ accidental objects: ', matchCount);
@@ -64,11 +66,14 @@ async function updateDocuments() {
     const { confirmation } = await prompt.get(property);
     if (confirmation === 'yes' || confirmation === 'y') {
 
-      console.log('Removing objects with empty labels arrays...');
-      const res = await Image.updateMany(
-        { },
-        { $pull: { objects: { labels: { $size: 0} } } }
-      );
+      // console.log('Removing objects with empty labels arrays...');
+      // const res = await Image.updateMany(
+      //   { },
+      //   { $pull: { objects: { labels: { $size: 0} } } }
+      // );
+
+      console.log('Associating all images with sci_biosecurity project...');
+      const res = await Image.updateMany({}, { project: 'sci_biosecurity' });
       console.log('res: ', res);
       await createLogFile('images', matchingImageIds);
     }

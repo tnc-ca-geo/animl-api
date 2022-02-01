@@ -34,7 +34,9 @@ const buildFilter = ({
   labels,
   reviewed,
   custom,
-}) => {
+}, user) => {
+
+  let projectFilter = {'project': user['selected_project'] };
 
   let camerasFilter = {};
   if (cameras) {
@@ -101,10 +103,9 @@ const buildFilter = ({
   if (custom) {
     customFilter = parser.isFilterValid(custom);
   }
-
-
   
   return {
+    ...projectFilter,
     ...camerasFilter,
     ...deploymentsFilter,
     ...dateCreatedFilter,
