@@ -57,7 +57,8 @@ functions:
     - http:
         path: /external
         method: post
-        cors: true
+        cors:
+          headers: '*'
         authorizer:
             name: CognitoAuthN
             type: COGNITO_USER_POOLS
