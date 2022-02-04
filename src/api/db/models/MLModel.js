@@ -1,31 +1,31 @@
 const { ApolloError } = require('apollo-server-errors');
-const Model = require('../schemas/Model');
+const MLModel = require('../schemas/MLModel');
 const utils = require('./utils');
 
-const generateModelModel = ({ user } = {}) => ({
+const generateMLModelModel = ({ user } = {}) => ({
 
-  getModels: async (_ids) => {
+  getMLModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
-      const models = await Model.find(query);
-      return models;
+      const mlModels = await MLModel.find(query);
+      return mlModels;
     } catch (err) {
       throw new ApolloError(err);
     }
   },
 
-  createModel: async (model) => {
+  createMLModel: async (mlModel) => {
     // if (!hasRole(user, ['animl_superuser'])) {
     //   return null;
     // }
-    console.log(`Creating new ml model record for  - ${model.name}`);
+    console.log(`Creating new ml model record for  - ${mlModel.name}`);
     try {
-      const newModel = new Model({
-        name: model.name,
-        version: model.version,
-        ...(model.description && { description: model.description }),
-        ...(model.renderThreshold && { renderThreshold: model.renderThreshold }),
-        ...(model.categories && { categories: model.categories }),
+      const newModel = new MLModel({
+        name: mlModel.name,
+        version: mlModel.version,
+        ...(mlModel.description && { description: mlModel.description }),
+        ...(mlModel.renderThreshold && { renderThreshold: mlModel.renderThreshold }),
+        ...(mlModel.categories && { categories: mlModel.categories }),
       });
       await newModel.save();
       return newModel;
@@ -36,7 +36,7 @@ const generateModelModel = ({ user } = {}) => ({
 
  });
 
- module.exports = generateModelModel;
+ module.exports = generateMLModelModel;
 
 // TODO: pass user into model generators to perform authorization at the
 // data fetching level. e.g.:

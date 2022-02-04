@@ -34,7 +34,7 @@ const Query = {
   },
 
   models: async (_, { _ids }, context) => {
-    return await context.models.Model.getModels(_ids);
+    return await context.models.MLModel.getMLModels(_ids);
   },
   
 };

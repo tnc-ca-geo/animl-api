@@ -1,7 +1,5 @@
 const { ApolloError } = require('apollo-server-errors');
-const moment = require('moment');
 const View = require('../schemas/View');
-const Model = require('../schemas/Model');
 
 const generateViewModel = ({ user } = {}) => ({
 

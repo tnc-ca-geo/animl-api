@@ -3,7 +3,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const PointSchema = new Schema({
+let PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
   coordinates: { type: [Number], required: true },
 });
@@ -17,8 +17,8 @@ let LocationSchema = new Schema({
 
 /*
  * ValidationSchema
- * validated - the prediction was validated by a user
- *   (true = correct prediction, false = incorrect prediction)
+ *    validated - the prediction was validated by a user (null = not validated,
+ *                true = correct prediction, false = incorrect prediction)
  */
 
 let ValidationSchema = new Schema({
@@ -29,9 +29,9 @@ let ValidationSchema = new Schema({
 
 /*
  * LabelSchema
- * category - the actual label (e.g. "skunk")
- * conf - confidence of prediction
- * bbox - [x, y, boxWidth, boxHeight], normalized
+ *    category - the actual label (e.g. "skunk")
+ *    conf - confidence of prediction
+ *    bbox - [x, y, boxWidth, boxHeight], normalized
  */
 
 let LabelSchema = new Schema({
@@ -41,17 +41,19 @@ let LabelSchema = new Schema({
   bbox: { type: [Number] },
   labeledDate: { type: Date, default: Date.now, required: true },
   validation: { type: ValidationSchema },
-  modelId: { type: Schema.Types.ObjectId, ref: 'Model' }, // if type === 'ml'
+  // NEW - now using model name as ID and updated 'model' to 'mlModel'
+  mlModel: { type: 'String', ref: 'Model' }, // if type === 'ml'
+  mlModelVersion: { type: 'String' }, // NEW
   userId: { type: String }, // if type === 'manual'
 });
 
 /*
  * ObjectSchema
- * bbox - [x, y, boxWidth, boxHeight], normalized
- * locked - a user has reviewed the labels and validated at least one. 
- *   the most recently added validated label is considered the most 
- *   accurate. No single-click editing of catagory or bbox allowed unless
- *   first unlocked.
+ *    bbox - [x, y, boxWidth, boxHeight], normalized
+ *    locked - a user has reviewed the labels and validated at least one. 
+ *             The most recently added validated label is considered the most 
+ *             accurate. No single-click editing of catagory or bbox allowed 
+ *             unless first unlocked.
  */
 
 let ObjectSchema = new Schema({

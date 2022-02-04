@@ -5,7 +5,7 @@ const generateProjectModel = require('./db/models/Project');
 const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
-const generateModelModel = require('./db/models/Model');
+const generateMLModelModel = require('./db/models/MLModel');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
 const Fields = require('./resolvers/Fields');
@@ -42,7 +42,7 @@ const context = async ({ event: req }) => {
       View: generateViewModel({ user }),
       Image: generateImageModel({ user }),
       Camera: generateCameraModel({ user }),
-      Model: generateModelModel({ user }),
+      MLModel: generateMLModelModel({ user }),
     },
   };
 };

@@ -298,12 +298,9 @@ const mapImageToDeployment = (image, camera) => {
     throw new ApolloError('Camera has no deployments');
   }
 
-  if (camera.deployments.length === 1) {
-    return camera.deployments[0]._id;
-  }
-
-  const deploymentId = findDeployment(image, camera);
-  return deploymentId;
+  return (camera.deployments.length === 1) 
+    ? camera.deployments[0]._id 
+    : findDeployment(image, camera);
 };
 
 module.exports = {

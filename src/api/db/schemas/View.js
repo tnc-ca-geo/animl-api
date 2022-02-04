@@ -9,8 +9,8 @@ let AutomationRuleSchema = new Schema({
   },
   action: {
     type: { type: String, enum: ['run-inference', 'send-alert'], required: true },
-    // TODO: rename this modelId
-    model: { type: Schema.Types.ObjectId, ref: 'Model' },
+    // NEW - now using model name as ID and updated 'model' to 'mkModel'
+    mlModel: { type: String, ref: 'MLModel' },
     alertRecipients: { type: [String] },
   },
 });
@@ -32,7 +32,7 @@ let ViewSchema = new Schema({
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
   editable: { type: Boolean },
-  automationRules: { type: [AutomationRuleSchema]}
+  automationRules: { type: [AutomationRuleSchema] }
 });
 
 module.exports = mongoose.model('View', ViewSchema);

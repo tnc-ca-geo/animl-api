@@ -3,9 +3,11 @@ const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('../api/db/connect');
 const generateProjectModel = require('../api/db/models/Project');
 const generateViewModel = require('../api/db/models/View');
-const generateModelModel = require('../api/db/models/Model');
+const generateMLModelModel = require('../api/db/models/MLModel');
 
-let defaultModelsConfig = [
+// TODO AUTH - this whole thing needs updating to reflect new schema changes
+
+let defaultMLModelsConfig = [
   {
     name: 'megadetector',
     version: 'v4.1',
@@ -47,7 +49,7 @@ let defaultProjectsConfig = [{
 }];
 
 function getDefaultModelId(defaultModelsConfig, newModelRecords) {
-  const defaultModelConfig = defaultModelsConfig.find((model) => (
+  const defaultModelConfig = defaultMLModelsConfig.find((model) => (
     model.defaultModel
   ));
   const defaultModelId = newModelRecords.find((model) => (

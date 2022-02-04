@@ -8,6 +8,8 @@ const secrets = new SecretsManager({ region: process.env.REGION });
  */
 
 const localConfig = {
+  // TODO AUTH - move away from using megadetector config here. 
+  // Settings should be in the automation rules themselves
   MEGADETECTOR_CONF_THRESHOLD: 0.8,
   MEGADETECTOR_CATEGORIES: [
     { id: 1, name: 'animal' },
