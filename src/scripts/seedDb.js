@@ -12,20 +12,24 @@ let defaultMLModelsConfig = [
     name: 'megadetector',
     version: 'v4.1',
     description: 'Microsoft Megadetector',
-    // TODO: double check whether these config values are actually getting used
-    renderThreshold: 0.8,
-    categories: {
-      1: 'animal',
-      2: 'person',
-      4: 'vehicle'
-    },
-    defaultModel: true,
+    defaultConfThreshold: 0.8,
+    categories: [ // NEW
+      { _id: '1', name: 'animal' },
+      { _id: '2', name: 'person' },
+      { _id: '3', name: 'vehicle' },
+    ],
+    // defaultModel: true, // TODO AUTH - is this used? it's not in Model Schema
   },
   {
     name: 'mira',
     version: '1.0',
     description: 'Santa Cruz Island classifier',
     renderThreshold: 0.8,
+    categories: [ // NEW
+      { _id: 'fox', name: 'fox' },
+      { _id: 'skunk', name: 'skunk' },
+      { _id: 'rodent', name: 'rodent' },
+    ],
   },
 ];
 
@@ -36,63 +40,66 @@ let defaultViewsConfig = [{
   editable: false,
   automationRules: [{
     event: { type: 'image-added' },
-    action: { type: 'run-inference', model: null },
+    action: { type: 'run-inference', mlModel: 'megadetector' }, // NEW - 'model' to 'mlModel'
     name: 'Run Megadetector on all new images',
   }],
 }];
 
+// NEW
 let defaultProjectsConfig = [{
   _id: 'default_project',
   name: 'Default project',
   description: 'Default project',
   timezone: 'America/Los_Angeles',
+  views: [defaultViewsConfig],
+  availableMLModels: ['megadetector', 'mira'],
 }];
 
-function getDefaultModelId(defaultModelsConfig, newModelRecords) {
-  const defaultModelConfig = defaultMLModelsConfig.find((model) => (
-    model.defaultModel
-  ));
-  const defaultModelId = newModelRecords.find((model) => (
-    model.name === defaultModelConfig.name && 
-    model.version === defaultModelConfig.version
-  ))._id;
-  return defaultModelId;
-};
+// function getDefaultModelId(defaultModelsConfig, newModelRecords) {
+//   const defaultModelConfig = defaultMLModelsConfig.find((model) => (
+//     model.defaultModel
+//   ));
+//   const defaultModelId = newModelRecords.find((model) => (
+//     model.name === defaultModelConfig.name && 
+//     model.version === defaultModelConfig.version
+//   ))._id;
+//   return defaultModelId;
+// };
 
-async function createDefaultViews(params) {
-  const {
-    dbModels,
-    newModelRecords,
-    defaultViewsConfig,
-    defaultModelsConfig,
-  } = params;
+// async function createDefaultViews(params) {
+//   const {
+//     dbModels,
+//     newModelRecords,
+//     defaultViewsConfig,
+//     defaultModelsConfig,
+//   } = params;
 
-  console.log('Creaing default views...');
-  const existingViews = await dbModels.View.getViews();
-  if (existingViews.length !== 0) {
-    console.log('Found exising views in db; skipping: ', existingViews);
-    return;
-  }
+//   console.log('Creaing default views...');
+//   const existingViews = await dbModels.View.getViews();
+//   if (existingViews.length !== 0) {
+//     console.log('Found exising views in db; skipping: ', existingViews);
+//     return;
+//   }
 
-  let newViewRecords = [];
-  for (const view of defaultViewsConfig) {
-    if (view.name === 'All images') {
-      console.log('default view automation rules: ', view.automationRules)
-      const modelId = getDefaultModelId(defaultModelsConfig, newModelRecords);
-      view.automationRules[0].action.model = modelId;
-    }
-    try {
-      const newViewRecord = await dbModels.View.createView(view);
-      newViewRecords.push(newViewRecord);
-    } catch (err) {
-      throw new ApolloError(err);
-    }
-  }
-  console.log('Successfully created new View records: ', newViewRecords);
-  return newViewRecords;
-};
+//   let newViewRecords = [];
+//   for (const view of defaultViewsConfig) {
+//     if (view.name === 'All images') {
+//       console.log('default view automation rules: ', view.automationRules)
+//       const modelId = getDefaultModelId(defaultModelsConfig, newModelRecords);
+//       view.automationRules[0].action.model = modelId;
+//     }
+//     try {
+//       const newViewRecord = await dbModels.View.createView(view);
+//       newViewRecords.push(newViewRecord);
+//     } catch (err) {
+//       throw new ApolloError(err);
+//     }
+//   }
+//   console.log('Successfully created new View records: ', newViewRecords);
+//   return newViewRecords;
+// };
 
-async function createDefaultModels(params) {
+async function createDefaultMLModels(params) {
   const { dbModels, defaultModelsConfig } = params;
   
   console.log('Creaing default models...');
@@ -142,33 +149,36 @@ async function createDefaultProjects(params) {
 async function seedDB() {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
+  // TODO AUTH - does seedDB (and all other scripts) use /internal API path 
+  // and thus are superusers?
+  console.log('Seeding Db with config: ', config);
 
   try {
     const dbModels = {
       Project: generateProjectModel(),
-      View: generateViewModel(),
+      // View: generateViewModel(),
       Model: generateModelModel(),
     };
 
     // create default project records
     const newProjectRecords = await createDefaultProjects({
-      dbModels,
       defaultProjectsConfig,
+      dbModels,
     });
   
     // create default ml model records
-    const newModelRecords = await createDefaultModels({
+    const newModelRecords = await createDefaultMLModels({
+      defaultMLModelsConfig,
       dbModels,
-      defaultModelsConfig,
     });
   
-    // create default view records
-    const newViewRecords = await createDefaultViews({
-      dbModels,
-      newModelRecords,
-      defaultViewsConfig,
-      defaultModelsConfig,
-    });
+    // // create default view records
+    // const newViewRecords = await createDefaultViews({
+    //   dbModels,
+    //   newModelRecords,
+    //   defaultViewsConfig,
+    //   defaultModelsConfig,
+    // });
   
     dbClient.connection.close();
     process.exit(0);

@@ -11,4 +11,5 @@ module.exports = `
     cameraId: ID!
     deploymentId: ID!
     diffs: DeploymentDiffsInput!
-}`;
+  }
+`; 

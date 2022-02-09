@@ -6,8 +6,10 @@ module.exports = `
 
   type AutomationAction {
     type: String!
-    model: ID
     alertRecipients: [String]
+    mlModel: String
+    confThreshold: Number
+    categoryConfig: JSONObject
   }
 
   type AutomationRule {

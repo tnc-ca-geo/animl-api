@@ -15,6 +15,7 @@ let ImageSchema = new Schema({
   fileTypeExtension: { type: String, required: true },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
+  // TODO: add dateTimeUTC field
   make: { type: String, default: 'unknown', required: true },
   cameraSn: { type: String, required: true, ref: 'Camera' },
   deployment: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
@@ -30,13 +31,15 @@ let ImageSchema = new Schema({
 });
 
 ImageSchema.index(
+  // TODO: not sure we really need to index by cameraSn if we're indexing by 
+  // deployment. Also, currently we're sorting date in decending order (-1), 
+  // (newest images first) but the front end is requesting oldest first by 
+  // default. Also we should update this when we add dateTimeUTC field. 
   { cameraSn: 1, dateTimeOriginal: -1 },
   { unique: true, sparse: true }
 );
-
 ImageSchema.index({ deployment: 1 });
-
-// TODO AUTH: add "project" as secondary indices
+ImageSchema.index({ project: 1 });
 
 ImageSchema.on('index', (e) => {
   console.log('Indexing error', e);

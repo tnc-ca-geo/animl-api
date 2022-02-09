@@ -1,42 +1,114 @@
+const { ApolloError } = require('apollo-server-errors');
 const utils = require('../db/models/utils');
 const retry = utils.retryWrapper;
 
 // TODO: Split this out by entity type
 
 const Mutation = {
+  
   createImage: async (_, { input }, context) => {
     const md = utils.sanitizeMetadata(input.md, context.config);
+    let projectId = 'default';
 
-    // find camera record (or create new one)
+    console.log(`createImage() - `, md);
+
+    // NEW - find camera record (or create new one)
     const cameraSn = md.serialNumber;
     const existingCam = await context.models.Camera.getCameras([cameraSn]);
-    const newCam = (existingCam.length === 0)
-      ? await retry(context.models.Camera.createCamera, md)
-      : null;
+    if (existingCam.length > 0) {
+      console.log(`Found camera - ${existingCam}`);
 
-    // if existing cam, find deployment
-    md.deployment = newCam 
-      ? newCam.deployments[0]._id
-      : utils.mapImageToDeployment(md, existingCam[0]);
+      // NEW - find current project registration
+      const projReg = existingCam[0].projRegistrations.find((proj) => (
+        proj.active
+      ));
+      if (!projReg) {
+        const err = `Can't find active project registration for image: ${md}`;
+        throw new ApolloError(err);
+      }
+      console.log(`Found current project registration - ${projReg.project}`);
+      projectId = projReg.project;
+    }
+    else {
+      console.log(`Couldn't find a camera for image, so creating new one...`);
+      const input = {
+        project: projectId,
+        cameraSn: md.serialNumber,
+        make: md.make,
+        ...(md.model && { model: md.model }),
+      },
+      const newCam = await retry(
+        context.models.Camera.createCamera,
+        input,
+        context
+      );
+    }
+
+    // NEW - map image to deployment
+    const project = await context.models.Project.getProjects([projectId]);
+    const camConfig = project.cameras.find((cam) => 
+      cam._id.toString() === cameraSn.toString()
+    );
+    const deploymentId = utils.mapImageToDeployment(md, camConfig);
 
     // create image record
+    md.project = projectId;
+    md.deployment = deploymentId;
     newImage = await retry(context.models.Image.createImage, md, context);
     return { image: newImage };
   },
 
+  // NEW - maybe more appropriate to move to model layer?
+  registerCamera: async(_, { input }, context) => {
+    // TODO AUTH - decide between cameraId and cameraSn and use consistently
+    const res = await retry(
+      context.models.Camera.registerCamera,
+      input,
+      context
+    );
+    return { success: res.ok, cameraId: input.cameraId };
+  },
+
   createView: async (_, { input }, context) => {
-    const newView = await retry(context.models.View.createView, input);
+    const newView = await retry(context.models.Project.createView, input);
     return { view: newView };
   },
 
   updateView: async (_, { input }, context) => {
-    const view = await retry(context.models.View.updateView, input);
+    const view = await retry(context.models.Project.updateView, input);
     return { view: view };
   },
 
   deleteView: async (_, { input }, context) => {
-    const res = await retry(context.models.View.deleteView, input);
-    return { success: res.ok, viewId: input._id};
+    const res = await retry(context.models.Project.deleteView, input);
+    return { success: res.ok, viewId: input._id };
+  },
+
+  createDeployment: async (_, { input }, context) => {
+    const cameraConfig = await retry(
+      context.models.Project.createDeployment,
+      input,
+      contex
+    );
+    return { camera: cameraConfig };
+  },
+
+  updateDeployment: async (_, { input }, context) => {
+    const cameraConfig = await retry(
+      context.models.Project.updateDeployment,
+      input,
+      context
+    );
+    return { cameraConfig: cameraConfig };
+  },
+
+  deleteDeployment: async (_, { input }, context) => {
+    const cameraConfig = await retry(
+      context.models.Project.deleteDeployment,
+      input,
+      context
+    );
+    return { cameraConfig: cameraConfig };
   },
 
   // updateObjects: async (_, { input }, context) => {
@@ -76,33 +148,6 @@ const Mutation = {
   deleteLabel: async (_, { input }, context) => {
     const image = await retry(context.models.Image.deleteLabel, input);
     return { image: image };
-  },
-
-  createDeployment: async (_, { input }, context) => {
-    const camera = await retry(
-      context.models.Camera.createDeployment,
-      input,
-      contex
-    );
-    return { camera: camera };
-  },
-
-  updateDeployment: async (_, { input }, context) => {
-    const camera = await retry(
-      context.models.Camera.updateDeployment,
-      input,
-      context
-    );
-    return { camera: camera };
-  },
-
-  deleteDeployment: async (_, { input }, context) => {
-    const camera = await retry(
-      context.models.Camera.deleteDeployment,
-      input,
-      context
-    );
-    return { camera: camera };
   },
 
 };

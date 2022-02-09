@@ -6,6 +6,7 @@ const { SQS } = require('aws-sdk');
 const sqs = new SQS();
 
 async function requestCreateLabels(input, config) {
+  // TODO: there's no real reason to return all of that image data
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
@@ -26,9 +27,7 @@ async function requestCreateLabels(input, config) {
   const variables = { input: input };
   try {
     const graphQLClient = new GraphQLClient(config['/API/URL'], {
-      headers: {
-        'x-api-key': config['APIKEY'],
-      },
+      headers: { 'x-api-key': config['APIKEY'] },
     });
     const createLabelResponse = await graphQLClient.request(mutation, variables);
     // console.log(JSON.stringify(createLabelResponse, undefined, 2));
@@ -55,11 +54,14 @@ exports.inference = async (event, context) => {
     }
     
     for (const message of data.Messages) {
-      const { model, image, label } = JSON.parse(message.Body);
+      const { modelSource, catConfig, image, label } = JSON.parse(message.Body);
 
+      // TODO AUTH - update this to reflect new automation rule approach & schema
+      
       // run inference
-      const detections = await runInference[model.name]({
-        model,
+      const detections = await runInference[modelSource._id]({
+        modelSource,
+        catConfig,
         image,
         label,
         config
@@ -71,6 +73,7 @@ exports.inference = async (event, context) => {
           imageId: image._id,
           labels: detections,
         }, config);
+        // TODO: gracefully handle failed label creation
       }
 
       // remove from queue

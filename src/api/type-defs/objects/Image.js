@@ -5,21 +5,22 @@ module.exports = `
     fileTypeExtension: String!
     dateAdded: Date!
     dateTimeOriginal: Date!
+    make: String!
+    cameraSn: String!
+    deployment: ID!
+    project: String!
     originalFileName: String
     imageWidth: Int
     imageHeight: Int
     mimeType: String
-    cameraSn: String!
-    camera: Camera
-    make: String!
-    model: String,
     userSetData: JSONObject
+    model: String,
     location: Location
-    deployment: ID
     objects: [Object]
+    camera: Camera
   }`;
 
-// TODO: make deployment id non-nullable (ID!)
 
 // TODO: decide if we want to populate() cameraSn field when returning 
 // an Image - in which case I think we use cameraSn: Camera!
+// I also don't think we need camera: Camera? double check

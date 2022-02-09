@@ -1,4 +1,4 @@
 module.exports = `
   type CreateDeploymentPayload {
-    camera: Camera
+    cameraConfig: CameraConfig
   }`

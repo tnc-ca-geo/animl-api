@@ -2,6 +2,8 @@
 // https://www.apollographql.com/docs/apollo-server/data/resolvers/#resolver-chains
 // https://www.apollographql.com/docs/tutorial/resolvers/
 
+// TODO AUTH - are we using these?
+
 const Camera = {
   // Field level resolver for Camera.images()
   images: async (parent, __, context) => {

@@ -6,6 +6,7 @@ const generateMLModelModel = ({ user } = {}) => ({
 
   getMLModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
+    console.log(`MLModel.getMLModels() - query: ${query}`);
     try {
       const mlModels = await MLModel.find(query);
       return mlModels;
@@ -18,7 +19,6 @@ const generateMLModelModel = ({ user } = {}) => ({
     // if (!hasRole(user, ['animl_superuser'])) {
     //   return null;
     // }
-    console.log(`Creating new ml model record for  - ${mlModel.name}`);
     try {
       const newModel = new MLModel({
         name: mlModel.name,
@@ -27,6 +27,7 @@ const generateMLModelModel = ({ user } = {}) => ({
         ...(mlModel.renderThreshold && { renderThreshold: mlModel.renderThreshold }),
         ...(mlModel.categories && { categories: mlModel.categories }),
       });
+      console.log(`MLModel.createModel() - newModel: ${newModel}`);
       await newModel.save();
       return newModel;
     } catch (err) {

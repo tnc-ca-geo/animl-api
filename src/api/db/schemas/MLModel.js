@@ -27,8 +27,14 @@ let MLModelSchema = new Schema({
   // name: { type: String, required: true },
   description: { type: String },
   version: { type: String, required: true },
-  defaultConfThreshold: { type: Number }, // NEW
-  categories: { type: [] }, // maybe use array? 
+  defaultConfThreshold: { type: Number, required: true }, // NEW
+  categories: {
+    type: [new Schema({
+      _id: { type: String, required: true },
+      name: { type: String, required: true }
+    })],
+    required: true,
+  },
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
 

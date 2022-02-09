@@ -9,12 +9,14 @@ const { __Directive } = require('graphql');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
+    console.log(`ImageModel.countImages() - `);
     const query = utils.buildFilter(input, user);
     const count = await Image.where(query).countDocuments();
     return count;
   },
 
   queryById: async (_id) => {
+    console.log(`ImageModel.queryById() - _id: ${_id}`);
     try {
       const image = await Image.findOne({_id});
       return image;
@@ -33,6 +35,7 @@ const generateImageModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous,
       };
+      console.log(`ImageModel.queryByFilter() - options: ${options}`);
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
@@ -44,11 +47,12 @@ const generateImageModel = ({ user } = {}) => ({
   getLabels: async () => {
     try {
       const categoriesAggregate = await Image.aggregate([
-        {$unwind: '$objects'},
-        {$unwind: '$objects.labels'},
-        {$match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
-        {$group: {_id: null, uniqueCategories: {
-          $addToSet: "$objects.labels.category"
+        { $match: {'project': user['curr_project']} }, // NEW - limit aggregation to JUST image w/ current project Id
+        { $unwind: '$objects' },
+        { $unwind: '$objects.labels' },
+        { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}} },
+        { $group: {_id: null, uniqueCategories: {
+            $addToSet: "$objects.labels.category"
         }}}
       ]);
       let categories = categoriesAggregate[0].uniqueCategories;
@@ -56,6 +60,7 @@ const generateImageModel = ({ user } = {}) => ({
       if (labellessImage) {
         categories.push('none');
       }
+      console.log(`ImageModel.getLabels() - categories: ${categories}`);
       return { categories };
     } catch (err) {
       throw new ApolloError(err);
@@ -63,8 +68,8 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   createImage: async (md, context) => {
+    console.log(`ImageModel.createImage() - md: ${md}`);
     try {
-      // const md = utils.sanitizeMetadata(input.md, context.config);
       const newImage = utils.createImageRecord(md);
       await newImage.save();
       await automation.handleEvent({
@@ -85,6 +90,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   get createObject() {
     return async (input, context) => {
+      console.log(`ImageModel.createObject() - input: ${input}`);
       const { imageId, object } = input;
       try {
         const image = await this.queryById(imageId);
@@ -99,6 +105,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   get updateObject() {
     return async (input, context) => {
+      console.log(`ImageModel.updateObject() - input: ${input}`);
       const { imageId, objectId, diffs } = input;
       try {
         const image = await this.queryById(imageId);
@@ -122,6 +129,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   get deleteObject() {
     return async (input, context) => {
+      console.log(`ImageModel.deleteObject() - input: ${input}`);
       const { imageId, objectId } = input;
       try {
         const image = await this.queryById(imageId);
@@ -137,28 +145,29 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
+  // TODO AUTH - createLabel can be executed by superuser (if ML predicted label) 
+  // do we need to know what project the label belongs to? if so how do we determine that?
   get createLabels() {
     return async (input, context) => {
+      console.log(`ImageModel.createLabels() - input: ${input}`);
       const { imageId, objectId, labels } = input;
       try {
         const image = await this.queryById(imageId);
         for (const label of labels) {
-          if (utils.isLabelDupe(image, label)) {
-            return;
-          }
+          if (utils.isLabelDupe(image, label)) return;
 
-          const authorId = label.modelId || label.userId;
+          const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
 
           if (objectId) {
-            // objectId specified, 
-            //so finding that object and saving label to it
+            // if objectId specified, find that object and save label to it
             const object = image.objects.find((obj) => (
               obj._id.toString() === objectId.toString()
             ));
             object.labels.unshift(labelRecord);
           }
           else {
+            // else try to match to existing object bbox
             let objExists = false;
             for (const object of image.objects) {
               if (_.isEqual(object.bbox, label.bbox)) {
@@ -195,7 +204,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   get updateLabel() {
     return async (input, context) => {
-      console.log('updateLabel() - update label with input: ', input);
+      console.log(`ImageModel.updateLabel() - input: ${input}`);
       const { imageId, objectId, labelId, diffs } = input;
       try {
         const image = await this.queryById(imageId);
@@ -218,7 +227,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   get deleteLabel() {
     return async (input, context) => {
-      console.log('deleteLabel() - delete label with input: ', input);
+      console.log(`ImageModel.deleteLabel() - input: ${input}`);
       const { imageId, objectId, labelId } = input;
       try {
         const image = await this.queryById(imageId);

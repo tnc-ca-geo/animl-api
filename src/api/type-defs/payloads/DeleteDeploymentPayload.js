@@ -1,4 +1,4 @@
 module.exports = `
   type DeleteDeploymentPayload {
-    camera: Camera
+    cameraConfig: CameraConfig
   }`

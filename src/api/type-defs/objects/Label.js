@@ -13,7 +13,8 @@ module.exports = `
     bbox: [Float!]!
     labeledDate: Date!
     validation: Validation
-    modelId: ID
+    mlModel: String
+    mlModelVersion: String
     userId: ID
   }
 
@@ -28,3 +29,5 @@ module.exports = `
     labels: [Label]
   }
 `;
+
+// NEW - Label.modelId is now Label.mlModel and we added Label.mlModelVersion

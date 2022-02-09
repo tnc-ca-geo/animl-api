@@ -18,7 +18,7 @@ let AutomationRuleSchema = new Schema({
       required: true
     },
     alertRecipients: { type: [String] },
-    // NEW - now using model name as ID and updated 'model' to 'mkModel'
+    // NEW - now using model name as ID and updated 'model' to 'mlModel'
     mlModel: { type: String, ref: 'MLModel' },
     confThreshold: { type: Number }, // NEW - used as default for categories w/o their own set thresholds 
     categoryConfig: { // NEW
@@ -61,7 +61,7 @@ let DeploymentSchema = new Schema({
 });
 
 let CameraConfigSchema = new Schema({
-  // QUESTION: make _id a ref to Camera? Would allow us to use populate()
+  // TODO AUTH - make _id a ref to Camera? Would allow us to use populate()
   // to determine which camera is currently active. Not sure that's necessary 
   // b/c we only need to know if a camera is active within a project when 
   // managing cameras from front end, so a second query to Cameras isn't a huge deal
@@ -74,8 +74,9 @@ let ProjectSchema = new Schema({
   name: { type: String, required: true },
   timezone: { type: String, default: 'America/Los_Angeles', required: true },
   description: { type: String },
-  views: { type: [ViewSchema]}, // NEW
+  views: { type: [ViewSchema], required: true }, // NEW
   cameras: { type: [CameraConfigSchema]}, // NEW
+  availableMLModels: { type: [{ type: String, ref: 'MLModel' }] } // NEW
 });
 
 module.exports = mongoose.model('Project', ProjectSchema);

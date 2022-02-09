@@ -13,7 +13,8 @@ module.exports = `
     bbox: [Float!]!
     labeledDate: Date
     validation: ValidationInput
-    modelId: ID
+    mlModel: String
+    mlModelVersion: String
     userId: ID
   }
 
@@ -22,3 +23,5 @@ module.exports = `
     objectId: ID
     labels: [LabelInput!]
 }`;
+
+// NEW - LabelInput.modelId to mlModel, LabelInput.mlModelVersion

@@ -21,7 +21,7 @@ let CameraSchema = new Schema({
   _id: { type: String, required: true },  // _id is serial number
   make: { type: String, default: 'unknown', required: true },
   model: { type: String },
-  projectRegistrations: { type: [ProjectRegistrationSchema] }, // NEW
+  projRegistrations: { type: [ProjectRegistrationSchema] }, // NEW
   // deployments: { type: [DeploymentSchema]} // NEW - removed! moving deps to Project.CameraConfig
 });
 

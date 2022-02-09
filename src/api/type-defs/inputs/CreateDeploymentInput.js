@@ -23,4 +23,5 @@ module.exports = `
   input CreateDeploymentInput {
     cameraId: ID!
     deployment: DeploymentInput!
-}`;
+  }
+`;

@@ -12,6 +12,8 @@ const DeleteViewInput = require('./inputs/DeleteViewInput');
 const QueryImageInput = require('./inputs/QueryImageInput');
 const QueryImagesInput = require('./inputs/QueryImagesInput');
 
+const RegisterCameraInput = require('./inputs/RegisterCameraInput');
+
 const UpdateDeploymentInput = require('./inputs/UpdateDeploymentInput');
 const UpdateLabelInput = require('./inputs/UpdateLabelInput');
 const UpdateObjectInput = require('./inputs/UpdateObjectInput');
@@ -24,7 +26,7 @@ const Filters = require('./objects/Filters');
 const Image = require('./objects/Image');
 const Label = require('./objects/Label');
 const Location = require('./objects/Location');
-const Model = require('./objects/Model');
+const MLModel = require('./objects/MLModel');
 const PageInfo = require('./objects/PageInfo');
 const Scalars = require('./objects/Scalars');
 const View = require('./objects/View');
@@ -42,6 +44,8 @@ const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
 const ImagesConnection = require('./payloads/ImagesConnection');
 
+const RegisterCameraPayload = require('./payloads/RegisterCameraPayload');
+
 const UpdateDeploymentPayload = require('./payloads/UpdateDeploymentPayload');
 const UpdateLabelPayload = require('./payloads/UpdateLabelPayload');
 const UpdateObjectPayload = require('./payloads/UpdateObjectPayload');
@@ -51,9 +55,12 @@ const UpdateViewPayload = require('./payloads/UpdateViewPayload');
 const Mutation = require('./root/Mutation');
 const Query = require('./root/Query');
 
-
 // TODO: replace this nightmare with merge-graphql-schemas utility 
 // https://github.com/prisma-labs/graphql-yoga/tree/master/examples/modular-resolvers
+
+// TODO: follow shopify naming convention for type-defs & resolvers: 
+// 'ImageCreateInput' rather than 'CreateImageInput' for alphabetical grouping  
+// by DB collection/schema type 
 
 const typeDefStrings = [
   CreateDeploymentInput,
@@ -67,6 +74,7 @@ const typeDefStrings = [
   DeleteViewInput,
   QueryImageInput,
   QueryImagesInput,
+  RegisterCameraInput,
   UpdateDeploymentInput,
   UpdateLabelInput,
   UpdateObjectInput,
@@ -78,7 +86,7 @@ const typeDefStrings = [
   Image,
   Label,
   Location,
-  Model,
+  MLModel,
   PageInfo,
   Scalars,
   View,
@@ -92,6 +100,7 @@ const typeDefStrings = [
   DeleteObjectPayload,
   DeleteViewPayload,
   ImagesConnection,
+  RegisterCameraPayload,
   UpdateDeploymentPayload,
   UpdateLabelPayload,
   UpdateObjectPayload,

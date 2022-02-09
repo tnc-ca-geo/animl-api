@@ -8,11 +8,11 @@ const retry = require('async-retry');
 
 // TODO: this file is getting unwieldy, break up 
 
+// TODO AUTH - make sure this can handle additional args
+// (e.g) context.models.Camera.createCamera() now can take 'project' as new param
 const retryWrapper = (fn, input, context) => {
   return retry(async (bail, attempt) => {
-    if (attempt > 1) {
-      console.log(`Retrying operation! Attempt #: ${attempt}`);
-    }
+    if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
     return await fn(input, context);
   }, { retries: 3 });
 }
@@ -36,7 +36,7 @@ const buildFilter = ({
   custom,
 }, user) => {
 
-  let projectFilter = {'project': user['selected_project'] };
+  let projectFilter = {'project': user['curr_project']};
 
   let camerasFilter = {};
   if (cameras) {
@@ -232,7 +232,6 @@ const createImageRecord = (md) => {
     cameraSn: md.serialNumber,
     make: md.make,
     deployment: md.deployment,
-    // optional fields...
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
@@ -247,16 +246,18 @@ const createImageRecord = (md) => {
 
 // TODO: accommodate users as label authors as well as models
 const createLabelRecord = (input, authorId) => {
+  const { _id, type, category, conf, bbox, mlModelVersion, validation } = inupt;
   const label = {
-    ...(input._id && { _id: input._id }),
-    type: input.type,
-    category: input.category,
-    conf: input.conf,
-    bbox: input.bbox,
+    ...(_id && { _id }),
+    type,
+    category,
+    conf,
+    bbox,
     labeledDate: moment(),
-    ...((authorId && input.type === 'ml') && { modelId: authorId }),
-    ...((authorId && input.type === 'manual') && { userId: authorId }),
-    ...((authorId && input.type === 'manual') && { validation: input.validation }),
+    ...((authorId && type === 'ml') && { mlModel: authorId }),  // NEW
+    ...((authorId && type === 'ml') && { mlModelVersion }), // NEW
+    ...((authorId && type === 'manual') && { userId: authorId }),
+    ...((authorId && type === 'manual') && { validation }),
   };
   return label;
 };
@@ -267,15 +268,16 @@ const hasRole = (userInfo, targetRoles = []) => {
 };
 
 // TODO: accomodate user-created deployments with no startDate?
-const findDeployment = (image, camera) => {
+// NEW
+const findDeployment = (image, cameraConfig) => {
   // find most recent deployment start date
   const imgCreated = !moment.isMoment(image.dateTimeOriginal) 
     ? moment(image.dateTimeOriginal)
     : image.dateTimeOriginal;
-  const defaultDep = camera.deployments.find((dep) => dep.name === 'default');
+  const defaultDep = cameraConfig.deployments.find((dep) => dep.name === 'default');
   
   let mostRecentDep = { deploymentId: null, timeElapsed: null };
-  for (const dep of camera.deployments) {
+  for (const dep of cameraConfig.deployments) {
     if (dep.name !== 'default') {
       const timeElapsed = imgCreated.diff(moment(dep.startDate));
       // if time elapsed is negative, image was taken before the dep began
@@ -292,15 +294,19 @@ const findDeployment = (image, camera) => {
     : defaultDep._id;
 }
 
+// NEW - updated this to find deployments in camera config entries, i.e.:
+// Project.cameras.deployments
+const mapImageToDeployment = (image, cameraConfig) => {
+  console.log(`utils.mapImageToDeployment() - image: ${image}`);
+  console.log(`utils.mapImageToDeployment() - cameraConfig: ${cameraConfig}`);
 
-const mapImageToDeployment = (image, camera) => {
-  if (camera.deployments.length === 0) {
+  if (cameraConfig.deployments.length === 0) {
     throw new ApolloError('Camera has no deployments');
   }
 
-  return (camera.deployments.length === 1) 
-    ? camera.deployments[0]._id 
-    : findDeployment(image, camera);
+  return (cameraConfig.deployments.length === 1) 
+    ? cameraConfig.deployments[0]._id 
+    : findDeployment(image, cameraConfig);
 };
 
 module.exports = {
