@@ -22,7 +22,5 @@ module.exports = `
   }
 `;
 
-// TODO: add CUD handlers for deployments
-// createDeployment(input: {cameraId, deployment})
-// updateDeployment(input: {cameraId, deploymentId, diffs})
-// deleteDeployment(input: {cameraId, deploymentId, diffs})
+// TODO AUTH -     
+// unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload

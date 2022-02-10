@@ -9,7 +9,7 @@ const generateMLModelModel = require('../api/db/models/MLModel');
 
 let defaultMLModelsConfig = [
   {
-    name: 'megadetector',
+    _id: 'megadetector',
     version: 'v4.1',
     description: 'Microsoft Megadetector',
     defaultConfThreshold: 0.8,
@@ -21,10 +21,10 @@ let defaultMLModelsConfig = [
     // defaultModel: true, // TODO AUTH - is this used? it's not in Model Schema
   },
   {
-    name: 'mira',
-    version: '1.0',
+    _id: 'mira',
+    version: 'v1.0',
     description: 'Santa Cruz Island classifier',
-    renderThreshold: 0.8,
+    defaultConfThreshold: 0.8,
     categories: [ // NEW
       { _id: 'fox', name: 'fox' },
       { _id: 'skunk', name: 'skunk' },
@@ -46,14 +46,26 @@ let defaultViewsConfig = [{
 }];
 
 // NEW
-let defaultProjectsConfig = [{
-  _id: 'default_project',
-  name: 'Default project',
-  description: 'Default project',
-  timezone: 'America/Los_Angeles',
-  views: [defaultViewsConfig],
-  availableMLModels: ['megadetector', 'mira'],
-}];
+let defaultProjectsConfig = [
+  {
+    _id: 'default_project',
+    name: 'Default project',
+    description: 'Default project',
+    timezone: 'America/Los_Angeles',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector', 'mira'],
+  },
+  // TEMPORARY! remove after seeding DBs
+  {
+    _id: 'sci_biosecurity',
+    name: 'SCI Biosecurity',
+    description: 'Biosecurity camera network on Santa Cruz Island',
+    timezone: 'America/Los_Angeles',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector', 'mira'],
+  },
+
+];
 
 // function getDefaultModelId(defaultModelsConfig, newModelRecords) {
 //   const defaultModelConfig = defaultMLModelsConfig.find((model) => (
@@ -100,19 +112,19 @@ let defaultProjectsConfig = [{
 // };
 
 async function createDefaultMLModels(params) {
-  const { dbModels, defaultModelsConfig } = params;
+  const { dbModels, defaultMLModelsConfig } = params;
   
-  console.log('Creaing default models...');
-  const existingModels = await dbModels.Model.getModels();
-  if (existingModels.length !== 0) {
-    console.log('Found exising models in db; skipping: ', existingModels);
+  console.log('Creaing default models: ', defaultMLModelsConfig);
+  const existingMLModels = await dbModels.MLModel.getMLModels();
+  if (existingMLModels.length !== 0) {
+    console.log('Found exising ML models in db; skipping: ', existingMLModels);
     return;
   }
 
   let newModelRecords = [];
-  for (const mlModel of defaultModelsConfig) {
+  for (const modelConfig of defaultMLModelsConfig) {
     try {
-      const newModelRecord = await dbModels.Model.createModel(mlModel);
+      const newModelRecord = await dbModels.MLModel.createMLModel(modelConfig);
       newModelRecords.push(newModelRecord);
     } catch (err) {
       throw new ApolloError(err);
@@ -149,15 +161,17 @@ async function createDefaultProjects(params) {
 async function seedDB() {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
+  const user = { 'is_superuser': true };
   // TODO AUTH - does seedDB (and all other scripts) use /internal API path 
   // and thus are superusers?
   console.log('Seeding Db with config: ', config);
 
   try {
+
     const dbModels = {
-      Project: generateProjectModel(),
+      Project: generateProjectModel({ user }),
       // View: generateViewModel(),
-      Model: generateModelModel(),
+      MLModel: generateMLModelModel({ user }),
     };
 
     // create default project records
@@ -171,7 +185,7 @@ async function seedDB() {
       defaultMLModelsConfig,
       dbModels,
     });
-  
+    
     // // create default view records
     // const newViewRecords = await createDefaultViews({
     //   dbModels,

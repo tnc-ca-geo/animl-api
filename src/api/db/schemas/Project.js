@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const shared = require('./shared');
 
 let AutomationRuleSchema = new Schema({
   name: { type: String, required: true },

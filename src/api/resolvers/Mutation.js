@@ -8,7 +8,7 @@ const Mutation = {
   
   createImage: async (_, { input }, context) => {
     const md = utils.sanitizeMetadata(input.md, context.config);
-    let projectId = 'default';
+    let projectId = 'default_project';
 
     console.log(`createImage() - `, md);
 
@@ -36,7 +36,7 @@ const Mutation = {
         cameraSn: md.serialNumber,
         make: md.make,
         ...(md.model && { model: md.model }),
-      },
+      };
       const newCam = await retry(
         context.models.Camera.createCamera,
         input,
@@ -58,7 +58,7 @@ const Mutation = {
     return { image: newImage };
   },
 
-  // NEW - maybe more appropriate to move to model layer?
+  // NEW
   registerCamera: async(_, { input }, context) => {
     // TODO AUTH - decide between cameraId and cameraSn and use consistently
     const res = await retry(
@@ -68,6 +68,8 @@ const Mutation = {
     );
     return { success: res.ok, cameraId: input.cameraId };
   },
+
+  // TODO AUTH - create unregisterCamera() handler
 
   createView: async (_, { input }, context) => {
     const newView = await retry(context.models.Project.createView, input);

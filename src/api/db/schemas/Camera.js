@@ -13,8 +13,8 @@ const shared = require('./shared');
 
 // NEW
 let ProjectRegistrationSchema = new Schema({
-  project: { type: String, default: 'default', required: true },
-  active: { type: Boolean, requried: true },
+  project: { type: String, default: 'default_project', required: true },
+  active: { type: Boolean, required: true },
 });
 
 let CameraSchema = new Schema({

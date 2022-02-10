@@ -1,7 +1,7 @@
 module.exports = `
   type RegistrationRejection {
-    msg: !String,
-    currProjReg: !String,
+    msg: String!,
+    currProjReg: String!,
   }
 
   type RegisterCameraPayload {

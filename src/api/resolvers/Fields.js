@@ -4,23 +4,23 @@
 
 // TODO AUTH - are we using these?
 
-const Camera = {
-  // Field level resolver for Camera.images()
-  images: async (parent, __, context) => {
-    return context.models.Image.queryByFilter({ cameras: [parent._id] });
-  },
-};
+// const Camera = {
+//   // Field level resolver for Camera.images()
+//   images: async (parent, __, context) => {
+//     return context.models.Image.queryByFilter({ cameras: [parent._id] });
+//   },
+// };
 
-const Image = {
-  // Field level resolver for Image.camera()
-  camera: async (parent, __, context) => {
-    const cameras = await context.models.Camera.getCameras([parent.cameraSn]);
-    return cameras[0];
-  }
-};
+// const Image = {
+//   // Field level resolver for Image.camera()
+//   camera: async (parent, __, context) => {
+//     const cameras = await context.models.Camera.getCameras([parent.cameraSn]);
+//     return cameras[0];
+//   }
+// };
 
-module.exports = {
-  Camera,
-  Image,
-};
+// module.exports = {
+//   Camera,
+//   Image,
+// };
 

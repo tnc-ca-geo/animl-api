@@ -23,7 +23,7 @@ let MLModelPerformanceSchema = new Schema({
 
 // NEW - renamed ModelSchema to MLModelsSchema
 let MLModelSchema = new Schema({
-  _id : { types: String, requrired: true }, // NEW - using "name" string as _id
+  _id : { type: String, required: true }, // NEW - using "name" string as _id
   // name: { type: String, required: true },
   description: { type: String },
   version: { type: String, required: true },

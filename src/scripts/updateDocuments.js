@@ -5,9 +5,9 @@ const { DateTime } = require('luxon');
 const appRoot = require('app-root-path');
 const prompt = require('prompt');
 const { connectToDatabase } = require('../api/db/connect');
-const Image = require('../api/db/schemas/Image');
 const { getConfig } = require('../config/config');
 const { backupConfig } = require('./backupConfig');
+const { operations } = require('./operations');
 
 const property = {
   name: 'confirmation',
@@ -43,6 +43,8 @@ async function createLogFile(collecton, _ids) {
 }
 
 async function updateDocuments() {
+  // TODO: accept op as param
+  const op = 'update-labels-to-new-schema';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
@@ -50,13 +52,10 @@ async function updateDocuments() {
 
     // TODO: create backup of db with exportDb.js
 
-    // const query = { 'objects.labels': { $size: 0 } };
-    const query = {};
-
-    const matchingImageIds = await Image.find(query).select('_id');
-    const matchCount = matchingImageIds.length
-    console.log('number of images w/ accidental objects: ', matchCount);
-    console.log('matchingImageIds: ', matchingImageIds);
+    const matchingImageIds = await operations[op].getIds();
+    const matchCount = matchingImageIds.length;
+    console.log(`This operation will affect ${matchCount} documents`);
+    console.log('With Ids: ', matchingImageIds);
     if (matchCount === 0) {
       dbClient.connection.close();
       process.exit(0);
@@ -65,15 +64,7 @@ async function updateDocuments() {
     prompt.start();
     const { confirmation } = await prompt.get(property);
     if (confirmation === 'yes' || confirmation === 'y') {
-
-      // console.log('Removing objects with empty labels arrays...');
-      // const res = await Image.updateMany(
-      //   { },
-      //   { $pull: { objects: { labels: { $size: 0} } } }
-      // );
-
-      console.log('Associating all images with sci_biosecurity project...');
-      const res = await Image.updateMany({}, { project: 'sci_biosecurity' });
+      const res = await await operations[op].update();
       console.log('res: ', res);
       await createLogFile('images', matchingImageIds);
     }

@@ -44,7 +44,7 @@ async function getUserInfo(req, config) {
       return projects;
     }, {});
 
-    // TODO AUTH - how to handle 'default' project access? Who needs it? 
+    // TODO AUTH - how to handle 'default_project' access? Who needs it? 
     // whatever role is creating images will need it. does anyone else?
     // superuser will be creating images and creating labels. Anything else?
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');

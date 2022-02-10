@@ -8,7 +8,7 @@ module.exports = `
     type: String!
     alertRecipients: [String]
     mlModel: String
-    confThreshold: Number
+    confThreshold: Float
     categoryConfig: JSONObject
   }
 

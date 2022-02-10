@@ -24,7 +24,7 @@ const generateCameraModel = ({ user } = {}) => ({
     //   return null;
     // }
     return async ({ project, cameraSn, make, model }, context) => {
-      project = project || 'default';
+      project = project || 'default_project';
       try {
         // NEW - create "source" Camera record
         const newCamera = new Camera({
@@ -73,7 +73,7 @@ const generateCameraModel = ({ user } = {}) => ({
 
         const cam = existingCam[0];
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
-        if (activeReg.project === 'default') {
+        if (activeReg.project === 'default_project') {
           // if it exists & default proj is active (i.e., it's unregistered),
           // change to current project
           // NOTE: projReg might already exist for the current project, 
@@ -107,6 +107,8 @@ const generateCameraModel = ({ user } = {}) => ({
       }
     };
   },
+
+  // TODO AUTH - create unregisterCamera() handler
 
   // reMapImagesToDeps: async (camera) => {
   //   try {

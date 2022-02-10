@@ -28,6 +28,7 @@ const Label = require('./objects/Label');
 const Location = require('./objects/Location');
 const MLModel = require('./objects/MLModel');
 const PageInfo = require('./objects/PageInfo');
+const Project = require('./objects/Project');
 const Scalars = require('./objects/Scalars');
 const View = require('./objects/View');
 
@@ -88,6 +89,7 @@ const typeDefStrings = [
   Location,
   MLModel,
   PageInfo,
+  Project,
   Scalars,
   View,
   CreateDeploymentPayload,

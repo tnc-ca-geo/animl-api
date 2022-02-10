@@ -15,18 +15,12 @@ const generateMLModelModel = ({ user } = {}) => ({
     }
   },
 
-  createMLModel: async (mlModel) => {
+  createMLModel: async (modelConfig) => {
     // if (!hasRole(user, ['animl_superuser'])) {
     //   return null;
     // }
     try {
-      const newModel = new MLModel({
-        name: mlModel.name,
-        version: mlModel.version,
-        ...(mlModel.description && { description: mlModel.description }),
-        ...(mlModel.renderThreshold && { renderThreshold: mlModel.renderThreshold }),
-        ...(mlModel.categories && { categories: mlModel.categories }),
-      });
+      const newModel = new MLModel(modelConfig);
       console.log(`MLModel.createModel() - newModel: ${newModel}`);
       await newModel.save();
       return newModel;
