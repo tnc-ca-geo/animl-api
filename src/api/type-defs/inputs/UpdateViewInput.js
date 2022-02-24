@@ -6,8 +6,10 @@ module.exports = `
 
   input AutomationActionInput {
     type: String!
-    model: ID,
+    mlModel: String,
     alertRecipients: [String],
+    confThreshold: Float
+    categoryConfig: JSONObject
   }
 
   input AutomationRuleInput {

@@ -56,6 +56,8 @@ const generateImageModel = ({ user } = {}) => ({
         }}}
       ]);
       if (categoriesAggregate.length === 0) {
+        // TODO AUTH - we probably don't want to throw an error here 
+        // b/c it's possible for a project to just not have any images or labels
         throw new ApolloError(`No labels found in ${user['curr_project']}`);
       }
       let categories = categoriesAggregate[0].uniqueCategories;

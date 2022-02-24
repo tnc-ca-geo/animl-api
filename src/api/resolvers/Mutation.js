@@ -82,8 +82,8 @@ const Mutation = {
   },
 
   deleteView: async (_, { input }, context) => {
-    const res = await retry(context.models.Project.deleteView, input);
-    return { success: res.ok, viewId: input._id };
+    const proj = await retry(context.models.Project.deleteView, input);
+    return { project: proj };
   },
 
   createDeployment: async (_, { input }, context) => {

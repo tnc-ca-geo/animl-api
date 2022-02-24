@@ -29,14 +29,14 @@ const operations = {
   'update-labels-to-new-schema': {
     getIds: async () => (
       await Image.find({
-        'project': 'test5',   // TODO: don't forget to change this
+        'project': 'sci_biosecurity',   // TODO: don't forget to change this
         'objects.labels.type': 'ml',
       }).select('_id')
     ),
     update: async () => {
       console.log('Updatind labels w/ new mlModel and mlModelVersion fields...');
-      const megadetectorId = "61eb283678ed7390a51835ce"; // TODO: don't forget to change this
-      const miraId = "61eb283678ed7390a51835d0"; // TODO: don't forget to change this
+      const megadetectorId = "61eb283678ed7390a51835ce"; // TODO: don't forget to change this to correct ID in prod
+      const miraId = "61eb283678ed7390a51835d0"; // TODO: don't forget to change this to correct ID in prod
 
       const mergeExpression = {
         $mergeObjects: [ 
@@ -79,7 +79,7 @@ const operations = {
       // updateMany with aggregation pipeline
       return await Image.updateMany(
         {
-          'project': 'test5',  // TODO: don't forget to change this
+          'project': 'sci_biosecurity',  // TODO: don't forget to change this
         },
         [
           {

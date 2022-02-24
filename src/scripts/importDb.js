@@ -15,4 +15,4 @@
 // TODO: prompt user - last warning. Continue Y/N?
 
 // TODO: Iterate through collections to import and execute the following:
-  // mongoimport --uri mongodb+srv://animlDB:<PASSWORD>@cluster0.bqyly.mongodb.net/<DATABASE> --collection <DATABASE> --type json --file <FILE> --mode=upsert
+  // mongoimport --uri mongodb+srv://animlDB:<PASSWORD>@cluster0.bqyly.mongodb.net/<DATABASE> --collection <COL> --type json --file <FILE> --mode=upsert

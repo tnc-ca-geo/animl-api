@@ -64,7 +64,14 @@ let defaultProjectsConfig = [
     views: defaultViewsConfig,
     availableMLModels: ['megadetector', 'mira'],
   },
-
+  {
+    _id: 'jldp',
+    name: 'Dangermond Preserve',
+    description: 'Camera trap on JLDP',
+    timezone: 'America/Los_Angeles',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector'],
+  },
 ];
 
 // function getDefaultModelId(defaultModelsConfig, newModelRecords) {
@@ -116,18 +123,22 @@ async function createDefaultMLModels(params) {
   
   console.log('Creaing default models: ', defaultMLModelsConfig);
   const existingMLModels = await dbModels.MLModel.getMLModels();
-  if (existingMLModels.length !== 0) {
-    console.log('Found exising ML models in db; skipping: ', existingMLModels);
-    return;
-  }
+  const existingMLModelIds = existingMLModels.map((mdl) => mdl._id);
+  console.log('Found existing models: ', existingMLModelIds);
+  // if (existingMLModels.length !== 0) {
+  //   console.log('Found exising ML models in db; skipping: ', existingMLModels);
+  //   return;
+  // }
 
   let newModelRecords = [];
   for (const modelConfig of defaultMLModelsConfig) {
-    try {
-      const newModelRecord = await dbModels.MLModel.createMLModel(modelConfig);
-      newModelRecords.push(newModelRecord);
-    } catch (err) {
-      throw new ApolloError(err);
+    if (!existingMLModelIds.includes(modelConfig._id)) {
+      try {
+        const newModelRecord = await dbModels.MLModel.createMLModel(modelConfig);
+        newModelRecords.push(newModelRecord);
+      } catch (err) {
+        throw new ApolloError(err);
+      }
     }
   }
   console.log('Successfully created new Model records: ', newModelRecords);
@@ -139,18 +150,23 @@ async function createDefaultProjects(params) {
   
   console.log('Creaing default projects...');
   const existingProjects = await dbModels.Project.getProjects();
-  if (existingProjects.length !== 0) {
-    console.log('Found exising projects in db; skipping: ', existingProjects);
-    return;
-  }
+  const existingProjIds = existingProjects.map((proj) => proj._id);
+  console.log('Found existing projects: ', existingProjIds);
+
+  // if (existingProjects.length !== 0) {
+  //   console.log('Found exising projects in db; skipping: ', existingProjects);
+  //   return;
+  // }
 
   let newProjectRecords = [];
   for (const project of defaultProjectsConfig) {
-    try {
-      const newProjectRecord = await dbModels.Project.createProject(project);
-      newProjectRecords.push(newProjectRecord);
-    } catch (err) {
-      throw new ApolloError(err);
+    if (!existingProjIds.includes(project._id)) {
+      try {
+        const newProjectRecord = await dbModels.Project.createProject(project);
+        newProjectRecords.push(newProjectRecord);
+      } catch (err) {
+        throw new ApolloError(err);
+      }
     }
   }
 

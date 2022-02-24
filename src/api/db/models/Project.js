@@ -47,7 +47,8 @@ const generateProjectModel = ({ user } = {}) => ({
       try {
         console.log(`ProjectModel.createCameraConfig() - projectId: ${projectId}`);
         console.log(`ProjectModel.createCameraConfig() - cameraSn: ${cameraSn}`);
-        let project = await this.getProjects(projectId);
+        const projects = await this.getProjects(projectId);
+        const project = projects[0];
         console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
         project = project[0];
         project.cameras.push({
@@ -67,69 +68,88 @@ const generateProjectModel = ({ user } = {}) => ({
   },
  
   // NEW
-  createView: async (input) => {
-    console.log(`ProjectModel.createView() - input: ${input}`);
-    try {
-      // TODO AUTH - get project
-      // do we want to accept project Id as a param? or pull it from user
-      // user['curr_project'] here? 
-      // decide on patern of determining what project we're acting on...
-      // IF its an operation the superuser ever performs, we do not want to use
-      // user['curr_project'], because they don't have one... 
-      // unless we set it after we map the image to the correct project?
-      let project = await this.getProjects(user['curr_project']);
-      const newView = {
-        name: input.name,
-        filters: input.filters,
-        ...(input.description && { description: input.description }),
-        editable: input.editable,
-      };
-      project.views.push(newView)
-      await project.save();
-      return newView;
-    } catch (err) {
-      throw new ApolloError(err);
+  get createView() {
+    // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
+    //   return null;
+    // }
+    return async (input) => {
+      console.log(`ProjectModel.createView() - input: ${input}`);
+      try {
+        // TODO AUTH - get project
+        // do we want to accept project Id as a param? or pull it from user
+        // user['curr_project'] here? 
+        // decide on patern of determining what project we're acting on...
+        // IF its an operation the superuser ever performs, we do not want to use
+        // user['curr_project'], because they don't have one... 
+        // unless we set it after we map the image to the correct project?
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
+        console.log(`ProjectModel.createView() - project: `, project);
+        const newView = {
+          name: input.name,
+          filters: input.filters,
+          ...(input.description && { description: input.description }),
+          editable: input.editable,
+        };
+        project.views.push(newView)
+        const updatedProj = await project.save();
+        // TODO AUTH - do we want to create _id for views on front end and pass
+        // them in as inputs to createView (like we do for objects and labels)?
+        // that would save us this step. related to question of whether we need 
+        // to return updated documents to the front end at all... 
+        return updatedProj.views.find((v) => v.name === newView.name);
+      } catch (err) {
+        throw new ApolloError(err);
+      }
     }
   },
 
   // NEW
-  updateView: async (input, context) => {
-    console.log(`ProjectModel.updateView() - input: ${input}`);
-    try {
-      let project = await this.getProjects(user['curr_project']);
-      let view = project.views.find((view) => (
-        view._id.toString() === input._id.toString()
-      ));
-      if (!view.editable) {
-        throw new ApolloError(`View ${view.name} is not editable`);
+  get updateView() {
+    return async (input, context) => {
+      console.log(`ProjectModel.updateView() - input: ${input}`);
+      try {
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
+        let view = project.views.find((view) => (
+          view._id.toString() === input._id.toString()
+        ));
+        if (!view.editable) {
+          throw new ApolloError(`View ${view.name} is not editable`);
+        }
+        for (let [key, newVal] of Object.entries(input.diffs)) {
+          view[key] = newVal;
+        }
+        const updatedProj = await project.save();
+        return updatedProj.views.find((v) => (
+          v._id.toString() === input._id.toString()
+        ));
+      } catch (err) {
+        throw new ApolloError(err);
       }
-      for (let [key, newVal] of Object.entries(input.diffs)) {
-        view[key] = newVal;
-      }
-      await project.save();
-      return view;
-    } catch (err) {
-      throw new ApolloError(err);
     }
   },
 
   // NEW
-  deleteView: async (input, context) => {
-    console.log(`ProjectModel.deleteView() - input: ${input}`);
-    try {
-      let project = await this.getProjects(user['curr_project']);
-      let view = project.views.find((view) => (
-        view._id.toString() === input._id.toString()
-      ));
-      if (!view.editable) {
-        throw new ApolloError(`View ${view.name} is not editable`);
+  get deleteView() {
+    return async (input, context) => {
+      console.log(`ProjectModel.deleteView() - input: ${input}`);
+      try {
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
+        let view = project.views.find((view) => (
+          view._id.toString() === input._id.toString()
+        ));
+        if (!view.editable) {
+          throw new ApolloError(`View ${view.name} is not editable`);
+        }
+        project.views = project.views.filter((view) => (
+          view._id.toString() !== input._id.toString()
+        ));
+        return await project.save();
+      } catch (err) {
+        throw new ApolloError(err);
       }
-      project.views = project.views.filter((view) => (
-        view._id.toString() !== input._id.toString()
-      ));
-      return await project.save();
-    } catch (err) {
-      throw new ApolloError(err);
     }
   },
 
@@ -170,7 +190,8 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.createDeployment() - input: ${input}`);
       const { cameraId, deployment } = input;
       try {
-        let project = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
         ));
@@ -190,7 +211,8 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.updateDeployment() - input: ${input}`);
       const { cameraId, deploymentId, diffs } = input;
       try {
-        let project = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
         ));
@@ -219,7 +241,8 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.deleteDeployment() - input: ${input}`);
       const { cameraId, deploymentId } = input;
       try {
-        let project = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects(user['curr_project']);
+        const project = projects[0];
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
         ));
