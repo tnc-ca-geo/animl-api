@@ -4,12 +4,12 @@ const Project = require('../schemas/Project');
 
 const generateProjectModel = ({ user } = {}) => ({
 
-  // NEW 
+  // NEW
   getProjects: async (_ids) => {
     let query = {};
     if (user['is_superuser']) {
       console.log('ProjectModel.getProjects() - user is_superuser');
-      query = _ids && { _id: { $in: _ids } };
+      query = _ids ? { _id: { $in: _ids } } : {};
     }
     else {
       const availIds = Object.keys(user['projects']);
@@ -23,7 +23,7 @@ const generateProjectModel = ({ user } = {}) => ({
       return projects;
     } catch (err) {
       throw new ApolloError(err);
-    } 
+    }
   },
 
   // NEW

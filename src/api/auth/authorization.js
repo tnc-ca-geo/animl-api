@@ -8,18 +8,22 @@ async function getUserInfo(req, config) {
     // TODO AUTH - if we will now be passing project into so many queries/mutations, 
     // maybe it makes sense to pass project in as a GraphQL input variable 
     // instead of as a header?
-    const project = req.headers['project'];
+    const selectedProject = req.headers['x-selected-project'] || null;
 
     // if x-api-key header is present, call was to /internal path
     // and was made by an internal lambda
     if (api_key == config['APIKEY']) {
+      console.log('authorization.getUserInfo() - found api key in header, must be /intenal call');
       // return { 'cognito:groups': ['animl_superuser'] };
       return { 'is_superuser': true };
     }
 
-    if (!token || !BEARER_TOKEN_PATTERN.test(token) || !project) {
+    if (!token || !BEARER_TOKEN_PATTERN.test(token)) {
+      console.log('authorization.getUserInfo() - no token found');
       return null;
     }
+
+    console.log('authorization.getUserInfo() - call was made to /external, so decode users access token');
 
     // else, call was made to /external (from the UI), so decode the user's 
     // access token
@@ -49,9 +53,11 @@ async function getUserInfo(req, config) {
     // superuser will be creating images and creating labels. Anything else?
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');
     user['projects'] = projects;
-    user['curr_project'] = project; 
-    user['curr_project_roles'] = projects[project] 
-      ? projects[project].roles 
+    // TODO AUTH - also some external calls will not have a project yet 
+    // (i.e. an initial getProjects request)
+    user['curr_project'] = selectedProject; 
+    user['curr_project_roles'] = projects[selectedProject] 
+      ? projects[selectedProject].roles 
       : null;
 
     return (user['is_superuser'] || user['curr_project_roles']) ? user : null;

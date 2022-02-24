@@ -21,7 +21,7 @@ module.exports = `
     timezone: String!
     description: String
     views: [View!]!
-    cameras: CameraConfig
+    cameras: [CameraConfig]
     availableMLModels: [String]
   }
 `;

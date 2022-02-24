@@ -29,7 +29,7 @@ const operations = {
   'update-labels-to-new-schema': {
     getIds: async () => (
       await Image.find({
-        'project': 'sci_biosecurity',   // TODO: don't forget to change this
+        'project': 'test5',   // TODO: don't forget to change this
         'objects.labels.type': 'ml',
       }).select('_id')
     ),
@@ -79,7 +79,7 @@ const operations = {
       // updateMany with aggregation pipeline
       return await Image.updateMany(
         {
-          'project': 'sci_biosecurity',  // TODO: don't forget to change this
+          'project': 'test5',  // TODO: don't forget to change this
         },
         [
           {
@@ -89,6 +89,11 @@ const operations = {
                   input: "$objects",
                   as: "obj",
                   in: {
+                    // TODO AUTH - DOUBLE CHECK THIS IS WORKING. 
+                    // PREVIOUSLY I WIPED OUT object._id, object.locked, and object.bbox!!
+                    "_id": "$$obj._id",
+                    "locked": "$$obj.locked",
+                    "bbox": "$$obj.bbox",
                     "labels": {
                       $map: {
                         input: "$$obj.labels",

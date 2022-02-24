@@ -50,16 +50,17 @@ const generateImageModel = ({ user } = {}) => ({
         { $match: {'project': user['curr_project']} }, // NEW - limit aggregation to JUST image w/ current project Id
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
-        { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}} },
+        { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
         { $group: {_id: null, uniqueCategories: {
             $addToSet: "$objects.labels.category"
         }}}
       ]);
+      if (categoriesAggregate.length === 0) {
+        throw new ApolloError(`No labels found in ${user['curr_project']}`);
+      }
       let categories = categoriesAggregate[0].uniqueCategories;
       const labellessImage = await Image.findOne({ objects: { $size: 0 } });
-      if (labellessImage) {
-        categories.push('none');
-      }
+      if (labellessImage) categories.push('none');
       console.log(`ImageModel.getLabels() - categories: ${categories}`);
       return { categories };
     } catch (err) {
