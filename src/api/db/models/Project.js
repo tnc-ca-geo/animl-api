@@ -178,7 +178,16 @@ const generateProjectModel = ({ user } = {}) => ({
             ...(createdEnd && { $lt: createdEnd }),
           }
         }
-        const update = { deployment: dep._id, timezone: dep.timezone };
+        // TODO TIME - decide if we're storing timezone on images or 
+        // converting to UTC+0 and storing that. 
+        // converting to UTC+0 would be ideal but require pulling all matching
+        // images into memory, iterating through them to convert and save to 
+        // UTC+0 (maybe with aggregation pipeline + updatemany?) and performoing
+        // update many / bulk write
+        const update = {
+          deployment: dep._id,
+          // timezone: dep.timezone 
+        };
         operations.push({ updateMany: { filter, update } });
       };
 
@@ -219,10 +228,12 @@ const generateProjectModel = ({ user } = {}) => ({
       try {
         const projects = await this.getProjects(user['curr_project']);
         const project = projects[0];
+        console.log(`ProjectModel.updateDeployment() - project: ${project._id}`);
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
         ));
-        let deployment = camConfig.find((dep) => (
+        console.log(`ProjectModel.updateDeployment() - camConfig: ${camConfig}`);
+        let deployment = camConfig.deployments.find((dep) => (
           dep._id.toString() === deploymentId.toString()
         ));
         if (deployment.name !== 'default') {
@@ -235,7 +246,7 @@ const generateProjectModel = ({ user } = {}) => ({
             await this.reMapImagesToDeps({ projId: project._id, camConfig });
           }
         }
-        return camera;
+        return camConfig;
       } catch (err) {
         throw new ApolloError(err);
       }

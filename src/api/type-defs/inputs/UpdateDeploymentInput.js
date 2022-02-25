@@ -3,6 +3,7 @@ module.exports = `
     name: String
     description: String
     location: LocationInput
+    timezone: String
     startDate: Date
     editable: Boolean
   }
