@@ -4,8 +4,8 @@ module.exports = `
     _id: ID!
     name: String!
     description: String
-    timezone: String
     location: Location
+    timezone: String!
     startDate: Date
     editable: Boolean
   }

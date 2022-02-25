@@ -90,9 +90,9 @@ const Mutation = {
     const cameraConfig = await retry(
       context.models.Project.createDeployment,
       input,
-      contex
+      context
     );
-    return { camera: cameraConfig };
+    return { cameraConfig: cameraConfig };
   },
 
   updateDeployment: async (_, { input }, context) => {

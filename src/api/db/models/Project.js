@@ -1,6 +1,9 @@
 const { ApolloError } = require('apollo-server-errors');
 const moment = require('moment');
 const Project = require('../schemas/Project');
+const Image = require('../schemas/Image');
+const utils = require('./utils');
+
 
 const generateProjectModel = ({ user } = {}) => ({
 
@@ -154,11 +157,13 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   // NEW
-  reMapImagesToDeps: async (camConfig) => {
+  reMapImagesToDeps: async ({ projId, camConfig }) => {
+    console.log(`ProjectModel.reMapImagesToDeps() - projId: ${projId}`);
     console.log(`ProjectModel.reMapImagesToDeps() - camConfig: ${camConfig}`);
     try {
       // build array of operations from camConfig.deployments:
       // for each deployment, build filter, update, then perform bulkWrite
+      // NOTE: this function expects deps to be in chronological order!
       let operations = [];
       for (const [index, dep] of camConfig.deployments.entries()) {
         const createdStart = dep.startDate || null;
@@ -166,14 +171,14 @@ const generateProjectModel = ({ user } = {}) => ({
           ? camConfig.deployments[index + 1].startDate
           : null;
 
-        let filter = { cameraSn: camConfig._id };
-        if (createdStart || createdEnd) {
+        let filter = { project: projId, cameraSn: camConfig._id };
+        if (createdStart || createdEnd) { 
           filter.dateTimeOriginal = {
             ...(createdStart && { $gte: createdStart }),
             ...(createdEnd && { $lt: createdEnd }),
           }
         }
-        const update = { deployment: dep._id }
+        const update = { deployment: dep._id, timezone: dep.timezone };
         operations.push({ updateMany: { filter, update } });
       };
 
@@ -196,8 +201,9 @@ const generateProjectModel = ({ user } = {}) => ({
           camConfig._id.toString() ===  cameraId.toString()
         ));
         camConfig.deployments.push(deployment);
-        await generateProjectModel.save();
-        await this.reMapImagesToDeps(camConfig);
+        camConfig.deployments = utils.sortDeps(camConfig.deployments);
+        await project.save();
+        await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {
         throw new ApolloError(err);
@@ -223,9 +229,10 @@ const generateProjectModel = ({ user } = {}) => ({
           for (let [key, newVal] of Object.entries(diffs)) {
             deployment[key] = newVal;
           }
+          camConfig.deployments = utils.sortDeps(camConfig.deployments);
           await project.save();
           if (Object.keys(diffs).includes('startDate')) {
-            await this.reMapImagesToDeps(camConfig);
+            await this.reMapImagesToDeps({ projId: project._id, camConfig });
           }
         }
         return camera;
@@ -249,8 +256,9 @@ const generateProjectModel = ({ user } = {}) => ({
         camConfig.deployments = camConfig.deployments.filter((dep) => (
           dep._id.toString() !== deploymentId.toString()
         ));
+        camConfig.deployments = utils.sortDeps(camConfig.deployments);
         await project.save();
-        await this.reMapImagesToDeps(camConfig);
+        await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {
         throw new ApolloError(err);

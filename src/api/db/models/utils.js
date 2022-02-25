@@ -309,7 +309,30 @@ const mapImageToDeployment = (image, cameraConfig) => {
     : findDeployment(image, cameraConfig);
 };
 
+// NEW
+const sortDeps = (deps) => {
+  console.log('utils.sortDeps() - deps before sort: ', deps);
+
+  // remove default deployment (temporarily)
+  let defaultDep = deps.find((dep) => dep.name === 'default');
+  let chronDeps = _.cloneDeep(deps);
+  chronDeps = chronDeps.filter((dep) => dep.startDate); 
+
+  // sort chonologically
+  chronDeps.sort((a, b) => {
+    const aStart = moment(a.startDate);
+    const bStart = moment(b.startDate);
+    return aStart.diff(bStart);
+  });
+
+  // add default deployment back in
+  chronDeps.unshift(defaultDep);
+  return chronDeps;
+};
+
+
 module.exports = {
+  retryWrapper,
   buildImgUrl,
   buildFilter,
   sanitizeMetadata,
@@ -318,5 +341,5 @@ module.exports = {
   createLabelRecord,
   hasRole,
   mapImageToDeployment,
-  retryWrapper,
+  sortDeps,
 };
