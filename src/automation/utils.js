@@ -3,7 +3,6 @@ const _ = require('lodash');
 
 const includedInView = (image, view) => {
   const filters = view.filters;
-
   // check camera filter
   if (filters.cameras) {
     if (!filters.cameras.includes(image.cameraSn)) return false;
@@ -63,7 +62,6 @@ const includedInView = (image, view) => {
   }
 
   // TODO: check custom - not sure we'll ever be able to evaluate custom filters
-
   return true;
 };
 
@@ -80,11 +78,14 @@ const ruleApplies = (rule, event, label) => {
 }
 
 const buildCallstack = async (payload, context) => {
-  console.log(`automation.buildCallstack() - payload: ${payload}`);
+  console.log(`automation.buildCallstack() - payload: ${JSON.stringify(payload)}`);
   const { event, image, label } = payload;
+  let callstack = [];
   // NEW - updated this to use context.models.Project to get views
-  const proj = await context.models.Project.getProject([payload.image.project]);
-  let callstack = proj.views.reduce((applicableRules, view) => {
+  const projects = await context.models.Project.getProjects([payload.image.project]);
+  const proj = projects[0];
+
+  callstack = proj.views.reduce((applicableRules, view) => {
     if (includedInView(image, view) && view.automationRules.length > 0) {
       view.automationRules
         .filter((rule) => ruleApplies(rule, event, label))
@@ -92,6 +93,7 @@ const buildCallstack = async (payload, context) => {
     }
     return applicableRules;
   }, []);
+
   return _.uniqWith(callstack, _.isEqual); // remove dupes
 };
 

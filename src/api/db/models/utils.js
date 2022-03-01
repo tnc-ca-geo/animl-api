@@ -14,7 +14,7 @@ const retryWrapper = (fn, input, context) => {
   return retry(async (bail, attempt) => {
     if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
     return await fn(input, context);
-  }, { retries: 3 });
+  }, { retries: 2 });
 }
 
 const buildImgUrl = (image, config, size = 'original') => {
@@ -232,6 +232,7 @@ const createImageRecord = (md) => {
     cameraSn: md.serialNumber,
     make: md.make,
     deployment: md.deployment,
+    project: md.project,
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
@@ -246,7 +247,7 @@ const createImageRecord = (md) => {
 
 // TODO: accommodate users as label authors as well as models
 const createLabelRecord = (input, authorId) => {
-  const { _id, type, category, conf, bbox, mlModelVersion, validation } = inupt;
+  const { _id, type, category, conf, bbox, mlModelVersion, validation } = input;
   const label = {
     ...(_id && { _id }),
     type,
@@ -297,7 +298,7 @@ const findDeployment = (image, cameraConfig) => {
 // NEW - updated this to find deployments in camera config entries, i.e.:
 // Project.cameras.deployments
 const mapImageToDeployment = (image, cameraConfig) => {
-  console.log(`utils.mapImageToDeployment() - image: ${image}`);
+  console.log(`utils.mapImageToDeployment() - image: ${JSON.stringify(image)}`);
   console.log(`utils.mapImageToDeployment() - cameraConfig: ${cameraConfig}`);
 
   if (cameraConfig.deployments.length === 0) {

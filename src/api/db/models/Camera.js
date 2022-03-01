@@ -33,8 +33,8 @@ const generateCameraModel = ({ user } = {}) => ({
           projRegistrations: [{ project, active: true }],
           ...(model && { model }),
         });
-        console.log(`CameraModel.createCamera() - newCamera: ${newCamera}`);
         await newCamera.save();
+        console.log(`CameraModel.createCamera() - newCamera: ${newCamera}`);
 
         // NEW - create camera config entry in Project.cameras
         // should this be somewhere else? move up to mutation resolver level?

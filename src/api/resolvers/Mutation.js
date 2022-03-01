@@ -16,24 +16,24 @@ const Mutation = {
     const cameraSn = md.serialNumber;
     const existingCam = await context.models.Camera.getCameras([cameraSn]);
     if (existingCam.length > 0) {
-      console.log(`Found camera - ${existingCam}`);
+      console.log(`createImage() - Found camera - ${existingCam}`);
 
       // NEW - find current project registration
-      const projReg = existingCam[0].projRegistrations.find((proj) => (
+      const activeProjReg = existingCam[0].projRegistrations.find((proj) => (
         proj.active
       ));
-      if (!projReg) {
+      if (!activeProjReg) {
         const err = `Can't find active project registration for image: ${md}`;
         throw new ApolloError(err);
       }
-      console.log(`Found current project registration - ${projReg.project}`);
-      projectId = projReg.project;
+      console.log(`createImage() - Found active project registration - ${activeProjReg.project}`);
+      projectId = activeProjReg.project;
     }
     else {
-      console.log(`Couldn't find a camera for image, so creating new one...`);
+      console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
       const input = {
         project: projectId,
-        cameraSn: md.serialNumber,
+        cameraSn,
         make: md.make,
         ...(md.model && { model: md.model }),
       };
@@ -42,14 +42,17 @@ const Mutation = {
         input,
         context
       );
+      console.log(`createImage() - newCam: `, newCam);
     }
 
     // NEW - map image to deployment
-    const project = await context.models.Project.getProjects([projectId]);
-    const camConfig = project.cameras.find((cam) => 
+    const projects = await context.models.Project.getProjects([projectId]);
+    console.log(`createImage() - found project: ${projects[0]}`);
+    const camConfig = projects[0].cameras.find((cam) => 
       cam._id.toString() === cameraSn.toString()
     );
     const deploymentId = utils.mapImageToDeployment(md, camConfig);
+    console.log(`createImage() - mapped to deployment: ${deploymentId}`);
 
     // create image record
     md.project = projectId;

@@ -46,23 +46,24 @@ const generateProjectModel = ({ user } = {}) => ({
     // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
     //   return null;
     // }
-    return async ({ projectId, cameraSn }) => {
+    return async (projectId, cameraSn) => {
       try {
         console.log(`ProjectModel.createCameraConfig() - projectId: ${projectId}`);
         console.log(`ProjectModel.createCameraConfig() - cameraSn: ${cameraSn}`);
-        const projects = await this.getProjects(projectId);
+        const projects = await this.getProjects([projectId]);
         const project = projects[0];
         console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
-        project = project[0];
         project.cameras.push({
           _id: cameraSn,
           deployments: [{
             name: 'default',
+            timezone: project.timezone,
             description: 'This is the default deployment. It is not editable',
             editable: false,
           }],
         });
         await project.save();
+        console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
         return project;
       } catch (err) {
         throw new ApolloError(err);
@@ -85,7 +86,7 @@ const generateProjectModel = ({ user } = {}) => ({
         // IF its an operation the superuser ever performs, we do not want to use
         // user['curr_project'], because they don't have one... 
         // unless we set it after we map the image to the correct project?
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
         console.log(`ProjectModel.createView() - project: `, project);
         const newView = {
@@ -112,7 +113,7 @@ const generateProjectModel = ({ user } = {}) => ({
     return async (input, context) => {
       console.log(`ProjectModel.updateView() - input: ${input}`);
       try {
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
         let view = project.views.find((view) => (
           view._id.toString() === input._id.toString()
@@ -138,7 +139,7 @@ const generateProjectModel = ({ user } = {}) => ({
     return async (input, context) => {
       console.log(`ProjectModel.deleteView() - input: ${input}`);
       try {
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
         let view = project.views.find((view) => (
           view._id.toString() === input._id.toString()
@@ -204,7 +205,7 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.createDeployment() - input: ${input}`);
       const { cameraId, deployment } = input;
       try {
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
@@ -226,13 +227,11 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.updateDeployment() - input: ${input}`);
       const { cameraId, deploymentId, diffs } = input;
       try {
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
-        console.log(`ProjectModel.updateDeployment() - project: ${project._id}`);
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()
         ));
-        console.log(`ProjectModel.updateDeployment() - camConfig: ${camConfig}`);
         let deployment = camConfig.deployments.find((dep) => (
           dep._id.toString() === deploymentId.toString()
         ));
@@ -259,7 +258,7 @@ const generateProjectModel = ({ user } = {}) => ({
       console.log(`ProjectModel.deleteDeployment() - input: ${input}`);
       const { cameraId, deploymentId } = input;
       try {
-        const projects = await this.getProjects(user['curr_project']);
+        const projects = await this.getProjects([user['curr_project']]);
         const project = projects[0];
         let camConfig = project.cameras.find((camConfig) => (
           camConfig._id.toString() ===  cameraId.toString()

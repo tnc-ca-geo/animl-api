@@ -47,7 +47,7 @@ const runInference = {
       type: 'ml',
       bbox: det.slice(0, 4),
       conf: det[4],
-      category: catConfig.find((cat) => cat._id === det[5]).name,
+      category: catConfig.find((cat) => cat._id === det[5].toString()).name,
     }));
 
     // NEW - filter out disabled detections & detections below confThreshold

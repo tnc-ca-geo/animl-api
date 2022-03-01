@@ -74,6 +74,10 @@ const generateImageModel = ({ user } = {}) => ({
     console.log(`ImageModel.createImage() - md: ${md}`);
     try {
       const newImage = utils.createImageRecord(md);
+      // TODO: fix error handling bug here - if image successfully saves
+      // and then an error gets thrown in automation.eventHandler, 
+      // retryWrapper retries this whole function again (including save image)
+      // but it gets rejected b/c the image is now a duplicate
       await newImage.save();
       await automation.handleEvent({
         event: 'image-added',
@@ -152,7 +156,7 @@ const generateImageModel = ({ user } = {}) => ({
   // do we need to know what project the label belongs to? if so how do we determine that?
   get createLabels() {
     return async (input, context) => {
-      console.log(`ImageModel.createLabels() - input: ${input}`);
+      console.log(`ImageModel.createLabels() - input: ${JSON.stringify(input)}`);
       const { imageId, objectId, labels } = input;
       try {
         const image = await this.queryById(imageId);
@@ -190,7 +194,7 @@ const generateImageModel = ({ user } = {}) => ({
 
           await image.save();
           
-          if (label.modelId) {
+          if (label.mlModel) {
             await automation.handleEvent({
               event: 'label-added',
               image: image,
