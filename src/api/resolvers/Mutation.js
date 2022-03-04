@@ -32,17 +32,17 @@ const Mutation = {
     else {
       console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
       const input = {
-        project: projectId,
-        cameraSn,
+        projectId,
+        cameraId: cameraSn,
         make: md.make,
         ...(md.model && { model: md.model }),
       };
-      const newCam = await retry(
+      const res = await retry(
         context.models.Camera.createCamera,
         input,
         context
       );
-      console.log(`createImage() - newCam: `, newCam);
+      console.log(`createImage() - newCam: `, res.newCam);
     }
 
     // NEW - map image to deployment
@@ -69,7 +69,13 @@ const Mutation = {
       input,
       context
     );
-    return { success: res.ok, cameraId: input.cameraId };
+    console.log(`registerCamera() - res: `, res);
+    return { 
+      success: res.ok,
+      cameraId: input.cameraId,
+      ...(res.project && { project: res.project }),
+      ...(res.rejectionInfo && { rejectionInfo: res.rejectionInfo })
+    };
   },
 
   // TODO AUTH - create unregisterCamera() handler

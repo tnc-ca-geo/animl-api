@@ -9,7 +9,6 @@ const retry = require('async-retry');
 // TODO: this file is getting unwieldy, break up 
 
 // TODO AUTH - make sure this can handle additional args
-// (e.g) context.models.Camera.createCamera() now can take 'project' as new param
 const retryWrapper = (fn, input, context) => {
   return retry(async (bail, attempt) => {
     if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);

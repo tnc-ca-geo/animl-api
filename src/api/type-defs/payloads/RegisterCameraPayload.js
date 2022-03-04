@@ -8,6 +8,7 @@ module.exports = `
     success: Boolean!
     rejectionInfo: RegistrationRejection
     cameraId: ID!
+    project: Project
   }
 `;
 

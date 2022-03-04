@@ -3,7 +3,9 @@ const { image } = require('../../resolvers/Query');
 const Project = require('../schemas/Project');
 const Camera = require('../schemas/Camera');
 const Image = require('../schemas/Image');
-const { hasRole, mapImageToDeployment } = require('./utils');
+const { hasRole, mapImageToDeployment, retryWrapper } = require('./utils');
+const retry = retryWrapper;
+
 
 const generateCameraModel = ({ user } = {}) => ({
 
@@ -19,18 +21,20 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   // NEW
+  // TODO: also return upated project
   get createCamera() {
     // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
     //   return null;
     // }
-    return async ({ project, cameraSn, make, model }, context) => {
-      project = project || 'default_project';
+    return async ({ projectId, cameraId, make, model }, context) => {
+      console.log(`CameraModel.createCamera() - creating camera`);
+      projectId = projectId || 'default_project';
       try {
         // NEW - create "source" Camera record
         const newCamera = new Camera({
-          _id: cameraSn,
+          _id: cameraId,
           make,
-          projRegistrations: [{ project, active: true }],
+          projRegistrations: [{ project: projectId, projectId, active: true }],
           ...(model && { model }),
         });
         await newCamera.save();
@@ -38,9 +42,12 @@ const generateCameraModel = ({ user } = {}) => ({
 
         // NEW - create camera config entry in Project.cameras
         // should this be somewhere else? move up to mutation resolver level?
-        await context.models.Project.createCameraConfig(project, newCamera._id);
+        const project = await context.models.Project.createCameraConfig(
+          projectId,
+          newCamera._id
+        );
 
-        return newCamera;
+        return { camera: newCamera, project };
       } catch (err) {
         throw new ApolloError(err);
       }
@@ -49,57 +56,69 @@ const generateCameraModel = ({ user } = {}) => ({
 
   // NEW
   get registerCamera() {
-    return async ({ cameraSn, make }, context) => {
+    return async ({ cameraId, make }, context) => {
       // TODO AUTH - DOES superuser ever have to registerCameras?
       // if so, we can't just use user['curr_project']
-      const project = user['curr_project'];
-      console.log(`CameraModel.registerCamera() - project: ${project}`);
-      console.log(`CameraModel.registerCamera() - cameraSn: ${cameraSn}`);
+      const projectId = user['curr_project'];
+      console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
+      console.log(`CameraModel.registerCamera() - cameraId: ${cameraId}`);
       console.log(`CameraModel.registerCamera() - make: ${make}`);
 
       try {
-        const existingCam = await this.getCameras([cameraSn]);
+        const existingCam = await this.getCameras([cameraId]);
         if (existingCam.length === 0) {
           // if no camera found, create new source "Camera" record
           // and CameraConfig entry
-          console.log(`Couldn't find an existing camera, so creating new one...`);
-          const newCam = await retry(
+          console.log(`CameraModel.registerCamera() - Couldn't find an existing camera, so creating new one and registering it to ${projectId} project...`);
+          const { camera, project } = await retry(
             this.createCamera,
-            { project, cameraSn, make },
+            { projectId, cameraId, make },
             context
           );
-          return { ok: true };  // TODO AUTH - maybe better return val here?
+          console.log(`CameraModel.registerCamera() - New camera: `, camera);
+          console.log(`CameraModel.registerCamera() - updated project: `, project);
+          return { ok: true, camera, project };
         }
 
         const cam = existingCam[0];
+        console.log(`CameraModel.registerCamera() - Found camera: `, cam);
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
         if (activeReg.project === 'default_project') {
+          console.log(`CameraModel.registerCamera() - Camera exists and it's currently registered to default project, so reassigning to ${projectId} project...`);
           // if it exists & default proj is active (i.e., it's unregistered),
           // change to current project
           // NOTE: projReg might already exist for the current project, 
           // or we might have to create one
           let foundProject = false;
-          cam.projectRegistrations = cam.projectRegistrations.map((proj) => {
-            if (proj.project === project) foundProject = true;
+          cam.projRegistrations = cam.projRegistrations.map((proj) => {
+            if (proj.project === projectId) foundProject = true;
             return {
               project: proj.project,
-              active: (proj.project === project),
+              active: (proj.project === projectId),
             }
           });
           if (!foundProject) {
-            cam.projectRegistrations.push({ project, active: true });
+            cam.projRegistrations.push({ project: projectId, active: true });
           }
+          console.log(`CameraModel.registerCamera() - Camera before saving: `, cam);
           await cam.save();
-          return { ok: true };
+          const project = await context.models.Project.createCameraConfig(
+            projectId,
+            cam._id
+          );
+          return { ok: true, camera: cam, project };
         }
-        else if (activeReg.project !== project) {
+        else if (activeReg.project !== projectId) {
+          console.log(`CameraModel.registerCamera() - camera exists, but it's registered to a different project, so rejecting registration`);
           // if it's mapped to another project that's the user's current one 
           // (i.e. user['curr_project'] reject registration
           // TODO AUTH - or do we throw error here? 
           return {
             ok: false,
-            currProjReg: activeReg.project,
-            msg: 'This camera is currently registered to a different project!'
+            rejectionInfo: {
+              currProjReg: activeReg.project,
+              msg: 'This camera is currently registered to a different project!'
+            }
           };
         }
       } catch (err) {
