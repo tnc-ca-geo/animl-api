@@ -44,10 +44,12 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   // TODO: this should be called getAllCategories or something like that
-  getLabels: async () => {
+  getLabels: async (projId) => {
     try {
+      console.log(`ImageModel.getLabels() - projId: ${projId}`);
+
       const categoriesAggregate = await Image.aggregate([
-        { $match: {'project': user['curr_project']} }, // NEW - limit aggregation to JUST image w/ current project Id
+        { $match: {'project': projId} }, // NEW - limit aggregation to specific project
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
         { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
@@ -56,12 +58,14 @@ const generateImageModel = ({ user } = {}) => ({
         }}}
       ]);
       if (categoriesAggregate.length === 0) {
-        // TODO AUTH - we probably don't want to throw an error here 
-        // b/c it's possible for a project to just not have any images or labels
-        throw new ApolloError(`No labels found in ${user['curr_project']}`);
       }
-      let categories = categoriesAggregate[0].uniqueCategories;
-      const labellessImage = await Image.findOne({ objects: { $size: 0 } });
+      let categories = categoriesAggregate.length
+        ? categoriesAggregate[0].uniqueCategories
+        : [];
+
+      const labellessImage = await Image.findOne(
+        { project: projId, objects: { $size: 0 } }
+      );
       if (labellessImage) categories.push('none');
       console.log(`ImageModel.getLabels() - categories: ${categories}`);
       return { categories };

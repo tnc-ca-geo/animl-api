@@ -29,9 +29,10 @@ const Query = {
     return await context.models.Image.queryById(args.input._id);
   },
 
-  labels: async (_, { _ids }, context) => {
-    return await context.models.Image.getLabels(_ids);
-  },
+  // Now fetching labels as a field level resolver for Project
+  // labels: async (_, __, context) => {
+  //   return await context.models.Image.getLabels();
+  // },
   
   cameras: async (_, { _ids }, context) => {
     return await context.models.Camera.getCameras(_ids);

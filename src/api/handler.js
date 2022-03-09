@@ -8,7 +8,7 @@ const generateCameraModel = require('./db/models/Camera');
 const generateMLModelModel = require('./db/models/MLModel');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
-// const Fields = require('./resolvers/Fields');
+const Fields = require('./resolvers/Fields');
 const Scalars = require('./resolvers/Scalars');
 const typeDefs = require('./type-defs');
 const { getConfig } = require('../config/config');
@@ -18,7 +18,7 @@ const { getUserInfo } = require('./auth/authorization');
 const resolvers = {
   Query,
   Mutation,
-  // ...Fields,
+  ...Fields,
   ...Scalars,
 };
 

@@ -22,6 +22,7 @@ module.exports = `
     description: String
     views: [View!]!
     cameras: [CameraConfig]
+    labels: LabelList
     availableMLModels: [String]
   }
 `;
