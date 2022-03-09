@@ -21,7 +21,7 @@ const generateProjectModel = ({ user } = {}) => ({
     }
 
     try {
-      console.log(`ProjectModel.getProjects() - query: ${query}`);
+      console.log(`ProjectModel.getProjects() - query: ${JSON.stringify(query)}`);
       const projects = await Project.find(query);
       return projects;
     } catch (err) {
@@ -53,17 +53,21 @@ const generateProjectModel = ({ user } = {}) => ({
         const projects = await this.getProjects([projectId]);
         const project = projects[0];
         console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
-        project.cameras.push({
-          _id: cameraSn,
-          deployments: [{
-            name: 'default',
-            timezone: project.timezone,
-            description: 'This is the default deployment. It is not editable',
-            editable: false,
-          }],
-        });
-        await project.save();
-        console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
+        // make sure project doesn't already have a config for this cam
+        const currCamConfig = project.cameras.find((c) => c._id === cameraSn);
+        if (!currCamConfig) {
+          project.cameras.push({
+            _id: cameraSn,
+            deployments: [{
+              name: 'default',
+              timezone: project.timezone,
+              description: 'This is the default deployment. It is not editable',
+              editable: false,
+            }],
+          });
+          await project.save();
+          console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
+        }
         return project;
       } catch (err) {
         throw new ApolloError(err);

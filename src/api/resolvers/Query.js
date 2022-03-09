@@ -29,8 +29,8 @@ const Query = {
     return await context.models.Image.queryById(args.input._id);
   },
 
-  labels: async (_, __, context) => {
-    return await context.models.Image.getLabels();
+  labels: async (_, { _ids }, context) => {
+    return await context.models.Image.getLabels(_ids);
   },
   
   cameras: async (_, { _ids }, context) => {

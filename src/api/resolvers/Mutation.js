@@ -74,9 +74,26 @@ const Mutation = {
       success: res.ok,
       cameraId: input.cameraId,
       ...(res.project && { project: res.project }),
+      ...(res.cameras && { cameras: res.cameras }),
       ...(res.rejectionInfo && { rejectionInfo: res.rejectionInfo })
     };
   },
+
+    // NEW
+    unregisterCamera: async(_, { input }, context) => {
+      const res = await retry(
+        context.models.Camera.unregisterCamera,
+        input,
+        context
+      );
+      console.log(`unregisterCamera() - res: `, res);
+      return { 
+        success: res.ok,
+        cameraId: input.cameraId,
+        ...(res.cameras && { cameras: res.cameras }),
+        ...(res.rejectionInfo && { rejectionInfo: res.rejectionInfo })
+      };
+    },
 
   // TODO AUTH - create unregisterCamera() handler
 

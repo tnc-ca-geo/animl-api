@@ -3,6 +3,7 @@ module.exports = `
     createImage(input: CreateImageInput!): CreateImagePayload
 
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
+    unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload
 
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload

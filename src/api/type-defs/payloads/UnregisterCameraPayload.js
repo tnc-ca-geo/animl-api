@@ -1,14 +1,8 @@
 module.exports = `
-  type RegistrationRejection {
-    msg: String!,
-    currProjReg: String,
-  }
-
-  type RegisterCameraPayload {
+  type UnregisterCameraPayload {
     success: Boolean!
     rejectionInfo: RegistrationRejection
     cameraId: ID!
-    project: Project
     cameras: [Camera]
   }
 `;
