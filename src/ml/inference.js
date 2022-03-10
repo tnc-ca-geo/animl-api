@@ -74,7 +74,7 @@ const runInference = {
 
   mira: async (params) => {
     const { modelSource, catConfig, image, label, config } = params;
-    console.log(`requesting inference from ${modelSource.name} on image: ${image.originalFileName}`);
+    console.log(`requesting inference from ${modelSource._id} on image: ${image.originalFileName}`);
     const imgBuffer = await getImage(image, config);
     const bbox = label.bbox ? label.bbox : [0,0,1,1];
     let res;

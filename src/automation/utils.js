@@ -1,6 +1,21 @@
 const moment = require('moment');
 const _ = require('lodash');
 
+const buildCatConfig = (modelSource, rule) => {
+  console.log('automation.buildCatConfig: - building category config')
+  const { confThreshold, categoryConfig } = rule.action;
+  return modelSource.categories.map((cs) => {
+    const { _id, name } = cs;
+    const catConfig = categoryConfig && categoryConfig[name];
+    const ct = (catConfig && catConfig.confThreshold) || // automation rule, category level setting
+                confThreshold || // automation rule, model level setting
+                modelSource.defaultConfThreshold;  // model source, default setting
+                
+    const disabled = (catConfig && catConfig.disabled) || false;
+    return { _id, name, disabled, confThreshold: ct };
+  });
+};
+
 const includedInView = (image, view) => {
   const filters = view.filters;
   // check camera filter
@@ -98,5 +113,6 @@ const buildCallstack = async (payload, context) => {
 };
 
 module.exports = {
+  buildCatConfig,
   buildCallstack,
 };

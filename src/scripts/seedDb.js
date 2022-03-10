@@ -29,6 +29,7 @@ let defaultMLModelsConfig = [
       { _id: 'fox', name: 'fox' },
       { _id: 'skunk', name: 'skunk' },
       { _id: 'rodent', name: 'rodent' },
+      { _id: 'empty', name: 'empty' },
     ],
   },
 ];

@@ -10,28 +10,14 @@ const executeRule = {
     console.log(`automation.executeRule() - rule: ${rule}`);
     console.log(`automation.executeRule() - payload: ${JSON.stringify(payload)}`);
 
-    // TODO: send MIRA requests to separate queue
     // NEW - update this to reflect new automation rule approach & schema
+    // TODO AUTH - this is a tough to read needs clean up.
     try {
-      const { mlModel, confThreshold, categoryConfig }  = rule.action;
-      // const projectId = payload.image.project;
+      const mlModel = rule.action.mlModel;
       const modelSources = await context.models.MLModel.getMLModels([mlModel]);
       const modelSource = modelSources[0];
-      // NEW - we also need to determine category config from a combo of
-      // the modelSource (default) and automationRule.action data
-      const catConfig = modelSource.categories.map((catSource) => {
-        const config = categoryConfig && categoryConfig[catSource.name];
-        const thresh = (config && config.confThreshold) || // automation rule, category level override
-                       confThreshold || // automation rule, model level setting
-                       modelSource.defaultConfThreshold;  // model source, default setting
-        return {
-          _id: catSource._id, // _id native to the model (i.e. _id 1 === 'animal')
-          name: catSource.name, // human readable category name
-          disabled: config && config.disabled,
-          confThreshold: thresh,
-        }
-      });
-      
+      console.log(`automation.executeRule() - modelSource ${JSON.stringify(modelSource)}`);
+      const catConfig = utils.buildCatConfig(modelSource, rule);
       const message = { modelSource, catConfig, ...payload }; // NEW
       console.log(`automation.executeRule['run-inference']() - message: ${JSON.stringify(message)}`);
       return await sqs.sendMessage({

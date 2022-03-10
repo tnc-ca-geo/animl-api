@@ -11,12 +11,14 @@ const generateCameraModel = ({ user } = {}) => ({
 
   getCameras: async (_ids) => {
     let query = _ids ? { _id: { $in: _ids } } : {};
-    // TODO if user has curr_project, limit returned cameras to those that 
+    // TODO: if user has curr_project, limit returned cameras to those that 
     // have been assoicted with curr_project
+
+    // Issue here: when registering a camera, we need to be able to get all cameras
+    // not just the ones that the user has access to or the ones in the curr_project...
     const projectId = user['curr_project'];
     if (projectId) query['projRegistrations.project'] = projectId;
     console.log(`CameraModel.getCameras() - query: ${JSON.stringify(query)}`);
-
     try {
       const cameras = await Camera.find(query);
       return cameras;
@@ -70,8 +72,9 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log(`CameraModel.registerCamera() - make: ${make}`);
 
       try {
-        const existingCam = await this.getCameras([cameraId]);
-        if (existingCam.length === 0) {
+        const cam = await Camera.findOne({ _id: cameraId });
+        console.log(`CameraModel.registerCamera() - Found camera: `, cam);
+        if (!cam) {
           // if no camera found, create new source "Camera" record
           // and CameraConfig entry
           console.log(`CameraModel.registerCamera() - Couldn't find an existing camera, so creating new one and registering it to ${projectId} project...`);
@@ -86,15 +89,11 @@ const generateCameraModel = ({ user } = {}) => ({
           return { ok: true, cameras, project };
         }
 
-        const cam = existingCam[0];
-        console.log(`CameraModel.registerCamera() - Found camera: `, cam);
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
         if (activeReg.project === 'default_project') {
           console.log(`CameraModel.registerCamera() - Camera exists and it's currently registered to default project, so reassigning to ${projectId} project...`);
-          // if it exists & default proj is active (i.e., it's unregistered),
-          // change to current project
-          // NOTE: projReg might already exist for the current project, 
-          // or we might have to create one
+          // if camera exists & is registered to default_project,
+          // register to current project
           let foundProject = false;
           cam.projRegistrations = cam.projRegistrations.map((proj) => {
             if (proj.project === projectId) foundProject = true;
@@ -117,8 +116,8 @@ const generateCameraModel = ({ user } = {}) => ({
         }
         else if (activeReg.project !== projectId) {
           console.log(`CameraModel.registerCamera() - camera exists, but it's registered to a different project, so rejecting registration`);
-          // if it's mapped to another project that's the user's current one 
-          // (i.e. user['curr_project'] reject registration
+          // if it's mapped to a different project than the user's current one, 
+          // so reject registration.
           // TODO AUTH - or do we throw error here? 
           return {
             ok: false,
@@ -143,7 +142,7 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log(`CameraModel.unregisterCamera() - projectId: ${projectId}`);
       console.log(`CameraModel.unregisterCamera() - cameraId: ${cameraId}`);
 
-      const reject = (msg, currProjReg) => {
+      const reject = ({ msg, currProjReg }) => {
         return {
           ok: false,
           rejectionInfo: { msg, currProjReg }
@@ -152,18 +151,18 @@ const generateCameraModel = ({ user } = {}) => ({
 
       try {
 
-        const cameras = await this.getCameras();
+        const cameras = await Camera.find();
         const cam = cameras.find((c) => c._id === cameraId);
         if (!cam) {
-          reject({ msg: `Couldn't find camera record for camera ${cameraId}` });
+          return reject({ msg: `Couldn't find camera record for camera ${cameraId}` });
         }
 
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
         if (activeReg.project === 'default_project') {
-          reject({ msg: `You can't unregister cameras from the default project` });
+          return reject({ msg: `You can't unregister cameras from the default project` });
         }
         else if (activeReg.project !== projectId) {
-          reject({ 
+          return reject({ 
             msg: `This camera is not currently registered to ${projectId}`,
             currProjReg: activeReg.project,
           });
