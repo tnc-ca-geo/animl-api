@@ -41,10 +41,10 @@ const executeRule = {
 };
 
 const handleEvent = async (payload, context) => {
-  console.log(`automation.handleEvent() - payload: ${payload}`);
+  console.log(`automation.handleEvent() - payload: ${JSON.stringify(payload)}`);
   try {
     const callstack = await utils.buildCallstack(payload, context);
-    console.log(`automation.handleEvent() - callstack: ${callstack}`);
+    console.log(`automation.handleEvent() - callstack: ${JSON.stringify(callstack)}`);
     if (callstack.length > 0) {
       await Promise.all(callstack.map(async (rule) => (
         await executeRule[rule.action.type](rule, payload, context)

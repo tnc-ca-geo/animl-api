@@ -35,7 +35,7 @@ const generateImageModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous,
       };
-      console.log(`ImageModel.queryByFilter() - options: ${options}`);
+      console.log(`ImageModel.queryByFilter() - options: ${JSON.stringify(options)}`);
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
@@ -75,7 +75,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   createImage: async (md, context) => {
-    console.log(`ImageModel.createImage() - md: ${md}`);
+    console.log(`ImageModel.createImage() - md: ${JSON.stringify(md)}`);
     try {
       const newImage = utils.createImageRecord(md);
       // TODO: fix error handling bug here - if image successfully saves

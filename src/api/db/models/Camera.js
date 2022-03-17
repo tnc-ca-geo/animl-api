@@ -11,11 +11,8 @@ const generateCameraModel = ({ user } = {}) => ({
 
   getCameras: async (_ids) => {
     let query = _ids ? { _id: { $in: _ids } } : {};
-    // TODO: if user has curr_project, limit returned cameras to those that 
-    // have been assoicted with curr_project
-
-    // Issue here: when registering a camera, we need to be able to get all cameras
-    // not just the ones that the user has access to or the ones in the curr_project...
+    // if user has curr_project, limit returned cameras to those that 
+    // have at one point been assoicted with curr_project
     const projectId = user['curr_project'];
     if (projectId) query['projRegistrations.project'] = projectId;
     console.log(`CameraModel.getCameras() - query: ${JSON.stringify(query)}`);

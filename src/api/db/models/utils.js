@@ -91,9 +91,12 @@ const buildFilter = ({
       }}},
       // has an object is not locked, but it has label that is 
       // not-invalidated and included in filters
-      {'objects.labels': {$elemMatch: {
-        category: {$in: labels},
-        'validation.validated': {$not: {$eq: false}}
+      {'objects': {$elemMatch: {
+        locked: false,
+        labels: {$elemMatch: {
+            'validation.validated': {$not: {$eq: false}},
+            category: {$in: labels},
+          }}
       }}},
     ]};
   }

@@ -42,7 +42,7 @@ const Mutation = {
         input,
         context
       );
-      console.log(`createImage() - newCam: `, res.newCam);
+      console.log(`createImage() - newCam: `, res.camera);
     }
 
     // NEW - map image to deployment

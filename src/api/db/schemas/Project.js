@@ -45,7 +45,7 @@ let FiltersSchema = new Schema({
 });
 
 let ViewSchema = new Schema({
-  name: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
   editable: { type: Boolean },
