@@ -90,13 +90,13 @@ const runInference = {
       console.log('detections before filtering: ', res);
   
       const filteredDets = Object.values(res).reduce((dets, classifier) => {
-        // only evaluate top predictions from MIRA
+        // only evaluate top predictions
         const [category, conf] = Object.entries(classifier.predictions)
           .sort((a, b) => b[1] - a[1])[0];
         console.log(`Top ${classifier['endpoint_name']} prediction: ${category} - ${conf}`);
   
-        // filter out disabled detections, empty detections,
-        // & detections below confThreshold
+        // filter out disabled detections,
+        // empty detections, & detections below confThreshold
         // NOTE: we disregard "empty" class detections from MIRA classifiers
         // b/c we're using Megadetector to determine if objects are present
         const { disabled, confThreshold } = catConfig.find((cat) => (

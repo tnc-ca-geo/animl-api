@@ -33,7 +33,7 @@ const executeRule = {
 
   'send-alert': async (rule, payload, context) => {
     console.log(`automation.executeRule() - rule: ${rule}`);
-    console.log(`automation.executeRule() - payload: ${payload}`);
+    console.log(`automation.executeRule() - payload: ${JSON.stringify(payload)}`);
 
     try {
       return await sendEmail(rule, payload.image, context);
