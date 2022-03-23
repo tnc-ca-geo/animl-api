@@ -14,7 +14,7 @@ const retryWrapper = (fn, input, context) => {
     if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
     return await fn(input, context);
   }, { retries: 2 });
-}
+};
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config['/IMAGES/URL'];
@@ -295,7 +295,7 @@ const findDeployment = (image, cameraConfig) => {
   return mostRecentDep.deploymentId !== null
     ? mostRecentDep.deploymentId
     : defaultDep._id;
-}
+};
 
 // NEW - updated this to find deployments in camera config entries, i.e.:
 // Project.cameras.deployments

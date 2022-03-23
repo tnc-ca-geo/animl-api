@@ -6,7 +6,8 @@ const { SQS } = require('aws-sdk');
 const sqs = new SQS();
 
 async function requestCreateLabels(input, config) {
-  // TODO: there's no real reason to return all of that image data
+  
+  const variables = { input: input };
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
@@ -24,14 +25,13 @@ async function requestCreateLabels(input, config) {
       }
     }
   `
-  const variables = { input: input };
+
   try {
-    const graphQLClient = new GraphQLClient(config['/API/URL'], {
-      headers: { 'x-api-key': config['APIKEY'] },
-    });
-    const createLabelResponse = await graphQLClient.request(mutation, variables);
-    // console.log(JSON.stringify(createLabelResponse, undefined, 2));
-    return createLabelResponse;
+    const graphQLClient = new GraphQLClient(
+      config['/API/URL'], 
+      { headers: { 'x-api-key': config['APIKEY'] } },
+    );
+    return await graphQLClient.request(mutation, variables);
   } catch (err) {
     throw err;
   }
@@ -39,8 +39,9 @@ async function requestCreateLabels(input, config) {
 
 
 exports.inference = async (event, context) => {
-  // poll for messages
+
   try {
+    // poll for messages
     const config = await getConfig();
     const data = await sqs.receiveMessage({
       QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
@@ -49,15 +50,12 @@ exports.inference = async (event, context) => {
       WaitTimeSeconds: 20
     }).promise();
     
-    if (!data.Messages) {
-      return; 
-    }
+    if (!data.Messages) return; 
     
     for (const message of data.Messages) {
       const { modelSource, catConfig, image, label } = JSON.parse(message.Body);
 
       console.log(`handler() - message body: ${message.Body}`)
-      // TODO AUTH - update this to reflect new automation rule approach & schema
       
       // run inference
       const detections = await runInference[modelSource._id]({
@@ -82,8 +80,8 @@ exports.inference = async (event, context) => {
         QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
         ReceiptHandle: message.ReceiptHandle /* required */
       }).promise();
-    }
 
+    }
   } catch (err) {
     // TODO: do we throw a new error here or return one? Unclear how to ensure 
     // failure and keep message in the queue

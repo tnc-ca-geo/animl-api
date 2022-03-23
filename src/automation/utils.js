@@ -2,15 +2,14 @@ const moment = require('moment');
 const _ = require('lodash');
 
 const buildCatConfig = (modelSource, rule) => {
-  console.log('automation.buildCatConfig: - building category config')
-  const { confThreshold, categoryConfig } = rule.action;
   return modelSource.categories.map((cs) => {
     const { _id, name } = cs;
-    const catConfig = categoryConfig && categoryConfig[name];
-    const ct = (catConfig && catConfig.confThreshold) || // automation rule, category level setting
-                confThreshold || // automation rule, model level setting
-                modelSource.defaultConfThreshold;  // model source, default setting
-                
+    const catConfig = rule.action.categoryConfig && 
+                      rule.action.categoryConfig.get(name);
+    // for confidence threshold, priorize the automation rule / category-level 
+    // setting if it exists, else use the model source's default setting 
+    const ct = (catConfig && catConfig.confThreshold) ||
+                modelSource.defaultConfThreshold;
     const disabled = (catConfig && catConfig.disabled) || false;
     return { _id, name, disabled, confThreshold: ct };
   });
@@ -95,10 +94,9 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   console.log(`automation.buildCallstack() - payload: ${JSON.stringify(payload)}`);
   const { event, image, label } = payload;
-  let callstack = [];
-  // NEW - updated this to use context.models.Project to get views
   const projects = await context.models.Project.getProjects([payload.image.project]);
   const proj = projects[0];
+  let callstack = [];
 
   callstack = proj.views.reduce((applicableRules, view) => {
     if (includedInView(image, view) && view.automationRules.length > 0) {

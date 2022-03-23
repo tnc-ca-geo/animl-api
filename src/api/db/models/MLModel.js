@@ -6,7 +6,7 @@ const generateMLModelModel = ({ user } = {}) => ({
 
   getMLModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
-    console.log(`MLModel.getMLModels() - query: ${query}`);
+    console.log(`MLModel.getMLModels() - query: ${JSON.stringify(query)}`);
     try {
       const mlModels = await MLModel.find(query);
       return mlModels;

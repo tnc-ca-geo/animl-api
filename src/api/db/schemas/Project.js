@@ -21,7 +21,7 @@ let AutomationRuleSchema = new Schema({
     alertRecipients: { type: [String] },
     // NEW - now using model name as ID and updated 'model' to 'mlModel'
     mlModel: { type: String, ref: 'MLModel' },
-    confThreshold: { type: Number }, // NEW - used as default for categories w/o their own set thresholds 
+    // confThreshold: { type: Number }, // NEW - used as default for categories w/o their own set thresholds 
     categoryConfig: { // NEW
       type: Map,
       of: new Schema({
