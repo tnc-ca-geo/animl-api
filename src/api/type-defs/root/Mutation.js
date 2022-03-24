@@ -22,6 +22,3 @@ module.exports = `
     deleteDeployment(input: DeleteDeploymentInput!): DeleteDeploymentPayload
   }
 `;
-
-// TODO AUTH -     
-// unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload

@@ -22,7 +22,9 @@ const makeEmail = async (rule, image, context) => {
     const project = projects[0];
     for (const cam of project.cameras) {
       for (const dep of cam.deployments) {
-        if (dep._id.toString() === image.deployment.toString()) deployment = dep;
+        if (dep._id.toString() === image.deployment.toString()) {
+          deployment = dep;
+        }
       };
     };
 

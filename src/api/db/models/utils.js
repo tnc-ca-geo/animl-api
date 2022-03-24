@@ -5,14 +5,23 @@ const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
 const retry = require('async-retry');
 
-
 // TODO: this file is getting unwieldy, break up 
 
-// TODO AUTH - make sure this can handle additional args
+// TODO: fix issues with retryWrapper - if image successfully saves
+// and then an error gets thrown in automation.eventHandler, 
+// retryWrapper retries this whole function again (including save image)
+// but it gets rejected b/c the image is now a duplicate
 const retryWrapper = (fn, input, context) => {
   return retry(async (bail, attempt) => {
     if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
     return await fn(input, context);
+  }, { retries: 2 });
+};
+
+const saveDocRetryWrapper = (doc) => {
+  return retry(async (bail, attempt) => {
+    if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
+    return await doc.save();
   }, { retries: 2 });
 };
 
@@ -333,9 +342,24 @@ const sortDeps = (deps) => {
   return chronDeps;
 };
 
+const findActiveProjReg = (camera) => {
+  const activeProjReg = camera[0].projRegistrations.find((pr) => (
+    pr.active
+  ));
+
+  if (!activeProjReg) {
+    const err = `Can't find active project registration for image: ${md}`;
+    throw new ApolloError(err);
+  }
+
+  console.log(`utils.findActiveProjReg() - Found active project registration - ${activeProjReg.project}`);
+  return activeProjReg.project;
+};
+
 
 module.exports = {
   retryWrapper,
+  saveDocRetryWrapper,
   buildImgUrl,
   buildFilter,
   sanitizeMetadata,
@@ -345,4 +369,5 @@ module.exports = {
   hasRole,
   mapImageToDeployment,
   sortDeps,
+  findActiveProjReg,
 };

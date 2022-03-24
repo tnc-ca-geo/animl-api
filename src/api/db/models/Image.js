@@ -3,8 +3,7 @@ const { DuplicateError, DBValidationError } = require('../../errors');
 const Image = require('../schemas/Image');
 const automation = require('../../../automation');
 const utils = require('./utils');
-const { labels } = require('../../resolvers/Query');
-const { __Directive } = require('graphql');
+const retry = utils.retryWrapper;
 
 const generateImageModel = ({ user } = {}) => ({
 
@@ -74,20 +73,58 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  createImage: async (md, context) => {
-    console.log(`ImageModel.createImage() - md: ${JSON.stringify(md)}`);
+  get createImage() {
+    return async (input, context) => {
+      const md = utils.sanitizeMetadata(input.md, context.config);
+      let projectId = 'default_project';
+      console.log(`createImage() - `, md);
+  
+      try {
+
+        // find camera record or create new one
+        const cameraSn = md.serialNumber;
+        const existingCam = await context.models.Camera.getCameras([cameraSn]);
+        if (existingCam.length > 0) {
+          console.log(`createImage() - Found camera - ${existingCam}`);
+          projectId = utils.findActiveProjReg(existingCam);
+        }
+        else {
+          console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
+          await context.models.Camera.createCamera({
+            projectId,
+            cameraId: cameraSn,
+            make: md.make,
+            ...(md.model && { model: md.model }),
+          }, context);
+        }
+
+        // map image to deployment
+        const projects = await context.models.Project.getProjects([projectId]);
+        console.log(`createImage() - found project: ${projects[0]}`);
+        const camConfig = projects[0].cameras.find((cam) => 
+          cam._id.toString() === cameraSn.toString()
+        );
+        const deploymentId = utils.mapImageToDeployment(md, camConfig);
+        console.log(`createImage() - mapped to deployment: ${deploymentId}`);
+
+        // create image record
+        md.project = projectId;
+        md.deployment = deploymentId;
+        const image = await retry(this.saveImage, md);
+        await automation.handleEvent({ event: 'image-added', image }, context);
+        return image;
+
+      } catch (err) {
+        throw new ApolloError(err);
+      }
+    }
+  },
+
+  saveImage: async (md) => {
+    console.log(`ImageModel.saveImage() - md: ${JSON.stringify(md)}`);
     try {
       const newImage = utils.createImageRecord(md);
-      // TODO: fix error handling bug here - if image successfully saves
-      // and then an error gets thrown in automation.eventHandler, 
-      // retryWrapper retries this whole function again (including save image)
-      // but it gets rejected b/c the image is now a duplicate
-      await newImage.save();
-      await automation.handleEvent({
-        event: 'image-added',
-        image: newImage,
-      }, context);
-      return newImage;
+      return await newImage.save();
     } catch (err) {
       if (err.message.toLowerCase().includes('duplicate')) {
         throw new DuplicateError(err);

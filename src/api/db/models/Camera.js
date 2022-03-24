@@ -25,7 +25,8 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   // NEW
-  // TODO: also return upated project
+  // TODO: also return upated project? 
+  // might be useful in Image.createImage()
   get createCamera() {
     // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
     //   return null;
@@ -61,8 +62,6 @@ const generateCameraModel = ({ user } = {}) => ({
   // NEW
   get registerCamera() {
     return async ({ cameraId, make }, context) => {
-      // TODO AUTH - DOES superuser ever have to registerCameras?
-      // if so, we can't just use user['curr_project']
       const projectId = user['curr_project'];
       console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
       console.log(`CameraModel.registerCamera() - cameraId: ${cameraId}`);
