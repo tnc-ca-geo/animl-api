@@ -1,13 +1,12 @@
 const { ApolloError } = require('apollo-server-errors');
-const moment = require('moment');
 const Project = require('../schemas/Project');
 const Image = require('../schemas/Image');
 const utils = require('./utils');
+const retry = require('async-retry');
 
 
 const generateProjectModel = ({ user } = {}) => ({
 
-  // NEW
   getProjects: async (_ids) => {
     let query = {};
     if (user['is_superuser']) {
@@ -29,194 +28,230 @@ const generateProjectModel = ({ user } = {}) => ({
     }
   },
 
-  // NEW
   createProject: async (input) => {
     console.log(`ProjectModel.createProject() - input: ${input}`);
+
+    const operation = async (input) => {
+      return await retry(async (bail) => {
+        const newProject = new Project(input);
+        await newProject.save();
+        return newProject;
+      }, { retries: 2 });
+    };
+    
     try {
-      const newProject = new Project(input);
-      await newProject.save();
-      return newProject;
+      return await operation(input);
     } catch (err) {
       throw new ApolloError(err);
     }
   },
 
-  // NEW - add createCameraConfig()
   get createCameraConfig() {
+    return async (projectId, cameraSn) => {
     // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
     //   return null;
     // }
-    return async (projectId, cameraSn) => {
+
+      const operation = async (projectId, cameraSn) => {
+        return await retry(async (bail) => {
+
+          const [ project ] = await this.getProjects([projectId]);
+          console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
+          
+          // make sure project doesn't already have a config for this cam
+          const currCamConfig = project.cameras.find((c) => c._id === cameraSn);
+          if (!currCamConfig) {
+            project.cameras.push({
+              _id: cameraSn,
+              deployments: [{
+                name: 'default',
+                timezone: project.timezone,
+                description: 'This is the default deployment. It is not editable',
+                editable: false,
+              }],
+            });
+            await project.save();
+            console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
+          }
+          
+          return project;
+
+        }, { retries: 2 });
+      };
+
       try {
         console.log(`ProjectModel.createCameraConfig() - projectId: ${projectId}`);
         console.log(`ProjectModel.createCameraConfig() - cameraSn: ${cameraSn}`);
-        const projects = await this.getProjects([projectId]);
-        const project = projects[0];
-        console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
-        // make sure project doesn't already have a config for this cam
-        const currCamConfig = project.cameras.find((c) => c._id === cameraSn);
-        if (!currCamConfig) {
-          project.cameras.push({
-            _id: cameraSn,
-            deployments: [{
-              name: 'default',
-              timezone: project.timezone,
-              description: 'This is the default deployment. It is not editable',
-              editable: false,
-            }],
-          });
-          await project.save();
-          console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
-        }
-        return project;
+        return await operation(projectId, cameraSn);
       } catch (err) {
         throw new ApolloError(err);
       }
     };
   },
  
-  // NEW
   get createView() {
-    // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
-    //   return null;
-    // }
     return async (input) => {
       console.log(`ProjectModel.createView() - input: ${input}`);
+
+      const operation = async (input) => {
+        return await retry(async (bail) => {
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          console.log(`ProjectModel.createView() - project: `, project);
+          const newView = {
+            name: input.name,
+            filters: input.filters,
+            ...(input.description && { description: input.description }),
+            editable: input.editable,
+          };
+          project.views.push(newView)
+          const updatedProj = await project.save();
+          // TODO: see if this incldues _id field.
+          // if so we dont need to find the view below
+          console.log(`ProjectModel.createView() - newView: `, newView); 
+          return updatedProj.views.find((v) => v.name === newView.name);
+        }, { retries: 2 });
+      };
+
       try {
-        // TODO AUTH - get project
-        // do we want to accept project Id as a param? or pull it from user
-        // user['curr_project'] here? 
-        // decide on patern of determining what project we're acting on...
-        // IF its an operation the superuser ever performs, we do not want to use
-        // user['curr_project'], because they don't have one... 
-        // unless we set it after we map the image to the correct project?
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        console.log(`ProjectModel.createView() - project: `, project);
-        const newView = {
-          name: input.name,
-          filters: input.filters,
-          ...(input.description && { description: input.description }),
-          editable: input.editable,
-        };
-        project.views.push(newView)
-        const updatedProj = await project.save();
-        // TODO AUTH - do we want to create _id for views on front end and pass
-        // them in as inputs to createView (like we do for objects and labels)?
-        // that would save us this step. related to question of whether we need 
-        // to return updated documents to the front end at all... 
-        return updatedProj.views.find((v) => v.name === newView.name);
+        return await operation(input);
       } catch (err) {
         throw new ApolloError(err);
       }
     }
   },
 
-  // NEW
   get updateView() {
-    return async (input, context) => {
+    return async (input) => {
       console.log(`ProjectModel.updateView() - input: ${input}`);
+
+      const operation = async ({ _id, diffs }) => {
+        return await retry(async (bail) => {
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          let view = project.views.find((view) => (
+            view._id.toString() === _id.toString()
+          ));
+          if (!view.editable) {
+            bail(new ApolloError(`View ${view.name} is not editable`));
+          }
+
+          for (let [key, newVal] of Object.entries(diffs)) {
+            view[key] = newVal;
+          }
+          const updatedProj = await project.save();
+          return updatedProj.views.find((v) => (
+            v._id.toString() === _id.toString()
+          ));
+
+        }, { retries: 2 });
+      };
+
       try {
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        let view = project.views.find((view) => (
-          view._id.toString() === input._id.toString()
-        ));
-        if (!view.editable) {
-          throw new ApolloError(`View ${view.name} is not editable`);
-        }
-        for (let [key, newVal] of Object.entries(input.diffs)) {
-          view[key] = newVal;
-        }
-        const updatedProj = await project.save();
-        return updatedProj.views.find((v) => (
-          v._id.toString() === input._id.toString()
-        ));
+        return await operation(input);
       } catch (err) {
         throw new ApolloError(err);
       }
     }
   },
 
-  // NEW
   get deleteView() {
-    return async (input, context) => {
+    return async (input) => {
       console.log(`ProjectModel.deleteView() - input: ${input}`);
+
+      const operation = async ({ _id }) => {
+        return await retry(async (bail) => {
+
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          let view = project.views.find((view) => (
+            view._id.toString() === _id.toString()
+          ));
+          if (!view.editable) {
+            bail(new ApolloError(`View ${view.name} is not editable`));
+          }
+
+          project.views = project.views.filter((view) => (
+            view._id.toString() !== _id.toString()
+          ));
+          return await project.save();
+
+        }, { retries: 2 });
+      };
+
       try {
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        let view = project.views.find((view) => (
-          view._id.toString() === input._id.toString()
-        ));
-        if (!view.editable) {
-          throw new ApolloError(`View ${view.name} is not editable`);
-        }
-        project.views = project.views.filter((view) => (
-          view._id.toString() !== input._id.toString()
-        ));
-        return await project.save();
+        return await operation(input);
       } catch (err) {
         throw new ApolloError(err);
       }
     }
   },
 
-  // NEW
   reMapImagesToDeps: async ({ projId, camConfig }) => {
     console.log(`ProjectModel.reMapImagesToDeps() - projId: ${projId}`);
     console.log(`ProjectModel.reMapImagesToDeps() - camConfig: ${camConfig}`);
-    try {
-      // build array of operations from camConfig.deployments:
-      // for each deployment, build filter, update, then perform bulkWrite
-      // NOTE: this function expects deps to be in chronological order!
-      let operations = [];
-      for (const [index, dep] of camConfig.deployments.entries()) {
-        const createdStart = dep.startDate || null;
-        const createdEnd = camConfig.deployments[index + 1] 
-          ? camConfig.deployments[index + 1].startDate
-          : null;
 
-        let filter = { project: projId, cameraSn: camConfig._id };
-        if (createdStart || createdEnd) { 
-          filter.dateTimeOriginal = {
-            ...(createdStart && { $gte: createdStart }),
-            ...(createdEnd && { $lt: createdEnd }),
+    const operation = async ({ projId, camConfig }) => {
+      return await retry(async (bail) => {
+        // build array of operations from camConfig.deployments:
+        // for each deployment, build filter, update, then perform bulkWrite
+        // NOTE: this function expects deps to be in chronological order!
+        let operations = [];
+        for (const [index, dep] of camConfig.deployments.entries()) {
+          const createdStart = dep.startDate || null;
+          const createdEnd = camConfig.deployments[index + 1] 
+            ? camConfig.deployments[index + 1].startDate
+            : null;
+
+          let filter = { project: projId, cameraSn: camConfig._id };
+          if (createdStart || createdEnd) {
+            filter.dateTimeOriginal = {
+              ...(createdStart && { $gte: createdStart }),
+              ...(createdEnd && { $lt: createdEnd }),
+            }
           }
-        }
-        // TODO TIME - decide if we're storing timezone on images or 
-        // converting to UTC+0 and storing that. 
-        // converting to UTC+0 would be ideal but require pulling all matching
-        // images into memory, iterating through them to convert and save to 
-        // UTC+0 (maybe with aggregation pipeline + updatemany?) and performoing
-        // update many / bulk write
-        const update = {
-          deployment: dep._id,
-          // timezone: dep.timezone 
+          // TODO TIME - decide if we're storing timezone on images or 
+          // converting to UTC+0 and storing that. 
+          // converting to UTC+0 would be ideal but require pulling all matching
+          // images into memory, iterating through them to convert and save to 
+          // UTC+0 (maybe with aggregation pipeline + updatemany?) and performoing
+          // update many / bulk write
+          const update = {
+            deployment: dep._id,
+            // timezone: dep.timezone 
+          };
+          operations.push({ updateMany: { filter, update } });
         };
-        operations.push({ updateMany: { filter, update } });
-      };
 
-      await Image.bulkWrite(operations);
+        await Image.bulkWrite(operations);
+      }, { retries: 2 });
+    };
 
+    try {
+      await operation({ projId, camConfig });
     } catch (err) {
       throw new ApolloError(err);
     }
   },
 
-  // NEW
   get createDeployment() {
-    return async (input, context) => {
-      console.log(`ProjectModel.createDeployment() - input: ${input}`);
-      const { cameraId, deployment } = input;
+    return async (input) => {
+      console.log(`ProjectModel.createDeployment() - deployment: ${JSON.stringify(input)}`);
+
+      const operation = async ({ cameraId, deployment }) => {
+        return await retry(async (bail) => {
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          let camConfig = project.cameras.find((camConfig) => (
+            camConfig._id.toString() ===  cameraId.toString()
+          ));
+
+          camConfig.deployments.push(deployment);
+          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          await project.save();
+          return { project, camConfig };
+
+        }, { retries: 2 });
+      };
+
       try {
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        let camConfig = project.cameras.find((camConfig) => (
-          camConfig._id.toString() ===  cameraId.toString()
-        ));
-        camConfig.deployments.push(deployment);
-        camConfig.deployments = utils.sortDeps(camConfig.deployments);
-        await project.save();
+        const { project, camConfig } = await operation(input);
         await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {
@@ -225,29 +260,39 @@ const generateProjectModel = ({ user } = {}) => ({
     }
   },
 
-  // NEW
   get updateDeployment() {
-    return async (input, context) => {
-      console.log(`ProjectModel.updateDeployment() - input: ${input}`);
-      const { cameraId, deploymentId, diffs } = input;
+    return async (input) => {
+      console.log(`ProjectModel.updateDeployment() - input: ${JSON.stringify(input)}`);
+
+      const operation = async ({ cameraId, deploymentId, diffs }) => {
+        return await retry(async (bail) => {
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          let camConfig = project.cameras.find((camConfig) => (
+            camConfig._id.toString() ===  cameraId.toString()
+          ));
+          let deployment = camConfig.deployments.find((dep) => (
+            dep._id.toString() === deploymentId.toString()
+          ));
+
+          // TODO: figure out uniform handling of illegal operations? thow error?
+          // return res.success info? (e.g. if deployment IS 'default')
+          // need to use "bail" to exit retry loop intentionally
+          if (deployment.name !== 'default') {
+            for (let [key, newVal] of Object.entries(diffs)) {
+              deployment[key] = newVal;
+            }
+            camConfig.deployments = utils.sortDeps(camConfig.deployments);
+            await project.save();
+          }
+          return { project, camConfig };
+
+        }, { retries: 2 });
+      };
+
       try {
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        let camConfig = project.cameras.find((camConfig) => (
-          camConfig._id.toString() ===  cameraId.toString()
-        ));
-        let deployment = camConfig.deployments.find((dep) => (
-          dep._id.toString() === deploymentId.toString()
-        ));
-        if (deployment.name !== 'default') {
-          for (let [key, newVal] of Object.entries(diffs)) {
-            deployment[key] = newVal;
-          }
-          camConfig.deployments = utils.sortDeps(camConfig.deployments);
-          await project.save();
-          if (Object.keys(diffs).includes('startDate')) {
-            await this.reMapImagesToDeps({ projId: project._id, camConfig });
-          }
+        const { project, camConfig } = await operation(input);
+        if (Object.keys(input.diffs).includes('startDate')) {
+          await this.reMapImagesToDeps({ projId: project._id, camConfig });
         }
         return camConfig;
       } catch (err) {
@@ -256,22 +301,29 @@ const generateProjectModel = ({ user } = {}) => ({
     }
   },
 
-  // NEW
   get deleteDeployment() {
-    return async (input, context) => {
-      console.log(`ProjectModel.deleteDeployment() - input: ${input}`);
-      const { cameraId, deploymentId } = input;
+    return async (input) => {
+      console.log(`ProjectModel.deleteDeployment() - input: ${JSON.stringify(input)}`);
+
+      const operation = async ({ cameraId, deploymentId }) => {
+        return await retry(async (bail) => {
+          const [ project ] = await this.getProjects([user['curr_project']]);
+          let camConfig = project.cameras.find((camConfig) => (
+            camConfig._id.toString() ===  cameraId.toString()
+          ));
+
+          camConfig.deployments = camConfig.deployments.filter((dep) => (
+            dep._id.toString() !== deploymentId.toString()
+          ));
+          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          await project.save();
+          return { project, camConfig };
+
+        }, { retries: 2 });
+      };
+      
       try {
-        const projects = await this.getProjects([user['curr_project']]);
-        const project = projects[0];
-        let camConfig = project.cameras.find((camConfig) => (
-          camConfig._id.toString() ===  cameraId.toString()
-        ));
-        camConfig.deployments = camConfig.deployments.filter((dep) => (
-          dep._id.toString() !== deploymentId.toString()
-        ));
-        camConfig.deployments = utils.sortDeps(camConfig.deployments);
-        await project.save();
+        const { project, camConfig } = await operation(input);
         await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {

@@ -196,27 +196,6 @@ const parseCoordinates = (md) => {
 
 };
 
-const isLabelDupe = (image, newLabel) => {
-  const labels = image.objects.reduce((labels, object) => {
-    object.labels.forEach((label) => labels.push(label));
-    return labels;
-  }, []);
-
-  for (const label of labels) {
-    const modelMatch = newLabel.modelId && label.modelId && 
-      newLabel.modelId.toString() === label.modelId.toString();
-    const labelMatch = newLabel.category === label.category;
-    const confMatch  = newLabel.conf === label.conf;
-    const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
-    if (modelMatch && labelMatch && confMatch && bboxMatch) {
-      // label has already been applied, skipping
-      return true;
-    }
-  }
-
-  return false;
-};
-
 // Map image metadata to image schema
 const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
@@ -254,6 +233,33 @@ const createImageRecord = (md) => {
   });
 
   return image;
+};
+
+// TODO: this us ugly clean up!
+const isLabelDupe = (image, newLabel) => {
+  const labels = image.objects.reduce((labels, object) => {
+    object.labels.forEach((label) => labels.push(label));
+    return labels;
+  }, []);
+
+  for (const label of labels) {
+
+    const mlModelMatch = newLabel.mlModel && label.mlModel && 
+      newLabel.mlModel.toString() === label.mlModel.toString();
+    const mlModelVersionMatch = newLabel.mlModelVersion && 
+                                label.mlModelVersion && 
+                                newLabel.mlModel.toString() === label.mlModel.toString();
+    const labelMatch = newLabel.category === label.category;
+    const confMatch  = newLabel.conf === label.conf;
+    const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
+
+    if (mlModelMatch && mlModelVersionMatch && labelMatch && confMatch && bboxMatch) {
+      // label has already been applied, skipping
+      return true;
+    }
+  }
+
+  return false;
 };
 
 // TODO: accommodate users as label authors as well as models
@@ -343,7 +349,7 @@ const sortDeps = (deps) => {
 };
 
 const findActiveProjReg = (camera) => {
-  const activeProjReg = camera[0].projRegistrations.find((pr) => (
+  const activeProjReg = camera.projRegistrations.find((pr) => (
     pr.active
   ));
 

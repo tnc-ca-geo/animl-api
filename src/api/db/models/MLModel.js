@@ -1,6 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
 const MLModel = require('../schemas/MLModel');
 const utils = require('./utils');
+const retry = require('async-retry');
+
 
 const generateMLModelModel = ({ user } = {}) => ({
 
@@ -19,11 +21,18 @@ const generateMLModelModel = ({ user } = {}) => ({
     // if (!hasRole(user, ['animl_superuser'])) {
     //   return null;
     // }
+
+    const operation = async (modelConfig) => {
+      return await retry(async (bail) => {
+        const newModel = new MLModel(modelConfig);
+        console.log(`MLModel.createModel() - newModel: ${newModel}`);
+        await newModel.save();
+        return newModel;
+      }, { retries: 2 });
+    };
+
     try {
-      const newModel = new MLModel(modelConfig);
-      console.log(`MLModel.createModel() - newModel: ${newModel}`);
-      await newModel.save();
-      return newModel;
+      return await operation(modelConfig);
     } catch (err) {
       throw new ApolloError(err);
     }
