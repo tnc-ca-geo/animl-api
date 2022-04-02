@@ -1,8 +1,12 @@
-const { ApolloError } = require('apollo-server-errors');
+const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const Project = require('../schemas/Project');
 const Image = require('../schemas/Image');
-const utils = require('./utils');
+const { sortDeps, hasRole } = require('./utils');
 const retry = require('async-retry');
+const {
+  WRITE_DEPLOYMENTS_ROLES,
+  WRITE_VIEWS_ROLES
+} = require('../../auth/roles');
 
 
 const generateProjectModel = ({ user } = {}) => ({
@@ -30,7 +34,6 @@ const generateProjectModel = ({ user } = {}) => ({
 
   createProject: async (input) => {
     console.log(`ProjectModel.createProject() - input: ${input}`);
-
     const operation = async (input) => {
       return await retry(async (bail) => {
         const newProject = new Project(input);
@@ -48,10 +51,7 @@ const generateProjectModel = ({ user } = {}) => ({
 
   get createCameraConfig() {
     return async (projectId, cameraSn) => {
-    // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
-    //   return null;
-    // }
-
+      
       const operation = async (projectId, cameraSn) => {
         return await retry(async (bail) => {
 
@@ -90,6 +90,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
  
   get createView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.createView() - input: ${input}`);
 
@@ -121,6 +122,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get updateView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.updateView() - input: ${input}`);
 
@@ -154,6 +156,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get deleteView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.deleteView() - input: ${input}`);
 
@@ -232,6 +235,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get createDeployment() {
+    if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.createDeployment() - deployment: ${JSON.stringify(input)}`);
 
@@ -261,6 +265,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get updateDeployment() {
+    if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.updateDeployment() - input: ${JSON.stringify(input)}`);
 
@@ -302,6 +307,7 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get deleteDeployment() {
+    if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ProjectModel.deleteDeployment() - input: ${JSON.stringify(input)}`);
 
@@ -335,15 +341,3 @@ const generateProjectModel = ({ user } = {}) => ({
  });
 
 module.exports = generateProjectModel;
-
-
-
-// TODO: pass user into model generators to perform authorization at the
-// data fetching level. e.g.:
-// export const generateViewModel = ({ user }) => ({
-//   getAll: () => {
-//     if(!user || !user.roles.includes('admin')) return null;
-//     return fetch('http://myurl.com/users');
-//    },
-//   ...
-// });

@@ -1,9 +1,9 @@
-const { ApolloError } = require('apollo-server-errors');
+const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const Image = require('../schemas/Image');
 const automation = require('../../../automation');
+const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
-// const retry = utils.retryWrapper;
 const retry = require('async-retry');
 
 const generateImageModel = ({ user } = {}) => ({
@@ -74,6 +74,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get createImage() {
+    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
       const md = utils.sanitizeMetadata(input.md, context.config);
       let projectId = 'default_project';
@@ -136,6 +137,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get createObject() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ImageModel.createObject() - input: ${input}`);
 
@@ -160,6 +162,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get updateObject() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ImageModel.updateObject() - input: ${input}`);
 
@@ -193,6 +196,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get deleteObject() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ImageModel.deleteObject() - input: ${JSON.stringify(input)}`);
 
@@ -221,6 +225,7 @@ const generateImageModel = ({ user } = {}) => ({
   // TODO AUTH - createLabel can be executed by superuser (if ML predicted label) 
   // do we need to know what project the label belongs to? if so how do we determine that?
   get createLabels() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
       console.log(`ImageModel.createLabels() - input: ${JSON.stringify(input)}`);
 
@@ -286,53 +291,8 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  // get saveLabel() {
-  //   return async ({ imageId, objectId, label }) => {
-
-  //     try {
-  //       const image = await this.queryById(imageId);
-  //       if (utils.isLabelDupe(image, label)) return;
-
-  //       const authorId = label.mlModel || label.userId;
-  //       const labelRecord = utils.createLabelRecord(label, authorId);
-
-  //       // if objectId was specified, find object and save label to it
-  //       // else try to match to existing object bbox and merge label into that
-  //       // else add new object 
-  //       if (objectId) {
-  //         const object = image.objects.find((obj) => (
-  //           obj._id.toString() === objectId.toString()
-  //         ));
-  //         object.labels.unshift(labelRecord);
-  //       }
-  //       else {
-  //         let objExists = false;
-  //         for (const object of image.objects) {
-  //           if (_.isEqual(object.bbox, label.bbox)) {
-  //             object.labels.unshift(labelRecord);
-  //             objExists = true;
-  //             break;
-  //           }
-  //         }
-  //         if (!objExists) {
-  //           image.objects.unshift({
-  //             bbox: labelRecord.bbox,
-  //             locked: false,
-  //             labels: [labelRecord],
-  //           });
-  //         }
-  //       }
-
-  //       await image.save();
-  //       return { image, newLabel: labelRecord };
-
-  //     } catch (err) {
-  //       throw new ApolloError(err);
-  //     }
-  //   }
-  // },
-
   get updateLabel() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ImageModel.updateLabel() - input: ${input}`);
 
@@ -365,6 +325,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get deleteLabel() {
+    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
       console.log(`ImageModel.deleteLabel() - input: ${input}`);
 
@@ -396,14 +357,3 @@ const generateImageModel = ({ user } = {}) => ({
  });
 
 module.exports = generateImageModel;
-
-
-// TODO: pass user into model generators to perform authorization at the
-// data fetching level. e.g.:
-// export const generateImageModel = ({ user }) => ({
-//   getAll: () => {
-//     if(!user || !user.roles.includes('admin')) return null;
-//     return fetch('http://myurl.com/users');
-//    },
-//   ...
-// });

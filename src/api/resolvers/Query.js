@@ -1,9 +1,6 @@
 const Query = {
 
-  // NEW - create query resolver for querying projects
   projects: async (_, { _ids }, context) => {
-    // Example role checking:
-    // if (!context.user || !context.user.roles.includes('admin')) return null;
     return await context.models.Project.getProjects(_ids);
   },
 
@@ -24,8 +21,6 @@ const Query = {
   },
 
   image: async (_, args, context) => {
-    // Example role checking:
-    // if (!context.user || !context.user.roles.includes('admin')) return null;
     return await context.models.Image.queryById(args.input._id);
   },
 
@@ -44,6 +39,7 @@ const Query = {
     return await context.models.View.getViews(_ids);
   },
 
+  // TODO: rename mlModels
   models: async (_, { _ids }, context) => {
     // TODO AUTH - not sure we need this either anymore. Maybe for some future
     // superuser/admin functionality?

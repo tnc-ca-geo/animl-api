@@ -12,3 +12,5 @@ module.exports = `
 
 // TODO AUTH - we will no longer need to get query views once they are embedded 
 // in projects. Maybe models too?
+
+// TODO: rename models -> mlModels

@@ -1,6 +1,8 @@
-const { ApolloError } = require('apollo-server-errors');
+const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const Camera = require('../schemas/Camera');
 const retry = require('async-retry');
+const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
+const { hasRole } = require('./utils');
 
 
 const generateCameraModel = ({ user } = {}) => ({
@@ -21,13 +23,9 @@ const generateCameraModel = ({ user } = {}) => ({
     }
   },
 
-  // NEW
-  // TODO: also return upated project? 
+  // TODO: also return updated project?
   // might be useful in Image.createImage()
   get createCamera() {
-    // if (!hasRole(user, ['animl_sci_project_owner', 'animl_superuser'])) {
-    //   return null;
-    // }
     return async (input, context) => {
       console.log(`CameraModel.createCamera() - creating camera`);
       const projectId = input.projectId || 'default_project';
@@ -64,8 +62,8 @@ const generateCameraModel = ({ user } = {}) => ({
     };
   },
 
-  // NEW
   get registerCamera() {
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
     return async ({ cameraId, make }, context) => {
       const projectId = user['curr_project'];
       console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
@@ -76,8 +74,7 @@ const generateCameraModel = ({ user } = {}) => ({
         const cam = await Camera.findOne({ _id: cameraId });
         console.log(`CameraModel.registerCamera() - Found camera: `, cam);
 
-        // if no camera found, create new "source"
-        // Camera record & cameraConfig
+        // if no camera found, create new "source" Camera record & cameraConfig
         if (!cam) {
           console.log(`CameraModel.registerCamera() - Couldn't find an existing camera, so creating new one and registering it to ${projectId} project...`);
           const res = await this.createCamera(
@@ -139,6 +136,7 @@ const generateCameraModel = ({ user } = {}) => ({
 
   // NEW
   get unregisterCamera() {
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
     return async ({ cameraId }, context) => {
       // TODO AUTH - DOES superuser ever have to unregisterCameras?
       // if so, we can't just use user['curr_project']
@@ -221,13 +219,3 @@ const generateCameraModel = ({ user } = {}) => ({
  });
 
  module.exports = generateCameraModel;
-
-// TODO: pass user into model generators to perform authorization at the
-// data fetching level. e.g.:
-// export const generateCameraModel = ({ user }) => ({
-//   getAll: () => {
-//     if(!user || !user.roles.includes('admin')) return null;
-//     return fetch('http://myurl.com/users');
-//    },
-//   ...
-// });

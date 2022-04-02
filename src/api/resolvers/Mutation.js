@@ -1,7 +1,3 @@
-const { ApolloError } = require('apollo-server-errors');
-const utils = require('../db/models/utils');
-// const retry = utils.retryWrapper;
-
 // TODO: Split this out by entity type
 
 const Mutation = {
@@ -13,7 +9,6 @@ const Mutation = {
   },
 
   registerCamera: async (_, { input }, context) => {
-    // TODO AUTH - decide between cameraId and cameraSn and use consistently
     const res = await context.models.Camera.registerCamera(input, context);
     console.log(`registerCamera() - res: `, res);
     return {

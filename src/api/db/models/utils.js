@@ -3,27 +3,8 @@ const _ = require('lodash');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
-const retry = require('async-retry');
 
 // TODO: this file is getting unwieldy, break up 
-
-// TODO: fix issues with retryWrapper - if image successfully saves
-// and then an error gets thrown in automation.eventHandler, 
-// retryWrapper retries this whole function again (including save image)
-// but it gets rejected b/c the image is now a duplicate
-const retryWrapper = (fn, input, context) => {
-  return retry(async (bail, attempt) => {
-    if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
-    return await fn(input, context);
-  }, { retries: 2 });
-};
-
-const saveDocRetryWrapper = (doc) => {
-  return retry(async (bail, attempt) => {
-    if (attempt > 1) console.log(`Retrying operation! Attempt #: ${attempt}`);
-    return await doc.save();
-  }, { retries: 2 });
-};
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config['/IMAGES/URL'];
@@ -280,13 +261,16 @@ const createLabelRecord = (input, authorId) => {
   return label;
 };
 
-const hasRole = (userInfo, targetRoles = []) => {
-  const cognitoGroups = userInfo && userInfo['cognito:groups'] || [];
-  return cognitoGroups.some((role) => targetRoles.includes(role));
+// TODO: consider calling this isAuthorized() ?
+const hasRole = (user, targetRoles = []) => {
+  const hasAuthorizedRole = user['curr_project_roles'] &&
+    user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
+  console.log('hasRole() - is_superuser: ', user['is_superuser']);
+  console.log('hasRole() - some roles are included in target roles: ', hasAuthorizedRole);
+  return user['is_superuser'] || hasAuthorizedRole;
 };
 
 // TODO: accomodate user-created deployments with no startDate?
-// NEW
 const findDeployment = (image, cameraConfig) => {
   // find most recent deployment start date
   const imgCreated = !moment.isMoment(image.dateTimeOriginal) 
@@ -364,8 +348,6 @@ const findActiveProjReg = (camera) => {
 
 
 module.exports = {
-  retryWrapper,
-  saveDocRetryWrapper,
   buildImgUrl,
   buildFilter,
   sanitizeMetadata,
