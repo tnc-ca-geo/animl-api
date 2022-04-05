@@ -13,27 +13,31 @@ const generateMLModelModel = ({ user } = {}) => ({
       const mlModels = await MLModel.find(query);
       return mlModels;
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
 
   createMLModel: async (modelConfig) => {
-    // if (!hasRole(user, ['animl_superuser'])) {
-    //   return null;
-    // }
 
     const operation = async (modelConfig) => {
       return await retry(async (bail) => {
+
+        // create new ML model record and save it
         const newModel = new MLModel(modelConfig);
         console.log(`MLModel.createModel() - newModel: ${newModel}`);
         await newModel.save();
         return newModel;
+        
       }, { retries: 2 });
     };
 
     try {
       return await operation(modelConfig);
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -41,13 +45,3 @@ const generateMLModelModel = ({ user } = {}) => ({
  });
 
  module.exports = generateMLModelModel;
-
-// TODO: pass user into model generators to perform authorization at the
-// data fetching level. e.g.:
-// export const generateCameraModel = ({ user }) => ({
-//   getAll: () => {
-//     if(!user || !user.roles.includes('admin')) return null;
-//     return fetch('http://myurl.com/users');
-//    },
-//   ...
-// });

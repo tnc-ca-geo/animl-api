@@ -1,4 +1,6 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
+const { CameraRegistrationError } = require('../../errors');
+const { GraphQLError } = require('graphql/error/GraphQLError');
 const Camera = require('../schemas/Camera');
 const retry = require('async-retry');
 const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
@@ -19,7 +21,8 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log(`CameraModel.getCameras() - found cameras: ${JSON.stringify(cameras)}`);
       return cameras;
     } catch (err) {
-      throw new ApolloError(err);
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err); /* error is uncontrolled, so throw new ApolloError */
     }
   },
 
@@ -30,7 +33,6 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log(`CameraModel.createCamera() - creating camera`);
       const projectId = input.projectId || 'default_project';
 
-      // create "source" Camera record
       const saveCamera = async (input) => {
         const { projectId, cameraId, make, model } = input;
         return await retry(async (bail, attempt) => {
@@ -57,6 +59,8 @@ const generateCameraModel = ({ user } = {}) => ({
         return { camera, project };
 
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     };
@@ -82,10 +86,10 @@ const generateCameraModel = ({ user } = {}) => ({
             context
           );
           const cameras = await this.getCameras();
-          return { ok: true, cameras, project: res.project };
+          return { cameras, project: res.project };
         }
 
-        // if camera exists & is registered to default_project, 
+        // else if camera exists & is registered to default_project, 
         // reassign it to user's current project, else reject registration
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
         if (activeReg.project === 'default_project') {
@@ -97,10 +101,7 @@ const generateCameraModel = ({ user } = {}) => ({
             return { project: pr.project, active: (pr.project === projectId) };
           });
           if (!foundProject) {
-            cam.projRegistrations.push({
-              project: projectId,
-              active: true
-            });
+            cam.projRegistrations.push({ project: projectId, active: true });
           }
 
           console.log(`CameraModel.registerCamera() - Camera before saving: `, cam);
@@ -112,31 +113,31 @@ const generateCameraModel = ({ user } = {}) => ({
           );
 
           const cameras = await this.getCameras();
-          return { ok: true, cameras, project };
+          return { cameras, project };
 
         }
         else {
           console.log(`CameraModel.registerCamera() - camera exists, but it's registered to a different project, so rejecting registration`);
-         
           const msg = activeReg.project === projectId
             ? `This camera is already registered to the ${projectId} project!`
-            : `This camera is already registered to a different project!`;
-          return {
-            rejectionInfo: { currProjReg: activeReg.project, msg },
-            ok: false,
-          };
-
+            : `This camera is registered to a different project!`;
+          throw new CameraRegistrationError(msg, {
+            currProjReg: activeReg.project 
+          });
         }
 
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     };
   },
 
-  // NEW
   get unregisterCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) {
+      throw new ForbiddenError;
+    }
     return async ({ cameraId }, context) => {
       // TODO AUTH - DOES superuser ever have to unregisterCameras?
       // if so, we can't just use user['curr_project']
@@ -144,35 +145,22 @@ const generateCameraModel = ({ user } = {}) => ({
       console.log(`CameraModel.unregisterCamera() - projectId: ${projectId}`);
       console.log(`CameraModel.unregisterCamera() - cameraId: ${cameraId}`);
 
-      const reject = ({ msg, currProjReg }) => {
-        return {
-          ok: false,
-          rejectionInfo: { msg, currProjReg }
-        };
-      }
-
       try {
 
         const cameras = await Camera.find();
         const cam = cameras.find((c) => c._id === cameraId);
         if (!cam) {
-          return reject({
-             msg: `Couldn't find camera record for camera ${cameraId}` 
-          });
+          const msg = `Couldn't find camera record for camera ${cameraId}`;
+          throw new CameraRegistrationError(msg);
         }
-
         const activeReg = cam.projRegistrations.find((proj) => proj.active);
         if (activeReg.project === 'default_project') {
-          return reject({
-            msg: `You can't unregister cameras from the default project`,
-            currProjReg: activeReg.project,
-          });
+          const msg = `You can't unregister cameras from the default project`;
+          throw new CameraRegistrationError(msg);
         }
         else if (activeReg.project !== projectId) {
-          return reject({ 
-            msg: `This camera is not currently registered to ${projectId}`,
-            currProjReg: activeReg.project,
-          });
+          const msg = `This camera is not currently registered to ${projectId}`;
+          throw new CameraRegistrationError(msg);
         }
 
         // if active registration === curr_project, 
@@ -193,7 +181,7 @@ const generateCameraModel = ({ user } = {}) => ({
 
         // make sure there's a Project.cameras config record for this camera 
         // in the default_project and create one if not
-        const [ defaultProj ] = await context.models.Project.getProjects(
+        const [defaultProj] = await context.models.Project.getProjects(
           ['default_project']
         );
 
@@ -208,9 +196,11 @@ const generateCameraModel = ({ user } = {}) => ({
         }
 
         // TODO AUTH: also return updated default project? 
-        return { ok: true, cameras };
+        return { cameras };
 
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     };

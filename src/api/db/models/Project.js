@@ -28,6 +28,8 @@ const generateProjectModel = ({ user } = {}) => ({
       const projects = await Project.find(query);
       return projects;
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -45,6 +47,8 @@ const generateProjectModel = ({ user } = {}) => ({
     try {
       return await operation(input);
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -55,7 +59,7 @@ const generateProjectModel = ({ user } = {}) => ({
       const operation = async (projectId, cameraSn) => {
         return await retry(async (bail) => {
 
-          const [ project ] = await this.getProjects([projectId]);
+          const [project] = await this.getProjects([projectId]);
           console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
           
           // make sure project doesn't already have a config for this cam
@@ -73,7 +77,6 @@ const generateProjectModel = ({ user } = {}) => ({
             await project.save();
             console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
           }
-          
           return project;
 
         }, { retries: 2 });
@@ -84,6 +87,8 @@ const generateProjectModel = ({ user } = {}) => ({
         console.log(`ProjectModel.createCameraConfig() - cameraSn: ${cameraSn}`);
         return await operation(projectId, cameraSn);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     };
@@ -96,7 +101,9 @@ const generateProjectModel = ({ user } = {}) => ({
 
       const operation = async (input) => {
         return await retry(async (bail) => {
-          const [ project ] = await this.getProjects([user['curr_project']]);
+
+          // find project, add new view, and save
+          const [project] = await this.getProjects([user['curr_project']]);
           console.log(`ProjectModel.createView() - project: `, project);
           const newView = {
             name: input.name,
@@ -106,16 +113,17 @@ const generateProjectModel = ({ user } = {}) => ({
           };
           project.views.push(newView)
           const updatedProj = await project.save();
-          // TODO: see if this incldues _id field.
-          // if so we dont need to find the view below
           console.log(`ProjectModel.createView() - newView: `, newView); 
           return updatedProj.views.find((v) => v.name === newView.name);
+
         }, { retries: 2 });
       };
 
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -128,14 +136,16 @@ const generateProjectModel = ({ user } = {}) => ({
 
       const operation = async ({ _id, diffs }) => {
         return await retry(async (bail) => {
-          const [ project ] = await this.getProjects([user['curr_project']]);
+          // find view
+          const [project] = await this.getProjects([user['curr_project']]);
           let view = project.views.find((view) => (
             view._id.toString() === _id.toString()
           ));
           if (!view.editable) {
-            bail(new ApolloError(`View ${view.name} is not editable`));
+            bail(new ForbiddenError(`View ${view.name} is not editable`));
           }
 
+          // appy updates & save project
           for (let [key, newVal] of Object.entries(diffs)) {
             view[key] = newVal;
           }
@@ -150,6 +160,8 @@ const generateProjectModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -163,14 +175,16 @@ const generateProjectModel = ({ user } = {}) => ({
       const operation = async ({ _id }) => {
         return await retry(async (bail) => {
 
-          const [ project ] = await this.getProjects([user['curr_project']]);
+          // find view
+          const [project] = await this.getProjects([user['curr_project']]);
           let view = project.views.find((view) => (
             view._id.toString() === _id.toString()
           ));
           if (!view.editable) {
-            bail(new ApolloError(`View ${view.name} is not editable`));
+            bail(new ForbiddenError(`View ${view.name} is not editable`));
           }
 
+          // remove view from project and save
           project.views = project.views.filter((view) => (
             view._id.toString() !== _id.toString()
           ));
@@ -182,6 +196,8 @@ const generateProjectModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -224,12 +240,14 @@ const generateProjectModel = ({ user } = {}) => ({
         };
 
         await Image.bulkWrite(operations);
-      }, { retries: 2 });
+      }, { retries: 3 });
     };
 
     try {
       await operation({ projId, camConfig });
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -241,11 +259,14 @@ const generateProjectModel = ({ user } = {}) => ({
 
       const operation = async ({ cameraId, deployment }) => {
         return await retry(async (bail) => {
-          const [ project ] = await this.getProjects([user['curr_project']]);
+
+          // find camera config
+          const [project] = await this.getProjects([user['curr_project']]);
           let camConfig = project.cameras.find((camConfig) => (
             camConfig._id.toString() ===  cameraId.toString()
           ));
 
+          // add new deployment, sort them, and save project
           camConfig.deployments.push(deployment);
           camConfig.deployments = utils.sortDeps(camConfig.deployments);
           await project.save();
@@ -259,6 +280,8 @@ const generateProjectModel = ({ user } = {}) => ({
         await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -271,24 +294,25 @@ const generateProjectModel = ({ user } = {}) => ({
 
       const operation = async ({ cameraId, deploymentId, diffs }) => {
         return await retry(async (bail) => {
-          const [ project ] = await this.getProjects([user['curr_project']]);
+
+          // find deployment
+          const [project] = await this.getProjects([user['curr_project']]);
           let camConfig = project.cameras.find((camConfig) => (
             camConfig._id.toString() ===  cameraId.toString()
           ));
           let deployment = camConfig.deployments.find((dep) => (
             dep._id.toString() === deploymentId.toString()
           ));
-
-          // TODO: figure out uniform handling of illegal operations? thow error?
-          // return res.success info? (e.g. if deployment IS 'default')
-          // need to use "bail" to exit retry loop intentionally
-          if (deployment.name !== 'default') {
-            for (let [key, newVal] of Object.entries(diffs)) {
-              deployment[key] = newVal;
-            }
-            camConfig.deployments = utils.sortDeps(camConfig.deployments);
-            await project.save();
+          if (deployment.name === 'default') {
+            bail(new ForbiddenError(`View ${view.name} is not editable`));
           }
+
+          // apply updates, sort deployments, and save project
+          for (let [key, newVal] of Object.entries(diffs)) {
+            deployment[key] = newVal;
+          }
+          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          await project.save();
           return { project, camConfig };
 
         }, { retries: 2 });
@@ -301,6 +325,8 @@ const generateProjectModel = ({ user } = {}) => ({
         }
         return camConfig;
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -313,11 +339,14 @@ const generateProjectModel = ({ user } = {}) => ({
 
       const operation = async ({ cameraId, deploymentId }) => {
         return await retry(async (bail) => {
-          const [ project ] = await this.getProjects([user['curr_project']]);
+
+          // find camera config
+          const [project] = await this.getProjects([user['curr_project']]);
           let camConfig = project.cameras.find((camConfig) => (
             camConfig._id.toString() ===  cameraId.toString()
           ));
-
+          
+          // filter out deployment, sort remaining ones, and save project
           camConfig.deployments = camConfig.deployments.filter((dep) => (
             dep._id.toString() !== deploymentId.toString()
           ));
@@ -333,6 +362,8 @@ const generateProjectModel = ({ user } = {}) => ({
         await this.reMapImagesToDeps({ projId: project._id, camConfig });
         return camConfig;
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }

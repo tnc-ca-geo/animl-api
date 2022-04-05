@@ -21,6 +21,8 @@ const generateImageModel = ({ user } = {}) => ({
       const image = await Image.findOne({_id});
       return image;
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -39,6 +41,8 @@ const generateImageModel = ({ user } = {}) => ({
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -48,7 +52,7 @@ const generateImageModel = ({ user } = {}) => ({
     try {
       console.log(`ImageModel.getLabels() - projId: ${projId}`);
 
-      const [ categoriesAggregate ] = await Image.aggregate([
+      const [categoriesAggregate] = await Image.aggregate([
         { $match: {'project': projId} }, // NEW - limit aggregation to specific project
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
@@ -69,6 +73,8 @@ const generateImageModel = ({ user } = {}) => ({
       console.log(`ImageModel.getLabels() - categories: ${categories}`);
       return { categories };
     } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   },
@@ -85,15 +91,13 @@ const generateImageModel = ({ user } = {}) => ({
           if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
           const newImage = utils.createImageRecord(md);
           return await newImage.save();
-          // TODO: consider catching known errors (e.g. duplicate, validation)
-          // and bailing from retry-loop early?
         }, { retries: 2 });
       };
 
       try {
         // find camera record or create new one
         const cameraSn = md.serialNumber;
-        const [ existingCam ] = await context.models.Camera.getCameras([cameraSn]);
+        const [existingCam] = await context.models.Camera.getCameras([cameraSn]);
         if (!existingCam) {
           console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
           await context.models.Camera.createCamera({
@@ -109,7 +113,7 @@ const generateImageModel = ({ user } = {}) => ({
         }
 
         // map image to deployment
-        const [ project ] = await context.models.Project.getProjects([projectId]);
+        const [project] = await context.models.Project.getProjects([projectId]);
         console.log(`createImage() - found project: ${project}`);
         const camConfig = project.cameras.find((cam) => 
           cam._id.toString() === cameraSn.toString()
@@ -125,10 +129,14 @@ const generateImageModel = ({ user } = {}) => ({
         return image;
 
       } catch (err) {
-        if (err.message.toLowerCase().includes('duplicate')) {
+        const msg = err.message.toLowerCase();
+        if (err instanceof ApolloError) {
+          throw err;
+        }
+        else if (msg.includes('duplicate')) {
           throw new DuplicateError(err);
         }
-        else if (err.message.toLowerCase().includes('validation')) {
+        else if (msg.includes('validation')) {
           throw new DBValidationError(err);
         }
         throw new ApolloError(err);
@@ -145,6 +153,7 @@ const generateImageModel = ({ user } = {}) => ({
         return await retry(async (bail, attempt) => {
           if (attempt > 1) console.log(`Retrying createObject operation! Try #: ${attempt}`);
 
+          // find image, add object, and save
           const image = await this.queryById(imageId);
           image.objects.unshift(object);
           await image.save();
@@ -156,6 +165,8 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -169,14 +180,15 @@ const generateImageModel = ({ user } = {}) => ({
       const operation = async ({ imageId, objectId, diffs }) => {
         return await retry(async (bail) => {
 
+          // find image, apply object updates, and save
           const image = await this.queryById(imageId);
           console.log(`Found image, version number: ${image.__v}`);
           const object = image.objects.find((obj) => (
             obj._id.toString() === objectId.toString()
           ));
           if (!object) {
-            const err = `Couldn't find object "${objectId}" on img "${imageId}"`;
-            bail(new ApolloError(err)); // TODO: test this
+            const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
+            bail(new ApolloError(msg));
           }
           for (let [key, newVal] of Object.entries(diffs)) {
             object[key] = newVal;
@@ -190,6 +202,8 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -203,6 +217,7 @@ const generateImageModel = ({ user } = {}) => ({
       const operation = async ({ imageId, objectId }) => {
         return await retry(async (bail) => {
 
+          // find image, filter out object, and save
           const image = await this.queryById(imageId);
           const newObjects = image.objects.filter((obj) => (
             obj._id.toString() !== objectId.toString()
@@ -217,6 +232,8 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -232,9 +249,9 @@ const generateImageModel = ({ user } = {}) => ({
       const operation = async ({ imageId, objectId, label }) => {
         return await retry(async (bail) => {
 
+          // find image, create label record
           const image = await this.queryById(imageId);
           if (utils.isLabelDupe(image, label)) return;
-  
           const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
   
@@ -286,6 +303,8 @@ const generateImageModel = ({ user } = {}) => ({
         }
         return image;
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -300,6 +319,7 @@ const generateImageModel = ({ user } = {}) => ({
         const { imageId, objectId, labelId, diffs } = input;
         return await retry(async (bail) => {
 
+          // find label, apply updates, and save image
           const image = await this.queryById(imageId);
           const object = image.objects.find((obj) => (
             obj._id.toString() === objectId.toString()
@@ -319,6 +339,8 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }
@@ -332,6 +354,7 @@ const generateImageModel = ({ user } = {}) => ({
       const operation = async ({ imageId, objectId, labelId }) => {
         return await retry(async (bail) => {
 
+          // find object, filter out label, and save image
           const image = await this.queryById(imageId);
           const object = image.objects.find((obj) => (
             obj._id.toString() === objectId.toString()
@@ -349,6 +372,8 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     }

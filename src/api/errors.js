@@ -8,6 +8,9 @@ const { GraphQLError } = require('graphql/error/GraphQLError');
 // Apollo errors docs: 
 // https://www.apollographql.com/docs/apollo-server/data/errors/
 
+// good blog post:
+// https://tomek.fojtuch.com/blog/error-handling-with-apollo-server/
+
 class DuplicateError extends ApolloError {
   constructor(message) {
     super(message, 'DUPLICATE_IMAGE');
@@ -22,23 +25,39 @@ class DBValidationError extends ApolloError {
   }
 };
 
-// NOTE: The goal here is to coerce all Errors into ApolloErrors
-// with proper error codes before they're returned to the client.
-// This probably won't be necessary with the next update of graphql-yoga
-// if they upgrade to apollo-server 2.0 under the hood
+// NOTE: use "properties" in constructor to return additional 
+// custom error details in response
+class CameraRegistrationError extends ApolloError {
+  constructor(message, properties) {
+    super(message, 'CAMERA_REGISTRATION_ERROR', properties);
+    Object.defineProperty(this, 'name', { value: 'CameraRegistrationError' });
+  }
+};
+
+// TODO: custom error for when users try to update an 
+// unwritable (uneditable or default) entity? Or just use ForbiddenError?
+// or UserInputError?
 
 function formatError (err) {
-  console.log('err before formatting: ', err);
- 
-  // if err is an instance of a GraphQLError, it is either:
-  // (a) an ApolloError we intentionally threw somewhere in the code, or 
-  // (b) a GraphQLError thrown by graphql-yoga in the parse or validation phase
-  // we can use formatApolloErrors() to format either case. 
-  // If the err is not a GraphQLError, that means something unexpected happened, 
-  // but we can convert it to an ApolloError and give it the generic code: 
-  // INTERNAL_SERVER_ERROR with toApolloError().
 
-  const error = err instanceof GraphQLError 
+  console.log('err before formatting: ', err);
+
+  /*
+   * NOTE: The goal here is to coerce all Errors into ApolloErrors
+   * with proper error codes before they're returned to the client.
+   * This probably won't be necessary with the next update of graphql-yoga
+   * if they upgrade to apollo-server 2.0 under the hood.
+   *
+   * If err is an instance of a GraphQLError, it is either:
+   * (a) an ApolloError we intentionally threw somewhere in the code, or 
+   * (b) a GraphQLError thrown by graphql-yoga in the parse or validation phase
+   * we can use formatApolloErrors() to format either case. 
+   * If the err is not a GraphQLError, that means something unexpected happened, 
+   * but we can convert it to an ApolloError and give it the generic code: 
+   * INTERNAL_SERVER_ERROR with toApolloError().
+   */
+
+  const error = (err instanceof GraphQLError)
     ? formatApolloErrors([err])[0]
     : toApolloError(err);
 
@@ -51,13 +70,19 @@ function formatError (err) {
     error.extensions.code = "GRAPHQL_VALIDATION_FAILED";
   }
 
-  console.log('error before sending to client: ', error);
+  // TODO: mask unexpected errors (upgrading to graphql-yoga 2.x would do 
+  // this automatically)
+  // https://www.graphql-yoga.com/docs/features/error-masking
+  // https://www.apollographql.com/docs/apollo-server/data/errors/#omitting-or-including-stacktrace
 
+  console.log('error before sending to client: ', error);
+  
   return error;
 };
 
 module.exports = {
   DuplicateError,
   DBValidationError,
+  CameraRegistrationError,
   formatError,
 }
