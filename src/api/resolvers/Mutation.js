@@ -11,13 +11,13 @@ const Mutation = {
   registerCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.registerCamera(input, context);
     console.log(`registerCamera() - res: `, res);
-    return { cameraId: input.cameraId, ...res };
+    return { ...res };
   },
 
   unregisterCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.unregisterCamera(input, context);
     console.log(`unregisterCamera() - res: `, res);
-    return { cameraId: input.cameraId, ...res }
+    return { ...res };
   },
 
   createView: async (_, { input }, context) => {

@@ -263,12 +263,12 @@ const generateProjectModel = ({ user } = {}) => ({
           // find camera config
           const [project] = await this.getProjects([user['curr_project']]);
           let camConfig = project.cameras.find((camConfig) => (
-            camConfig._id.toString() ===  cameraId.toString()
+            camConfig._id.toString() === cameraId.toString()
           ));
 
           // add new deployment, sort them, and save project
           camConfig.deployments.push(deployment);
-          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();
           return { project, camConfig };
 
@@ -311,7 +311,7 @@ const generateProjectModel = ({ user } = {}) => ({
           for (let [key, newVal] of Object.entries(diffs)) {
             deployment[key] = newVal;
           }
-          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();
           return { project, camConfig };
 
@@ -350,7 +350,7 @@ const generateProjectModel = ({ user } = {}) => ({
           camConfig.deployments = camConfig.deployments.filter((dep) => (
             dep._id.toString() !== deploymentId.toString()
           ));
-          camConfig.deployments = utils.sortDeps(camConfig.deployments);
+          camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();
           return { project, camConfig };
 

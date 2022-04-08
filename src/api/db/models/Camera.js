@@ -26,8 +26,6 @@ const generateCameraModel = ({ user } = {}) => ({
     }
   },
 
-  // TODO: also return updated project?
-  // might be useful in Image.createImage()
   get createCamera() {
     return async (input, context) => {
       console.log(`CameraModel.createCamera() - creating camera`);
@@ -67,7 +65,9 @@ const generateCameraModel = ({ user } = {}) => ({
   },
 
   get registerCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) {
+      throw new ForbiddenError;
+    }
     return async ({ cameraId, make }, context) => {
       const projectId = user['curr_project'];
       console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
@@ -181,22 +181,23 @@ const generateCameraModel = ({ user } = {}) => ({
 
         // make sure there's a Project.cameras config record for this camera 
         // in the default_project and create one if not
-        const [defaultProj] = await context.models.Project.getProjects(
+        let [defaultProj] = await context.models.Project.getProjects(
           ['default_project']
         );
 
-        console.log(`CameraModel.unregisterCamera() - found defaultProj: ${JSON.stringify(defaultProj)}`)
+        console.log(`CameraModel.unregisterCamera() - found defaultProj: ${JSON.stringify(defaultProj)}`);
+        let addedNewCamConfig = false;
         const camConfig = defaultProj.cameras.find((cc) => cc._id === cameraId);
         if (!camConfig) {
           console.log(`CameraModel.unregisterCamera() - Couldn't find a camConfig on default project for camera ${cameraId}, so creating one`)
-          await context.models.Project.createCameraConfig(
+          defaultProj = await context.models.Project.createCameraConfig(
             'default_project',
             cameraId
           );
+          addedNewCamConfig = true;
         }
 
-        // TODO AUTH: also return updated default project? 
-        return { cameras };
+        return { cameras, ...(addedNewCamConfig && { project: defaultProj }) };
 
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError

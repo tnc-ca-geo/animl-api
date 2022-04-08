@@ -1,6 +1,6 @@
 module.exports = `
   type UnregisterCameraPayload {
-    cameraId: ID!
+    project: Project
     cameras: [Camera]
   }
 `;

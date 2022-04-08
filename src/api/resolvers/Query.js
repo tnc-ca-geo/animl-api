@@ -41,8 +41,6 @@ const Query = {
 
   // TODO: rename mlModels
   models: async (_, { _ids }, context) => {
-    // TODO AUTH - not sure we need this either anymore. Maybe for some future
-    // superuser/admin functionality?
     return await context.models.MLModel.getMLModels(_ids);
   },
   
