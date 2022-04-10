@@ -45,10 +45,6 @@ async function getUserInfo(req, config) {
       }
       return projects;
     }, {});
-
-    // TODO AUTH - if we will now be passing project into so many queries/mutations, 
-    // maybe it makes sense to pass project in as a GraphQL input variable 
-    // instead of as a header?
     
     const selectedProject = req.headers['x-selected-project'] || null;
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');

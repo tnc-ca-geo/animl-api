@@ -5,27 +5,24 @@ const generateProjectModel = require('../api/db/models/Project');
 const generateViewModel = require('../api/db/models/View');
 const generateMLModelModel = require('../api/db/models/MLModel');
 
-// TODO AUTH - this whole thing needs updating to reflect new schema changes
-
 let defaultMLModelsConfig = [
   {
     _id: 'megadetector',
     version: 'v4.1',
     description: 'Microsoft Megadetector',
     defaultConfThreshold: 0.8,
-    categories: [ // NEW
+    categories: [
       { _id: '1', name: 'animal' },
       { _id: '2', name: 'person' },
       { _id: '3', name: 'vehicle' },
     ],
-    // defaultModel: true, // TODO AUTH - is this used? it's not in Model Schema
   },
   {
     _id: 'mira',
     version: 'v1.0',
     description: 'Santa Cruz Island classifier',
     defaultConfThreshold: 0.8,
-    categories: [ // NEW
+    categories: [
       { _id: 'fox', name: 'fox' },
       { _id: 'skunk', name: 'skunk' },
       { _id: 'rodent', name: 'rodent' },
@@ -41,12 +38,11 @@ let defaultViewsConfig = [{
   editable: false,
   automationRules: [{
     event: { type: 'image-added' },
-    action: { type: 'run-inference', mlModel: 'megadetector' }, // NEW - 'model' to 'mlModel'
+    action: { type: 'run-inference', mlModel: 'megadetector' },
     name: 'Run Megadetector on all new images',
   }],
 }];
 
-// NEW
 let defaultProjectsConfig = [
   {
     _id: 'default_project',
@@ -56,7 +52,7 @@ let defaultProjectsConfig = [
     views: defaultViewsConfig,
     availableMLModels: ['megadetector', 'mira'],
   },
-  // TEMPORARY! remove after seeding DBs
+  // NOTE: THIS IS TEMPORARY! remove after seeding DBs
   {
     _id: 'sci_biosecurity',
     name: 'SCI Biosecurity',
@@ -65,6 +61,7 @@ let defaultProjectsConfig = [
     views: defaultViewsConfig,
     availableMLModels: ['megadetector', 'mira'],
   },
+  // NOTE: THIS IS TEMPORARY! remove after seeding DBs
   {
     _id: 'jldp',
     name: 'Dangermond Preserve',
@@ -74,50 +71,6 @@ let defaultProjectsConfig = [
     availableMLModels: ['megadetector'],
   },
 ];
-
-// function getDefaultModelId(defaultModelsConfig, newModelRecords) {
-//   const defaultModelConfig = defaultMLModelsConfig.find((model) => (
-//     model.defaultModel
-//   ));
-//   const defaultModelId = newModelRecords.find((model) => (
-//     model.name === defaultModelConfig.name && 
-//     model.version === defaultModelConfig.version
-//   ))._id;
-//   return defaultModelId;
-// };
-
-// async function createDefaultViews(params) {
-//   const {
-//     dbModels,
-//     newModelRecords,
-//     defaultViewsConfig,
-//     defaultModelsConfig,
-//   } = params;
-
-//   console.log('Creaing default views...');
-//   const existingViews = await dbModels.View.getViews();
-//   if (existingViews.length !== 0) {
-//     console.log('Found exising views in db; skipping: ', existingViews);
-//     return;
-//   }
-
-//   let newViewRecords = [];
-//   for (const view of defaultViewsConfig) {
-//     if (view.name === 'All images') {
-//       console.log('default view automation rules: ', view.automationRules)
-//       const modelId = getDefaultModelId(defaultModelsConfig, newModelRecords);
-//       view.automationRules[0].action.model = modelId;
-//     }
-//     try {
-//       const newViewRecord = await dbModels.View.createView(view);
-//       newViewRecords.push(newViewRecord);
-//     } catch (err) {
-//       throw new ApolloError(err);
-//     }
-//   }
-//   console.log('Successfully created new View records: ', newViewRecords);
-//   return newViewRecords;
-// };
 
 async function createDefaultMLModels(params) {
   const { dbModels, defaultMLModelsConfig } = params;
@@ -202,14 +155,6 @@ async function seedDB() {
       defaultMLModelsConfig,
       dbModels,
     });
-    
-    // // create default view records
-    // const newViewRecords = await createDefaultViews({
-    //   dbModels,
-    //   newModelRecords,
-    //   defaultViewsConfig,
-    //   defaultModelsConfig,
-    // });
   
     dbClient.connection.close();
     process.exit(0);

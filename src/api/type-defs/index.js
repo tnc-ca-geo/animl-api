@@ -58,8 +58,8 @@ const UpdateViewPayload = require('./payloads/UpdateViewPayload');
 const Mutation = require('./root/Mutation');
 const Query = require('./root/Query');
 
-// TODO: replace this nightmare with merge-graphql-schemas utility 
-// https://github.com/prisma-labs/graphql-yoga/tree/master/examples/modular-resolvers
+// TODO: replace this nightmare with @graphql-tools/merge utility 
+// https://www.npmjs.com/package/@graphql-tools/merge
 
 // TODO: follow shopify naming convention for type-defs & resolvers: 
 // 'ImageCreateInput' rather than 'CreateImageInput' for alphabetical grouping  

@@ -1,6 +1,7 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const Image = require('../schemas/Image');
+const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
@@ -16,9 +17,11 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryById: async (_id) => {
-    console.log(`ImageModel.queryById() - _id: ${_id}`);
+    const query = !user['is_superuser'] 
+      ? { _id, project: user['curr_project']}
+      : { _id };
     try {
-      const image = await Image.findOne({_id});
+      const image = await Image.findOne(query);
       return image;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -82,6 +85,7 @@ const generateImageModel = ({ user } = {}) => ({
   get createImage() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
+      const successfulOps = [];
       const md = utils.sanitizeMetadata(input.md, context.config);
       let projectId = 'default_project';
       console.log(`ImageModel.createImage() - md: ${JSON.stringify(md)}`);
@@ -96,16 +100,19 @@ const generateImageModel = ({ user } = {}) => ({
 
       try {
         // find camera record or create new one
-        const cameraSn = md.serialNumber;
-        const [existingCam] = await context.models.Camera.getCameras([cameraSn]);
+        const cameraId = md.serialNumber;
+        const [existingCam] = await context.models.Camera.getCameras([cameraId]);
         if (!existingCam) {
+          
           console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
-          await context.models.Camera.createCamera({
+          const { camera } = await context.models.Camera.createCamera({
             projectId,
-            cameraId: cameraSn,
+            cameraId,
             make: md.make,
             ...(md.model && { model: md.model }),
           }, context);
+
+          successfulOps.push({ op: 'cam-created', info: { cameraId } });
         }
         else {
           console.log(`createImage() - Found camera - ${existingCam}`);
@@ -115,8 +122,8 @@ const generateImageModel = ({ user } = {}) => ({
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
         console.log(`createImage() - found project: ${project}`);
-        const camConfig = project.cameras.find((cam) => 
-          cam._id.toString() === cameraSn.toString()
+        const camConfig = project.cameras.find((camConfig) => 
+          camConfig._id.toString() === cameraId.toString()
         );
         const deploymentId = utils.mapImageToDeployment(md, camConfig);
         console.log(`createImage() - mapped to deployment: ${deploymentId}`);
@@ -129,6 +136,22 @@ const generateImageModel = ({ user } = {}) => ({
         return image;
 
       } catch (err) {
+
+        // reverse successful operations
+        for (const op of successfulOps) {
+          if (op.op === 'cam-created') {
+            console.log(`ImageModel.createImage() - reversing camera-created operation`);
+            // delete newly created camera record
+            await Camera.findOneAndDelete({ _id: op.info.cameraId });
+            // find project, remove newly created cameraConfig record
+            const [project] = await context.models.Project.getProjects([projectId]);
+            project.cameras = project.cameras.filter((camConfig) => (
+              camConfig._id.toString() !== op.info.cameraId.toString()
+            ));
+            project.save();
+          }
+        }
+
         const msg = err.message.toLowerCase();
         if (err instanceof ApolloError) {
           throw err;
@@ -239,8 +262,6 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  // TODO AUTH - createLabel can be executed by superuser (if ML predicted label) 
-  // do we need to know what project the label belongs to? if so how do we determine that?
   get createLabels() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {

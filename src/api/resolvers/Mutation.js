@@ -1,5 +1,3 @@
-// TODO: Split this out by entity type
-
 const Mutation = {
 
   createImage: async (_, { input }, context) => {

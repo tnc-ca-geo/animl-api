@@ -29,6 +29,7 @@ const generateCameraModel = ({ user } = {}) => ({
   get createCamera() {
     return async (input, context) => {
       console.log(`CameraModel.createCamera() - creating camera`);
+      const successfulOps = [];
       const projectId = input.projectId || 'default_project';
 
       const saveCamera = async (input) => {
@@ -49,6 +50,7 @@ const generateCameraModel = ({ user } = {}) => ({
         // create "source" Camera record
         const camera = await saveCamera({...input, projectId });
         console.log(`CameraModel.createCamera() - camera: ${camera}`);
+        successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id} });
         // and CameraConfig record
         const project = await context.models.Project.createCameraConfig(
           projectId,
@@ -57,6 +59,15 @@ const generateCameraModel = ({ user } = {}) => ({
         return { camera, project };
 
       } catch (err) {
+
+        // reverse successful operations
+        for (const op of successfulOps) {
+          if (op.op === 'cam-saved') {
+            console.log(`CameraModel.createCamera() - reversing camera-saved operation`);
+            await Camera.findOneAndDelete({ _id: op.info.cameraId });
+          }
+        }
+
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
@@ -69,6 +80,7 @@ const generateCameraModel = ({ user } = {}) => ({
       throw new ForbiddenError;
     }
     return async ({ cameraId, make }, context) => {
+      const successfulOps = [];
       const projectId = user['curr_project'];
       console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
       console.log(`CameraModel.registerCamera() - cameraId: ${cameraId}`);
@@ -106,13 +118,13 @@ const generateCameraModel = ({ user } = {}) => ({
 
           console.log(`CameraModel.registerCamera() - Camera before saving: `, cam);
           await cam.save();
-
+          successfulOps.push({ op: 'cam-registered', info: { cameraId }});
+          const cameras = await this.getCameras();
           const project = await context.models.Project.createCameraConfig(
             projectId,
             cam._id
           );
 
-          const cameras = await this.getCameras();
           return { cameras, project };
 
         }
@@ -127,6 +139,14 @@ const generateCameraModel = ({ user } = {}) => ({
         }
 
       } catch (err) {
+        // reverse successful operations
+        for (const op of successfulOps) {
+          if (op.op === 'cam-registered') {
+            console.log(`CameraModel.registerCamera() - reversing camera registration operation`);
+            await this.unregisterCamera({ cameraId: op.info.cameraId }, context);
+          }
+        }
+
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
@@ -139,8 +159,8 @@ const generateCameraModel = ({ user } = {}) => ({
       throw new ForbiddenError;
     }
     return async ({ cameraId }, context) => {
-      // TODO AUTH - DOES superuser ever have to unregisterCameras?
-      // if so, we can't just use user['curr_project']
+      const successfulOps = [];
+      // doneOps, execdOps, cmpltdOps, 
       const projectId = user['curr_project'];
       console.log(`CameraModel.unregisterCamera() - projectId: ${projectId}`);
       console.log(`CameraModel.unregisterCamera() - cameraId: ${cameraId}`);
@@ -170,7 +190,7 @@ const generateCameraModel = ({ user } = {}) => ({
         let defaultProjReg = cam.projRegistrations.find((proj) => (
           proj.project === 'default_project'
         ));
-        if (defaultProjReg) defaultProjReg.active = true
+        if (defaultProjReg) defaultProjReg.active = true;
         else {
           cam.projRegistrations.push({
             project: 'default_project',
@@ -178,6 +198,7 @@ const generateCameraModel = ({ user } = {}) => ({
           });
         }
         await cam.save();
+        successfulOps.push({ op: 'cam-unregistered', info: { cameraId } });
 
         // make sure there's a Project.cameras config record for this camera 
         // in the default_project and create one if not
@@ -200,6 +221,13 @@ const generateCameraModel = ({ user } = {}) => ({
         return { cameras, ...(addedNewCamConfig && { project: defaultProj }) };
 
       } catch (err) {
+        // reverse successful operations
+        for (const op of successfulOps) {
+          if (op.op === 'cam-unregistered') {
+            console.log(`CameraModel.unregisterCamera() - reversing camera unregistration operation`);
+            await this.registerCamera({ cameraId: op.info.cameraId }, context);
+          }
+        }
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);

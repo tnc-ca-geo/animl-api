@@ -216,8 +216,8 @@ const createImageRecord = (md) => {
   return image;
 };
 
-// TODO: this us ugly clean up!
 const isLabelDupe = (image, newLabel) => {
+
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -227,15 +227,21 @@ const isLabelDupe = (image, newLabel) => {
 
     const mlModelMatch = newLabel.mlModel && label.mlModel && 
       newLabel.mlModel.toString() === label.mlModel.toString();
-    const mlModelVersionMatch = newLabel.mlModelVersion && 
-                                label.mlModelVersion && 
-                                newLabel.mlModel.toString() === label.mlModel.toString();
+  
+    const mlModelVersionMatch = newLabel.mlModelVersion && label.mlModelVersion && 
+      newLabel.mlModel.toString() === label.mlModel.toString();
+
     const labelMatch = newLabel.category === label.category;
     const confMatch  = newLabel.conf === label.conf;
     const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
 
-    if (mlModelMatch && mlModelVersionMatch && labelMatch && confMatch && bboxMatch) {
-      // label has already been applied, skipping
+    if (
+      mlModelMatch && 
+        mlModelVersionMatch && 
+          labelMatch && 
+            confMatch && 
+              bboxMatch
+      ) {
       return true;
     }
   }

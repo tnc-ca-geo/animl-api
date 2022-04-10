@@ -62,10 +62,6 @@ let DeploymentSchema = new Schema({
 });
 
 let CameraConfigSchema = new Schema({
-  // TODO AUTH - make _id a ref to Camera? Would allow us to use populate()
-  // to determine which camera is currently active. Not sure that's necessary 
-  // b/c we only need to know if a camera is active within a project when 
-  // managing cameras from front end, so a second query to Cameras isn't a huge deal
   _id: { type: String, required: true },  // _id is serial number
   deployments: { type: [DeploymentSchema]},
 });

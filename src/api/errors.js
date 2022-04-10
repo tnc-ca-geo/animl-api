@@ -34,10 +34,6 @@ class CameraRegistrationError extends ApolloError {
   }
 };
 
-// TODO: custom error for when users try to update an 
-// unwritable (uneditable or default) entity? Or just use ForbiddenError?
-// or UserInputError?
-
 function formatError (err) {
 
   console.log('err before formatting: ', err);

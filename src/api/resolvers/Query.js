@@ -24,7 +24,9 @@ const Query = {
     return await context.models.Image.queryById(args.input._id);
   },
 
-  // Now fetching labels as a field level resolver for Project
+  // TODO: Now fetching labels as a field level resolver for Project, but we 
+  // should reimplement this & call it when users create new label categories
+
   // labels: async (_, __, context) => {
   //   return await context.models.Image.getLabels();
   // },
@@ -33,14 +35,7 @@ const Query = {
     return await context.models.Camera.getCameras(_ids);
   },
 
-  views: async (_, { _ids }, context) => {
-    // TODO AUTH - not sure we'll need this anymore b/c we're getting views
-    // from Project.views
-    return await context.models.View.getViews(_ids);
-  },
-
-  // TODO: rename mlModels
-  models: async (_, { _ids }, context) => {
+  mlModels: async (_, { _ids }, context) => {
     return await context.models.MLModel.getMLModels(_ids);
   },
   
