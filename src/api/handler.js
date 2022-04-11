@@ -2,7 +2,6 @@ const { GraphQLServerLambda } = require('graphql-yoga');
 const { AuthenticationError } = require('apollo-server-errors');
 const { formatError } = require('./errors');
 const generateProjectModel = require('./db/models/Project');
-// const generateViewModel = require('./db/models/View');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
 const generateMLModelModel = require('./db/models/MLModel');
@@ -25,9 +24,6 @@ const resolvers = {
 const context = async ({ event: req }) => {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
-
-  // Authorize user and pass into model generator functions
-  // https://www.apollographql.com/docs/apollo-server/security/authentication/#authorization-in-resolvers
   const user = await getUserInfo(req, config);
   console.log('req: ', req);
   console.log('user: ', user);
@@ -39,7 +35,6 @@ const context = async ({ event: req }) => {
     config,
     models: {
       Project: generateProjectModel({ user }),
-      // View: generateViewModel({ user }),
       Image: generateImageModel({ user }),
       Camera: generateCameraModel({ user }),
       MLModel: generateMLModelModel({ user }),

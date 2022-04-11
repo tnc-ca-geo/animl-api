@@ -23,5 +23,3 @@ module.exports = `
     objectId: ID
     labels: [LabelInput!]
 }`;
-
-// NEW - LabelInput.modelId to mlModel, LabelInput.mlModelVersion

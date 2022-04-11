@@ -54,19 +54,19 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   get createCameraConfig() {
-    return async (projectId, cameraSn) => {
+    return async (projectId, cameraId) => {
       
-      const operation = async (projectId, cameraSn) => {
+      const operation = async (projectId, cameraId) => {
         return await retry(async (bail) => {
 
           const [project] = await this.getProjects([projectId]);
           console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
           
           // make sure project doesn't already have a config for this cam
-          const currCamConfig = project.cameras.find((c) => c._id === cameraSn);
+          const currCamConfig = project.cameraConfigs.find((c) => c._id === cameraId);
           if (!currCamConfig) {
-            project.cameras.push({
-              _id: cameraSn,
+            project.cameraConfigs.push({
+              _id: cameraId,
               deployments: [{
                 name: 'default',
                 timezone: project.timezone,
@@ -84,8 +84,8 @@ const generateProjectModel = ({ user } = {}) => ({
 
       try {
         console.log(`ProjectModel.createCameraConfig() - projectId: ${projectId}`);
-        console.log(`ProjectModel.createCameraConfig() - cameraSn: ${cameraSn}`);
-        return await operation(projectId, cameraSn);
+        console.log(`ProjectModel.createCameraConfig() - cameraId: ${cameraId}`);
+        return await operation(projectId, cameraId);
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
@@ -262,7 +262,7 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find camera config
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameras.find((camConfig) => (
+          let camConfig = project.cameraConfigs.find((camConfig) => (
             camConfig._id.toString() === cameraId.toString()
           ));
 
@@ -297,7 +297,7 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find deployment
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameras.find((camConfig) => (
+          let camConfig = project.cameraConfigs.find((camConfig) => (
             camConfig._id.toString() ===  cameraId.toString()
           ));
           let deployment = camConfig.deployments.find((dep) => (
@@ -342,7 +342,7 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find camera config
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameras.find((camConfig) => (
+          let camConfig = project.cameraConfigs.find((camConfig) => (
             camConfig._id.toString() ===  cameraId.toString()
           ));
           

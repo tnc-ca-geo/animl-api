@@ -39,9 +39,8 @@ let LabelSchema = new Schema({
   bbox: { type: [Number] },
   labeledDate: { type: Date, default: Date.now, required: true },
   validation: { type: ValidationSchema },
-  // NEW - now using model name as ID and updated 'model' to 'mlModel'
   mlModel: { type: 'String', ref: 'Model' }, // if type === 'ml'
-  mlModelVersion: { type: 'String' }, // NEW
+  mlModelVersion: { type: 'String' },
   userId: { type: String }, // if type === 'manual'
 });
 

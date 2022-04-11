@@ -19,7 +19,7 @@ let ImageSchema = new Schema({
   make: { type: String, default: 'unknown', required: true },
   cameraSn: { type: String, required: true, ref: 'Camera' },
   deployment: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
-  project: { type: String, required: true, ref: 'Project' },  // NEW
+  project: { type: String, required: true, ref: 'Project' },
   originalFileName: { type: String },
   imageWidth: { type: Number },
   imageHeight: { type: Number },

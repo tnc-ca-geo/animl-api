@@ -19,10 +19,8 @@ let AutomationRuleSchema = new Schema({
       required: true
     },
     alertRecipients: { type: [String] },
-    // NEW - now using model name as ID and updated 'model' to 'mlModel'
     mlModel: { type: String, ref: 'MLModel' },
-    // confThreshold: { type: Number }, // NEW - used as default for categories w/o their own set thresholds 
-    categoryConfig: { // NEW
+    categoryConfig: {
       type: Map,
       of: new Schema({
         confThreshold: { type: Number },
@@ -56,24 +54,24 @@ let DeploymentSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   location: { type: shared.LocationSchema },
-  timezone: { type: String, required: true }, // NEW
+  timezone: { type: String, required: true },
   startDate: { type: Date },
   editable: { type: Boolean },
 });
 
 let CameraConfigSchema = new Schema({
-  _id: { type: String, required: true },  // _id is serial number
+  _id: { type: String, required: true },  /* _id is serial number */
   deployments: { type: [DeploymentSchema]},
 });
 
 let ProjectSchema = new Schema({
-  _id: { type: String, required: true },  // _id is name in_snake_case
+  _id: { type: String, required: true },  /* _id is name in_snake_case */
   name: { type: String, required: true },
   timezone: { type: String, default: 'America/Los_Angeles', required: true },
   description: { type: String },
-  views: { type: [ViewSchema], required: true }, // NEW
-  cameras: { type: [CameraConfigSchema]}, // NEW
-  availableMLModels: { type: [{ type: String, ref: 'MLModel' }] } // NEW
+  views: { type: [ViewSchema], required: true },
+  cameraConfigs: { type: [CameraConfigSchema]},
+  availableMLModels: { type: [{ type: String, ref: 'MLModel' }] }
 });
 
 module.exports = mongoose.model('Project', ProjectSchema);

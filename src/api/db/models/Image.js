@@ -56,7 +56,7 @@ const generateImageModel = ({ user } = {}) => ({
       console.log(`ImageModel.getLabels() - projId: ${projId}`);
 
       const [categoriesAggregate] = await Image.aggregate([
-        { $match: {'project': projId} }, // NEW - limit aggregation to specific project
+        { $match: {'project': projId} },
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
         { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
@@ -99,13 +99,12 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       try {
-        // find camera record or create new one
+        // find camera record & active registration or create new one
         const cameraId = md.serialNumber;
         const [existingCam] = await context.models.Camera.getCameras([cameraId]);
         if (!existingCam) {
-          
           console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
-          const { camera } = await context.models.Camera.createCamera({
+          await context.models.Camera.createCamera({
             projectId,
             cameraId,
             make: md.make,
@@ -122,8 +121,8 @@ const generateImageModel = ({ user } = {}) => ({
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
         console.log(`createImage() - found project: ${project}`);
-        const camConfig = project.cameras.find((camConfig) => 
-          camConfig._id.toString() === cameraId.toString()
+        const camConfig = project.cameraConfigs.find((cc) => 
+          cc._id.toString() === cameraId.toString()
         );
         const deploymentId = utils.mapImageToDeployment(md, camConfig);
         console.log(`createImage() - mapped to deployment: ${deploymentId}`);
@@ -140,12 +139,12 @@ const generateImageModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {
-            console.log(`ImageModel.createImage() - reversing camera-created operation`);
+            console.log(`ImageModel.createImage() - reversing cam-created operation`);
             // delete newly created camera record
             await Camera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
             const [project] = await context.models.Project.getProjects([projectId]);
-            project.cameras = project.cameras.filter((camConfig) => (
+            project.cameraConfigs = project.cameraConfigs.filter((camConfig) => (
               camConfig._id.toString() !== op.info.cameraId.toString()
             ));
             project.save();

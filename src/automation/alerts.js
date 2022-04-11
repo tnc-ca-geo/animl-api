@@ -20,8 +20,8 @@ const makeEmail = async (rule, image, context) => {
     let deployment;
     const projects = await context.models.Project.getProjects([image.project]);
     const project = projects[0];
-    for (const cam of project.cameras) {
-      for (const dep of cam.deployments) {
+    for (const camConfig of project.cameraConfigs) {
+      for (const dep of camConfig.deployments) {
         if (dep._id.toString() === image.deployment.toString()) {
           deployment = dep;
         }

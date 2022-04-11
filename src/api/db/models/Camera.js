@@ -93,12 +93,12 @@ const generateCameraModel = ({ user } = {}) => ({
         // if no camera found, create new "source" Camera record & cameraConfig
         if (!cam) {
           console.log(`CameraModel.registerCamera() - Couldn't find an existing camera, so creating new one and registering it to ${projectId} project...`);
-          const res = await this.createCamera(
+          const { project } = await this.createCamera(
             { projectId, cameraId, make }, 
             context
           );
           const cameras = await this.getCameras();
-          return { cameras, project: res.project };
+          return { cameras, project };
         }
 
         // else if camera exists & is registered to default_project, 
@@ -143,7 +143,10 @@ const generateCameraModel = ({ user } = {}) => ({
         for (const op of successfulOps) {
           if (op.op === 'cam-registered') {
             console.log(`CameraModel.registerCamera() - reversing camera registration operation`);
-            await this.unregisterCamera({ cameraId: op.info.cameraId }, context);
+            await this.unregisterCamera(
+              { cameraId: op.info.cameraId }, 
+              context
+            );
           }
         }
 
@@ -168,7 +171,10 @@ const generateCameraModel = ({ user } = {}) => ({
       try {
 
         const cameras = await Camera.find();
-        const cam = cameras.find((c) => c._id === cameraId);
+        const cam = cameras.find((c) => c._id.toString() === cameraId.toString());
+        // TODO: Implement idMatch() util function that just converts both ids to strings and compares them
+        // const cam = cameras.find((c) => idsMatch(c._id, cameraId));
+
         if (!cam) {
           const msg = `Couldn't find camera record for camera ${cameraId}`;
           throw new CameraRegistrationError(msg);
@@ -200,7 +206,7 @@ const generateCameraModel = ({ user } = {}) => ({
         await cam.save();
         successfulOps.push({ op: 'cam-unregistered', info: { cameraId } });
 
-        // make sure there's a Project.cameras config record for this camera 
+        // make sure there's a Project.cameraConfig record for this camera 
         // in the default_project and create one if not
         let [defaultProj] = await context.models.Project.getProjects(
           ['default_project']
@@ -208,7 +214,9 @@ const generateCameraModel = ({ user } = {}) => ({
 
         console.log(`CameraModel.unregisterCamera() - found defaultProj: ${JSON.stringify(defaultProj)}`);
         let addedNewCamConfig = false;
-        const camConfig = defaultProj.cameras.find((cc) => cc._id === cameraId);
+        const camConfig = defaultProj.cameraConfigs.find((camConfig) => (
+          camConfig._id.toString() === cameraId.toString()
+        ));
         if (!camConfig) {
           console.log(`CameraModel.unregisterCamera() - Couldn't find a camConfig on default project for camera ${cameraId}, so creating one`)
           defaultProj = await context.models.Project.createCameraConfig(

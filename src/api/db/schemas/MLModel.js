@@ -21,13 +21,11 @@ let MLModelPerformanceSchema = new Schema({
  *    and for when applying model version to labels after inference
  */
 
-// NEW - renamed ModelSchema to MLModelsSchema
 let MLModelSchema = new Schema({
-  _id : { type: String, required: true }, // NEW - using "name" string as _id
-  // name: { type: String, required: true },
+  _id : { type: String, required: true }, /* _id is name of ml model */
   description: { type: String },
   version: { type: String, required: true },
-  defaultConfThreshold: { type: Number, required: true }, // NEW
+  defaultConfThreshold: { type: Number, required: true },
   categories: {
     type: [new Schema({
       _id: { type: String, required: true },

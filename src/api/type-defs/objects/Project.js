@@ -1,4 +1,3 @@
-// NEW - add project type-def
 module.exports = `
   type Deployment {
     _id: ID!
@@ -21,7 +20,7 @@ module.exports = `
     timezone: String!
     description: String
     views: [View!]!
-    cameras: [CameraConfig]
+    cameraConfigs: [CameraConfig]
     labels: LabelList
     availableMLModels: [String]
   }

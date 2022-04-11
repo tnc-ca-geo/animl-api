@@ -29,5 +29,3 @@ module.exports = `
     labels: [Label]
   }
 `;
-
-// NEW - Label.modelId is now Label.mlModel and we added Label.mlModelVersion

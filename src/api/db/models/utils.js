@@ -182,13 +182,6 @@ const createImageRecord = (md) => {
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
 
-  // TODO: are we even using this? do we need it?
-  const camera = {
-    serialNumber: md.serialNumber,
-    make: md.make,
-    ...(md.model && { model: md.model }),
-  };
-
   const location = coords && {
     geometry: { type: 'Point', coordinates: coords },
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
@@ -259,8 +252,8 @@ const createLabelRecord = (input, authorId) => {
     conf,
     bbox,
     labeledDate: moment(),
-    ...((authorId && type === 'ml') && { mlModel: authorId }),  // NEW
-    ...((authorId && type === 'ml') && { mlModelVersion }), // NEW
+    ...((authorId && type === 'ml') && { mlModel: authorId }),
+    ...((authorId && type === 'ml') && { mlModelVersion }),
     ...((authorId && type === 'manual') && { userId: authorId }),
     ...((authorId && type === 'manual') && { validation }),
   };
@@ -277,15 +270,15 @@ const hasRole = (user, targetRoles = []) => {
 };
 
 // TODO: accomodate user-created deployments with no startDate?
-const findDeployment = (image, cameraConfig) => {
+const findDeployment = (img, camConfig) => {
   // find most recent deployment start date
-  const imgCreated = !moment.isMoment(image.dateTimeOriginal) 
-    ? moment(image.dateTimeOriginal)
-    : image.dateTimeOriginal;
-  const defaultDep = cameraConfig.deployments.find((dep) => dep.name === 'default');
+  const imgCreated = !moment.isMoment(img.dateTimeOriginal) 
+    ? moment(img.dateTimeOriginal)
+    : img.dateTimeOriginal;
+  const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
   
   let mostRecentDep = { deploymentId: null, timeElapsed: null };
-  for (const dep of cameraConfig.deployments) {
+  for (const dep of camConfig.deployments) {
     if (dep.name !== 'default') {
       const timeElapsed = imgCreated.diff(moment(dep.startDate));
       // if time elapsed is negative, image was taken before the dep began
@@ -302,22 +295,18 @@ const findDeployment = (image, cameraConfig) => {
     : defaultDep._id;
 };
 
-// NEW - updated this to find deployments in camera config entries, i.e.:
-// Project.cameras.deployments
-const mapImageToDeployment = (image, cameraConfig) => {
-  console.log(`utils.mapImageToDeployment() - image: ${JSON.stringify(image)}`);
-  console.log(`utils.mapImageToDeployment() - cameraConfig: ${cameraConfig}`);
-
-  if (cameraConfig.deployments.length === 0) {
-    throw new ApolloError('Camera has no deployments');
+const mapImageToDeployment = (img, camConfig) => {
+  console.log(`utils.mapImageToDeployment() - img: ${JSON.stringify(img)}`);
+  console.log(`utils.mapImageToDeployment() - camConfig: ${camConfig}`);
+  if (camConfig.deployments.length === 0) {
+    throw new ApolloError('Camera config has no deployments');
   }
 
-  return (cameraConfig.deployments.length === 1) 
-    ? cameraConfig.deployments[0]._id 
-    : findDeployment(image, cameraConfig);
+  return (camConfig.deployments.length === 1) 
+    ? camConfig.deployments[0]._id 
+    : findDeployment(img, camConfig);
 };
 
-// NEW
 const sortDeps = (deps) => {
   console.log('utils.sortDeps() - deps before sort: ', deps);
 
