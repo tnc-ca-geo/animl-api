@@ -219,7 +219,7 @@ const generateProjectModel = ({ user } = {}) => ({
             ? camConfig.deployments[index + 1].startDate
             : null;
 
-          let filter = { project: projId, cameraSn: camConfig._id };
+          let filter = { project: projId, cameraId: camConfig._id };
           if (createdStart || createdEnd) {
             filter.dateTimeOriginal = {
               ...(createdStart && { $gte: createdStart }),

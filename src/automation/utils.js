@@ -19,7 +19,7 @@ const includedInView = (image, view) => {
   const filters = view.filters;
   // check camera filter
   if (filters.cameras) {
-    if (!filters.cameras.includes(image.cameraSn)) return false;
+    if (!filters.cameras.includes(image.cameraId)) return false;
   }
 
   // check deployments filter

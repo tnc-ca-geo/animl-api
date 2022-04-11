@@ -2,7 +2,6 @@ const { ApolloError } = require('apollo-server-errors');
 const { getConfig } = require('../config/config');
 const { connectToDatabase } = require('../api/db/connect');
 const generateProjectModel = require('../api/db/models/Project');
-const generateViewModel = require('../api/db/models/View');
 const generateMLModelModel = require('../api/db/models/MLModel');
 
 let defaultMLModelsConfig = [

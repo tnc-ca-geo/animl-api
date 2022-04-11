@@ -6,7 +6,7 @@ module.exports = `
     dateAdded: Date!
     dateTimeOriginal: Date!
     make: String!
-    cameraSn: String!
+    cameraId: String!
     deployment: ID!
     project: String!
     originalFileName: String
@@ -21,6 +21,6 @@ module.exports = `
   }`;
 
 
-// TODO: decide if we want to populate() cameraSn field when returning 
-// an Image - in which case I think we use cameraSn: Camera!
+// TODO: decide if we want to populate() cameraId field when returning 
+// an Image - in which case I think we use cameraId: Camera!
 // I also don't think we need camera: Camera? double check

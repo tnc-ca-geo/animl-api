@@ -29,7 +29,7 @@ const buildFilter = ({
 
   let camerasFilter = {};
   if (cameras) {
-    camerasFilter = {'cameraSn': { $in: cameras }}
+    camerasFilter = {'cameraId': { $in: cameras }}
   }
 
   let deploymentsFilter = {};
@@ -193,7 +193,7 @@ const createImageRecord = (md) => {
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: moment(),
     dateTimeOriginal: md.dateTimeOriginal,
-    cameraSn: md.serialNumber,
+    cameraId: md.serialNumber,
     make: md.make,
     deployment: md.deployment,
     project: md.project,
