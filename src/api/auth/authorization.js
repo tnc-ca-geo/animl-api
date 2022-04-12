@@ -46,6 +46,7 @@ async function getUserInfo(req, config) {
       return projects;
     }, {});
     
+    // add structured project & role info to user
     const selectedProject = req.headers['x-selected-project'] || null;
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');
     user['projects'] = projects;

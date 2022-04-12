@@ -5,6 +5,7 @@ const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
+const { idMatch } = require('./utils');
 const retry = require('async-retry');
 
 const generateImageModel = ({ user } = {}) => ({
@@ -56,7 +57,7 @@ const generateImageModel = ({ user } = {}) => ({
       console.log(`ImageModel.getLabels() - projId: ${projId}`);
 
       const [categoriesAggregate] = await Image.aggregate([
-        { $match: {'project': projId} },
+        { $match: {'projectId': projId} },
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
         { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
@@ -70,7 +71,7 @@ const generateImageModel = ({ user } = {}) => ({
         : [];
 
       const labellessImage = await Image.findOne(
-        { project: projId, objects: { $size: 0 } }
+        { projectId: projId, objects: { $size: 0 } }
       );
       if (labellessImage) categories.push('none');
       console.log(`ImageModel.getLabels() - categories: ${categories}`);
@@ -121,15 +122,15 @@ const generateImageModel = ({ user } = {}) => ({
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
         console.log(`createImage() - found project: ${project}`);
-        const camConfig = project.cameraConfigs.find((cc) => 
-          cc._id.toString() === cameraId.toString()
-        );
+        const camConfig = project.cameraConfigs.find((cc) => (
+          idMatch(cc._id, cameraId)
+        ));
         const deploymentId = utils.mapImageToDeployment(md, camConfig);
         console.log(`createImage() - mapped to deployment: ${deploymentId}`);
 
         // create image record
-        md.project = projectId;
-        md.deployment = deploymentId;
+        md.projectId = projectId;
+        md.deploymentId = deploymentId;
         const image = await saveImage(md);
         await automation.handleEvent({ event: 'image-added', image }, context);
         return image;
@@ -145,7 +146,7 @@ const generateImageModel = ({ user } = {}) => ({
             // find project, remove newly created cameraConfig record
             const [project] = await context.models.Project.getProjects([projectId]);
             project.cameraConfigs = project.cameraConfigs.filter((camConfig) => (
-              camConfig._id.toString() !== op.info.cameraId.toString()
+              !idMatch(camConfig._id, op.info.cameraId)
             ));
             project.save();
           }
@@ -205,9 +206,7 @@ const generateImageModel = ({ user } = {}) => ({
           // find image, apply object updates, and save
           const image = await this.queryById(imageId);
           console.log(`Found image, version number: ${image.__v}`);
-          const object = image.objects.find((obj) => (
-            obj._id.toString() === objectId.toString()
-          ));
+          const object = image.objects.find((obj) => idMatch(obj._id, objectId));
           if (!object) {
             const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
             bail(new ApolloError(msg));
@@ -242,7 +241,7 @@ const generateImageModel = ({ user } = {}) => ({
           // find image, filter out object, and save
           const image = await this.queryById(imageId);
           const newObjects = image.objects.filter((obj) => (
-            obj._id.toString() !== objectId.toString()
+            !idMatch(obj._id, objectId)
           ));
           image.objects = newObjects;
           await image.save();
@@ -279,9 +278,7 @@ const generateImageModel = ({ user } = {}) => ({
           // else try to match to existing object bbox and merge label into that
           // else add new object 
           if (objectId) {
-            const object = image.objects.find((obj) => (
-              obj._id.toString() === objectId.toString()
-            ));
+            const object = image.objects.find((obj) => idMatch(obj._id, objectId));
             object.labels.unshift(labelRecord);
           }
           else {
@@ -341,12 +338,8 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find label, apply updates, and save image
           const image = await this.queryById(imageId);
-          const object = image.objects.find((obj) => (
-            obj._id.toString() === objectId.toString()
-          ));
-          const label = object.labels.find((lbl) => (
-            lbl._id.toString() === labelId.toString()
-          ));
+          const object = image.objects.find((obj) => idMatch(obj._id, objectId));
+          const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
           for (let [key, newVal] of Object.entries(diffs)) {
             label[key] = newVal;
           }
@@ -376,12 +369,8 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find object, filter out label, and save image
           const image = await this.queryById(imageId);
-          const object = image.objects.find((obj) => (
-            obj._id.toString() === objectId.toString()
-          ));
-          const newLabels = object.labels.filter((lbl) => (
-            lbl._id.toString() !== labelId.toString()
-          ));
+          const object = image.objects.find((obj) => idMatch(obj._id, objectId));
+          const newLabels = object.labels.filter((lbl) => !idMatch(lbl._id, labelId));
           object.labels = newLabels;
           await image.save();
           return image;

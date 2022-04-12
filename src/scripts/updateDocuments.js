@@ -44,14 +44,14 @@ async function createLogFile(collecton, _ids) {
 
 async function updateDocuments() {
   // TODO: accept op as param
-  const op = 'update-labels-to-new-schema';
+  // const op = 'update-image-schema';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
   try {
 
     // TODO: create backup of db with exportDb.js
-
+    console.log(`Executing ${op}...`);
     const matchingImageIds = await operations[op].getIds();
     const matchCount = matchingImageIds.length;
     console.log(`This operation will affect ${matchCount} documents`);
@@ -66,15 +66,21 @@ async function updateDocuments() {
     if (confirmation === 'yes' || confirmation === 'y') {
       const res = await await operations[op].update();
       console.log('res: ', res);
-      await createLogFile('images', matchingImageIds);
+      if (res.nModified === matchCount) {
+        await createLogFile('images', matchingImageIds);
+      }
+      else {
+        const msg = `There was a discrepency between the number of matching 
+          documents and the number of modified documents`;
+        throw new ApolloError(err);
+      }
     }
 
     dbClient.connection.close();
     process.exit(0);
   } catch (err) {
-    throw new ApolloError('An error occured while updating the documents: ', err);
     dbClient.connection.close();
-    process.exit(1);
+    throw new ApolloError('An error occured while updating documents: ', err);
   }
 };
 

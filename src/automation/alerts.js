@@ -1,6 +1,6 @@
 const { ApolloError } = require('apollo-server-errors');
 const { SES } = require('aws-sdk');
-const { buildImgUrl } = require('../api/db/models/utils');
+const { buildImgUrl, idMatch } = require('../api/db/models/utils');
 
 const ses = new SES({ apiVersion: '2010-12-01' });
 
@@ -18,11 +18,11 @@ const makeEmail = async (rule, image, context) => {
   try {
 
     let deployment;
-    const projects = await context.models.Project.getProjects([image.project]);
+    const projects = await context.models.Project.getProjects([image.projectId]);
     const project = projects[0];
     for (const camConfig of project.cameraConfigs) {
       for (const dep of camConfig.deployments) {
-        if (dep._id.toString() === image.deployment.toString()) {
+        if (idMatch(dep._id, image.deploymentId)) {
           deployment = dep;
         }
       };

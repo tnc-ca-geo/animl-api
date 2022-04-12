@@ -4,7 +4,7 @@ const { GraphQLError } = require('graphql/error/GraphQLError');
 const Camera = require('../schemas/Camera');
 const retry = require('async-retry');
 const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
-const { hasRole } = require('./utils');
+const { hasRole, idMatch } = require('./utils');
 
 
 const generateCameraModel = ({ user } = {}) => ({
@@ -14,7 +14,7 @@ const generateCameraModel = ({ user } = {}) => ({
     // if user has curr_project, limit returned cameras to those that 
     // have at one point been assoicted with curr_project
     const projectId = user['curr_project'];
-    if (projectId) query['projRegistrations.project'] = projectId;
+    if (projectId) query['projRegistrations.projectId'] = projectId;
     console.log(`CameraModel.getCameras() - query: ${JSON.stringify(query)}`);
     try {
       const cameras = await Camera.find(query);
@@ -38,7 +38,7 @@ const generateCameraModel = ({ user } = {}) => ({
           const newCamera = new Camera({
             _id: cameraId,
             make,
-            projRegistrations: [{ project: projectId, active: true }],
+            projRegistrations: [{ projectId, active: true }],
             ...(model && { model }),
           });
           await newCamera.save();
@@ -103,17 +103,17 @@ const generateCameraModel = ({ user } = {}) => ({
 
         // else if camera exists & is registered to default_project, 
         // reassign it to user's current project, else reject registration
-        const activeReg = cam.projRegistrations.find((proj) => proj.active);
-        if (activeReg.project === 'default_project') {
+        const activeReg = cam.projRegistrations.find((pr) => pr.active);
+        if (activeReg.projectId === 'default_project') {
           console.log(`CameraModel.registerCamera() - Camera exists and it's currently registered to default project, so reassigning to ${projectId} project...`);
           
           let foundProject = false;
           cam.projRegistrations = cam.projRegistrations.map((pr) => {
-            if (pr.project === projectId) foundProject = true;
-            return { project: pr.project, active: (pr.project === projectId) };
+            if (pr.projectId === projectId) foundProject = true;
+            return { ...pr, active: (pr.projectId === projectId) };
           });
           if (!foundProject) {
-            cam.projRegistrations.push({ project: projectId, active: true });
+            cam.projRegistrations.push({ projectId, active: true });
           }
 
           console.log(`CameraModel.registerCamera() - Camera before saving: `, cam);
@@ -130,11 +130,11 @@ const generateCameraModel = ({ user } = {}) => ({
         }
         else {
           console.log(`CameraModel.registerCamera() - camera exists, but it's registered to a different project, so rejecting registration`);
-          const msg = activeReg.project === projectId
+          const msg = activeReg.projectId === projectId
             ? `This camera is already registered to the ${projectId} project!`
             : `This camera is registered to a different project!`;
           throw new CameraRegistrationError(msg, {
-            currProjReg: activeReg.project 
+            currProjReg: activeReg.projectId 
           });
         }
 
@@ -171,20 +171,18 @@ const generateCameraModel = ({ user } = {}) => ({
       try {
 
         const cameras = await Camera.find();
-        const cam = cameras.find((c) => c._id.toString() === cameraId.toString());
-        // TODO: Implement idMatch() util function that just converts both ids to strings and compares them
-        // const cam = cameras.find((c) => idsMatch(c._id, cameraId));
+        const cam = cameras.find((c) => idMatch(c._id, cameraId));
 
         if (!cam) {
           const msg = `Couldn't find camera record for camera ${cameraId}`;
           throw new CameraRegistrationError(msg);
         }
-        const activeReg = cam.projRegistrations.find((proj) => proj.active);
-        if (activeReg.project === 'default_project') {
+        const activeReg = cam.projRegistrations.find((pr) => pr.active);
+        if (activeReg.projectId === 'default_project') {
           const msg = `You can't unregister cameras from the default project`;
           throw new CameraRegistrationError(msg);
         }
-        else if (activeReg.project !== projectId) {
+        else if (activeReg.projectId !== projectId) {
           const msg = `This camera is not currently registered to ${projectId}`;
           throw new CameraRegistrationError(msg);
         }
@@ -193,13 +191,13 @@ const generateCameraModel = ({ user } = {}) => ({
         // reset registration.active to false,
         // and set default_project registration to active
         activeReg.active = false;
-        let defaultProjReg = cam.projRegistrations.find((proj) => (
-          proj.project === 'default_project'
+        let defaultProjReg = cam.projRegistrations.find((pr) => (
+          pr.projectId === 'default_project'
         ));
         if (defaultProjReg) defaultProjReg.active = true;
         else {
           cam.projRegistrations.push({
-            project: 'default_project',
+            projectId: 'default_project',
             active: true
           });
         }
@@ -214,8 +212,8 @@ const generateCameraModel = ({ user } = {}) => ({
 
         console.log(`CameraModel.unregisterCamera() - found defaultProj: ${JSON.stringify(defaultProj)}`);
         let addedNewCamConfig = false;
-        const camConfig = defaultProj.cameraConfigs.find((camConfig) => (
-          camConfig._id.toString() === cameraId.toString()
+        const camConfig = defaultProj.cameraConfigs.find((cc) => (
+          idMatch(cc._id, cameraId)
         ));
         if (!camConfig) {
           console.log(`CameraModel.unregisterCamera() - Couldn't find a camConfig on default project for camera ${cameraId}, so creating one`)

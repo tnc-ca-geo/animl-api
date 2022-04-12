@@ -1,7 +1,7 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const Project = require('../schemas/Project');
 const Image = require('../schemas/Image');
-const { sortDeps, hasRole } = require('./utils');
+const { sortDeps, hasRole, idMatch } = require('./utils');
 const retry = require('async-retry');
 const {
   WRITE_DEPLOYMENTS_ROLES,
@@ -134,13 +134,11 @@ const generateProjectModel = ({ user } = {}) => ({
     return async (input) => {
       console.log(`ProjectModel.updateView() - input: ${input}`);
 
-      const operation = async ({ _id, diffs }) => {
+      const operation = async ({ viewId, diffs }) => {
         return await retry(async (bail) => {
           // find view
           const [project] = await this.getProjects([user['curr_project']]);
-          let view = project.views.find((view) => (
-            view._id.toString() === _id.toString()
-          ));
+          let view = project.views.find((v) => idMatch(v._id, viewId));
           if (!view.editable) {
             bail(new ForbiddenError(`View ${view.name} is not editable`));
           }
@@ -150,9 +148,7 @@ const generateProjectModel = ({ user } = {}) => ({
             view[key] = newVal;
           }
           const updatedProj = await project.save();
-          return updatedProj.views.find((v) => (
-            v._id.toString() === _id.toString()
-          ));
+          return updatedProj.views.find((v) => idMatch(v._id, viewId));
 
         }, { retries: 2 });
       };
@@ -172,22 +168,18 @@ const generateProjectModel = ({ user } = {}) => ({
     return async (input) => {
       console.log(`ProjectModel.deleteView() - input: ${input}`);
 
-      const operation = async ({ _id }) => {
+      const operation = async ({ viewId }) => {
         return await retry(async (bail) => {
 
           // find view
           const [project] = await this.getProjects([user['curr_project']]);
-          let view = project.views.find((view) => (
-            view._id.toString() === _id.toString()
-          ));
+          let view = project.views.find((v) => idMatch(v._id, viewId));
           if (!view.editable) {
             bail(new ForbiddenError(`View ${view.name} is not editable`));
           }
 
           // remove view from project and save
-          project.views = project.views.filter((view) => (
-            view._id.toString() !== _id.toString()
-          ));
+          project.views = project.views.filter((v) => !idMatch(v._id, viewId));
           return await project.save();
 
         }, { retries: 2 });
@@ -219,7 +211,7 @@ const generateProjectModel = ({ user } = {}) => ({
             ? camConfig.deployments[index + 1].startDate
             : null;
 
-          let filter = { project: projId, cameraId: camConfig._id };
+          let filter = { projectId: projId, cameraId: camConfig._id };
           if (createdStart || createdEnd) {
             filter.dateTimeOriginal = {
               ...(createdStart && { $gte: createdStart }),
@@ -262,8 +254,8 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find camera config
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameraConfigs.find((camConfig) => (
-            camConfig._id.toString() === cameraId.toString()
+          let camConfig = project.cameraConfigs.find((cc) => (
+            idMatch(cc._id, cameraId)
           ));
 
           // add new deployment, sort them, and save project
@@ -297,11 +289,11 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find deployment
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameraConfigs.find((camConfig) => (
-            camConfig._id.toString() ===  cameraId.toString()
+          let camConfig = project.cameraConfigs.find((cc) => (
+            idMatch(cc._id, cameraId)
           ));
           let deployment = camConfig.deployments.find((dep) => (
-            dep._id.toString() === deploymentId.toString()
+            idMatch(dep._id, deploymentId)
           ));
           if (deployment.name === 'default') {
             bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -342,13 +334,13 @@ const generateProjectModel = ({ user } = {}) => ({
 
           // find camera config
           const [project] = await this.getProjects([user['curr_project']]);
-          let camConfig = project.cameraConfigs.find((camConfig) => (
-            camConfig._id.toString() ===  cameraId.toString()
+          let camConfig = project.cameraConfigs.find((cc) => (
+            idMatch(cc._id, cameraId)
           ));
           
           // filter out deployment, sort remaining ones, and save project
           camConfig.deployments = camConfig.deployments.filter((dep) => (
-            dep._id.toString() !== deploymentId.toString()
+            !idMatch(dep._id, deploymentId)
           ));
           camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();

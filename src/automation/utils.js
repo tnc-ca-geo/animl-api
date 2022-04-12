@@ -24,7 +24,7 @@ const includedInView = (image, view) => {
 
   // check deployments filter
   if (filters.deployments) {
-    if (!filters.deployments.includes(image.deployment)) return false;
+    if (!filters.deployments.includes(image.deplotmentId)) return false;
   }
 
   // check label filter
@@ -97,7 +97,7 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   console.log(`automation.buildCallstack() - payload: ${JSON.stringify(payload)}`);
   const { event, image, label } = payload;
-  const projects = await context.models.Project.getProjects([image.project]);
+  const projects = await context.models.Project.getProjects([image.projectId]);
   const proj = projects[0];
   let callstack = [];
 

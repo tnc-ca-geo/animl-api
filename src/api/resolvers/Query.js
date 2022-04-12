@@ -21,7 +21,7 @@ const Query = {
   },
 
   image: async (_, args, context) => {
-    return await context.models.Image.queryById(args.input._id);
+    return await context.models.Image.queryById(args.input.imageId);
   },
 
   // TODO: Now fetching labels as a field level resolver for Project, but we 

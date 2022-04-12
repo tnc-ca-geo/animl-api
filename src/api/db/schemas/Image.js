@@ -18,8 +18,8 @@ let ImageSchema = new Schema({
   // TODO: add dateTimeUTC field
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
-  deployment: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
-  project: { type: String, required: true, ref: 'Project' },
+  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
+  projectId: { type: String, required: true, ref: 'Project' },
   originalFileName: { type: String },
   imageWidth: { type: Number },
   imageHeight: { type: Number },
@@ -38,8 +38,8 @@ ImageSchema.index(
   { cameraId: 1, dateTimeOriginal: -1 },
   { unique: true, sparse: true }
 );
-ImageSchema.index({ deployment: 1 });
-ImageSchema.index({ project: 1 });
+ImageSchema.index({ deploymentId: 1 });
+ImageSchema.index({ projectId: 1 });
 
 ImageSchema.on('index', (e) => {
   console.log('Indexing error', e);

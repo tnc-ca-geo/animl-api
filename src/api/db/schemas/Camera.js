@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 let ProjectRegistrationSchema = new Schema({
-  project: { type: String, default: 'default_project', required: true },
+  projectId: { type: String, default: 'default_project', required: true },
   active: { type: Boolean, required: true },
 });
 

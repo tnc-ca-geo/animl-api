@@ -10,7 +10,7 @@ const operations = {
     update: async () => {
       console.log('Removing objects with empty labels arrays...');
       return await Image.updateMany(
-        { },
+        {},
         { $pull: { objects: { labels: { $size: 0} } } }
       )
     }
@@ -22,7 +22,7 @@ const operations = {
     ),
     update: async () => {
       console.log('Associating all images with sci_biosecurity project...');
-      return await Image.updateMany({}, { project: 'sci_biosecurity' });
+      return await Image.updateMany({}, { projectId: 'sci_biosecurity' });
     }
   },
 
@@ -110,7 +110,22 @@ const operations = {
         ]
       );
     },
+  },
 
+  'update-image-schema': {
+    getIds: async () => (
+      await Image.find({}).select('_id')
+    ),
+    update: async () => {
+      console.log('Updating all images with new property keys...');
+      return await Image.updateMany({}, { 
+        $rename: { 
+          'cameraSn': 'cameraId',
+          'project': 'projectId',
+          'deployment': 'deploymentId',
+        } 
+      }, { strict: false });
+    }
   },
 
 }

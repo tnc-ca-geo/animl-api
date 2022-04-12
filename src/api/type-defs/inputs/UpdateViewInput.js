@@ -27,7 +27,7 @@ module.exports = `
   }
 
   input UpdateViewInput {
-    _id: ID!
+    viewId: ID!
     diffs: ViewDiffsInput!
 }`;
 

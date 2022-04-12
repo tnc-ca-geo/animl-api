@@ -25,7 +25,7 @@ const buildFilter = ({
   custom,
 }, user) => {
 
-  let projectFilter = {'project': user['curr_project']};
+  let projectFilter = {'projectId': user['curr_project']};
 
   let camerasFilter = {};
   if (cameras) {
@@ -37,7 +37,7 @@ const buildFilter = ({
     const deploymentIds = deployments.map((depString) => (
       new ObjectId(depString))  // have to cast string id to ObjectId
     );
-    deploymentsFilter = {'deployment': { $in: deploymentIds }}
+    deploymentsFilter = {'deploymentId': { $in: deploymentIds }}
   }
 
   let dateCreatedFilter =  {};
@@ -195,8 +195,8 @@ const createImageRecord = (md) => {
     dateTimeOriginal: md.dateTimeOriginal,
     cameraId: md.serialNumber,
     make: md.make,
-    deployment: md.deployment,
-    project: md.project,
+    deploymentId: md.deploymentId,
+    projectId: md.projectId,
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.imageWidth && { imageWidth: md.imageWidth }),
@@ -219,10 +219,10 @@ const isLabelDupe = (image, newLabel) => {
   for (const label of labels) {
 
     const mlModelMatch = newLabel.mlModel && label.mlModel && 
-      newLabel.mlModel.toString() === label.mlModel.toString();
+      idMatch(newLabel.mlModel, label.mlModel);
   
-    const mlModelVersionMatch = newLabel.mlModelVersion && label.mlModelVersion && 
-      newLabel.mlModel.toString() === label.mlModel.toString();
+    const mlModelVerMatch = newLabel.mlModelVersion && label.mlModelVersion && 
+      newLabel.mlModelVersion.toString() === label.mlModelVersion.toString();
 
     const labelMatch = newLabel.category === label.category;
     const confMatch  = newLabel.conf === label.conf;
@@ -230,11 +230,11 @@ const isLabelDupe = (image, newLabel) => {
 
     if (
       mlModelMatch && 
-        mlModelVersionMatch && 
-          labelMatch && 
-            confMatch && 
-              bboxMatch
-      ) {
+      mlModelVerMatch && 
+      labelMatch && 
+      confMatch && 
+      bboxMatch
+    ) {
       return true;
     }
   }
@@ -328,19 +328,17 @@ const sortDeps = (deps) => {
 };
 
 const findActiveProjReg = (camera) => {
-  const activeProjReg = camera.projRegistrations.find((pr) => (
-    pr.active
-  ));
-
+  const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
     const err = `Can't find active project registration for image: ${md}`;
     throw new ApolloError(err);
   }
 
-  console.log(`utils.findActiveProjReg() - Found active project registration - ${activeProjReg.project}`);
-  return activeProjReg.project;
+  console.log(`utils.findActiveProjReg() - Found active project registration - ${activeProjReg.projectId}`);
+  return activeProjReg.projectId;
 };
 
+const idMatch = (idA, idB) => idA.toString() === idB.toString();
 
 module.exports = {
   buildImgUrl,
@@ -353,4 +351,5 @@ module.exports = {
   mapImageToDeployment,
   sortDeps,
   findActiveProjReg,
+  idMatch,
 };

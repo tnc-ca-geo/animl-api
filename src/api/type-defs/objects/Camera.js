@@ -1,7 +1,7 @@
 module.exports = `
   type ProjectRegistration {
     _id: ID!
-    project: String!
+    projectId: String!
     active: Boolean!
   }
 

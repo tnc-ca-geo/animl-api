@@ -1,4 +1,4 @@
 module.exports = `
   input QueryImageInput {
-    _id: ID!
+    imageId: ID!
   }`;
