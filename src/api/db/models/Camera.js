@@ -108,9 +108,9 @@ const generateCameraModel = ({ user } = {}) => ({
           console.log(`CameraModel.registerCamera() - Camera exists and it's currently registered to default project, so reassigning to ${projectId} project...`);
           
           let foundProject = false;
-          cam.projRegistrations = cam.projRegistrations.map((pr) => {
+          cam.projRegistrations.forEach((pr) => {
             if (pr.projectId === projectId) foundProject = true;
-            return { ...pr, active: (pr.projectId === projectId) };
+            pr.active = (pr.projectId === projectId);
           });
           if (!foundProject) {
             cam.projRegistrations.push({ projectId, active: true });

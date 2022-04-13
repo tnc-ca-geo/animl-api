@@ -225,11 +225,17 @@ const generateProjectModel = ({ user } = {}) => ({
           // UTC+0 (maybe with aggregation pipeline + updatemany?) and performoing
           // update many / bulk write
           const update = {
-            deployment: dep._id,
+            deploymentId: dep._id,
             // timezone: dep.timezone 
           };
+          console.log('ProjectModel.reMapImagesToDeps() - filter: ', filter);
+          console.log('ProjectModel.reMapImagesToDeps() - update: ', update);
+
           operations.push({ updateMany: { filter, update } });
         };
+
+        console.log('ProjectModel.reMapImagesToDeps() - operations: ', operations);
+
 
         await Image.bulkWrite(operations);
       }, { retries: 3 });
