@@ -24,7 +24,7 @@ const includedInView = (image, view) => {
 
   // check deployments filter
   if (filters.deployments) {
-    if (!filters.deployments.includes(image.deplotmentId)) return false;
+    if (!filters.deployments.includes(image.deploymentId)) return false;
   }
 
   // check label filter
@@ -97,11 +97,10 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   console.log(`automation.buildCallstack() - payload: ${JSON.stringify(payload)}`);
   const { event, image, label } = payload;
-  const projects = await context.models.Project.getProjects([image.projectId]);
-  const proj = projects[0];
+  const [project] = await context.models.Project.getProjects([image.projectId]);
   let callstack = [];
 
-  callstack = proj.views.reduce((applicableRules, view) => {
+  callstack = project.views.reduce((applicableRules, view) => {
     const imageIncInView = includedInView(image, view);
     if (imageIncInView && view.automationRules.length > 0) {
       view.automationRules
@@ -111,7 +110,7 @@ const buildCallstack = async (payload, context) => {
     return applicableRules;
   }, []);
 
-  console.log(`automation.buildCallstack() - callstack: ${JSON.stringify(callstack)}`);
+  console.log(`automation.buildCallstack() - callstack before de-duping: ${JSON.stringify(callstack)}`);
 
   return _.uniqWith(callstack, _.isEqual); // remove dupes
 };

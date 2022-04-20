@@ -4,22 +4,22 @@ const { buildImgUrl, idMatch } = require('../api/db/models/utils');
 
 const ses = new SES({ apiVersion: '2010-12-01' });
 
-const buildFrontendUrl = (image, config) => {
+const buildFrontendUrl = async (image, project, config) => {
   const url = config['/FRONTEND/URL'];
-  return `https://${url}/?img=${image._id}`;
+  const projId = image.projectId;
+  const viewId = project.views.find((v) => v.name === 'All images')._id;
+  return `https://${url}/${projId}/${viewId}?img=${image._id}`;
 };
 
 const makeEmail = async (rule, image, context) => {
 
-  console.log(`alerts.makeEmail() - rule: ${rule}`);
-  const frontendUrl = buildFrontendUrl(image, context.config)
-  const imageUrl = buildImgUrl(image, context.config);
-
   try {
-
+    const projId = image.projectId;
+    const [project] = await context.models.Project.getProjects([projId]);
+    const frontendUrl = await buildFrontendUrl(image, project, context.config);
+    const imageUrl = buildImgUrl(image, context.config, 'medium');
+  
     let deployment;
-    const projects = await context.models.Project.getProjects([image.projectId]);
-    const project = projects[0];
     for (const camConfig of project.cameraConfigs) {
       for (const dep of camConfig.deployments) {
         if (idMatch(dep._id, image.deploymentId)) {
@@ -29,8 +29,12 @@ const makeEmail = async (rule, image, context) => {
     };
 
     const body = 
-      `<a href=${frontendUrl}>View image in Animl</a>\
-      <img src="${imageUrl}" alt="detected ${rule.event.label}"/>`
+      `<div>` +
+        `<a href=${frontendUrl}>View image in Animl</a>` +
+      `</div>` +
+      `<div>` +
+        `<img src="https://${imageUrl}" alt="detected ${rule.event.label}"/>` +
+      `</div>`;
   
     return {
       Destination: {
