@@ -19,9 +19,10 @@ const generateImageModel = ({ user } = {}) => ({
 
   queryById: async (_id) => {
     const query = !user['is_superuser'] 
-      ? { _id, project: user['curr_project']}
+      ? { _id, projectId: user['curr_project']}
       : { _id };
     try {
+      console.log(`ImageModel.queryById() query - ${JSON.stringify(query)}`);
       const image = await Image.findOne(query);
       return image;
     } catch (err) {
@@ -205,7 +206,7 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find image, apply object updates, and save
           const image = await this.queryById(imageId);
-          console.log(`Found image, version number: ${image.__v}`);
+          console.log(`ImageModel.updateObject() - found image: ${JSON.stringify(image)}`);
           const object = image.objects.find((obj) => idMatch(obj._id, objectId));
           if (!object) {
             const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
