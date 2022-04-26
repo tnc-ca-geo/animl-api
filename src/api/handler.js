@@ -21,13 +21,17 @@ const resolvers = {
   ...Scalars,
 };
 
+const authMiddleware = async (resolve, parent, args, context, info) => {
+  if (!context.user) throw new AuthenticationError('Authentication failed');
+  return await resolve(parent, args, context, info);
+};
+
 const context = async ({ event: req }) => {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
   const user = await getUserInfo(req, config);
   console.log('req: ', req);
   console.log('user: ', user);
-  if (!user) throw new AuthenticationError('Authentication failed');
     
   return {
     ...req,
@@ -46,6 +50,7 @@ const lambda = new GraphQLServerLambda({
   typeDefs,
   resolvers,
   context,
+  middlewares: [authMiddleware],
   options: {
     formatError,
   },
@@ -55,6 +60,7 @@ exports.playground = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
   lambda.playgroundHandler(event, context, callback);
 };
+
 exports.server = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
   lambda.graphqlHandler(event, context, callback);

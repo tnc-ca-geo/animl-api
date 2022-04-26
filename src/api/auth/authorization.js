@@ -3,34 +3,40 @@ const jwt = require('jwt-simple');
 const BEARER_TOKEN_PATTERN = /^Bearer [-_=.0-9a-zA-Z]+$/i;
 
 async function getUserInfo(req, config) {
-    const token = req.headers.Authorization || req.headers.authorization;
-    const api_key = req.headers['x-api-key'];
+  const token = req.headers.Authorization || req.headers.authorization;
+  const api_key = req.headers['x-api-key'];
 
-    // if x-api-key header is present, call was to /internal path
-    // and was made by an internal lambda
-    if (api_key == config['APIKEY']) {
-      console.log('authorization.getUserInfo() - found api key in header, must be /intenal call');
-      return { 'is_superuser': true };
-    }
+  // if x-api-key header is present, call was to /internal path
+  // and was made by an internal lambda
+  if (api_key == config['APIKEY']) {
+    console.log('authorization.getUserInfo() - found api key in header, must be /intenal call');
+    return { 'is_superuser': true };
+  }
 
-    if (!token || !BEARER_TOKEN_PATTERN.test(token)) {
-      console.log('authorization.getUserInfo() - no token found');
-      return null;
-    }
+  if (!token || !BEARER_TOKEN_PATTERN.test(token)) {
+    console.log('authorization.getUserInfo() - no token found');
+    return null;
+  }
 
-    console.log('authorization.getUserInfo() - call was made to /external, so decode users access token');
+  console.log('authorization.getUserInfo() - call was made to /external, so decode users access token');
 
-    // else, call was made to /external (from the UI),
-    // so decode the user's access token
-    let user = jwt.decode(
-        token.substring('Bearer '.length), // Everything after the Bearer prefix
-        null, // Secret doesn't matter since the APIG verifies
-        true // API Gateway handles verification, so we don't
-    );
+  // else, call was made to /external (from the UI),
+  // so decode the user's access token
+  let user = jwt.decode(
+      token.substring('Bearer '.length), // Everything after the Bearer prefix
+      null, // Secret doesn't matter since the APIG verifies
+      true // API Gateway handles verification, so we don't
+  );
 
-    console.log(`authorization.getUserInfo() - user before parsing: ${JSON.stringify(user)}`);
+  console.log(`authorization.getUserInfo() - user before parsing: ${JSON.stringify(user)}`);
 
-    // parse cognito groups into projects
+  // add selected project info to user
+  const selectedProject = req.headers['x-selected-project'] || null;
+  user['curr_project'] = selectedProject;
+
+  // parse cognito groups into projects
+  user['projects'] = [];
+  if (user['cognito:groups']) {
     const projects = user['cognito:groups'].reduce((projects, group) => {
       const groupComponents = group.split('/');
       if (groupComponents.length !== 3) return projects;
@@ -45,19 +51,17 @@ async function getUserInfo(req, config) {
       }
       return projects;
     }, {});
-    
-    // add structured project & role info to user
-    const selectedProject = req.headers['x-selected-project'] || null;
+
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');
     user['projects'] = projects;
-    user['curr_project'] = selectedProject; 
     user['curr_project_roles'] = projects[selectedProject] 
-      ? projects[selectedProject].roles 
-      : null;
+    ? projects[selectedProject].roles 
+    : [];
+  } 
 
-    console.log(`authorization.getUserInfo() - user after parsing: ${JSON.stringify(user)}`);
+  console.log(`authorization.getUserInfo() - user after parsing: ${JSON.stringify(user)}`);
 
-    return user;
+  return user;
 
 }
 
