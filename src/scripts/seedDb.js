@@ -69,12 +69,21 @@ let defaultProjectsConfig = [
     views: defaultViewsConfig,
     availableMLModels: ['megadetector'],
   },
+  // NOTE: THIS IS TEMPORARY! remove after seeding DBs
+  {
+    _id: 'catalina',
+    name: 'Catalina Island',
+    description: 'Experimental control network on Catalina Island',
+    timezone: 'America/Los_Angeles',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector', 'mira'],
+  },
 ];
 
 async function createDefaultMLModels(params) {
   const { dbModels, defaultMLModelsConfig } = params;
   
-  console.log('Creaing default models: ', defaultMLModelsConfig);
+  console.log('Creaing default models...');
   const existingMLModels = await dbModels.MLModel.getMLModels();
   const existingMLModelIds = existingMLModels.map((mdl) => mdl._id);
   console.log('Found existing models: ', existingMLModelIds);
@@ -139,7 +148,6 @@ async function seedDB() {
 
     const dbModels = {
       Project: generateProjectModel({ user }),
-      // View: generateViewModel(),
       MLModel: generateMLModelModel({ user }),
     };
 

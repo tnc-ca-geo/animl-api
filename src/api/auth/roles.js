@@ -2,7 +2,7 @@ const MANAGER = 'project_manager';
 const MEMBER = 'project_member';
 const OBSERVER = 'project_observer';
 
-const WRITE_OBJECTS_ROLES =              [MANAGER, MEMBER, OBSERVER];
+const WRITE_OBJECTS_ROLES =              [MANAGER, MEMBER];
 const WRITE_VIEWS_ROLES =                [MANAGER, MEMBER];
 const WRITE_IMAGES_ROLES =               [MANAGER];
 const WRITE_DEPLOYMENTS_ROLES =          [MANAGER];
