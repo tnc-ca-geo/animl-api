@@ -20,7 +20,6 @@
 const Project = {
   // Field level resolver for Project.labels()
   labels: async (parent, __, context) => {
-    console.log('Executing field level resolver for Project.labels()');
     return await context.models.Image.getLabels(parent._id);
   }
 }

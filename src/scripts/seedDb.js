@@ -35,11 +35,13 @@ let defaultViewsConfig = [{
   filters: {},
   description: `Default view of all images. This view is not editable.`,
   editable: false,
-  automationRules: [{
-    event: { type: 'image-added' },
-    action: { type: 'run-inference', mlModel: 'megadetector' },
-    name: 'Run Megadetector on all new images',
-  }],
+  // NOTE: commenting this out so that users have ability to adjust
+  // category configs (e.g. turn off 'vehicle' label)
+  // automationRules: [{
+  //   event: { type: 'image-added' },
+  //   action: { type: 'run-inference', mlModel: 'megadetector' },
+  //   name: 'Run Megadetector on all new images',
+  // }],
 }];
 
 let defaultProjectsConfig = [
