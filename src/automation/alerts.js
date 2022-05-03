@@ -58,7 +58,6 @@ const makeEmail = async (rule, image, context) => {
 
 const sendEmail = async (rule, image, context) => {
   try {
-    console.log(`Sending alert for ${image.originalFileName}`);
     const email = await makeEmail(rule, image, context);
     const res = await ses.sendEmail(email).promise();
     return res;

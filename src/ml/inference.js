@@ -4,13 +4,11 @@ const { buildImgUrl } = require('../api/db/models/utils');
 
 // get image from S3, read in as buffer of binary data
 const getImage = async (image, config) => {
-  console.log('getImage() firing: ', );
   const url = buildImgUrl(image, config);
   try {
     let img = await agent.get(url).buffer(true);
     return Buffer.from(img.body, 'binary');
   } catch (err) {
-    console.log('error trying to get image from s3: ', err);
     throw err;
   }
 };
@@ -20,7 +18,6 @@ const runInference = {
   megadetector: async (params) => {
 
     const { modelSource, catConfig, image, label, config } = params;
-    console.log(`requesting inference from ${modelSource._id} on image: ${image.originalFileName}`);
     const imgBuffer = await getImage(image, config);
 
     try {
@@ -36,7 +33,6 @@ const runInference = {
       // the first four floats are the relative coordinates of the bbox
       const tmpFile = res.files.detection_result.path;
       const detections = JSON.parse(fs.readFileSync(tmpFile));
-      console.log('detections before filtering: ', detections);
 
       const formatedDets = detections[image._id].map((det) => ({
         mlModel: modelSource._id,
@@ -66,7 +62,6 @@ const runInference = {
         });
       }
 
-      console.log('filteredDetections: ', filteredDets);
       return filteredDets;
 
     } catch (err) {
@@ -77,7 +72,6 @@ const runInference = {
   mira: async (params) => {
 
     const { modelSource, catConfig, image, label, config } = params;
-    console.log(`requesting inference from ${modelSource._id} on image: ${image.originalFileName}`);
     const imgBuffer = await getImage(image, config);
     const bbox = label.bbox ? label.bbox : [0,0,1,1];
 
@@ -87,13 +81,11 @@ const runInference = {
         .field('bbox', JSON.stringify(bbox))
         .attach('image', imgBuffer, image._id + '.jpg');
       res = JSON.parse(res.res.text);
-      console.log('detections before filtering: ', res);
   
       const filteredDets = Object.values(res).reduce((dets, classifier) => {
         // only evaluate top predictions
         const [category, conf] = Object.entries(classifier.predictions)
           .sort((a, b) => b[1] - a[1])[0];
-        console.log(`Top ${classifier['endpoint_name']} prediction: ${category} - ${conf}`);
   
         // filter out disabled detections,
         // empty detections, & detections below confThreshold
@@ -116,7 +108,6 @@ const runInference = {
         return dets;
       }, []);
 
-      console.log('filteredDetections: ', filteredDets);
       return filteredDets;
 
     } catch (err) {

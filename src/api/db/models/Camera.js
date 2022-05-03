@@ -15,10 +15,8 @@ const generateCameraModel = ({ user } = {}) => ({
     // have at one point been assoicted with curr_project
     const projectId = user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
-    console.log(`CameraModel.getCameras() - query: ${JSON.stringify(query)}`);
     try {
       const cameras = await Camera.find(query);
-      console.log(`CameraModel.getCameras() - found cameras: ${JSON.stringify(cameras)}`);
       return cameras;
     } catch (err) {
       if (err instanceof ApolloError) throw err;
@@ -28,7 +26,6 @@ const generateCameraModel = ({ user } = {}) => ({
 
   get createCamera() {
     return async (input, context) => {
-      console.log(`CameraModel.createCamera() - creating camera`);
       const successfulOps = [];
       const projectId = input.projectId || 'default_project';
 
@@ -49,7 +46,6 @@ const generateCameraModel = ({ user } = {}) => ({
       try {
         // create "source" Camera record
         const camera = await saveCamera({...input, projectId });
-        console.log(`CameraModel.createCamera() - camera: ${camera}`);
         successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id} });
         // and CameraConfig record
         const project = await context.models.Project.createCameraConfig(
@@ -63,7 +59,6 @@ const generateCameraModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-saved') {
-            console.log(`CameraModel.createCamera() - reversing camera-saved operation`);
             await Camera.findOneAndDelete({ _id: op.info.cameraId });
           }
         }
@@ -82,17 +77,12 @@ const generateCameraModel = ({ user } = {}) => ({
     return async ({ cameraId, make }, context) => {
       const successfulOps = [];
       const projectId = user['curr_project'];
-      console.log(`CameraModel.registerCamera() - projectId: ${projectId}`);
-      console.log(`CameraModel.registerCamera() - cameraId: ${cameraId}`);
-      console.log(`CameraModel.registerCamera() - make: ${make}`);
 
       try {
         const cam = await Camera.findOne({ _id: cameraId });
-        console.log(`CameraModel.registerCamera() - Found camera: `, cam);
 
         // if no camera found, create new "source" Camera record & cameraConfig
         if (!cam) {
-          console.log(`CameraModel.registerCamera() - Couldn't find an existing camera, so creating new one and registering it to ${projectId} project...`);
           const { project } = await this.createCamera(
             { projectId, cameraId, make }, 
             context
@@ -105,7 +95,6 @@ const generateCameraModel = ({ user } = {}) => ({
         // reassign it to user's current project, else reject registration
         const activeReg = cam.projRegistrations.find((pr) => pr.active);
         if (activeReg.projectId === 'default_project') {
-          console.log(`CameraModel.registerCamera() - Camera exists and it's currently registered to default project, so reassigning to ${projectId} project...`);
           
           let foundProject = false;
           cam.projRegistrations.forEach((pr) => {
@@ -116,7 +105,6 @@ const generateCameraModel = ({ user } = {}) => ({
             cam.projRegistrations.push({ projectId, active: true });
           }
 
-          console.log(`CameraModel.registerCamera() - Camera before saving: `, cam);
           await cam.save();
           successfulOps.push({ op: 'cam-registered', info: { cameraId }});
           const cameras = await this.getCameras();
@@ -129,7 +117,6 @@ const generateCameraModel = ({ user } = {}) => ({
 
         }
         else {
-          console.log(`CameraModel.registerCamera() - camera exists, but it's registered to a different project, so rejecting registration`);
           const msg = activeReg.projectId === projectId
             ? `This camera is already registered to the ${projectId} project!`
             : `This camera is registered to a different project!`;
@@ -142,7 +129,6 @@ const generateCameraModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-registered') {
-            console.log(`CameraModel.registerCamera() - reversing camera registration operation`);
             await this.unregisterCamera(
               { cameraId: op.info.cameraId }, 
               context
@@ -163,10 +149,7 @@ const generateCameraModel = ({ user } = {}) => ({
     }
     return async ({ cameraId }, context) => {
       const successfulOps = [];
-      // doneOps, execdOps, cmpltdOps, 
       const projectId = user['curr_project'];
-      console.log(`CameraModel.unregisterCamera() - projectId: ${projectId}`);
-      console.log(`CameraModel.unregisterCamera() - cameraId: ${cameraId}`);
 
       try {
 
@@ -210,13 +193,11 @@ const generateCameraModel = ({ user } = {}) => ({
           ['default_project']
         );
 
-        console.log(`CameraModel.unregisterCamera() - found defaultProj: ${JSON.stringify(defaultProj)}`);
         let addedNewCamConfig = false;
         const camConfig = defaultProj.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
         if (!camConfig) {
-          console.log(`CameraModel.unregisterCamera() - Couldn't find a camConfig on default project for camera ${cameraId}, so creating one`)
           defaultProj = await context.models.Project.createCameraConfig(
             'default_project',
             cameraId
@@ -230,7 +211,6 @@ const generateCameraModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-unregistered') {
-            console.log(`CameraModel.unregisterCamera() - reversing camera unregistration operation`);
             await this.registerCamera({ cameraId: op.info.cameraId }, context);
           }
         }

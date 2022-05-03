@@ -29,14 +29,15 @@ const operations = {
   'update-labels-to-new-schema': {
     getIds: async () => (
       await Image.find({
-        'project': 'sci_biosecurity',   // TODO: don't forget to change this
+        // 'projectId': 'sci_biosecurity',
         'objects.labels.type': 'ml',
       }).select('_id')
     ),
     update: async () => {
       console.log('Updatind labels w/ new mlModel and mlModelVersion fields...');
-      const megadetectorId = "61eb283678ed7390a51835ce"; // TODO: don't forget to change this to correct ID in prod
-      const miraId = "61eb283678ed7390a51835d0"; // TODO: don't forget to change this to correct ID in prod
+      // TODO: these must be modified to match the model Ids in your target db
+      // const megadetectorId = "6163b013796cd67379391a59";
+      // const miraId = "6163b013796cd67379391a5a";
 
       const mergeExpression = {
         $mergeObjects: [ 
@@ -79,7 +80,8 @@ const operations = {
       // updateMany with aggregation pipeline
       return await Image.updateMany(
         {
-          'project': 'sci_biosecurity',  // TODO: don't forget to change this
+          // 'project': 'sci_biosecurity',
+          'objects.labels.type': 'ml',
         },
         [
           {
@@ -121,7 +123,6 @@ const operations = {
       return await Image.updateMany({}, { 
         $rename: { 
           'cameraSn': 'cameraId',
-          'project': 'projectId',
           'deployment': 'deploymentId',
         } 
       }, { strict: false });

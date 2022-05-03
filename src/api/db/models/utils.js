@@ -264,8 +264,6 @@ const createLabelRecord = (input, authorId) => {
 const hasRole = (user, targetRoles = []) => {
   const hasAuthorizedRole = user['curr_project_roles'] &&
     user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
-  console.log('hasRole() - is_superuser: ', user['is_superuser']);
-  console.log('hasRole() - some roles are included in target roles: ', hasAuthorizedRole);
   return user['is_superuser'] || hasAuthorizedRole;
 };
 
@@ -296,8 +294,6 @@ const findDeployment = (img, camConfig) => {
 };
 
 const mapImageToDeployment = (img, camConfig) => {
-  console.log(`utils.mapImageToDeployment() - img: ${JSON.stringify(img)}`);
-  console.log(`utils.mapImageToDeployment() - camConfig: ${camConfig}`);
   if (camConfig.deployments.length === 0) {
     throw new ApolloError('Camera config has no deployments');
   }
@@ -308,7 +304,6 @@ const mapImageToDeployment = (img, camConfig) => {
 };
 
 const sortDeps = (deps) => {
-  console.log('utils.sortDeps() - deps before sort: ', deps);
 
   // remove default deployment (temporarily)
   let defaultDep = deps.find((dep) => dep.name === 'default');
@@ -334,7 +329,6 @@ const findActiveProjReg = (camera) => {
     throw new ApolloError(err);
   }
 
-  console.log(`utils.findActiveProjReg() - Found active project registration - ${activeProjReg.projectId}`);
   return activeProjReg.projectId;
 };
 

@@ -32,9 +32,11 @@ let ImageSchema = new Schema({
 
 ImageSchema.index(
   // TODO: not sure we really need to index by cameraId if we're indexing by 
-  // deployment. Also, currently we're sorting date in decending order (-1), 
+  // deployment.
+  // Also, currently we're sorting date in decending order (-1), 
   // (newest images first) but the front end is requesting oldest first by 
-  // default. Also we should update this when we add dateTimeUTC field. 
+  // default. 
+  // Also we should update this when we add dateTimeUTC field. 
   { cameraId: 1, dateTimeOriginal: -1 },
   { unique: true, sparse: true }
 );

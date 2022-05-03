@@ -9,16 +9,12 @@ async function getUserInfo(req, config) {
   // if x-api-key header is present, call was to /internal path
   // and was made by an internal lambda
   if (api_key == config['APIKEY']) {
-    console.log('authorization.getUserInfo() - found api key in header, must be /intenal call');
     return { 'is_superuser': true };
   }
 
   if (!token || !BEARER_TOKEN_PATTERN.test(token)) {
-    console.log('authorization.getUserInfo() - no token found');
     return null;
   }
-
-  console.log('authorization.getUserInfo() - call was made to /external, so decode users access token');
 
   // else, call was made to /external (from the UI),
   // so decode the user's access token
@@ -27,8 +23,6 @@ async function getUserInfo(req, config) {
       null, // Secret doesn't matter since the APIG verifies
       true // API Gateway handles verification, so we don't
   );
-
-  console.log(`authorization.getUserInfo() - user before parsing: ${JSON.stringify(user)}`);
 
   // add selected project info to user
   const selectedProject = req.headers['x-selected-project'] || null;
@@ -58,8 +52,6 @@ async function getUserInfo(req, config) {
     ? projects[selectedProject].roles 
     : [];
   } 
-
-  console.log(`authorization.getUserInfo() - user after parsing: ${JSON.stringify(user)}`);
 
   return user;
 

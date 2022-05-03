@@ -142,8 +142,6 @@ async function seedDB() {
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
   const user = { 'is_superuser': true };
-  // TODO AUTH - does seedDB (and all other scripts) use /internal API path 
-  // and thus are superusers?
   console.log('Seeding Db with config: ', config);
 
   try {

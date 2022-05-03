@@ -14,7 +14,6 @@ const generateProjectModel = ({ user } = {}) => ({
   getProjects: async (_ids) => {
     let query = {};
     if (user['is_superuser']) {
-      console.log('ProjectModel.getProjects() - user is_superuser');
       query = _ids ? { _id: { $in: _ids } } : {};
     }
     else {
@@ -24,7 +23,6 @@ const generateProjectModel = ({ user } = {}) => ({
     }
 
     try {
-      console.log(`ProjectModel.getProjects() - query: ${JSON.stringify(query)}`);
       const projects = await Project.find(query);
       return projects;
     } catch (err) {
@@ -35,7 +33,6 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   createProject: async (input) => {
-    console.log(`ProjectModel.createProject() - input: ${input}`);
     const operation = async (input) => {
       return await retry(async (bail) => {
         const newProject = new Project(input);
@@ -60,7 +57,6 @@ const generateProjectModel = ({ user } = {}) => ({
         return await retry(async (bail) => {
 
           const [project] = await this.getProjects([projectId]);
-          console.log(`ProjectModel.createCameraConfig() - found project: ${project}`);
           
           // make sure project doesn't already have a config for this cam
           const currCamConfig = project.cameraConfigs.find((c) => c._id === cameraId);
@@ -75,7 +71,6 @@ const generateProjectModel = ({ user } = {}) => ({
               }],
             });
             await project.save();
-            console.log(`ProjectModel.createCameraConfig() - saved project: ${project}`);
           }
           return project;
 
@@ -83,8 +78,6 @@ const generateProjectModel = ({ user } = {}) => ({
       };
 
       try {
-        console.log(`ProjectModel.createCameraConfig() - projectId: ${projectId}`);
-        console.log(`ProjectModel.createCameraConfig() - cameraId: ${cameraId}`);
         return await operation(projectId, cameraId);
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
@@ -97,14 +90,12 @@ const generateProjectModel = ({ user } = {}) => ({
   get createView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.createView() - input: ${input}`);
 
       const operation = async (input) => {
         return await retry(async (bail) => {
 
           // find project, add new view, and save
           const [project] = await this.getProjects([user['curr_project']]);
-          console.log(`ProjectModel.createView() - project: `, project);
           const newView = {
             name: input.name,
             filters: input.filters,
@@ -113,7 +104,6 @@ const generateProjectModel = ({ user } = {}) => ({
           };
           project.views.push(newView)
           const updatedProj = await project.save();
-          console.log(`ProjectModel.createView() - newView: `, newView); 
           return updatedProj.views.find((v) => v.name === newView.name);
 
         }, { retries: 2 });
@@ -132,7 +122,6 @@ const generateProjectModel = ({ user } = {}) => ({
   get updateView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.updateView() - input: ${input}`);
 
       const operation = async ({ viewId, diffs }) => {
         return await retry(async (bail) => {
@@ -166,7 +155,6 @@ const generateProjectModel = ({ user } = {}) => ({
   get deleteView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.deleteView() - input: ${input}`);
 
       const operation = async ({ viewId }) => {
         return await retry(async (bail) => {
@@ -196,8 +184,6 @@ const generateProjectModel = ({ user } = {}) => ({
   },
 
   reMapImagesToDeps: async ({ projId, camConfig }) => {
-    console.log(`ProjectModel.reMapImagesToDeps() - projId: ${projId}`);
-    console.log(`ProjectModel.reMapImagesToDeps() - camConfig: ${camConfig}`);
 
     const operation = async ({ projId, camConfig }) => {
       return await retry(async (bail) => {
@@ -228,14 +214,9 @@ const generateProjectModel = ({ user } = {}) => ({
             deploymentId: dep._id,
             // timezone: dep.timezone 
           };
-          console.log('ProjectModel.reMapImagesToDeps() - filter: ', filter);
-          console.log('ProjectModel.reMapImagesToDeps() - update: ', update);
 
           operations.push({ updateMany: { filter, update } });
         };
-
-        console.log('ProjectModel.reMapImagesToDeps() - operations: ', operations);
-
 
         await Image.bulkWrite(operations);
       }, { retries: 3 });
@@ -253,7 +234,6 @@ const generateProjectModel = ({ user } = {}) => ({
   get createDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.createDeployment() - deployment: ${JSON.stringify(input)}`);
 
       const operation = async ({ cameraId, deployment }) => {
         return await retry(async (bail) => {
@@ -288,7 +268,6 @@ const generateProjectModel = ({ user } = {}) => ({
   get updateDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.updateDeployment() - input: ${JSON.stringify(input)}`);
 
       const operation = async ({ cameraId, deploymentId, diffs }) => {
         return await retry(async (bail) => {
@@ -333,7 +312,6 @@ const generateProjectModel = ({ user } = {}) => ({
   get deleteDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ProjectModel.deleteDeployment() - input: ${JSON.stringify(input)}`);
 
       const operation = async ({ cameraId, deploymentId }) => {
         return await retry(async (bail) => {

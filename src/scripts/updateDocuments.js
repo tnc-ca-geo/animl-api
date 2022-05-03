@@ -44,7 +44,7 @@ async function createLogFile(collecton, _ids) {
 
 async function updateDocuments() {
   // TODO: accept op as param
-  // const op = 'update-image-schema';
+  const op = 'update-labels-to-new-schema';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
@@ -72,7 +72,7 @@ async function updateDocuments() {
       else {
         const msg = `There was a discrepency between the number of matching 
           documents and the number of modified documents`;
-        throw new ApolloError(err);
+        throw new ApolloError(msg);
       }
     }
 

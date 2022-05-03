@@ -8,7 +8,6 @@ const generateMLModelModel = ({ user } = {}) => ({
 
   getMLModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
-    console.log(`MLModel.getMLModels() - query: ${JSON.stringify(query)}`);
     try {
       const mlModels = await MLModel.find(query);
       return mlModels;
@@ -26,7 +25,6 @@ const generateMLModelModel = ({ user } = {}) => ({
 
         // create new ML model record and save it
         const newModel = new MLModel(modelConfig);
-        console.log(`MLModel.createModel() - newModel: ${newModel}`);
         await newModel.save();
         return newModel;
         

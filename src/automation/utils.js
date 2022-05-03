@@ -95,7 +95,6 @@ const ruleApplies = (rule, event, label) => {
 }
 
 const buildCallstack = async (payload, context) => {
-  console.log(`automation.buildCallstack() - payload: ${JSON.stringify(payload)}`);
   const { event, image, label } = payload;
   const [project] = await context.models.Project.getProjects([image.projectId]);
   let callstack = [];
@@ -109,8 +108,6 @@ const buildCallstack = async (payload, context) => {
     }
     return applicableRules;
   }, []);
-
-  console.log(`automation.buildCallstack() - callstack before de-duping: ${JSON.stringify(callstack)}`);
 
   return _.uniqWith(callstack, _.isEqual); // remove dupes
 };

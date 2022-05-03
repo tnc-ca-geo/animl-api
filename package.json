@@ -6,6 +6,7 @@
   "scripts": {
     "start": "serverless offline --useSeparateProcesses --env dev",
     "deploy-dev": "sls deploy --stage dev",
+    "deploy-prod": "sls deploy --stage prod",
     "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
     "seed-db-dev": "STAGE=dev npm run seed-db",
     "seed-db-prod": "STAGE=prod npm run seed-db",

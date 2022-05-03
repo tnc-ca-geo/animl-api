@@ -11,7 +11,6 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    console.log(`ImageModel.countImages() - `);
     const query = utils.buildFilter(input, user);
     const count = await Image.where(query).countDocuments();
     return count;
@@ -22,7 +21,6 @@ const generateImageModel = ({ user } = {}) => ({
       ? { _id, projectId: user['curr_project']}
       : { _id };
     try {
-      console.log(`ImageModel.queryById() query - ${JSON.stringify(query)}`);
       const image = await Image.findOne(query);
       return image;
     } catch (err) {
@@ -42,7 +40,6 @@ const generateImageModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous,
       };
-      console.log(`ImageModel.queryByFilter() - options: ${JSON.stringify(options)}`);
       const result = await Image.paginate(options);
       return result;
     } catch (err) {
@@ -55,7 +52,6 @@ const generateImageModel = ({ user } = {}) => ({
   // TODO: this should be called getAllCategories or something like that
   getLabels: async (projId) => {
     try {
-      console.log(`ImageModel.getLabels() - projId: ${projId}`);
 
       const [categoriesAggregate] = await Image.aggregate([
         { $match: {'projectId': projId} },
@@ -75,7 +71,7 @@ const generateImageModel = ({ user } = {}) => ({
         { projectId: projId, objects: { $size: 0 } }
       );
       if (labellessImage) categories.push('none');
-      console.log(`ImageModel.getLabels() - categories: ${categories}`);
+
       return { categories };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -90,7 +86,6 @@ const generateImageModel = ({ user } = {}) => ({
       const successfulOps = [];
       const md = utils.sanitizeMetadata(input.md, context.config);
       let projectId = 'default_project';
-      console.log(`ImageModel.createImage() - md: ${JSON.stringify(md)}`);
 
       const saveImage = async (md) => {
         return await retry(async (bail, attempt) => {
@@ -105,7 +100,6 @@ const generateImageModel = ({ user } = {}) => ({
         const cameraId = md.serialNumber;
         const [existingCam] = await context.models.Camera.getCameras([cameraId]);
         if (!existingCam) {
-          console.log(`createImage() - Couldn't find a camera for image, so creating new one...`);
           await context.models.Camera.createCamera({
             projectId,
             cameraId,
@@ -116,18 +110,15 @@ const generateImageModel = ({ user } = {}) => ({
           successfulOps.push({ op: 'cam-created', info: { cameraId } });
         }
         else {
-          console.log(`createImage() - Found camera - ${existingCam}`);
           projectId = utils.findActiveProjReg(existingCam);
         }
 
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
-        console.log(`createImage() - found project: ${project}`);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
         const deploymentId = utils.mapImageToDeployment(md, camConfig);
-        console.log(`createImage() - mapped to deployment: ${deploymentId}`);
 
         // create image record
         md.projectId = projectId;
@@ -141,15 +132,14 @@ const generateImageModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {
-            console.log(`ImageModel.createImage() - reversing cam-created operation`);
             // delete newly created camera record
             await Camera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
-            const [project] = await context.models.Project.getProjects([projectId]);
-            project.cameraConfigs = project.cameraConfigs.filter((camConfig) => (
+            const [proj] = await context.models.Project.getProjects([projectId]);
+            proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => (
               !idMatch(camConfig._id, op.info.cameraId)
             ));
-            project.save();
+            proj.save();
           }
         }
 
@@ -171,11 +161,12 @@ const generateImageModel = ({ user } = {}) => ({
   get createObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.createObject() - input: ${input}`);
 
       const operation = async ({ imageId, object }) => {
         return await retry(async (bail, attempt) => {
-          if (attempt > 1) console.log(`Retrying createObject operation! Try #: ${attempt}`);
+          if (attempt > 1) {
+            console.log(`Retrying createObject operation! Try #: ${attempt}`);
+          }
 
           // find image, add object, and save
           const image = await this.queryById(imageId);
@@ -203,10 +194,11 @@ const generateImageModel = ({ user } = {}) => ({
 
       const operation = async ({ imageId, objectId, diffs }) => {
         return await retry(async (bail) => {
-
+          if (attempt > 1) {
+            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
+          }
           // find image, apply object updates, and save
           const image = await this.queryById(imageId);
-          console.log(`ImageModel.updateObject() - found image: ${JSON.stringify(image)}`);
           const object = image.objects.find((obj) => idMatch(obj._id, objectId));
           if (!object) {
             const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
@@ -234,7 +226,6 @@ const generateImageModel = ({ user } = {}) => ({
   get deleteObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.deleteObject() - input: ${JSON.stringify(input)}`);
 
       const operation = async ({ imageId, objectId }) => {
         return await retry(async (bail) => {
@@ -264,7 +255,6 @@ const generateImageModel = ({ user } = {}) => ({
   get createLabels() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
-      console.log(`ImageModel.createLabels() - input: ${JSON.stringify(input)}`);
 
       const operation = async ({ imageId, objectId, label }) => {
         return await retry(async (bail) => {
@@ -331,7 +321,6 @@ const generateImageModel = ({ user } = {}) => ({
   get updateLabel() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.updateLabel() - input: ${input}`);
 
       const operation = async (input) => {
         const { imageId, objectId, labelId, diffs } = input;
@@ -363,7 +352,6 @@ const generateImageModel = ({ user } = {}) => ({
   get deleteLabel() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.deleteLabel() - input: ${input}`);
 
       const operation = async ({ imageId, objectId, labelId }) => {
         return await retry(async (bail) => {

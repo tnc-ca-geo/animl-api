@@ -2,19 +2,16 @@ const Mutation = {
 
   createImage: async (_, { input }, context) => {
     const image = await context.models.Image.createImage(input, context);
-    console.log(`Mutation.createImage() - image: `, image);
     return { image };
   },
 
   registerCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.registerCamera(input, context);
-    console.log(`registerCamera() - res: `, res);
     return { ...res };
   },
 
   unregisterCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.unregisterCamera(input, context);
-    console.log(`unregisterCamera() - res: `, res);
     return { ...res };
   },
 

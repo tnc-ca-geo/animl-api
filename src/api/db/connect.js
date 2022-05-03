@@ -28,7 +28,6 @@ module.exports.connectToDatabase = async function connectToDb(config) {
     const client = await cachedConnectionPromise;
     return client;
   } catch (err) {
-    console.log('error connecting to database: ', err);
     throw new ApolloError(err);
   }
 };

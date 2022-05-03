@@ -36,8 +36,6 @@ class CameraRegistrationError extends ApolloError {
 
 function formatError (err) {
 
-  console.log('err before formatting: ', err);
-
   /*
    * NOTE: The goal here is to coerce all Errors into ApolloErrors
    * with proper error codes before they're returned to the client.
@@ -70,8 +68,6 @@ function formatError (err) {
   // this automatically)
   // https://www.graphql-yoga.com/docs/features/error-masking
   // https://www.apollographql.com/docs/apollo-server/data/errors/#omitting-or-including-stacktrace
-
-  console.log('error before sending to client: ', error);
   
   return error;
 };

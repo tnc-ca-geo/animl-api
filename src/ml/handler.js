@@ -55,7 +55,7 @@ exports.inference = async (event, context) => {
     for (const message of data.Messages) {
       const { modelSource, catConfig, image, label } = JSON.parse(message.Body);
 
-      console.log(`handler() - message body: ${message.Body}`)
+      console.log(`message body: ${message.Body}`)
       
       // run inference
       const detections = await runInference[modelSource._id]({
