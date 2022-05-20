@@ -1,5 +1,6 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
+const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
@@ -11,9 +12,11 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    const query = utils.buildFilter(input, user);
-    const count = await Image.where(query).countDocuments();
-    return count;
+    console.log('ImageModel.countImages() - counting images...');
+    const pipeline = utils.buildPipeline(input, user);
+    const [res] = await Image.aggregate(pipeline).count('imageCount');
+    console.log('ImageModel.countImages() - res: ', res);
+    return res.imageCount;
   },
 
   queryById: async (_id) => {
@@ -31,16 +34,19 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryByFilter: async (input) => {
+    console.log('ImageModel.queryByFilter() - querying images...');
+    console.log('Image.collection: ', Image.collection);
     try {
-      const options = {
-        query: utils.buildFilter(input, user),
+      const params = {
+        aggregation: utils.buildPipeline(input, user),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
         previous: input.previous,
       };
-      const result = await Image.paginate(options);
+      const result = await MongoPaging.aggregate(Image.collection, params);
+      console.log('ImageModel.queryByFilter() - result: ', result);
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError

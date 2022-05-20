@@ -13,7 +13,7 @@ const buildImgUrl = (image, config, size = 'original') => {
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 };
 
-const buildFilter = ({
+const buildPipeline = ({
   cameras,
   deployments,
   createdStart,
@@ -25,88 +25,195 @@ const buildFilter = ({
   custom,
 }, user) => {
 
-  let projectFilter = {'projectId': user['curr_project']};
+  let pipeline = [];
 
-  let camerasFilter = {};
+  // match current project
+  pipeline.push({'$match': {'projectId': user['curr_project']} });
+
+  // match cameras filter
   if (cameras) {
-    camerasFilter = {'cameraId': { $in: cameras }}
+    pipeline.push({'$match': {'cameraId': { $in: cameras } }});
   }
 
-  let deploymentsFilter = {};
+  // match deployments filter
   if (deployments) {
     const deploymentIds = deployments.map((depString) => (
       new ObjectId(depString))  // have to cast string id to ObjectId
     );
-    deploymentsFilter = {'deploymentId': { $in: deploymentIds }}
+    pipeline.push({'$match': {'deploymentId': { $in: deploymentIds } }});
   }
 
-  let dateCreatedFilter =  {};
+  // match date created filter
   if (createdStart || createdEnd) {
-    dateCreatedFilter = {'dateTimeOriginal': {
-      ...(createdStart && { $gte: createdStart.toDate() }),
-      ...(createdEnd && { $lt: createdEnd.toDate() }),
-    }};
+    pipeline.push({'$match': {
+      'dateTimeOriginal': {
+        ...(createdStart && { $gte: createdStart.toDate() }),
+        ...(createdEnd && { $lt: createdEnd.toDate() }),
+      }
+    }});
   }
 
-  let dateAddedFilter = {};
+  // match date added filter
   if (addedStart || addedEnd) {
-    dateAddedFilter = {'dateAdded': {
-      ...(addedStart && { $gte: addedStart.toDate() }),
-      ...(addedEnd && { $lt: addedEnd.toDate() }),
-    }};
+    pipeline.push({'$match': {
+      'dateAdded': {
+        ...(addedStart && { $gte: addedStart.toDate() }),
+        ...(addedEnd && { $lt: addedEnd.toDate() }),
+      }
+    }});
   }
 
-  let reviewedFilter = {};
+  // match reivew filter
   if (reviewed === false) {
     // exclude reviewed images (images that have all locked objects)
     // equivalant to: incldue images that have at least one unlocked object
-    reviewedFilter = {'objects.locked': false};
+    pipeline.push({'$match': {'objects.locked': false } });
   }
 
-  let labelsFilter = {};
+  // match labels filter
   if (labels) {
-    labelsFilter = {$or: [
-      // has an object that is locked,
-      // and it has a label that is both validated and included in filters
-      // NOTE: this is still not perfect: I'm not sure how to determine 
-      // whether the FIRST validated label is included in the filters. Right 
-      // now if there is ANY label that is both validated and is in filters, 
-      // the image will pass the filter
-      {objects: {$elemMatch: {
+    // copy first validated label in labels array to new field
+    // on all objects
+
+    // NOTE: "limit" option is for $filter expression is not supported 
+    // in the current MongoDB version we're using (5.0.8). We'll need to 
+    // upgrade to 5.3 for that feature
+    pipeline.push({'$set': {
+      'objects.firstValidLabel': {
+        '$filter': {
+          input: '$objects.labels',
+          as: 'label',
+          cond: { '$label.validation.validated': true },
+          limit: 1
+        }
+      }
+    }});
+
+    pipeline.push({'$match': {
+      $or: [
+        // has an object that is locked,
+        // and its first validated label is included in labels filter
+        {objects: {$elemMatch: {
           locked: true,
+          "firstValidLabel.category": {$in: labels},
+        }}},
+
+        // has an object is not locked, but it has label that is 
+        // not-invalidated and included in filters
+        {'objects': {$elemMatch: {
+          locked: false,
           labels: {$elemMatch: {
-            'validation.validated': true,
-            category: {$in: labels},
-          }}
-      }}},
-      // has an object is not locked, but it has label that is 
-      // not-invalidated and included in filters
-      {'objects': {$elemMatch: {
-        locked: false,
-        labels: {$elemMatch: {
-            'validation.validated': {$not: {$eq: false}},
-            category: {$in: labels},
-          }}
-      }}},
-    ]};
+              'validation.validated': {$not: {$eq: false}},
+              category: {$in: labels},
+            }}
+        }}},
+      ]
+    }});
   }
 
-  let customFilter = {};
+  // match custom filter
   if (custom) {
-    customFilter = parser.isFilterValid(custom);
+    pipeline.push({'$match': parser.isFilterValid(custom)});
   }
   
-  return {
-    ...projectFilter,
-    ...camerasFilter,
-    ...deploymentsFilter,
-    ...dateCreatedFilter,
-    ...dateAddedFilter,
-    ...reviewedFilter,
-    ...labelsFilter,
-    ...customFilter,
-  };
+  console.log('utils.buildPipeline() - pipeline: ', pipeline);
+  return pipeline;
 };
+
+// const buildFilter = ({
+//   cameras,
+//   deployments,
+//   createdStart,
+//   createdEnd,
+//   addedStart,
+//   addedEnd,
+//   labels,
+//   reviewed,
+//   custom,
+// }, user) => {
+
+//   let projectFilter = {'projectId': user['curr_project']};
+
+//   let camerasFilter = {};
+//   if (cameras) {
+//     camerasFilter = {'cameraId': { $in: cameras }}
+//   }
+
+//   let deploymentsFilter = {};
+//   if (deployments) {
+//     const deploymentIds = deployments.map((depString) => (
+//       new ObjectId(depString))  // have to cast string id to ObjectId
+//     );
+//     deploymentsFilter = {'deploymentId': { $in: deploymentIds }}
+//   }
+
+//   let dateCreatedFilter =  {};
+//   if (createdStart || createdEnd) {
+//     dateCreatedFilter = {'dateTimeOriginal': {
+//       ...(createdStart && { $gte: createdStart.toDate() }),
+//       ...(createdEnd && { $lt: createdEnd.toDate() }),
+//     }};
+//   }
+
+//   let dateAddedFilter = {};
+//   if (addedStart || addedEnd) {
+//     dateAddedFilter = {'dateAdded': {
+//       ...(addedStart && { $gte: addedStart.toDate() }),
+//       ...(addedEnd && { $lt: addedEnd.toDate() }),
+//     }};
+//   }
+
+//   let reviewedFilter = {};
+//   if (reviewed === false) {
+//     // exclude reviewed images (images that have all locked objects)
+//     // equivalant to: incldue images that have at least one unlocked object
+//     reviewedFilter = {'objects.locked': false};
+//   }
+
+//   let labelsFilter = {};
+//   if (labels) {
+//     labelsFilter = {$or: [
+//       // has an object that is locked,
+//       // and it has a label that is both validated and included in filters
+//       // NOTE: this is still not perfect: I'm not sure how to determine 
+//       // whether the FIRST validated label is included in the filters. Right 
+//       // now if there is ANY label that is both validated and is in filters, 
+//       // the image will pass the filter
+//       {objects: {$elemMatch: {
+//           locked: true,
+//           labels: {$elemMatch: {
+//             'validation.validated': true,
+//             category: {$in: labels},
+//           }}
+//       }}},
+//       // has an object is not locked, but it has label that is 
+//       // not-invalidated and included in filters
+//       {'objects': {$elemMatch: {
+//         locked: false,
+//         labels: {$elemMatch: {
+//             'validation.validated': {$not: {$eq: false}},
+//             category: {$in: labels},
+//           }}
+//       }}},
+//     ]};
+//   }
+
+//   let customFilter = {};
+//   if (custom) {
+//     customFilter = parser.isFilterValid(custom);
+//   }
+  
+//   return {
+//     ...projectFilter,
+//     ...camerasFilter,
+//     ...deploymentsFilter,
+//     ...dateCreatedFilter,
+//     ...dateAddedFilter,
+//     ...reviewedFilter,
+//     ...labelsFilter,
+//     ...customFilter,
+//   };
+// };
 
 const sanitizeMetadata = (md, config) => {
   let sanitized = {};
@@ -336,7 +443,8 @@ const idMatch = (idA, idB) => idA.toString() === idB.toString();
 
 module.exports = {
   buildImgUrl,
-  buildFilter,
+  // buildFilter,
+  buildPipeline,
   sanitizeMetadata,
   isLabelDupe,
   createImageRecord,

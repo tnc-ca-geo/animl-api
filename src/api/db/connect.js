@@ -26,6 +26,14 @@ module.exports.connectToDatabase = async function connectToDb(config) {
 
   try {
     const client = await cachedConnectionPromise;
+
+    // NOTE: for testing only. Current version is 5.0.8, which doesn't support
+    // the "limit" option on an aggregation pipeline $filter expression
+    var admin = new mongoose.mongo.Admin(mongoose.connection.db);
+    admin.buildInfo(function (err, info) {
+       console.log('mongodb version: ', info.version);
+    });
+
     return client;
   } catch (err) {
     throw new ApolloError(err);
