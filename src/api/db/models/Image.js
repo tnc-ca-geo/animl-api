@@ -51,6 +51,7 @@ const generateImageModel = ({ user } = {}) => ({
 
   // TODO: this should be called getAllCategories or something like that
   getLabels: async (projId) => {
+    console.log('Image.getLabels() - projId: ', projId);
     try {
 
       const [categoriesAggregate] = await Image.aggregate([
@@ -67,10 +68,13 @@ const generateImageModel = ({ user } = {}) => ({
         ? categoriesAggregate.uniqueCategories
         : [];
 
-      const labellessImage = await Image.findOne(
+      const objectLessImage = await Image.findOne(
         { projectId: projId, objects: { $size: 0 } }
       );
-      if (labellessImage) categories.push('none');
+      if (objectLessImage) {
+        console.log('Image.getLabels() - found a labelless image, so adding "none" category');
+        categories.push('none');
+      }
 
       return { categories };
     } catch (err) {
@@ -80,6 +84,10 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
+  // BUG: I think when you upload multiple images at once from the same camera,
+  // and there's not yet a camera record associated with it, 
+  // some issues occur due to the camera record not being created fast enough
+  // for some of the new images? Investigate
   get createImage() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
@@ -100,6 +108,7 @@ const generateImageModel = ({ user } = {}) => ({
         const cameraId = md.serialNumber;
         const [existingCam] = await context.models.Camera.getCameras([cameraId]);
         if (!existingCam) {
+          console.log('Image.createImage() - no existing cam found, socreating one');
           await context.models.Camera.createCamera({
             projectId,
             cameraId,
@@ -111,14 +120,18 @@ const generateImageModel = ({ user } = {}) => ({
         }
         else {
           projectId = utils.findActiveProjReg(existingCam);
+          console.log('Image.createImage() - existing cam found, updating projectId to: ', projectId);
         }
 
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
+        console.log('Image.createImage() - project: ', project);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
+        console.log('Image.createImage() - camConfig: ', camConfig);
         const deploymentId = utils.mapImageToDeployment(md, camConfig);
+        console.log('Image.createImage() - deploymentId: ', deploymentId);
 
         // create image record
         md.projectId = projectId;
@@ -132,6 +145,7 @@ const generateImageModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {
+            console.log('Image.createImage() - an error occured, so reversing successful cam-created operation');
             // delete newly created camera record
             await Camera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
@@ -190,10 +204,10 @@ const generateImageModel = ({ user } = {}) => ({
   get updateObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.updateObject() - input: ${input}`);
+      console.log(`ImageModel.updateObject() - input: `, input);
 
       const operation = async ({ imageId, objectId, diffs }) => {
-        return await retry(async (bail) => {
+        return await retry(async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateObject operation! Try #: ${attempt}`);
           }

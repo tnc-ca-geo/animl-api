@@ -25,11 +25,11 @@ const buildFilter = ({
   custom,
 }, user) => {
 
-  let projectFilter = {'projectId': user['curr_project']};
+  let projectFilter = { projectId: user['curr_project'] };
 
   let camerasFilter = {};
   if (cameras) {
-    camerasFilter = {'cameraId': { $in: cameras }}
+    camerasFilter = { cameraId: { $in: cameras }}
   }
 
   let deploymentsFilter = {};
@@ -37,12 +37,12 @@ const buildFilter = ({
     const deploymentIds = deployments.map((depString) => (
       new ObjectId(depString))  // have to cast string id to ObjectId
     );
-    deploymentsFilter = {'deploymentId': { $in: deploymentIds }}
+    deploymentsFilter = { deploymentId: { $in: deploymentIds }}
   }
 
   let dateCreatedFilter =  {};
   if (createdStart || createdEnd) {
-    dateCreatedFilter = {'dateTimeOriginal': {
+    dateCreatedFilter = { dateTimeOriginal: {
       ...(createdStart && { $gte: createdStart.toDate() }),
       ...(createdEnd && { $lt: createdEnd.toDate() }),
     }};
@@ -50,7 +50,7 @@ const buildFilter = ({
 
   let dateAddedFilter = {};
   if (addedStart || addedEnd) {
-    dateAddedFilter = {'dateAdded': {
+    dateAddedFilter = { dateAdded: {
       ...(addedStart && { $gte: addedStart.toDate() }),
       ...(addedEnd && { $lt: addedEnd.toDate() }),
     }};
@@ -60,28 +60,30 @@ const buildFilter = ({
   if (reviewed === false) {
     // exclude reviewed images (images that have all locked objects)
     // equivalant to: incldue images that have at least one unlocked object
-    reviewedFilter = {'objects.locked': false};
+    reviewedFilter = { 'objects.locked': false };
   }
 
   let labelsFilter = {};
   if (labels) {
     labelsFilter = {$or: [
+
       // has an object that is locked,
       // and it has a label that is both validated and included in filters
       // NOTE: this is still not perfect: I'm not sure how to determine 
       // whether the FIRST validated label is included in the filters. Right 
       // now if there is ANY label that is both validated and is in filters, 
       // the image will pass the filter
-      {objects: {$elemMatch: {
+      { objects: {$elemMatch: {
           locked: true,
           labels: {$elemMatch: {
             'validation.validated': true,
             category: {$in: labels},
           }}
       }}},
-      // has an object is not locked, but it has label that is 
+
+      // has an object that is not locked, but it has label that is 
       // not-invalidated and included in filters
-      {'objects': {$elemMatch: {
+      { objects: {$elemMatch: {
         locked: false,
         labels: {$elemMatch: {
             'validation.validated': {$not: {$eq: false}},
@@ -90,6 +92,23 @@ const buildFilter = ({
       }}},
     ]};
   }
+
+  let noObjectsFilter = {};
+  if (labels && labels.includes('none')) {
+    noObjectsFilter = {$or: [
+      // return images w/ no objects,
+      { objects: { $size: 0 } },
+      // or images in which all labels of all objects have been invalidated
+      { objects: {$not: {
+        $elemMatch: {
+          labels: {$elemMatch: {$or: [
+            {validation: null},
+            {'validation.validated': true}
+          ]}}
+        }
+      }}}
+    ]}
+  };
 
   let customFilter = {};
   if (custom) {
@@ -104,6 +123,7 @@ const buildFilter = ({
     ...dateAddedFilter,
     ...reviewedFilter,
     ...labelsFilter,
+    ...noObjectsFilter,
     ...customFilter,
   };
 };

@@ -15,6 +15,17 @@ const buildCatConfig = (modelSource, rule) => {
   });
 };
 
+// NOTE: not great to be manually evaluating whether an images would be returned
+// by a view. Would be far more preferrable to use the actual mongodb query
+// in buildQuery() in src/api/db/models/utils and somehow evaluate the image 
+// against that. I think in theory in both event cases 
+// (i.e., "image-added" or "label-added"), the image will have already been saved
+// to the DB, so maybe we just actually build filters for each view and query 
+// the DB with them, and see if our image comes up?
+// would mean we have to peform query for each view in the app each time 
+// a label gets added or image gets added...
+// Alternatively, Sift.js sounds very promising: https://github.com/crcn/sift.js
+// but wouldn't work if we moved to aggregation pipeline based querying
 const includedInView = (image, view) => {
   const filters = view.filters;
   // check camera filter
@@ -28,6 +39,8 @@ const includedInView = (image, view) => {
   }
 
   // check label filter
+  // TODO: this no longer matches the label filtering query in buildFilter()
+  // of src/api/db/models/utils
   if (filters.labels) {
     let imgLabels = [];
     for (const obj of image.objects) {
