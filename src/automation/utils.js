@@ -1,5 +1,8 @@
 const moment = require('moment');
 const _ = require('lodash');
+const { buildFilter } = require('../api/db/models/utils');
+const Image = require('../api/db/schemas/Image');
+
 
 const buildCatConfig = (modelSource, rule) => {
   return modelSource.categories.map((cs) => {
@@ -15,84 +18,27 @@ const buildCatConfig = (modelSource, rule) => {
   });
 };
 
-// NOTE: not great to be manually evaluating whether an images would be returned
-// by a view. Would be far more preferrable to use the actual mongodb query
-// in buildQuery() in src/api/db/models/utils and somehow evaluate the image 
-// against that. I think in theory in both event cases 
-// (i.e., "image-added" or "label-added"), the image will have already been saved
-// to the DB, so maybe we just actually build filters for each view and query 
-// the DB with them, and see if our image comes up?
-// would mean we have to peform query for each view in the app each time 
-// a label gets added or image gets added...
-// Alternatively, Sift.js sounds very promising: https://github.com/crcn/sift.js
-// but wouldn't work if we moved to aggregation pipeline based querying
-const includedInView = (image, view) => {
-  const filters = view.filters;
-  // check camera filter
-  if (filters.cameras) {
-    if (!filters.cameras.includes(image.cameraId)) return false;
-  }
+const includedInView = async (image, view, projectId) => {
+  // NOTE: we moved away from manually trying to evaluate whether an image's
+  // in-memory JSON representation would be included in a view to actually  
+  // querying for the real image in the DB (this is possible b/c in the context 
+  // of either automation event types - "image-added" or "label-added" - the  
+  // image should have already been saved before we handle the event. 
 
-  // check deployments filter
-  if (filters.deployments) {
-    if (!filters.deployments.includes(image.deploymentId)) return false;
-  }
+  // Alternatively, Sift.js (https://github.com/crcn/sift.js) sounds very 
+  // promising but wouldn't work if we move to aggregation-pipeline-based querying
 
-  // check label filter
-  // TODO: this no longer matches the label filtering query in buildFilter()
-  // of src/api/db/models/utils
-  if (filters.labels) {
-    let imgLabels = [];
-    for (const obj of image.objects) {
-      const labels = obj.labels.map((label) => label.category);
-      imgLabels = imgLabels.concat(labels);
-    }
-    if (!imgLabels.length && !filters.labels.includes('none')) {
-      // if the image has no labels, and filters.labels !include 'none', fail
-      return false;
-    }
-    else {
-      // else if none of the image labels are in filters.labels, fail
-      const sharedLabels = _.intersection(imgLabels, filters.labels);
-      if (!sharedLabels.length) return false;
-    }
-  }
+  // Another option would be to break the automation rule handling into it's own
+  // service/lambda so that we can trigger it and return from mutation resolver 
+  // without waiting for the callstack to be built and executed. 
 
-  // check reviewed filter
-  if (filters.reviewed === 'false') {
-    // if the image has all locked objects, fail
-    if (image.objects.every((obj) => obj.locked)) return false;
-  }
-
-  // check createdStart filter
-  if (filters.createdStart) {
-    if (moment(image.dateTimeOriginal).isBefore(filters.createdStart)) {
-      return false;
-    }
-  }
-
-  // check createdEnd filter
-  if (filters.createdEnd) {
-    if (moment(image.dateTimeOriginal).isAfter(filters.createdEnd)) {
-      return false;
-    }
-  }
-
-  // check addedStart filter
-  if (filters.addedStart) {
-    if (moment(image.dateAdded).isBefore(filters.addedStart)) return false;
-  }
-
-  // check addedEnd
-  if (filters.addedEnd) {
-    if (moment(image.dateAdded).isAfter(filters.addedEnd)) return false;
-  }
-
-  // TODO: check custom filter
-  // this might be tough because I don't know how to evaluate whether an
-  // image would match a MongoDB query outside of the DB.
-
-  return true;
+  console.log('includedInView() - firing');
+  const viewQuery = buildFilter(view.filters, projectId);
+  const query = { _id: image._id, ...viewQuery };
+  console.log('includedInView() - query: ', query);
+  const res = await Image.find(query);
+  console.log('includedInView() - res: ', res);
+  return res.length > 0;
 };
 
 const ruleApplies = (rule, event, label) => {
@@ -110,19 +56,29 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   const { event, image, label } = payload;
   const [project] = await context.models.Project.getProjects([image.projectId]);
-  let callstack = [];
 
-  callstack = project.views.reduce((applicableRules, view) => {
-    const imageIncInView = includedInView(image, view);
+  let callstack = [];
+  for (const view of project.views) {
+    console.log('buildCallstack() - checking view: ', view);
+    const imageIncInView = await includedInView(image, view, project._id);
+    console.log('buildCallstack() - imageIncInView: ', imageIncInView);
     if (imageIncInView && view.automationRules.length > 0) {
       view.automationRules
         .filter((rule) => ruleApplies(rule, event, label))
-        .forEach((rule) => applicableRules.push(rule));
+        .forEach((rule) => callstack.push(rule));
     }
-    return applicableRules;
-  }, []);
+  }
 
-  return _.uniqWith(callstack, _.isEqual); // remove dupes
+  // remove dupes
+  // BUG: this no longer works, b/c automation rules have unique _id fields,
+  // the name fields for automation rule might differ, and category configs
+  // nested documents also have their own _id fields. I think the ultimate 
+  // solution will be to move automation rules from the view level to the 
+  // project level: https://github.com/tnc-ca-geo/animl-api/issues/50
+  callstack = _.uniqWith(callstack, _.isEqual);
+  console.log('buildCallstack() - callstack: ', callstack);
+
+  return callstack;
 };
 
 module.exports = {

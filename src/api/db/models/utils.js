@@ -23,9 +23,12 @@ const buildFilter = ({
   labels,
   reviewed,
   custom,
-}, user) => {
+}, projectId) => {
 
-  let projectFilter = { projectId: user['curr_project'] };
+  let projectFilter = {};
+  if (projectId) {
+    projectFilter = { projectId };
+  }
 
   let camerasFilter = {};
   if (cameras) {

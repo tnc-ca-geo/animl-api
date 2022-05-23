@@ -11,7 +11,7 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    const query = utils.buildFilter(input, user);
+    const query = utils.buildFilter(input, user['curr_project']);
     const count = await Image.where(query).countDocuments();
     return count;
   },
@@ -33,7 +33,7 @@ const generateImageModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
     try {
       const options = {
-        query: utils.buildFilter(input, user),
+        query: utils.buildFilter(input, user['curr_project']),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
