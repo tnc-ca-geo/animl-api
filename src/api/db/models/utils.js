@@ -61,9 +61,13 @@ const buildFilter = ({
 
   let reviewedFilter = {};
   if (reviewed === false) {
-    // exclude reviewed images (images that have all locked objects)
-    // equivalant to: incldue images that have at least one unlocked object
-    reviewedFilter = { 'objects.locked': false };
+    // exclude reviewed images (images that have all locked objects or no objects)
+    // equivalant to: incldue images that have at least one unlocked object, or
+    // no objects at all
+    reviewedFilter = {$or: [
+      { 'objects.locked': false },
+      { objects: { $size: 0 } },
+    ]}
   }
 
   let labelsFilter = {};
