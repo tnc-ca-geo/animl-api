@@ -11,6 +11,7 @@ const DeleteViewInput = require('./inputs/DeleteViewInput');
 
 const QueryImageInput = require('./inputs/QueryImageInput');
 const QueryImagesInput = require('./inputs/QueryImagesInput');
+const QueryStatsInput = require('./inputs/QueryStatsInput');
 
 const RegisterCameraInput = require('./inputs/RegisterCameraInput');
 const UnregisterCameraInput = require('./inputs/UnregisterCameraInput');
@@ -45,6 +46,7 @@ const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
 const ImagesConnection = require('./payloads/ImagesConnection');
+const ImagesStats = require('./payloads/ImagesStats');
 
 const RegisterCameraPayload = require('./payloads/RegisterCameraPayload');
 const UnregisterCameraPayload = require('./payloads/UnregisterCameraPayload');
@@ -77,6 +79,7 @@ const typeDefStrings = [
   DeleteViewInput,
   QueryImageInput,
   QueryImagesInput,
+  QueryStatsInput,
   RegisterCameraInput,
   UnregisterCameraInput,
   UpdateDeploymentInput,
@@ -105,6 +108,7 @@ const typeDefStrings = [
   DeleteObjectPayload,
   DeleteViewPayload,
   ImagesConnection,
+  ImagesStats,
   RegisterCameraPayload,
   UnregisterCameraPayload,
   UpdateDeploymentPayload,

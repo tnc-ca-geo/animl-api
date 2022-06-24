@@ -33,7 +33,7 @@ const generateImageModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
     try {
       const options = {
-        query: utils.buildFilter(input, user['curr_project']),
+        query: utils.buildFilter(input.filters, user['curr_project']),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
@@ -388,6 +388,25 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
+    }
+  },
+
+  getStats: async (input) => {
+    try {
+      const query = utils.buildFilter(input.filters, user['curr_project']);
+      console.log('image.getStats() - query: ', query);
+      const images = await Image.find(query);
+      console.log('image.getStats() - images found: ', images);
+      // return result;
+      return {
+        imageCount: 1,
+        reviewedCount: { reviewed: 1, notReviewed: 1},
+        reviewerList: [{ userId: 'someUser@id.com', reviewedCount: 0 }]
+      };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
     }
   },
 

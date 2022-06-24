@@ -6,6 +6,7 @@ module.exports = `
     labels: LabelList
     cameras(_ids: [String!]): [Camera]
     mlModels(_ids: [String!]): [MLModel]
+    stats(input: QueryStatsInput!): ImagesStats
   }
 `;
 

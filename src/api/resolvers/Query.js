@@ -4,9 +4,9 @@ const Query = {
     return await context.models.Project.getProjects(_ids);
   },
 
-  images: async (_, args, context) => {
-    const count = await context.models.Image.countImages(args.input);
-    const response = await context.models.Image.queryByFilter(args.input);
+  images: async (_, { input }, context) => {
+    const count = await context.models.Image.countImages(input);
+    const response = await context.models.Image.queryByFilter(input);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {  // reurn ImagesConnection 
       pageInfo: {
@@ -20,8 +20,8 @@ const Query = {
     }
   },
 
-  image: async (_, args, context) => {
-    return await context.models.Image.queryById(args.input.imageId);
+  image: async (_, { input }, context) => {
+    return await context.models.Image.queryById(input.imageId);
   },
 
   // TODO: Now fetching labels as a field level resolver for Project, but we 
@@ -37,6 +37,10 @@ const Query = {
 
   mlModels: async (_, { _ids }, context) => {
     return await context.models.MLModel.getMLModels(_ids);
+  },
+
+  stats: async (_, { input }, context) => {
+    return await context.models.Image.getStats(input);
   },
   
 };
