@@ -13,5 +13,7 @@ module.exports = `
     imageCount: Int!
     reviewedCount: ReviewedCount!
     reviewerList: [ReviewerStats]!
+    labelList: JSONObject!
+    multiReviewerCount: Int
   }
 `;
