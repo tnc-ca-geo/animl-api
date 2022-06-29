@@ -60,19 +60,29 @@ const buildFilter = ({
   }
 
   let reviewedFilter = {};
-  if (reviewed === false) {
-    // exclude reviewed images (images that have all locked objects or no objects)
-    // equivalant to: incldue images that have at least one unlocked object, or
-    // no objects at all
-    reviewedFilter = {$or: [
+  if (reviewed === false) { 
+
+    // incldue images that need review, i.e.:
+    // have at least one unlocked object,
+    // no objects at all,
+    // OR all invalidated labels
+    reviewedFilter = { $or: [
       { 'objects.locked': false },
       { objects: { $size: 0 } },
+      { objects: { $not: {
+        $elemMatch: {
+          labels: { $elemMatch: { $or: [
+            { validation: null },
+            { 'validation.validated': true }
+          ]}}
+        }
+      }}}
     ]}
   }
 
   let labelsFilter = {};
   if (labels) {
-    labelsFilter = {$or: [
+    labelsFilter = { $or: [
 
       // has an object that is locked,
       // and it has a label that is both validated and included in filters
@@ -80,59 +90,63 @@ const buildFilter = ({
       // whether the FIRST validated label is included in the filters. Right 
       // now if there is ANY label that is both validated and is in filters, 
       // the image will pass the filter
-      { objects: {$elemMatch: {
+      { objects: { $elemMatch: {
           locked: true,
-          labels: {$elemMatch: {
+          labels: { $elemMatch: {
             'validation.validated': true,
-            category: {$in: labels},
+            category: { $in: labels },
           }}
       }}},
 
-      // has an object that is not locked, but it has label that is 
+      // OR has an object that is not locked, but it has label that is 
       // not-invalidated and included in filters
-      { objects: {$elemMatch: {
+      { objects: { $elemMatch: {
         locked: false,
-        labels: {$elemMatch: {
-            'validation.validated': {$not: {$eq: false}},
-            category: {$in: labels},
+        labels: { $elemMatch: {
+            'validation.validated': { $not: { $eq: false }},
+            category: { $in: labels },
           }}
       }}},
+
     ]};
+
+    // if labels includes "none", also return images with no objects
+    if (labels.includes('none')) {
+      const noObjectsFilter = { $or: [
+        // return images w/ no objects,
+        { objects: { $size: 0 } },
+        // or images in which all labels of all objects have been invalidated
+        { objects: { $not: {
+          $elemMatch: {
+            labels: { $elemMatch: { $or: [
+              { validation: null },
+              { 'validation.validated': true }
+            ]}}
+          }
+        }}}
+      ]};
+      labelsFilter.$or.push(noObjectsFilter);
+    };
   }
 
-  let noObjectsFilter = {};
-  if (labels && labels.includes('none')) {
-    noObjectsFilter = {$or: [
-      // return images w/ no objects,
-      { objects: { $size: 0 } },
-      // or images in which all labels of all objects have been invalidated
-      { objects: {$not: {
-        $elemMatch: {
-          labels: {$elemMatch: {$or: [
-            {validation: null},
-            {'validation.validated': true}
-          ]}}
-        }
-      }}}
-    ]}
-  };
 
   let customFilter = {};
   if (custom) {
     customFilter = parser.isFilterValid(custom);
   }
-  
+
   return {
-    ...projectFilter,
-    ...camerasFilter,
-    ...deploymentsFilter,
-    ...dateCreatedFilter,
-    ...dateAddedFilter,
-    ...reviewedFilter,
-    ...labelsFilter,
-    ...noObjectsFilter,
-    ...customFilter,
-  };
+    $and: [
+      projectFilter,
+      camerasFilter,
+      deploymentsFilter,
+      dateCreatedFilter,
+      dateAddedFilter,
+      reviewedFilter,
+      labelsFilter,
+      customFilter,
+    ]
+  }
 };
 
 const sanitizeMetadata = (md, config) => {
@@ -361,6 +375,19 @@ const findActiveProjReg = (camera) => {
 
 const idMatch = (idA, idB) => idA.toString() === idB.toString();
 
+const isImageReviewed = (image) => {
+  // images are considered reviewed if they: 
+  // have objects,
+  // all objects are locked,
+  // AND there are no locked objects with all invalidated labels
+  const hasObjs = image.objects.length > 0;
+  const hasUnlockedObjs = image.objects.some((obj) => obj.locked === false);
+  const hasAllInvalidatedLabels = !image.objects.some((obj) => (
+    obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated)
+  ));
+  return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
+}; 
+
 module.exports = {
   buildImgUrl,
   buildFilter,
@@ -373,4 +400,5 @@ module.exports = {
   sortDeps,
   findActiveProjReg,
   idMatch,
+  isImageReviewed,
 };

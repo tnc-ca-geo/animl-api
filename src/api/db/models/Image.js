@@ -11,7 +11,7 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    const query = utils.buildFilter(input, user['curr_project']);
+    const query = utils.buildFilter(input.filters, user['curr_project']);
     const count = await Image.where(query).countDocuments();
     return count;
   },
@@ -68,13 +68,11 @@ const generateImageModel = ({ user } = {}) => ({
         ? categoriesAggregate.uniqueCategories
         : [];
 
-      const objectLessImage = await Image.findOne(
-        { projectId: projId, objects: { $size: 0 } }
-      );
-      if (objectLessImage) {
-        console.log('Image.getLabels() - found a labelless image, so adding "none" category');
-        categories.push('none');
-      }
+      const objectLessImage = await Image.findOne({ 
+        projectId: projId,
+        objects: { $size: 0 } 
+      });
+      if (objectLessImage) categories.push('none');
 
       return { categories };
     } catch (err) {
@@ -401,24 +399,14 @@ const generateImageModel = ({ user } = {}) => ({
     // by more than one reviewer. can remove later
     let multiReviewerCount = 0;
 
-    // determine if image has been reviewed or not:
-    // i.e., reviewed = image has objects and every object is locked
-    const isReviewed = (image) => {
-      const hasObjects = image.objects.length > 0;
-      const allLocked = image.objects.every((obj) => obj.locked);
-      return hasObjects && allLocked;
-    }; 
-
     try {
       const query = utils.buildFilter(input.filters, user['curr_project']);
-      console.log('image.getStats() - query: ', query);
       const images = await Image.find(query);
-      console.log('image.getStats() - images found: ', images);
       imageCount = images.length;
       for (const img of images) {
 
         // increment reviewedCount
-        isReviewed(img) ? reviewed++ : notReviewed++;
+        utils.isImageReviewed(img) ? reviewed++ : notReviewed++;
 
         // build reviwer list
         let reviewers = [];
@@ -428,44 +416,26 @@ const generateImageModel = ({ user } = {}) => ({
           }
         }
         reviewers = _.uniq(reviewers);
-
-        // NOTE: just testing/curious
-        if (reviewers.length > 1) {
-          console.log('more than one reviewer found for this image! ', reviewers)
-          multiReviewerCount++
-        }
+        if (reviewers.length > 1) multiReviewerCount++;
 
         for (const userId of reviewers) {
-          console.log('found reviewer: ', userId)
           let usr = reviewerList.find((reviewer) => reviewer.userId === userId);
-          console.log('usr: ', usr);
-          if (!usr) {
-            console.log('user not found in reviewerList, so adding to reviewerList')
-            reviewerList.push({ userId: userId, reviewedCount: 1 })
-          }
-          else {
-            console.log('user found in reviewerList, so incrementing reviewedCount')
-            usr.reviewedCount++;
-          }
+          !usr 
+            ? reviewerList.push({ userId: userId, reviewedCount: 1 })
+            : usr.reviewedCount++;
         }
 
         // order reviewer list by reviewed count
-        reviewers.sort((a, b) => a.reviewedCount - b.reviewedCount);
+        reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
 
         // build label list
-        console.log('building label list')
         for (const obj of img.objects) {
-          console.log('evaluating object: ', obj);
           if (obj.locked) {
             const firstValidLabel = obj.labels.find((label) => (
               label.validation && label.validation.validated
             ));
-            if (firstValidLabel) console.log('firstValidLabel: ', firstValidLabel);
             if (firstValidLabel) {
               const cat = firstValidLabel.category;
-              console.log('labelList: ', labelList);
-              console.log('cat: ', cat);
-              console.log('labelList has cat? ', labelList.hasOwnProperty(cat))
               labelList[cat] = labelList.hasOwnProperty(cat) 
                 ? labelList[cat] + 1
                 : 1;
