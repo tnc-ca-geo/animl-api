@@ -401,7 +401,7 @@ const generateImageModel = ({ user } = {}) => ({
 
     try {
       const query = utils.buildFilter(input.filters, user['curr_project']);
-      const images = await Image.find(query);
+      const images = await Image.find(query, ['objects']);
       imageCount = images.length;
       for (const img of images) {
 
