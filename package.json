@@ -16,7 +16,7 @@
     "update-docs": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/updateDocuments.js",
     "update-docs-dev": "STAGE=dev npm run update-docs",
     "update-docs-prod": "STAGE=prod npm run update-docs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape test/**.test.js"
   },
   "author": "Nathaniel Rindlaub",
   "license": "ISC",
@@ -41,6 +41,7 @@
     "superagent": "^6.1.0"
   },
   "devDependencies": {
-    "serverless": "^2.46.0"
+    "serverless": "^2.46.0",
+    "tape": "^5.5.3"
   }
 }

@@ -1,6 +1,7 @@
 const agent = require('superagent');
 const fs = require('fs');
 const { buildImgUrl } = require('../api/db/models/utils');
+const { SageMakerRuntime } = require('aws-sdk');
 
 // get image from S3, read in as buffer of binary data
 const getImage = async (image, config) => {
@@ -13,21 +14,23 @@ const getImage = async (image, config) => {
   }
 };
 
+const smr = new SageMakerRuntime();
+
 const runInference = {
 
   megadetector: async (params) => {
-
     const { modelSource, catConfig, image, label, config } = params;
     const imgBuffer = await getImage(image, config);
 
     try {
-      let res = await agent
-        .post(config['/ML/MEGADETECTOR_API_URL'])
-        .query({ render: 'false' })
-        .set('Ocp-Apim-Subscription-Key', config['/ML/MEGADETECTOR_API_KEY'])
-        .attach(image._id, imgBuffer, image._id + '.jpg');
+      let res = srm.invokeEndpoint({
+        Body: imgBuffer,
+        EndpointName: config['/ML/MEGADETECTOR_API_URL']
+      }).promise();
 
-      // Megadetector API returns detections as nested arrays 
+      console.error(res)
+
+      // Megadetector API returns detections as nested arrays
       // w/ each detection represented as:
       // [ymin, xmin, ymax, xmax, confidence, category].
       // the first four floats are the relative coordinates of the bbox
@@ -81,12 +84,12 @@ const runInference = {
         .field('bbox', JSON.stringify(bbox))
         .attach('image', imgBuffer, image._id + '.jpg');
       res = JSON.parse(res.res.text);
-  
+
       const filteredDets = Object.values(res).reduce((dets, classifier) => {
         // only evaluate top predictions
         const [category, conf] = Object.entries(classifier.predictions)
           .sort((a, b) => b[1] - a[1])[0];
-  
+
         // filter out disabled detections,
         // empty detections, & detections below confThreshold
         // NOTE: we disregard "empty" class detections from MIRA classifiers
