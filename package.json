@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "serverless": "^2.46.0",
+    "nock": "^13.2.8",
     "tape": "^5.5.3"
   }
 }

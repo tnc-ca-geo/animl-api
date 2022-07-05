@@ -3,27 +3,28 @@ const fs = require('fs');
 const { buildImgUrl } = require('../api/db/models/utils');
 const { SageMakerRuntime } = require('aws-sdk');
 
-// get image from S3, read in as buffer of binary data
-const getImage = async (image, config) => {
-  const url = buildImgUrl(image, config);
-  try {
-    let img = await agent.get(url).buffer(true);
-    return Buffer.from(img.body, 'binary');
-  } catch (err) {
-    throw err;
-  }
-};
-
-const smr = new SageMakerRuntime();
-
 const runInference = {
+
+  // get image from S3, read in as buffer of binary data
+  _getImage: async (image, config) => {
+    const url = buildImgUrl(image, config);
+
+    try {
+      let img = await agent.get(url).buffer(true);
+      return Buffer.from(img.body, 'binary');
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
 
   megadetector: async (params) => {
     const { modelSource, catConfig, image, label, config } = params;
-    const imgBuffer = await getImage(image, config);
+    const imgBuffer = await runInference._getImage(image, config);
 
     try {
-      let res = srm.invokeEndpoint({
+      const smr = new SageMakerRuntime({ region: process.env.REGION });
+
+      let res = await smr.invokeEndpoint({
         Body: imgBuffer,
         EndpointName: config['/ML/MEGADETECTOR_API_URL']
       }).promise();
@@ -68,14 +69,14 @@ const runInference = {
       return filteredDets;
 
     } catch (err) {
-      throw err;
+      throw new Error(err);
     }
   },
 
   mira: async (params) => {
 
     const { modelSource, catConfig, image, label, config } = params;
-    const imgBuffer = await getImage(image, config);
+    const imgBuffer = await runInference._getImage(image, config);
     const bbox = label.bbox ? label.bbox : [0,0,1,1];
 
     try {
@@ -114,7 +115,7 @@ const runInference = {
       return filteredDets;
 
     } catch (err) {
-      throw err;
+      throw new Error(err);
     }
 
   },
