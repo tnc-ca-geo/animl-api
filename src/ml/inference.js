@@ -1,7 +1,7 @@
 const agent = require('superagent');
 const fs = require('fs');
 const { buildImgUrl } = require('../api/db/models/utils');
-const { SageMakerRuntime } = require('aws-sdk');
+const AWS = require('aws-sdk');
 
 const runInference = {
 
@@ -22,28 +22,24 @@ const runInference = {
     const imgBuffer = await runInference._getImage(image, config);
 
     try {
-      const smr = new SageMakerRuntime({ region: process.env.REGION });
+      const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
 
-      let res = await smr.invokeEndpoint({
+      let detections = (await smr.invokeEndpoint({
         Body: imgBuffer,
         EndpointName: config['/ML/MEGADETECTOR_API_URL']
-      }).promise();
-
-      console.error(res)
+      }).promise()).Body;
 
       // Megadetector API returns detections as nested arrays
       // w/ each detection represented as:
       // [ymin, xmin, ymax, xmax, confidence, category].
       // the first four floats are the relative coordinates of the bbox
-      const tmpFile = res.files.detection_result.path;
-      const detections = JSON.parse(fs.readFileSync(tmpFile));
 
-      const formatedDets = detections[image._id].map((det) => ({
+      const formatedDets = detections.map((det) => ({
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
         type: 'ml',
-        bbox: det.slice(0, 4),
-        conf: det[4],
+        bbox: [ det.x1, det.y1, det.x2, det.y2 ],
+        conf: det.confidence,
         category: catConfig.find((cat) => cat._id === det[5].toString()).name,
       }));
 

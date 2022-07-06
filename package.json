@@ -41,8 +41,9 @@
     "superagent": "^6.1.0"
   },
   "devDependencies": {
-    "serverless": "^2.46.0",
+    "@mapbox/mock-aws-sdk-js": "^1.0.0",
     "nock": "^13.2.8",
+    "serverless": "^2.46.0",
     "tape": "^5.5.3"
   }
 }
