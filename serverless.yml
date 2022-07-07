@@ -26,6 +26,10 @@ provider:
             - Arn
     - Effect: Allow
       Action:
+        - sagemaker:InvokeEndpoint
+      Resource: "*"
+    - Effect: Allow
+      Action:
         - ses:SendEmail
         - ses:SendRawEmail
       Resource: "*"
@@ -36,7 +40,7 @@ provider:
     - Effect: Allow
       Action:
         - secretsmanager:GetSecretValue
-      Resource: "*"  
+      Resource: "*"
   apiKeys:
     - name: animlApiKeyInternal-${self:provider.stage}
       value: '{{resolve:secretsmanager:api-key-${self:provider.stage}:SecretString:apikey}}'
@@ -94,7 +98,7 @@ functions:
 resources:
   Resources:
 
-    # Secrets Manager secret for API key 
+    # Secrets Manager secret for API key
     apiKey:
       Type: AWS::SecretsManager::Secret
       Properties:
@@ -115,7 +119,7 @@ resources:
               - inferenceDeadLetterQueue
               - Arn
           maxReceiveCount: 5
-    
+
     # Inference - dead-letter SQS queue
     inferenceDeadLetterQueue:
       Type: "AWS::SQS::Queue"
@@ -132,7 +136,7 @@ resources:
         Type: String
         Value: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${opt:stage, self:provider.stage, 'dev'}/internal/
 
-    # SSM Param - inference queue url 
+    # SSM Param - inference queue url
     SSMParameterInferencequeue:
       Type: AWS::SSM::Parameter
       Properties:

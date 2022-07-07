@@ -24,7 +24,7 @@ tape('ML-Inference Megadetector', async (t) => {
                 x2: 0.6615734100341797,
                 y2: 0.5675788521766663,
                 confidence: 0.9314358830451965,
-                class: 0
+                class: 1
             }]
         }));
     });
@@ -35,12 +35,26 @@ tape('ML-Inference Megadetector', async (t) => {
                 _id: 1,
                 version: 2
             },
-            catConfig: '',
+            catConfig: [{
+                _id: 1,
+                name: "animal",
+                disabled: false,
+                confThreshold: 0.8
+            },{
+                _id: 2,
+                name: "person",
+                disabled: false,
+                confThreshold: 0.5
+            },{
+                _id: 3,
+                name: "vehicle",
+                disabled: true,
+                confThreshold: 0.8
+            }],
             image: {
                 _id: 1,
                 fileTypeExtension: 'png'
             },
-            label: '',
             config: {
                 '/IMAGES/URL': 'http://example.com',
                 '/ML/MEGADETECTOR_API_URL': 'http://example.com'

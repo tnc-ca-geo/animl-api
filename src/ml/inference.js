@@ -18,7 +18,7 @@ const runInference = {
   },
 
   megadetector: async (params) => {
-    const { modelSource, catConfig, image, label, config } = params;
+    const { modelSource, catConfig, image, config } = params;
     const imgBuffer = await runInference._getImage(image, config);
 
     try {
@@ -40,7 +40,7 @@ const runInference = {
         type: 'ml',
         bbox: [ det.y1, det.x1, det.y2, det.x2 ],
         conf: det.confidence,
-        category: catConfig.find((cat) => cat._id === det[5].toString()).name,
+        category: catConfig.find((cat) => cat._id === det.class).name,
       }));
 
       // filter out disabled detections & detections below confThreshold
