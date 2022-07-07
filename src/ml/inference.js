@@ -38,7 +38,7 @@ const runInference = {
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
         type: 'ml',
-        bbox: [ det.x1, det.y1, det.x2, det.y2 ],
+        bbox: [ det.y1, det.x1, det.y2, det.x2 ],
         conf: det.confidence,
         category: catConfig.find((cat) => cat._id === det[5].toString()).name,
       }));
