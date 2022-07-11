@@ -36,8 +36,8 @@ const operations = {
         update: async () => {
             console.log('Updatind labels w/ new mlModel and mlModelVersion fields...');
             // TODO: these must be modified to match the model Ids in your target db
-            // const megadetectorId = "6163b013796cd67379391a59";
-            // const miraId = "6163b013796cd67379391a5a";
+            const megadetectorId = '6163b013796cd67379391a59';
+            const miraId = '6163b013796cd67379391a5a';
 
             const mergeExpression = {
                 $mergeObjects: [
