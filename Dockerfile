@@ -14,5 +14,5 @@ RUN export NODEV='16.15.1' \
 
 RUN npm install
 
-CMD npm test
+CMD npm run lint && npm test
 
