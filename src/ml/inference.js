@@ -26,7 +26,7 @@ const runInference = {
 
       let detections = (await smr.invokeEndpoint({
         Body: imgBuffer,
-        EndpointName: config['/ML/MEGADETECTOR_API_URL']
+        EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
       }).promise()).Body;
 
       // Megadetector API returns detections as nested arrays

@@ -3,7 +3,7 @@ const { SSM, SecretsManager } = require('aws-sdk');
 const ssm = new SSM({ region: process.env.REGION });
 const secrets = new SecretsManager({ region: process.env.REGION });
 
-/* 
+/*
  *  Local config values
  */
 
@@ -14,8 +14,8 @@ const localConfig = {
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
 };
 
-/* 
- *  Remote config values & secrets to be fetched 
+/*
+ *  Remote config values & secrets to be fetched
  *  from SSM Parameter Store
  */
 
@@ -29,8 +29,7 @@ const ssmNames = [
   `/images/url-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/ml/mira-api-url-${process.env.STAGE}`,
-  `/ml/megadetector-api-url-${process.env.STAGE}`,
-  `/ml/megadetector-api-key`,
+  `/ml/megadetector-sagemaker-name-${process.env.STAGE}`
 ];
 
 const formatSSMParams = (ssmParams) => {

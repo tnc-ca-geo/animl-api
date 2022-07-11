@@ -88,14 +88,12 @@ functions:
     handler: src/ml/handler.inference
     reservedConcurrency: 10 # max number of lambdas to invoke at one time
     events:
-      - eventBridge:
-          schedule: rate(1 minute)
-      # - sqs:
-      #     arn:
-      #       Fn::GetAtt:
-      #         - inferenceQueue
-      #         - Arn
-      #     batchSize: 1
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - inferenceQueue
+              - Arn
+          batchSize: 1
     timeout: 120
 
 resources:
@@ -116,6 +114,7 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: inferenceQueue-${self:provider.stage}
+        VisibilityTimeout: 120
         RedrivePolicy:
           deadLetterTargetArn:
             "Fn::GetAtt":

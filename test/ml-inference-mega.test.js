@@ -57,7 +57,7 @@ tape('ML-Inference Megadetector', async (t) => {
             },
             config: {
                 '/IMAGES/URL': 'http://example.com',
-                '/ML/MEGADETECTOR_API_URL': 'http://example.com'
+                '/ML/MEGADETECTOR_SAGEMAKER_NAME': 'http://example.com'
             }
         });
 
