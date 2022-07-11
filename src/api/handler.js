@@ -11,7 +11,6 @@ const Fields = require('./resolvers/Fields');
 const Scalars = require('./resolvers/Scalars');
 const typeDefs = require('./type-defs');
 const { getConfig } = require('../config/config');
-const { connectToDatabase } = require('./db/connect');
 const { getUserInfo } = require('./auth/authorization');
 
 const resolvers = {
@@ -28,7 +27,6 @@ const authMiddleware = async (resolve, parent, args, context, info) => {
 
 const context = async ({ event: req }) => {
     const config = await getConfig();
-    const dbClient = await connectToDatabase(config);
     const user = await getUserInfo(req, config);
     console.log('req: ', req);
     console.log('user: ', user);

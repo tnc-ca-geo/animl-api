@@ -1,5 +1,4 @@
 const agent = require('superagent');
-const fs = require('fs');
 const { buildImgUrl } = require('../api/db/models/utils');
 const AWS = require('aws-sdk');
 

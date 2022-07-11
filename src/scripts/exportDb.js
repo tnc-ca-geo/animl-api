@@ -10,8 +10,9 @@ const { getConfig } = require('../config/config');
 const { backupConfig } = require('./backupConfig');
 
 async function listCollections(config) {
+    let db;
     try {
-        const db = await connectToDatabase(config);
+        db = await connectToDatabase(config);
         let collections = await db.connections[0].db.listCollections().toArray();
         collections = collections.map((col) => col.name);
         db.connection.close();
@@ -81,7 +82,6 @@ async function exportDb() {
         process.exit(0);
     } catch (err) {
         throw new ApolloError('An error occured while backing up the db: ', err);
-        process.exit(1);
     }
 }
 

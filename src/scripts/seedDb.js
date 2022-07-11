@@ -152,13 +152,13 @@ async function seedDB() {
         };
 
         // create default project records
-        const newProjectRecords = await createDefaultProjects({
+        await createDefaultProjects({
             defaultProjectsConfig,
             dbModels
         });
 
         // create default ml model records
-        const newModelRecords = await createDefaultMLModels({
+        await createDefaultMLModels({
             defaultMLModelsConfig,
             dbModels
         });

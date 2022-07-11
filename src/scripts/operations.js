@@ -44,32 +44,26 @@ const operations = {
                     '$$lbl',
                     { mlModel: {
                         $switch: {
-                            branches: [
-                                {
-                                    case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                                    then: 'megadetector'
-                                },
-                                {
-                                    case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                                    then: 'mira'
-                                }
-                            ],
+                            branches: [{
+                                case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                                then: 'megadetector'
+                            },{
+                                case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                                then: 'mira'
+                            }],
                             default: '$$REMOVE'
                         }
                     }
                     },
                     { mlModelVersion: {
                         $switch: {
-                            branches: [
-                                {
-                                    case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                                    then: 'v4.1'
-                                },
-                                {
-                                    case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                                    then: 'v1.0'
-                                }
-                            ],
+                            branches: [{
+                                case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                                then: 'v4.1'
+                            },{
+                                case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                                then: 'v1.0'
+                            }],
                             default: '$$REMOVE'
                         }
                     }

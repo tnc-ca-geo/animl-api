@@ -1,4 +1,3 @@
-const moment = require('moment');
 const _ = require('lodash');
 const { buildFilter } = require('../api/db/models/utils');
 const Image = require('../api/db/schemas/Image');

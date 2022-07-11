@@ -8,7 +8,7 @@ const { runInference } = require('../src/ml/inference.js');
 process.env.REGION = 'us-east-1';
 
 tape('ML-Inference Megadetector', async (t) => {
-    const scope = nock('http://example.com')
+    nock('http://example.com')
         .get('/original/1-original.png')
         .reply(200, path.resolve(__dirname, './fixtures/cat.jpg'), {
             'Content-Type': 'image/jpeg'
