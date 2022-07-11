@@ -30,7 +30,7 @@ tape('ML-Inference Megadetector', async (t) => {
     });
 
     try {
-        await runInference.megadetector({
+        const inference = await runInference.megadetector({
             modelSource: {
                 _id: 1,
                 version: 2
@@ -60,6 +60,15 @@ tape('ML-Inference Megadetector', async (t) => {
                 '/ML/MEGADETECTOR_API_URL': 'http://example.com'
             }
         });
+
+        t.deepEquals(inference, [{
+            mlModel: 1,
+            mlModelVersion: 2,
+            type: 'ml',
+            bbox: [ 0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797 ],
+            conf: 0.9314358830451965,
+            category: 'animal'
+        }]);
     } catch (err) {
         t.error(err);
     }
