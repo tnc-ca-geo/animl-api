@@ -10,6 +10,7 @@ package:
 provider:
   name: aws
   runtime: nodejs12.x
+  lambdaHashingVersion: "20201221"
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
@@ -41,9 +42,10 @@ provider:
       Action:
         - secretsmanager:GetSecretValue
       Resource: "*"
-  apiKeys:
-    - name: animlApiKeyInternal-${self:provider.stage}
-      value: '{{resolve:secretsmanager:api-key-${self:provider.stage}:SecretString:apikey}}'
+  apiGateway:
+    apiKeys:
+      - name: animlApiKeyInternal-${self:provider.stage}
+        value: '{{resolve:secretsmanager:api-key-${self:provider.stage}:SecretString:apikey}}'
 
 functions:
   graphql:

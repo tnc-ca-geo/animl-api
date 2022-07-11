@@ -37,13 +37,13 @@
     "mongodb-query-parser": "^2.4.3",
     "mongoose": "^5.10.3",
     "prompt": "^1.2.0",
-    "serverless-dotenv-plugin": "^3.0.0",
     "superagent": "^6.1.0"
   },
   "devDependencies": {
     "@mapbox/mock-aws-sdk-js": "^1.0.0",
     "nock": "^13.2.8",
-    "serverless": "^2.46.0",
+    "serverless": "^3.20.0",
+    "serverless-dotenv-plugin": "^4.0.1",
     "tape": "^5.5.3"
   }
 }
