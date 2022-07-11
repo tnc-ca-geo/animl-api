@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "Lambda-based graphQL API for camera trap data managment platform",
   "main": "src/handler.js",
+  "author": "Nathaniel Rindlaub",
+  "license": "ISC",
   "scripts": {
     "start": "serverless offline --useSeparateProcesses --env dev",
     "deploy-dev": "sls deploy --stage dev",
@@ -18,8 +20,6 @@
     "update-docs-prod": "STAGE=prod npm run update-docs",
     "test": "tape test/**.test.js"
   },
-  "author": "Nathaniel Rindlaub",
-  "license": "ISC",
   "dependencies": {
     "apollo-server-errors": "^2.5.0",
     "app-root-path": "^3.0.0",

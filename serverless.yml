@@ -10,38 +10,39 @@ package:
 provider:
   name: aws
   runtime: nodejs12.x
-  lambdaHashingVersion: "20201221"
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
   environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - sqs:*
-      Resource:
-        - Fn::GetAtt:
-            - inferenceQueue
-            - Arn
-    - Effect: Allow
-      Action:
-        - sagemaker:InvokeEndpoint
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - ses:SendEmail
-        - ses:SendRawEmail
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - ssm:GetParameters
-      Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
-    - Effect: Allow
-      Action:
-        - secretsmanager:GetSecretValue
-      Resource: "*"
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - sqs:*
+          Resource:
+            - Fn::GetAtt:
+                - inferenceQueue
+                - Arn
+        - Effect: Allow
+          Action:
+            - sagemaker:InvokeEndpoint
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - ssm:GetParameters
+          Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: "*"
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
