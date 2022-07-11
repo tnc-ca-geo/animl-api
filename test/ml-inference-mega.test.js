@@ -11,11 +11,11 @@ tape('ML-Inference Megadetector', async (t) => {
     const scope = nock('http://example.com')
         .get('/original/1-original.png')
         .reply(200, path.resolve(__dirname, './fixtures/cat.jpg'), {
-            'Content-Type': 'image/jpeg',
-        })
+            'Content-Type': 'image/jpeg'
+        });
 
     AWS.stub('SageMakerRuntime', 'invokeEndpoint', async function(params) {
-        t.ok(params.Body instanceof Buffer)
+        t.ok(params.Body instanceof Buffer);
 
         return this.request.promise.returns(Promise.resolve({
             Body: [{
@@ -37,17 +37,17 @@ tape('ML-Inference Megadetector', async (t) => {
             },
             catConfig: [{
                 _id: 1,
-                name: "animal",
+                name: 'animal',
                 disabled: false,
                 confThreshold: 0.8
             },{
                 _id: 2,
-                name: "person",
+                name: 'person',
                 disabled: false,
                 confThreshold: 0.5
             },{
                 _id: 3,
-                name: "vehicle",
+                name: 'vehicle',
                 disabled: true,
                 confThreshold: 0.8
             }],
@@ -65,7 +65,7 @@ tape('ML-Inference Megadetector', async (t) => {
             mlModel: 1,
             mlModelVersion: 2,
             type: 'ml',
-            bbox: [ 0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797 ],
+            bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
             conf: 0.9314358830451965,
             category: 'animal'
         }]);
@@ -74,6 +74,6 @@ tape('ML-Inference Megadetector', async (t) => {
     }
 
     AWS.SageMakerRuntime.restore();
-    nock.cleanAll()
+    nock.cleanAll();
     t.end();
 });
