@@ -6,7 +6,7 @@
     "author": "Nathaniel Rindlaub",
     "license": "ISC",
     "scripts": {
-        "start": "serverless offline --useSeparateProcesses --env dev",
+        "start": "serverless offline",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
@@ -41,12 +41,13 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
+        "@mapbox/mock-aws-sdk-js": "^1.0.0",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
-        "@mapbox/mock-aws-sdk-js": "^1.0.0",
         "nock": "^13.2.8",
         "serverless": "^3.20.0",
         "serverless-dotenv-plugin": "^4.0.1",
+        "serverless-offline": "^8.8.1",
         "tape": "^5.5.3"
     }
 }

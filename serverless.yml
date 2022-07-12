@@ -3,6 +3,9 @@ app: animl
 service: animl-api
 # variablesResolutionMode: 20210326
 
+plugins:
+  - serverless-offline
+
 package:
   patterns:
     - '!backups/**'
