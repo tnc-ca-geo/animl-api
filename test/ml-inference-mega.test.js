@@ -18,14 +18,14 @@ tape('ML-Inference Megadetector', async (t) => {
         t.ok(params.Body instanceof Buffer);
 
         return this.request.promise.returns(Promise.resolve({
-            Body: [{
+            Body: Buffer.from(JSON.stringify([{
                 x1: 0.45518332719802856,
                 y1: 0.28664860129356384,
                 x2: 0.6615734100341797,
                 y2: 0.5675788521766663,
                 confidence: 0.9314358830451965,
                 class: 1
-            }]
+            }]))
         }));
     });
 

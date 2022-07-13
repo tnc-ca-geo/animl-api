@@ -23,11 +23,10 @@ const runInference = {
         try {
             const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
 
-            const detections = (await smr.invokeEndpoint({
+            const detections = JSON.parse((await smr.invokeEndpoint({
                 Body: imgBuffer,
                 EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
-            }).promise()).Body;
-            console.error('DETECTIONS', detections);
+            }).promise()).Body);
 
             // Megadetector API returns detections as nested arrays
             // w/ each detection represented as:
@@ -40,9 +39,8 @@ const runInference = {
                 type: 'ml',
                 bbox: [det.y1, det.x1, det.y2, det.x2],
                 conf: det.confidence,
-                category: catConfig.find((cat) => cat._id === det.class).name
+                category: catConfig.find((cat) => parseInt(cat._id) === parseInt(det.class)).name
             }));
-            console.error(formatedDets);
 
             // filter out disabled detections & detections below confThreshold
             const filteredDets = formatedDets.filter((det) => {
