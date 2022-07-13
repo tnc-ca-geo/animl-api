@@ -17,15 +17,12 @@ const runInference = {
     },
 
     megadetector: async (params) => {
-        console.error('PARAMS', params);
         const { modelSource, catConfig, image, config } = params;
         const imgBuffer = await runInference._getImage(image, config);
-        console.error(imgBuffer);
 
         try {
             const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
 
-            console.error('PRE SMR');
             const detections = (await smr.invokeEndpoint({
                 Body: imgBuffer,
                 EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']

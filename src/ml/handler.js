@@ -35,21 +35,15 @@ async function requestCreateLabels(input, config) {
 }
 
 
-exports.inference = async () => {
+exports.inference = async (event) => {
     const config = await getConfig();
-    const data = await sqs.receiveMessage({
-        QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
-        MaxNumberOfMessages: 10,
-        VisibilityTimeout: 10,
-        WaitTimeSeconds: 20
-    }).promise();
 
-    if (!data.Messages) return;
+    if (!event.Records.length) return;
 
-    for (const message of data.Messages) {
-        const { modelSource, catConfig, image, label } = JSON.parse(message.Body);
+    for (const record of event.Records) {
+        const { modelSource, catConfig, image, label } = JSON.parse(record.body);
 
-        console.log(`message body: ${message.Body}`);
+        console.log(`record body: ${record.body}`);
 
         // run inference
         const detections = await runInference[modelSource._id]({
@@ -68,12 +62,6 @@ exports.inference = async () => {
             }, config);
             // TODO: gracefully handle failed label creation
         }
-
-        // remove from queue
-        await sqs.deleteMessage({
-            QueueUrl: config['/ML/INFERENCE_QUEUE_URL'],
-            ReceiptHandle: message.ReceiptHandle /* required */
-        }).promise();
 
     }
 };
