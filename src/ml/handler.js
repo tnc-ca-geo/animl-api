@@ -1,9 +1,6 @@
 const { GraphQLClient, gql } = require('graphql-request');
 const { runInference } = require('./inference');
 const { getConfig } = require('../config/config');
-const { SQS } = require('aws-sdk');
-
-const sqs = new SQS();
 
 async function requestCreateLabels(input, config) {
 
