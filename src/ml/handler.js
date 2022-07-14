@@ -1,5 +1,5 @@
 const { GraphQLClient, gql } = require('graphql-request');
-const { runInference } = require('./inference');
+const { modelInterfaces } = require('./modelInterfaces');
 const { getConfig } = require('../config/config');
 
 async function requestCreateLabels(input, config) {
@@ -43,22 +43,27 @@ exports.inference = async (event) => {
         console.log(`record body: ${record.body}`);
 
         // run inference
-        const detections = await runInference[modelSource._id]({
-            modelSource,
-            catConfig,
-            image,
-            label,
-            config
-        });
+        if (modelInterfaces.has(modelSource._id)) {
+            const requestInference = modelInterfaces.get(modelSource._id);
+            const detections = await requestInference({
+                modelSource,
+                catConfig,
+                image,
+                label,
+                config
+            });
 
-        // if successful, make create label request
-        if (detections.length) {
-            await requestCreateLabels({
-                imageId: image._id,
-                labels: detections
-            }, config);
-            // TODO: gracefully handle failed label creation
+            // if successful, make create label request
+            if (detections.length) {
+                await requestCreateLabels({
+                    imageId: image._id,
+                    labels: detections
+                }, config);
+                // TODO: gracefully handle failed label creation
+            }
+
+        } else {
+            // TODO: gracefully handle model not found
         }
-
     }
 };
