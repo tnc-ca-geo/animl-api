@@ -28,11 +28,6 @@ const runInference = {
                 EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
             }).promise()).Body);
 
-            // Megadetector API returns detections as nested arrays
-            // w/ each detection represented as:
-            // [ymin, xmin, ymax, xmax, confidence, category].
-            // the first four floats are the relative coordinates of the bbox
-
             const formatedDets = detections.map((det) => ({
                 mlModel: modelSource._id,
                 mlModelVersion: modelSource.version,
