@@ -3,7 +3,7 @@ const nock = require('nock');
 const path = require('path');
 const AWS = require('@mapbox/mock-aws-sdk-js');
 
-const { runInference } = require('../src/ml/inference.js');
+const { modelInterfaces } = require('../src/ml/modelInterfaces.js');
 
 process.env.REGION = 'us-east-1';
 
@@ -30,7 +30,7 @@ tape('ML-Inference Megadetector', async (t) => {
     });
 
     try {
-        const inference = await runInference.megadetector({
+        const inference = await modelInterfaces.get('megadetector')({
             modelSource: {
                 _id: 1,
                 version: 2
