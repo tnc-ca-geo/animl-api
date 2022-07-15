@@ -32,8 +32,8 @@ const megadetector = async (params) => {
             bbox: [det.y1, det.x1, det.y2, det.x2],
             conf: det.confidence,
             category: catConfig.find((cat) => (
-                parseInt(cat._id) === parseInt(det.class)).name
-            )
+                parseInt(cat._id) === parseInt(det.class)
+            )).name
         }));
 
         // filter out disabled detections & detections below confThreshold
