@@ -35,7 +35,9 @@ async function requestCreateLabels(input, config) {
 exports.inference = async (event) => {
     const config = await getConfig();
 
-    if (!event.Records.length) return;
+    console.log('event: ', event);
+
+    if (!event.Records || !event.Records.length) return;
 
     for (const record of event.Records) {
         const { modelSource, catConfig, image, label } = JSON.parse(record.body);
