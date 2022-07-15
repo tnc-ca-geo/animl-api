@@ -7,9 +7,9 @@ const generateMLModelModel = require('../api/db/models/MLModel');
 const defaultMLModelsConfig = [
     {
         _id: 'megadetector',
-        version: 'v4.1',
+        version: 'v5.0a',
         description: 'Microsoft Megadetector',
-        defaultConfThreshold: 0.8,
+        defaultConfThreshold: 0.25,
         categories: [
             { _id: '1', name: 'animal' },
             { _id: '2', name: 'person' },
