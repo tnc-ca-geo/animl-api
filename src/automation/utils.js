@@ -31,12 +31,9 @@ const includedInView = async (image, view, projectId) => {
     // service/lambda so that we can trigger it and return from mutation resolver
     // without waiting for the callstack to be built and executed.
 
-    console.log('includedInView() - firing');
     const viewQuery = buildFilter(view.filters, projectId);
     const query = { _id: image._id, ...viewQuery };
-    console.log('includedInView() - query: ', query);
     const res = await Image.find(query);
-    console.log('includedInView() - res: ', res);
     return res.length > 0;
 };
 
@@ -58,9 +55,7 @@ const buildCallstack = async (payload, context) => {
 
     let callstack = [];
     for (const view of project.views) {
-        console.log('buildCallstack() - checking view: ', view);
         const imageIncInView = await includedInView(image, view, project._id);
-        console.log('buildCallstack() - imageIncInView: ', imageIncInView);
         if (imageIncInView && view.automationRules.length > 0) {
             view.automationRules
                 .filter((rule) => ruleApplies(rule, event, label))
@@ -75,8 +70,6 @@ const buildCallstack = async (payload, context) => {
     // solution will be to move automation rules from the view level to the
     // project level: https://github.com/tnc-ca-geo/animl-api/issues/50
     callstack = _.uniqWith(callstack, _.isEqual);
-    console.log('buildCallstack() - callstack: ', callstack);
-
     return callstack;
 };
 

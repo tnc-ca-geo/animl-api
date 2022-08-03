@@ -15,7 +15,7 @@ const ImageSchema = new Schema({
     fileTypeExtension: { type: String, required: true },
     dateAdded: { type: Date, default: Date.now, required: true },
     dateTimeOriginal: { type: Date, required: true },
-    // TODO: add dateTimeUTC field
+    // dateTimeUTC: { type: Date, required: true },
     make: { type: String, default: 'unknown', required: true },
     cameraId: { type: String, required: true, ref: 'Camera' },
     deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
@@ -31,7 +31,7 @@ const ImageSchema = new Schema({
 });
 
 ImageSchema.index(
-    // TODO: revisit indexing. I'm not sure we really need to index by 
+    // TODO: revisit indexing. I'm not sure we really need to index by
     // cameraId if we're indexing by deployment.
     // Also, currently we're sorting date in decending order (-1),
     // (newest images first) but the front end is requesting oldest first by
