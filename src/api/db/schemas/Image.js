@@ -15,7 +15,7 @@ const ImageSchema = new Schema({
     fileTypeExtension: { type: String, required: true },
     dateAdded: { type: Date, default: Date.now, required: true },
     dateTimeOriginal: { type: Date, required: true },
-    // dateTimeUTC: { type: Date, required: true },
+    dateTimeUTC: { type: Date, required: true },
     make: { type: String, default: 'unknown', required: true },
     cameraId: { type: String, required: true, ref: 'Camera' },
     deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },

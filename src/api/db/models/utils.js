@@ -245,6 +245,7 @@ const createImageRecord = (md) => {
         fileTypeExtension: md.fileTypeExtension,
         dateAdded: DateTime.now(),
         dateTimeOriginal: md.dateTimeOriginal,
+        dateTimeUTC: md.dateTimeUTC,
         cameraId: md.serialNumber,
         make: md.make,
         deploymentId: md.deploymentId,
@@ -320,61 +321,59 @@ const hasRole = (user, targetRoles = []) => {
 };
 
 // TODO: accomodate user-created deployments with no startDate?
-const findDeployment = (img, camConfig, config) => {
+const findDeployment = (img, camConfig, config, projTimeZone) => {
     console.log('finding deployment for img: ', img);
     // find the deployment that's start date is closest to (but preceeds)
     // the image's created date
 
-    // NOTE: we will not know the timezone for this image yet b/c we pull the
-    // timezone from the deployment record, which we haven't yet found.
-    // So Moment/Luxon will assume imgCreated to be in UTC+0 by default (but it likely isn't)
-    // and we'll be comparing that to the deployment start date, which is stored
-    // in UTC+0...
+    // NOTE: we do not know the timezone for the image yet b/c we pull the
+    // timezone from the deployment record, which we are in the proess of finding.
+    // So Luxon will assume imgCreated to be in UTC+0 by default (but it likely isn't)
+    // and we'll be comparing that to the deployment's start date,
+    // which is stored in UTC+0...
 
-    // An imperfect solution would be to use the project's default timezone,
+    // current (imperfect) solution is be to use the project's default timezone
     // and assume the image is in that timezone. That would mean there's still
-    // a chance the correct deployment we want to associate this image with
-    // is in a different timezone than the project default and it could land in
-    // the wrong deployment...
+    // a chance the correct deployment we want to associate the image with
+    // is in a different timezone than the project default and it could get
+    // paired to the wrong deployment.
 
     const exifFormat = config['TIME_FORMATS']['EXIF'];
-    const imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
+    let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
         ? DateTime.fromFormat(img.dateTimeOriginal, exifFormat)
         : img.dateTimeOriginal;
+    imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
     const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
 
-    let mostRecentDepId = null;
+    let mostRecentDep = null;
     let shortestInterval = null;
     for (const dep of camConfig.deployments) {
         if (dep.name !== 'default') {
-            console.log(`dep ${dep.name} start date: `, dep.startDate);
-            console.log('is it a JS Date? ', dep.startDate instanceof Date);
             const depStart = DateTime.fromJSDate(dep.startDate);
             const timeDiff = imgCreated.diff(depStart).toObject().milliseconds;
             // if time elapsed is negative,
             // image was taken before the deployment start date
-            console.log('timeDiff: ', timeDiff);
             if (
                 (shortestInterval === null || shortestInterval > timeDiff) &&
                 timeDiff >= 0
             ) {
-                mostRecentDepId = dep._id;
+                mostRecentDep = dep;
                 shortestInterval = timeDiff;
             }
         }
     }
 
-    return mostRecentDepId || defaultDep._id;
+    return mostRecentDep || defaultDep;
 };
 
-const mapImageToDeployment = (img, camConfig, config) => {
+const mapImgToDep = (img, camConfig, config, projTimeZone) => {
     if (camConfig.deployments.length === 0) {
         throw new ApolloError('Camera config has no deployments');
     }
 
     return (camConfig.deployments.length === 1)
         ? camConfig.deployments[0]._id
-        : findDeployment(img, camConfig, config);
+        : findDeployment(img, camConfig, config, projTimeZone);
 };
 
 const sortDeps = (deps) => {
@@ -427,7 +426,7 @@ module.exports = {
     createImageRecord,
     createLabelRecord,
     hasRole,
-    mapImageToDeployment,
+    mapImgToDep,
     sortDeps,
     findActiveProjReg,
     idMatch,

@@ -5,6 +5,7 @@ module.exports = `
     fileTypeExtension: String!
     dateAdded: Date!
     dateTimeOriginal: Date!
+    dateTimeUTC: Date!
     make: String!
     cameraId: String!
     deploymentId: ID!

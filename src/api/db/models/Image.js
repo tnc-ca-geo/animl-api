@@ -127,16 +127,17 @@ const generateImageModel = ({ user } = {}) => ({
                 // map image to deployment
                 const [project] = await context.models.Project.getProjects([projectId]);
                 console.log('Image.createImage() - project: ', project);
-                const camConfig = project.cameraConfigs.find((cc) => (
-                    idMatch(cc._id, cameraId)
-                ));
+                const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
                 console.log('Image.createImage() - camConfig: ', camConfig);
-                const deploymentId = utils.mapImageToDeployment(md, camConfig, context.config);
-                console.log('Image.createImage() - deploymentId: ', deploymentId);
+                const deployment = utils.mapImgToDep(md, camConfig, context.config, project.timezone);
+                console.log('Image.createImage() - deploymentId: ', deployment._id);
 
                 // create image record
                 md.projectId = projectId;
-                md.deploymentId = deploymentId;
+                md.deploymentId = deployment._id;
+                md.dateTimeUTC = md.dateTimeOriginal
+                    .setZone(deployment.timezone, { keepLocalTime: true })
+                    .toUTC();
                 const image = await saveImage(md);
                 await automation.handleEvent({ event: 'image-added', image }, context);
                 return image;
