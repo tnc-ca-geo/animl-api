@@ -172,9 +172,21 @@ const getUserSetData = (input) => {
       if (!input.comment) {
         return null;
       }
-      let userData = {};
+      const userData = {};
       input.comment.split('\n').forEach((item) => {
         if (item.includes('TEXT1') || item.includes('TEXT2')) {
+          userData[item.split('=')[0]] = item.split('=')[1];
+        }
+      });
+      return userData;
+    },
+    'RidgeTec': (input) => {
+      if (!input.userComment) {
+        return null;
+      }
+      const userData = {};
+      input.userComment.split('\n').forEach((item) => {
+        if (item.includes('AccountId')) {
           userData[item.split('=')[0]] = item.split('=')[1];
         }
       });
@@ -190,7 +202,7 @@ const getUserSetData = (input) => {
     },
   };
 
-  const usd = (input.make && userDataMap[input.make])
+  return (input.make && userDataMap[input.make])
     ? userDataMap[input.make](input)
     : null;
 };
