@@ -6,7 +6,7 @@ const _getImage = async (image, config) => {
     const url = buildImgUrl(image, config);
 
     try {
-        const img = await agent.get(url).buffer(true);
+        const img = await agent.get(url);
         return Buffer.from(img.body, 'binary');
     } catch (err) {
         throw new Error(err);
