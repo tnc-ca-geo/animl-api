@@ -3,108 +3,108 @@ const { buildImgUrl } = require('../api/db/models/utils');
 const AWS = require('aws-sdk');
 
 const _getImage = async (image, config) => {
-    const url = buildImgUrl(image, config);
+  const url = buildImgUrl(image, config);
 
-    try {
-        const img = await agent.get(url);
-        return Buffer.from(img.body, 'binary');
-    } catch (err) {
-        throw new Error(err);
-    }
+  try {
+    const img = await agent.get(url);
+    return Buffer.from(img.body, 'binary');
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
 const megadetector = async (params) => {
-    const { modelSource, catConfig, image, config } = params;
-    const imgBuffer = await _getImage(image, config);
+  const { modelSource, catConfig, image, config } = params;
+  const imgBuffer = await _getImage(image, config);
 
-    try {
-        const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
+  try {
+    const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
 
-        const detections = JSON.parse((await smr.invokeEndpoint({
-            Body: imgBuffer,
-            EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
-        }).promise()).Body);
+    const detections = JSON.parse((await smr.invokeEndpoint({
+      Body: imgBuffer,
+      EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
+    }).promise()).Body);
 
-        const formatedDets = detections.map((det) => ({
-            mlModel: modelSource._id,
-            mlModelVersion: modelSource.version,
-            type: 'ml',
-            bbox: [det.y1, det.x1, det.y2, det.x2],
-            conf: det.confidence,
-            category: catConfig.find((cat) => (
-                parseInt(cat._id) === parseInt(det.class)
-            )).name
-        }));
+    const formatedDets = detections.map((det) => ({
+      mlModel: modelSource._id,
+      mlModelVersion: modelSource.version,
+      type: 'ml',
+      bbox: [det.y1, det.x1, det.y2, det.x2],
+      conf: det.confidence,
+      category: catConfig.find((cat) => (
+        parseInt(cat._id) === parseInt(det.class)
+      )).name
+    }));
 
-        // filter out disabled detections & detections below confThreshold
-        const filteredDets = formatedDets.filter((det) => {
-            const { disabled, confThreshold } = catConfig.find((cat) => (
-                cat.name === det.category
-            ));
-            return !disabled && det.conf >= confThreshold;
-        });
+    // filter out disabled detections & detections below confThreshold
+    const filteredDets = formatedDets.filter((det) => {
+      const { disabled, confThreshold } = catConfig.find((cat) => (
+        cat.name === det.category
+      ));
+      return !disabled && det.conf >= confThreshold;
+    });
 
-        // add "empty" detection
-        if (filteredDets.length === 0) {
-            filteredDets.push({
-                mlModel: modelSource._id,
-                mlModelVersion: modelSource.version,
-                type: 'ml',
-                bbox: [0, 0, 1, 1],
-                category: 'empty'
-            });
-        }
-
-        return filteredDets;
-
-    } catch (err) {
-        throw new Error(err);
+    // add "empty" detection
+    if (filteredDets.length === 0) {
+      filteredDets.push({
+        mlModel: modelSource._id,
+        mlModelVersion: modelSource.version,
+        type: 'ml',
+        bbox: [0, 0, 1, 1],
+        category: 'empty'
+      });
     }
+
+    return filteredDets;
+
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
 const mira = async (params) => {
-    const { modelSource, catConfig, image, label, config } = params;
-    const imgBuffer = await _getImage(image, config);
-    const bbox = label.bbox ? label.bbox : [0,0,1,1];
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox = label.bbox ? label.bbox : [0,0,1,1];
 
-    try {
-        let res = await agent
-            .post(config['/ML/MIRA_API_URL'])
-            .field('bbox', JSON.stringify(bbox))
-            .attach('image', imgBuffer, image._id + '.jpg');
-        res = JSON.parse(res.res.text);
+  try {
+    let res = await agent
+      .post(config['/ML/MIRA_API_URL'])
+      .field('bbox', JSON.stringify(bbox))
+      .attach('image', imgBuffer, image._id + '.jpg');
+    res = JSON.parse(res.res.text);
 
-        const filteredDets = Object.values(res).reduce((dets, classifier) => {
-            // only evaluate top predictions
-            const [category, conf] = Object.entries(classifier.predictions)
-                .sort((a, b) => b[1] - a[1])[0];
+    const filteredDets = Object.values(res).reduce((dets, classifier) => {
+      // only evaluate top predictions
+      const [category, conf] = Object.entries(classifier.predictions)
+        .sort((a, b) => b[1] - a[1])[0];
 
-            // filter out disabled detections,
-            // empty detections, & detections below confThreshold
-            // NOTE: we disregard "empty" class detections from MIRA classifiers
-            // b/c we're using Megadetector to determine if objects are present
-            const { disabled, confThreshold } = catConfig.find((cat) => (
-                cat.name === category
-            ));
-            if (!disabled && category !== 'empty' && conf >= confThreshold) {
-                dets.push({
-                    mlModel: modelSource._id,
-                    mlModelVersion: modelSource.version,
-                    type: 'ml',
-                    bbox,
-                    conf,
-                    category
-                });
-            }
+      // filter out disabled detections,
+      // empty detections, & detections below confThreshold
+      // NOTE: we disregard "empty" class detections from MIRA classifiers
+      // b/c we're using Megadetector to determine if objects are present
+      const { disabled, confThreshold } = catConfig.find((cat) => (
+        cat.name === category
+      ));
+      if (!disabled && category !== 'empty' && conf >= confThreshold) {
+        dets.push({
+          mlModel: modelSource._id,
+          mlModelVersion: modelSource.version,
+          type: 'ml',
+          bbox,
+          conf,
+          category
+        });
+      }
 
-            return dets;
-        }, []);
+      return dets;
+    }, []);
 
-        return filteredDets;
+    return filteredDets;
 
-    } catch (err) {
-        throw new Error(err);
-    }
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
 const modelInterfaces = new Map();
@@ -112,5 +112,5 @@ modelInterfaces.set('megadetector', megadetector);
 modelInterfaces.set('mira', mira);
 
 module.exports = {
-    modelInterfaces
+  modelInterfaces
 };

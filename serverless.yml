@@ -12,7 +12,7 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs16.x
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
@@ -46,6 +46,19 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource: "*"
+        - Effect: 'Allow'
+          Action:
+            - 's3:PutObject'
+          Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Ref: S3BucketAnimlexporteddata
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Ref: S3BucketAnimlexporteddata
+                - '/*'
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
@@ -150,14 +163,25 @@ resources:
         Type: String
         Value: !Ref inferenceQueue
 
-    # SSM Param - Megadetector API url
-    SSMParameterMegadetectorapiurl:
+    # Exported data bucket
+    S3BucketAnimlexporteddata:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    # SSM Param - exported data bucket
+    SSMParameterAnimlexporteddata:
       Type: AWS::SSM::Parameter
       Properties:
-        Description: Megadetector API url
-        Name: /ml/megadetector-api-url-${opt:stage, self:provider.stage, 'dev'}
+        Description: Animl exported data bucket name
+        Name: /exports/exported-data-bucket-${opt:stage, self:provider.stage, 'dev'}
         Type: String
-        Value: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect'
+        Value: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
 
     # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
     # contain secret keys so need to be created manually in the AWS console

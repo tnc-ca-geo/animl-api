@@ -1,5 +1,11 @@
+const stream = require('node:stream');
+const _ = require('lodash');
+const moment = require('moment');
+const { stringify } = require('csv-stringify');
+const { S3 } = require('aws-sdk');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
+const crypto = require('crypto');
 const Image = require('../schemas/Image');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
@@ -55,13 +61,13 @@ const generateImageModel = ({ user } = {}) => ({
     try {
 
       const [categoriesAggregate] = await Image.aggregate([
-        { $match: {'projectId': projId} },
+        { $match: { 'projectId': projId } },
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
-        { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
-        { $group: {_id: null, uniqueCategories: {
-            $addToSet: "$objects.labels.category"
-        }}}
+        { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
+        { $group: { _id: null, uniqueCategories: {
+          $addToSet: '$objects.labels.category'
+        } } }
       ]);
 
       let categories = categoriesAggregate
@@ -166,8 +172,8 @@ const generateImageModel = ({ user } = {}) => ({
           throw new DBValidationError(err);
         }
         throw new ApolloError(err);
-      }  
-    }
+      }
+    };
   },
 
   get createObject() {
@@ -202,7 +208,7 @@ const generateImageModel = ({ user } = {}) => ({
   get updateObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.updateObject() - input: `, input);
+      console.log('ImageModel.updateObject() - input: ', input);
 
       const operation = async ({ imageId, objectId, diffs }) => {
         return await retry(async (bail, attempt) => {
@@ -216,12 +222,12 @@ const generateImageModel = ({ user } = {}) => ({
             const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
             bail(new ApolloError(msg));
           }
-          for (let [key, newVal] of Object.entries(diffs)) {
+          for (const [key, newVal] of Object.entries(diffs)) {
             object[key] = newVal;
           }
           await image.save();
           return image;
-          
+
         }, { retries: 2 });
       };
 
@@ -419,8 +425,8 @@ const generateImageModel = ({ user } = {}) => ({
         if (reviewers.length > 1) multiReviewerCount++;
 
         for (const userId of reviewers) {
-          let usr = reviewerList.find((reviewer) => reviewer.userId === userId);
-          !usr 
+          const usr = reviewerList.find((reviewer) => reviewer.userId === userId);
+          !usr
             ? reviewerList.push({ userId: userId, reviewedCount: 1 })
             : usr.reviewedCount++;
         }
@@ -436,13 +442,13 @@ const generateImageModel = ({ user } = {}) => ({
             ));
             if (firstValidLabel) {
               const cat = firstValidLabel.category;
-              labelList[cat] = labelList.hasOwnProperty(cat) 
+              labelList[cat] = labelList.hasOwnProperty(cat)
                 ? labelList[cat] + 1
                 : 1;
             }
           }
         }
-      
+
       }
 
       return {
@@ -460,6 +466,142 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
- });
+  get exportCSV() {
+    // if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return async (input, context) => {
+      console.log('exporting to csv');
+
+      const id = crypto.randomBytes(16).toString('hex');
+      let imageCount = 0;
+      let reviewed = 0;
+      let notReviewed = 0;
+
+      const uploadS3Stream = (key, bucket) => {
+        // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
+        const s3 = new S3({ region: process.env.AWS_DEFAULT_REGION });
+        const pass = new stream.PassThrough();
+
+        return {
+          writeStream: pass,
+          promise: s3.upload({
+            Bucket: bucket,
+            Key: key,
+            Body: pass,
+            ContentType: 'text/csv'
+            // ACL: 'public-read',
+          }).promise()
+        };
+      };
+
+      const streamCSVtoS3 = async (stringifier, data) => {
+        return new Promise(async (resolve, reject) => {
+          const filename = id + '.csv';
+          const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+          const { promise, writeStream } = uploadS3Stream(filename, bucket);
+          console.log('building pipeline');
+          stream.pipeline(
+            stringifier,
+            writeStream,
+            async (err) => {
+              if (err) {
+                console.error(err, 'Pipeline failed.');
+                reject(err);
+              } else {
+                const res = await promise; // wait for upload complete
+                console.log('upload succeeded. res: ', res);
+                resolve({ filename });
+              }
+            }
+          );
+
+          // write data to CSV stringifier
+          for (const row of data) {
+            stringifier.write(row);
+          }
+          stringifier.end();
+
+        });
+      }
+
+      try {
+        const { categories } = await context.models.Image.getLabels(user['curr_project']);
+        const query = utils.buildFilter(input.filters, user['curr_project']);
+        const fields = ['objects', 'dateAdded', 'dateTimeOriginal',
+          'cameraId', 'make', 'deploymentId', 'projectId'];
+        // TODO: stream results from MongoDB rather than pulling them into memory
+        // https://mongoosejs.com/docs/queries.html#streaming
+        const images = await Image.find(query, fields);
+        imageCount = images.length;
+        console.log('image count: ', imageCount);
+
+        // simplify and flatten image data
+        const data = [];
+        for (const img of images) {
+
+          if (utils.isImageReviewed(img)) {
+            reviewed++;
+
+            const simpleImgRecord = {
+              _id: img._id.toString(),
+              dateAdded: moment(img.dateAdded).format(),  // or use toISOString()? see https://stackoverflow.com/questions/25725019/how-do-i-format-a-date-as-iso-8601-in-moment-js
+              dateTimeOriginal: moment(img.dateTimeOriginal).format(),
+              cameraId: img.cameraId.toString(),
+              make: img.make,
+              deploymentId: img.deploymentId.toString(),
+              projectId: img.projectId.toString()
+            };
+
+            // build flattened reprentation of objects/labels
+            const catCounts = {};
+            categories.forEach((cat) => catCounts[cat] = 0 );
+            for (const obj of img.objects) {
+              const firstValidLabel = obj.labels.find((label) => (
+                label.validation && label.validation.validated
+              ));
+              if (firstValidLabel) {
+                const cat = firstValidLabel.category;
+                catCounts[cat] = catCounts[cat] + 1;
+              }
+            }
+
+            data.push({
+              ...simpleImgRecord,
+              ...catCounts
+            });
+
+          } else {
+            notReviewed++;
+          }
+
+        }
+
+        console.log('flattened data count: ', data.length);
+        console.log('data: ', data);
+        console.log('reviewed count: ', reviewed);
+        console.log('not reviewed count: ', notReviewed);
+
+        // stream data to CSV and upload stream to S3
+        const stringifier = stringify({ header: true });
+        stringifier.on('error', (err)=> {
+          console.error('error stringifying data: ', err.message);
+        });
+        const res = await streamCSVtoS3(stringifier, data);
+        console.log('res from streamCSVtoS3: ', res);
+
+        return {
+          // url,
+          imageCount,
+          reviewedCount: { reviewed, notReviewed }
+        };
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  }
+
+});
 
 module.exports = generateImageModel;

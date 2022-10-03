@@ -19,7 +19,7 @@ const generateProjectModel = ({ user } = {}) => ({
     else {
       const availIds = Object.keys(user['projects']);
       const filteredIds = _ids && _ids.filter((_id) => availIds.includes(_id));
-      query = { _id: { $in: (filteredIds || availIds) }};
+      query = { _id: { $in: (filteredIds || availIds) } };
     }
 
     try {
@@ -34,13 +34,13 @@ const generateProjectModel = ({ user } = {}) => ({
 
   createProject: async (input) => {
     const operation = async (input) => {
-      return await retry(async (bail) => {
+      return await retry(async () => {
         const newProject = new Project(input);
         await newProject.save();
         return newProject;
       }, { retries: 2 });
     };
-    
+
     try {
       return await operation(input);
     } catch (err) {
@@ -52,12 +52,12 @@ const generateProjectModel = ({ user } = {}) => ({
 
   get createCameraConfig() {
     return async (projectId, cameraId) => {
-      
+
       const operation = async (projectId, cameraId) => {
         return await retry(async (bail) => {
 
           const [project] = await this.getProjects([projectId]);
-          
+
           // make sure project doesn't already have a config for this cam
           const currCamConfig = project.cameraConfigs.find((c) => c._id === cameraId);
           if (!currCamConfig) {
@@ -86,7 +86,7 @@ const generateProjectModel = ({ user } = {}) => ({
       }
     };
   },
- 
+
   get createView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
     return async (input) => {
@@ -193,7 +193,7 @@ const generateProjectModel = ({ user } = {}) => ({
         let operations = [];
         for (const [index, dep] of camConfig.deployments.entries()) {
           const createdStart = dep.startDate || null;
-          const createdEnd = camConfig.deployments[index + 1] 
+          const createdEnd = camConfig.deployments[index + 1]
             ? camConfig.deployments[index + 1].startDate
             : null;
 
@@ -204,15 +204,15 @@ const generateProjectModel = ({ user } = {}) => ({
               ...(createdEnd && { $lt: createdEnd }),
             }
           }
-          // TODO TIME - decide if we're storing timezone on images or 
-          // converting to UTC+0 and storing that. 
+          // TODO TIME - decide if we're storing timezone on images or
+          // converting to UTC+0 and storing that.
           // converting to UTC+0 would be ideal but require pulling all matching
-          // images into memory, iterating through them to convert and save to 
+          // images into memory, iterating through them to convert and save to
           // UTC+0 (maybe with aggregation pipeline + updatemany?) and performoing
           // update many / bulk write
           const update = {
             deploymentId: dep._id,
-            // timezone: dep.timezone 
+            // timezone: dep.timezone
           };
 
           operations.push({ updateMany: { filter, update } });
@@ -321,7 +321,7 @@ const generateProjectModel = ({ user } = {}) => ({
           let camConfig = project.cameraConfigs.find((cc) => (
             idMatch(cc._id, cameraId)
           ));
-          
+
           // filter out deployment, sort remaining ones, and save project
           camConfig.deployments = camConfig.deployments.filter((dep) => (
             !idMatch(dep._id, deploymentId)
@@ -332,7 +332,7 @@ const generateProjectModel = ({ user } = {}) => ({
 
         }, { retries: 2 });
       };
-      
+
       try {
         const { project, camConfig } = await operation(input);
         await this.reMapImagesToDeps({ projId: project._id, camConfig });

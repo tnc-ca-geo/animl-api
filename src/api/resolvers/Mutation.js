@@ -78,7 +78,7 @@ const Mutation = {
   deleteLabel: async (_, { input }, context) => {
     const image = context.models.Image.deleteLabel(input);
     return { image };
-  },
+  }
 
 };
 
