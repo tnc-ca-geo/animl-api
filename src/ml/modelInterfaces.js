@@ -1,6 +1,9 @@
 const agent = require('superagent');
 const { buildImgUrl } = require('../api/db/models/utils');
-const AWS = require('aws-sdk');
+const {
+  SageMakerRuntimeClient,
+  InvokeEndpointCommand
+} = require('@aws-sdk/client-sagemaker-runtime');
 
 const _getImage = async (image, config) => {
   const url = buildImgUrl(image, config);
@@ -18,12 +21,14 @@ const megadetector = async (params) => {
   const imgBuffer = await _getImage(image, config);
 
   try {
-    const smr = new AWS.SageMakerRuntime({ region: process.env.REGION });
-
-    const detections = JSON.parse((await smr.invokeEndpoint({
+    const smr = new SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new InvokeEndpointCommand({
       Body: imgBuffer,
       EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
-    }).promise()).Body);
+    });
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const detections = JSON.parse(body);
 
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,

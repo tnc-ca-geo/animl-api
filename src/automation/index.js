@@ -1,9 +1,9 @@
 const { ApolloError } = require('apollo-server-errors');
-const { SQS } = require('aws-sdk');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const utils = require('./utils');
 const { sendEmail } = require('./alerts');
 
-const sqs = new SQS();
+const sqs = new SQSClient();
 
 const executeRule = {
 
@@ -15,11 +15,11 @@ const executeRule = {
       const catConfig = utils.buildCatConfig(modelSource, rule);
 
       const message = { modelSource, catConfig, ...payload };
-      return await sqs.sendMessage({
+      const command = new SendMessageCommand({
         QueueUrl: context.config['/ML/INFERENCE_QUEUE_URL'],
         MessageBody: JSON.stringify(message)
-      }).promise();
-
+      });
+      return await sqs.send(command);
     } catch (err) {
       throw new ApolloError(err);
     }

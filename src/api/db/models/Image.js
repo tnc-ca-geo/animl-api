@@ -2,7 +2,8 @@ const stream = require('node:stream');
 const _ = require('lodash');
 const moment = require('moment');
 const { stringify } = require('csv-stringify');
-const { S3 } = require('aws-sdk');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
@@ -478,18 +479,23 @@ const generateImageModel = ({ user } = {}) => ({
 
       const uploadS3Stream = (key, bucket) => {
         // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
-        const s3 = new S3({ region: process.env.AWS_DEFAULT_REGION });
+        const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
         const pass = new stream.PassThrough();
 
-        return {
-          writeStream: pass,
-          promise: s3.upload({
+        const parallelUploads3 = new Upload({
+          client: s3,
+          params: {
             Bucket: bucket,
             Key: key,
             Body: pass,
             ContentType: 'text/csv'
             // ACL: 'public-read',
-          }).promise()
+          }
+        });
+
+        return {
+          writeStream: pass,
+          promise: parallelUploads3.done()
         };
       };
 

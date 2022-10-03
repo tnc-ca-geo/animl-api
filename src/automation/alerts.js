@@ -1,8 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
-const { SES } = require('aws-sdk');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const { buildImgUrl, idMatch } = require('../api/db/models/utils');
 
-const ses = new SES({ apiVersion: '2010-12-01' });
+const ses = new SESClient({ apiVersion: '2010-12-01' });
 
 const buildFrontendUrl = async (image, project, config) => {
   const url = config['/FRONTEND/URL'];
@@ -59,7 +59,8 @@ const makeEmail = async (rule, image, context) => {
 const sendEmail = async (rule, image, context) => {
   try {
     const email = await makeEmail(rule, image, context);
-    const res = await ses.sendEmail(email).promise();
+    const command = new SendEmailCommand(email);
+    const res = await ses.send(command);
     return res;
   } catch (err) {
     throw new ApolloError(err);
