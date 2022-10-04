@@ -2,8 +2,9 @@ const stream = require('node:stream');
 const _ = require('lodash');
 const moment = require('moment');
 const { stringify } = require('csv-stringify');
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
@@ -468,10 +469,12 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get exportCSV() {
+    // TODO: what role makes sense for this?
     // if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
       console.log('exporting to csv');
 
+      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
       let imageCount = 0;
       let reviewed = 0;
@@ -479,7 +482,6 @@ const generateImageModel = ({ user } = {}) => ({
 
       const uploadS3Stream = (key, bucket) => {
         // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
-        const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
         const pass = new stream.PassThrough();
 
         const parallelUploads3 = new Upload({
@@ -489,7 +491,6 @@ const generateImageModel = ({ user } = {}) => ({
             Key: key,
             Body: pass,
             ContentType: 'text/csv'
-            // ACL: 'public-read',
           }
         });
 
@@ -500,6 +501,7 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       const streamCSVtoS3 = async (stringifier, data) => {
+        // TODO: fix this (make promise executor function not async)
         return new Promise(async (resolve, reject) => {
           const filename = id + '.csv';
           const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
@@ -515,7 +517,7 @@ const generateImageModel = ({ user } = {}) => ({
               } else {
                 const res = await promise; // wait for upload complete
                 console.log('upload succeeded. res: ', res);
-                resolve({ filename });
+                resolve(res);
               }
             }
           );
@@ -527,18 +529,21 @@ const generateImageModel = ({ user } = {}) => ({
           stringifier.end();
 
         });
-      }
+      };
 
       try {
         const { categories } = await context.models.Image.getLabels(user['curr_project']);
         const query = utils.buildFilter(input.filters, user['curr_project']);
-        const fields = ['objects', 'dateAdded', 'dateTimeOriginal',
-          'cameraId', 'make', 'deploymentId', 'projectId'];
+        const fields = ['objects', 'dateAdded', 'dateTimeOriginal', 'cameraId',
+          'make', 'deploymentId', 'projectId'];
         // TODO: stream results from MongoDB rather than pulling them into memory
         // https://mongoosejs.com/docs/queries.html#streaming
         const images = await Image.find(query, fields);
         imageCount = images.length;
-        console.log('image count: ', imageCount);
+
+        // TODO: pull all cameraConfigs into memory for this project,
+        // and use them to find deployment data by deployment ID so that we can
+        // enrich spreadsheet with deployment name, lat, long, and possibly start date
 
         // simplify and flatten image data
         const data = [];
@@ -549,24 +554,26 @@ const generateImageModel = ({ user } = {}) => ({
 
             const simpleImgRecord = {
               _id: img._id.toString(),
+              // TODO: add original file name
               dateAdded: moment(img.dateAdded).format(),  // or use toISOString()? see https://stackoverflow.com/questions/25725019/how-do-i-format-a-date-as-iso-8601-in-moment-js
               dateTimeOriginal: moment(img.dateTimeOriginal).format(),
               cameraId: img.cameraId.toString(),
               make: img.make,
               deploymentId: img.deploymentId.toString(),
               projectId: img.projectId.toString()
+              // TODO: add deployment name, lat, long
             };
 
             // build flattened reprentation of objects/labels
             const catCounts = {};
-            categories.forEach((cat) => catCounts[cat] = 0 );
+            categories.forEach((cat) => catCounts[cat] = null );
             for (const obj of img.objects) {
               const firstValidLabel = obj.labels.find((label) => (
                 label.validation && label.validation.validated
               ));
               if (firstValidLabel) {
                 const cat = firstValidLabel.category;
-                catCounts[cat] = catCounts[cat] + 1;
+                catCounts[cat] = catCounts[cat] ? catCounts[cat]++ : 1;
               }
             }
 
@@ -581,21 +588,19 @@ const generateImageModel = ({ user } = {}) => ({
 
         }
 
-        console.log('flattened data count: ', data.length);
-        console.log('data: ', data);
-        console.log('reviewed count: ', reviewed);
-        console.log('not reviewed count: ', notReviewed);
-
         // stream data to CSV and upload stream to S3
         const stringifier = stringify({ header: true });
         stringifier.on('error', (err)=> {
-          console.error('error stringifying data: ', err.message);
+          throw new ApolloError(err);
         });
-        const res = await streamCSVtoS3(stringifier, data);
-        console.log('res from streamCSVtoS3: ', res);
+        const { Bucket, Key } = await streamCSVtoS3(stringifier, data);
+
+        // get presigned url (expires in one hour)
+        const command = new GetObjectCommand({ Bucket, Key });
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
         return {
-          // url,
+          url,
           imageCount,
           reviewedCount: { reviewed, notReviewed }
         };

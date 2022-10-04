@@ -32,7 +32,6 @@ const context = async ({ event: req }) => {
   const user = await getUserInfo(req, config);
   console.log('req: ', req);
   console.log('user: ', user);
-  console.log('config: ', config);
 
   return {
     ...req,
