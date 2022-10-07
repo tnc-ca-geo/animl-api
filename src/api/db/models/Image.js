@@ -1,4 +1,6 @@
-const stream = require('node:stream');
+// const stream = require('node:stream');
+const stream = require('node:stream/promises');
+const { PassThrough } = require('node:stream');
 const _ = require('lodash');
 const moment = require('moment');
 const { stringify } = require('csv-stringify');
@@ -481,8 +483,9 @@ const generateImageModel = ({ user } = {}) => ({
       let notReviewed = 0;
 
       const uploadS3Stream = (key, bucket) => {
+        console.log('uploadS3Stream firing');
         // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
-        const pass = new stream.PassThrough();
+        const pass = new PassThrough();
         const parallelUploads3 = new Upload({
           client: s3,
           params: {
@@ -499,34 +502,35 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       const streamCSVtoS3 = async (stringifier, data) => {
-        // TODO: fix this (make promise executor function not async)
-        return new Promise(async (resolve, reject) => {
-          const filename = id + '.csv';
-          const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-          const { promise, writeStream } = uploadS3Stream(filename, bucket);
-          console.log('building pipeline');
-          stream.pipeline(
+        console.log('streamCSVtoS3 firing');
+        const filename = id + '.csv';
+        const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+        const { promise, writeStream } = uploadS3Stream(filename, bucket);
+
+        // write data to CSV stringifier
+        for (const row of data) {
+          console.log('writing data to stringifier...');
+          stringifier.write(row);
+        }
+        console.log('end stringifier');
+        stringifier.end();
+
+        try {
+          // pipelining three streams
+          console.log('entring try block');
+          await stream.pipeline(
             stringifier,
-            writeStream,
-            async (err) => {
-              if (err) {
-                console.error(err, 'Pipeline failed.');
-                reject(err);
-              } else {
-                const res = await promise; // wait for upload complete
-                console.log('upload succeeded. res: ', res);
-                resolve(res);
-              }
-            }
+            writeStream
           );
 
-          // write data to CSV stringifier
-          for (const row of data) {
-            stringifier.write(row);
-          }
-          stringifier.end();
+          console.log('pipeline complete');
+          const res = await promise; // wait for upload complete
+          console.log('upload succeeded. res: ', res);
+          return res;
 
-        });
+        } catch (err) {
+          console.error('pipeline failed with error:', err);
+        }
       };
 
       try {
