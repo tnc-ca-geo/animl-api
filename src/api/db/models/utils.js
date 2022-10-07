@@ -1,14 +1,9 @@
-const fs = require('fs');
-const { stringify } = require('csv-stringify');
 const moment = require('moment');
 const _ = require('lodash');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
 const { ApolloError } = require('apollo-server-errors');
-
-const { parse } = require('csv-parse'); // testing
-
 
 
 // TODO: this file is getting unwieldy, break up
@@ -407,35 +402,6 @@ const isImageReviewed = (image) => {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 };
 
-const writeToCSV = async (data, filename) => {
-  const tmpPath = '/tmp/' + filename;
-  // const writableStream = fs.createWriteStream(tmpPath);
-  const stringifier = stringify({ header: true });
-
-  stringifier.on('error', (err)=> {
-    console.error('error stringifying data: ', err.message);
-  });
-  stringifier.on('finish', ()=> {
-    console.log('stringifier finished writing to csv');
-  });
-  for (const row of data) {
-    console.log('writing row of data: ', row);
-    stringifier.write(row);
-  }
-  // stringifier.pipe(writableStream);
-  // stringifier.end();
-
-  // console.log('reading from CSV to test success: ');
-  // fs.createReadStream(tmpPath)
-  //   .pipe(parse({ delimiter: ',', from_line: 2 }))
-  //   .on('data', (row) => {
-  //     console.log(row);
-  //   });
-
-  // return tmpPath;
-  return stringifier;
-};
-
 module.exports = {
   buildImgUrl,
   buildFilter,
@@ -448,6 +414,5 @@ module.exports = {
   sortDeps,
   findActiveProjReg,
   idMatch,
-  isImageReviewed,
-  writeToCSV
+  isImageReviewed
 };

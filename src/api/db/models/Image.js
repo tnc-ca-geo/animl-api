@@ -483,7 +483,6 @@ const generateImageModel = ({ user } = {}) => ({
       const uploadS3Stream = (key, bucket) => {
         // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
         const pass = new stream.PassThrough();
-
         const parallelUploads3 = new Upload({
           client: s3,
           params: {
@@ -493,7 +492,6 @@ const generateImageModel = ({ user } = {}) => ({
             ContentType: 'text/csv'
           }
         });
-
         return {
           writeStream: pass,
           promise: parallelUploads3.done()
@@ -532,18 +530,16 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       try {
-        const { categories } = await context.models.Image.getLabels(user['curr_project']);
+        // get this project's cameraConfigs, so that we can map deployment Ids to deployment data
+        const [project] = await context.models.Project.getProjects([user['curr_project']]);
+        const { categories } = await this.getLabels(user['curr_project']);
         const query = utils.buildFilter(input.filters, user['curr_project']);
-        const fields = ['objects', 'dateAdded', 'dateTimeOriginal', 'cameraId',
-          'make', 'deploymentId', 'projectId'];
+        const fields = ['originalFileName', 'objects', 'dateAdded', 'dateTimeOriginal',
+          'cameraId', 'make', 'deploymentId', 'projectId'];
         // TODO: stream results from MongoDB rather than pulling them into memory
         // https://mongoosejs.com/docs/queries.html#streaming
         const images = await Image.find(query, fields);
         imageCount = images.length;
-
-        // TODO: pull all cameraConfigs into memory for this project,
-        // and use them to find deployment data by deployment ID so that we can
-        // enrich spreadsheet with deployment name, lat, long, and possibly start date
 
         // simplify and flatten image data
         const data = [];
@@ -552,16 +548,24 @@ const generateImageModel = ({ user } = {}) => ({
           if (utils.isImageReviewed(img)) {
             reviewed++;
 
+            const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, img.cameraId));
+            const deployment = camConfig.deployments.find((dep) => idMatch(dep._id, img.deploymentId));
+
             const simpleImgRecord = {
               _id: img._id.toString(),
-              // TODO: add original file name
               dateAdded: moment(img.dateAdded).format(),  // or use toISOString()? see https://stackoverflow.com/questions/25725019/how-do-i-format-a-date-as-iso-8601-in-moment-js
               dateTimeOriginal: moment(img.dateTimeOriginal).format(),
               cameraId: img.cameraId.toString(),
+              projectId: img.projectId.toString(),
               make: img.make,
               deploymentId: img.deploymentId.toString(),
-              projectId: img.projectId.toString()
-              // TODO: add deployment name, lat, long
+              deploymentName: deployment.name,
+              deploymentTimezone: deployment.timezone,
+              ...(img.originalFileName && { originalFileName: img.originalFileName }),
+              ...(deployment.location && {
+                deploymentLat: deployment.location.geometry.coordinates[1],
+                deploymentLong: deployment.location.geometry.coordinates[0]
+              })
             };
 
             // build flattened reprentation of objects/labels
@@ -573,7 +577,7 @@ const generateImageModel = ({ user } = {}) => ({
               ));
               if (firstValidLabel) {
                 const cat = firstValidLabel.category;
-                catCounts[cat] = catCounts[cat] ? catCounts[cat]++ : 1;
+                catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
               }
             }
 
@@ -589,7 +593,12 @@ const generateImageModel = ({ user } = {}) => ({
         }
 
         // stream data to CSV and upload stream to S3
-        const stringifier = stringify({ header: true });
+        const staticColumns = ['_id', 'originalFileName', 'dateAdded',
+          'dateTimeOriginal', 'cameraId', 'projectId','make', 'deploymentId',
+          'deploymentName', 'deploymentTimezone', 'deploymentLat', 'deploymentLong'
+        ];
+        const columns = staticColumns.concat(categories);
+        const stringifier = stringify({ header: true, columns });
         stringifier.on('error', (err)=> {
           throw new ApolloError(err);
         });
