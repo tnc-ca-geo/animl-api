@@ -24,8 +24,8 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryById: async (_id) => {
-    const query = !user['is_superuser'] 
-      ? { _id, projectId: user['curr_project']}
+    const query = !user['is_superuser']
+      ? { _id, projectId: user['curr_project'] }
       : { _id };
     try {
       const image = await Image.findOne(query);
@@ -45,7 +45,7 @@ const generateImageModel = ({ user } = {}) => ({
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
-        previous: input.previous,
+        previous: input.previous
       };
       const result = await Image.paginate(options);
       return result;
@@ -71,13 +71,13 @@ const generateImageModel = ({ user } = {}) => ({
         } } }
       ]);
 
-      let categories = categoriesAggregate
+      const categories = categoriesAggregate
         ? categoriesAggregate.uniqueCategories
         : [];
 
-      const objectLessImage = await Image.findOne({ 
+      const objectLessImage = await Image.findOne({
         projectId: projId,
-        objects: { $size: 0 } 
+        objects: { $size: 0 }
       });
       if (objectLessImage) categories.push('none');
 
@@ -90,7 +90,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   // BUG: I think when you upload multiple images at once from the same camera,
-  // and there's not yet a camera record associated with it, 
+  // and there's not yet a camera record associated with it,
   // some issues occur due to the camera record not being created fast enough
   // for some of the new images? Investigate
   get createImage() {
@@ -118,7 +118,7 @@ const generateImageModel = ({ user } = {}) => ({
             projectId,
             cameraId,
             make: md.make,
-            ...(md.model && { model: md.model }),
+            ...(md.model && { model: md.model })
           }, context);
 
           successfulOps.push({ op: 'cam-created', info: { cameraId } });
@@ -203,7 +203,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get updateObject() {
@@ -239,7 +239,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get deleteObject() {
@@ -247,7 +247,7 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input) => {
 
       const operation = async ({ imageId, objectId }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find image, filter out object, and save
           const image = await this.queryById(imageId);
@@ -268,7 +268,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get createLabels() {
@@ -276,17 +276,17 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input, context) => {
 
       const operation = async ({ imageId, objectId, label }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find image, create label record
           const image = await this.queryById(imageId);
           if (utils.isLabelDupe(image, label)) return;
           const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
-  
+
           // if objectId was specified, find object and save label to it
           // else try to match to existing object bbox and merge label into that
-          // else add new object 
+          // else add new object
           if (objectId) {
             const object = image.objects.find((obj) => idMatch(obj._id, objectId));
             object.labels.unshift(labelRecord);
@@ -304,11 +304,11 @@ const generateImageModel = ({ user } = {}) => ({
               image.objects.unshift({
                 bbox: labelRecord.bbox,
                 locked: false,
-                labels: [labelRecord],
+                labels: [labelRecord]
               });
             }
           }
-  
+
           await image.save();
           return { image, newLabel: labelRecord };
 
@@ -324,7 +324,7 @@ const generateImageModel = ({ user } = {}) => ({
             await automation.handleEvent({
               event: 'label-added',
               label: res.newLabel,
-              image,
+              image
             }, context);
           }
         }
@@ -334,7 +334,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get updateLabel() {
@@ -343,13 +343,13 @@ const generateImageModel = ({ user } = {}) => ({
 
       const operation = async (input) => {
         const { imageId, objectId, labelId, diffs } = input;
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find label, apply updates, and save image
           const image = await this.queryById(imageId);
           const object = image.objects.find((obj) => idMatch(obj._id, objectId));
           const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
-          for (let [key, newVal] of Object.entries(diffs)) {
+          for (const [key, newVal] of Object.entries(diffs)) {
             label[key] = newVal;
           }
           await image.save();
@@ -365,7 +365,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get deleteLabel() {
@@ -373,7 +373,7 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input) => {
 
       const operation = async ({ imageId, objectId, labelId }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find object, filter out label, and save image
           const image = await this.queryById(imageId);
@@ -385,7 +385,7 @@ const generateImageModel = ({ user } = {}) => ({
 
         }, { retries: 2 });
       };
-      
+
       try {
         return await operation(input);
       } catch (err) {
@@ -393,15 +393,15 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   getStats: async (input) => {
     let imageCount = 0;
     let reviewed = 0;
     let notReviewed = 0;
-    let reviewerList = [];
-    let labelList = {};
+    const reviewerList = [];
+    const labelList = {};
     // NOTE: just curious how many images get touched
     // by more than one reviewer. can remove later
     let multiReviewerCount = 0;
