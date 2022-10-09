@@ -25,7 +25,7 @@
         "computed-property-spacing": [ "error", "never" ],
         "eol-last": "error",
         "eqeqeq": [ "error", "smart" ],
-        "indent": [ "error", 4, { "SwitchCase": 1 } ],
+        "indent": [ "error", 2, { "SwitchCase": 1 } ],
         "no-confusing-arrow": [ "error", { "allowParens": false } ],
         "no-extend-native": "error",
         "no-mixed-spaces-and-tabs": "error",

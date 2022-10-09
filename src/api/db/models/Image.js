@@ -1,9 +1,16 @@
+// const stream = require('node:stream');
+const stream = require('node:stream/promises');
+const _ = require('lodash');
+const { stringify } = require('csv-stringify');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
+const crypto = require('crypto');
 const Image = require('../schemas/Image');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
-const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES } = require('../../auth/roles');
+const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
 const { idMatch } = require('./utils');
 const retry = require('async-retry');
@@ -17,8 +24,8 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryById: async (_id) => {
-    const query = !user['is_superuser'] 
-      ? { _id, projectId: user['curr_project']}
+    const query = !user['is_superuser']
+      ? { _id, projectId: user['curr_project'] }
       : { _id };
     try {
       const image = await Image.findOne(query);
@@ -38,7 +45,7 @@ const generateImageModel = ({ user } = {}) => ({
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
-        previous: input.previous,
+        previous: input.previous
       };
       const result = await Image.paginate(options);
       return result;
@@ -55,22 +62,22 @@ const generateImageModel = ({ user } = {}) => ({
     try {
 
       const [categoriesAggregate] = await Image.aggregate([
-        { $match: {'projectId': projId} },
+        { $match: { 'projectId': projId } },
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
-        { $match: {'objects.labels.validation.validated': {$not: {$eq: false}}}},
-        { $group: {_id: null, uniqueCategories: {
-            $addToSet: "$objects.labels.category"
-        }}}
+        { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
+        { $group: { _id: null, uniqueCategories: {
+          $addToSet: '$objects.labels.category'
+        } } }
       ]);
 
-      let categories = categoriesAggregate
+      const categories = categoriesAggregate
         ? categoriesAggregate.uniqueCategories
         : [];
 
-      const objectLessImage = await Image.findOne({ 
+      const objectLessImage = await Image.findOne({
         projectId: projId,
-        objects: { $size: 0 } 
+        objects: { $size: 0 }
       });
       if (objectLessImage) categories.push('none');
 
@@ -83,7 +90,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   // BUG: I think when you upload multiple images at once from the same camera,
-  // and there's not yet a camera record associated with it, 
+  // and there's not yet a camera record associated with it,
   // some issues occur due to the camera record not being created fast enough
   // for some of the new images? Investigate
   get createImage() {
@@ -111,7 +118,7 @@ const generateImageModel = ({ user } = {}) => ({
             projectId,
             cameraId,
             make: md.make,
-            ...(md.model && { model: md.model }),
+            ...(md.model && { model: md.model })
           }, context);
 
           successfulOps.push({ op: 'cam-created', info: { cameraId } });
@@ -166,8 +173,8 @@ const generateImageModel = ({ user } = {}) => ({
           throw new DBValidationError(err);
         }
         throw new ApolloError(err);
-      }  
-    }
+      }
+    };
   },
 
   get createObject() {
@@ -196,13 +203,13 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get updateObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log(`ImageModel.updateObject() - input: `, input);
+      console.log('ImageModel.updateObject() - input: ', input);
 
       const operation = async ({ imageId, objectId, diffs }) => {
         return await retry(async (bail, attempt) => {
@@ -216,12 +223,12 @@ const generateImageModel = ({ user } = {}) => ({
             const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
             bail(new ApolloError(msg));
           }
-          for (let [key, newVal] of Object.entries(diffs)) {
+          for (const [key, newVal] of Object.entries(diffs)) {
             object[key] = newVal;
           }
           await image.save();
           return image;
-          
+
         }, { retries: 2 });
       };
 
@@ -232,7 +239,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get deleteObject() {
@@ -240,7 +247,7 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input) => {
 
       const operation = async ({ imageId, objectId }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find image, filter out object, and save
           const image = await this.queryById(imageId);
@@ -261,7 +268,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get createLabels() {
@@ -269,17 +276,17 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input, context) => {
 
       const operation = async ({ imageId, objectId, label }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find image, create label record
           const image = await this.queryById(imageId);
           if (utils.isLabelDupe(image, label)) return;
           const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
-  
+
           // if objectId was specified, find object and save label to it
           // else try to match to existing object bbox and merge label into that
-          // else add new object 
+          // else add new object
           if (objectId) {
             const object = image.objects.find((obj) => idMatch(obj._id, objectId));
             object.labels.unshift(labelRecord);
@@ -297,11 +304,11 @@ const generateImageModel = ({ user } = {}) => ({
               image.objects.unshift({
                 bbox: labelRecord.bbox,
                 locked: false,
-                labels: [labelRecord],
+                labels: [labelRecord]
               });
             }
           }
-  
+
           await image.save();
           return { image, newLabel: labelRecord };
 
@@ -317,7 +324,7 @@ const generateImageModel = ({ user } = {}) => ({
             await automation.handleEvent({
               event: 'label-added',
               label: res.newLabel,
-              image,
+              image
             }, context);
           }
         }
@@ -327,7 +334,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get updateLabel() {
@@ -336,13 +343,13 @@ const generateImageModel = ({ user } = {}) => ({
 
       const operation = async (input) => {
         const { imageId, objectId, labelId, diffs } = input;
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find label, apply updates, and save image
           const image = await this.queryById(imageId);
           const object = image.objects.find((obj) => idMatch(obj._id, objectId));
           const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
-          for (let [key, newVal] of Object.entries(diffs)) {
+          for (const [key, newVal] of Object.entries(diffs)) {
             label[key] = newVal;
           }
           await image.save();
@@ -358,7 +365,7 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   get deleteLabel() {
@@ -366,7 +373,7 @@ const generateImageModel = ({ user } = {}) => ({
     return async (input) => {
 
       const operation = async ({ imageId, objectId, labelId }) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
 
           // find object, filter out label, and save image
           const image = await this.queryById(imageId);
@@ -378,7 +385,7 @@ const generateImageModel = ({ user } = {}) => ({
 
         }, { retries: 2 });
       };
-      
+
       try {
         return await operation(input);
       } catch (err) {
@@ -386,15 +393,15 @@ const generateImageModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    }
+    };
   },
 
   getStats: async (input) => {
     let imageCount = 0;
     let reviewed = 0;
     let notReviewed = 0;
-    let reviewerList = [];
-    let labelList = {};
+    const reviewerList = [];
+    const labelList = {};
     // NOTE: just curious how many images get touched
     // by more than one reviewer. can remove later
     let multiReviewerCount = 0;
@@ -419,8 +426,8 @@ const generateImageModel = ({ user } = {}) => ({
         if (reviewers.length > 1) multiReviewerCount++;
 
         for (const userId of reviewers) {
-          let usr = reviewerList.find((reviewer) => reviewer.userId === userId);
-          !usr 
+          const usr = reviewerList.find((reviewer) => reviewer.userId === userId);
+          !usr
             ? reviewerList.push({ userId: userId, reviewedCount: 1 })
             : usr.reviewedCount++;
         }
@@ -436,13 +443,13 @@ const generateImageModel = ({ user } = {}) => ({
             ));
             if (firstValidLabel) {
               const cat = firstValidLabel.category;
-              labelList[cat] = labelList.hasOwnProperty(cat) 
+              labelList[cat] = labelList.hasOwnProperty(cat)
                 ? labelList[cat] + 1
                 : 1;
             }
           }
         }
-      
+
       }
 
       return {
@@ -460,6 +467,74 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
- });
+  get exportCSV() {
+    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async (input, context) => {
+      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const id = crypto.randomBytes(16).toString('hex');
+      const filename = id + '.csv';
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+      let imageCount = 0;
+      let reviewed = 0;
+      let notReviewed = 0;
+
+      try {
+
+        // get project's cameraConfigs, so we can map deplyment Ids to deployment data
+        const [project] = await context.models.Project.getProjects([user['curr_project']]);
+        const { categories } = await this.getLabels(user['curr_project']);
+
+        // flatten image record transform stream
+        const flattenImg = await utils.flattenImgTransform(project, categories);
+
+        // conver objects to CSV string stream
+        const columns = context.config.CSV_EXPORT_COLUMNS.concat(categories);
+        const convertToCSV = stringify({ header: true, columns });
+
+        // write to S3 object stream
+        const { streamToS3, uploadPromise } = utils.streamToS3(filename, bucket, s3);
+
+        // stream in images from MongoDB, write to transformation stream
+        const query = utils.buildFilter(input.filters, user['curr_project']);
+        for await (const img of Image.find(query)) {
+          imageCount++;
+          if (utils.isImageReviewed(img)) {
+            reviewed++;
+            flattenImg.write(img);
+          } else {
+            notReviewed++;
+          }
+        }
+        flattenImg.end();
+
+        // pipe together transform and write streams
+        await stream.pipeline(
+          flattenImg,
+          convertToCSV,
+          streamToS3
+        );
+
+        // wait for upload complete
+        const { Bucket, Key } = await uploadPromise;
+
+        // get presigned url for new S3 object (expires in one hour)
+        const command = new GetObjectCommand({ Bucket, Key });
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+        return {
+          url,
+          imageCount,
+          reviewedCount: { reviewed, notReviewed }
+        };
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  }
+
+});
 
 module.exports = generateImageModel;
