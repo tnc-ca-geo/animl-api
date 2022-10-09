@@ -12,7 +12,21 @@ const localConfig = {
   TIME_FORMATS: {
     EXIF: 'YYYY:MM:DD HH:mm:ss'
   },
-  EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
+  EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com',
+  CSV_EXPORT_COLUMNS: [
+    '_id',
+    'originalFileName',
+    'dateAdded',
+    'dateTimeOriginal',
+    'cameraId',
+    'projectId',
+    'make',
+    'deploymentId',
+    'deploymentName',
+    'deploymentTimezone',
+    'deploymentLat',
+    'deploymentLong'
+  ]
 };
 
 /*
