@@ -8,6 +8,7 @@ module.exports = `
     mlModels(_ids: [String!]): [MLModel]
     stats(input: QueryStatsInput!): ImagesStats
     csv(input: ExportCSVInput!): ExportCSVPayload
+    exportStatus(input: ExportStatusInput!): ExportStatusPayload
   }
 `;
 

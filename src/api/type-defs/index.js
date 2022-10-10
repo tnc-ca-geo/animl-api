@@ -10,6 +10,7 @@ const DeleteObjectInput = require('./inputs/DeleteObjectInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 
 const ExportCSVInput = require('./inputs/ExportCSVInput');
+const ExportStatusInput = require('./inputs/ExportStatusInput');
 
 const QueryImageInput = require('./inputs/QueryImageInput');
 const QueryImagesInput = require('./inputs/QueryImagesInput');
@@ -48,6 +49,7 @@ const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
 const ExportCSVPayload = require('./payloads/ExportCSVPayload');
+const ExportStatusPayload = require('./payloads/ExportStatusPayload');
 
 const ImagesConnection = require('./payloads/ImagesConnection');
 const ImagesStats = require('./payloads/ImagesStats');
@@ -82,6 +84,7 @@ const typeDefStrings = [
   DeleteObjectInput,
   DeleteViewInput,
   ExportCSVInput,
+  ExportStatusInput,
   QueryImageInput,
   QueryImagesInput,
   QueryStatsInput,
@@ -113,6 +116,7 @@ const typeDefStrings = [
   DeleteObjectPayload,
   DeleteViewPayload,
   ExportCSVPayload,
+  ExportStatusPayload,
   ImagesConnection,
   ImagesStats,
   RegisterCameraPayload,

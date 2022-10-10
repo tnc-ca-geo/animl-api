@@ -45,7 +45,8 @@ const ssmNames = [
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/ml/mira-api-url-${process.env.STAGE}`,
   `/ml/megadetector-sagemaker-name-${process.env.STAGE}`,
-  `/exports/exported-data-bucket-${process.env.STAGE}`
+  `/exports/exported-data-bucket-${process.env.STAGE}`,
+  `/exports/export-queue-url-${process.env.STAGE}`,
 ];
 
 const formatSSMParams = (ssmParams) => {

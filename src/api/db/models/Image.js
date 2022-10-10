@@ -1,8 +1,9 @@
-// const stream = require('node:stream');
 const stream = require('node:stream/promises');
+const { text } = require('node:stream/consumers');
 const _ = require('lodash');
 const { stringify } = require('csv-stringify');
-const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
@@ -470,62 +471,69 @@ const generateImageModel = ({ user } = {}) => ({
   get exportCSV() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
+
+      console.log('exporting to csv...');
+
       const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const sqs = new SQSClient({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
-      const filename = id + '.csv';
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-      let imageCount = 0;
-      let reviewed = 0;
-      let notReviewed = 0;
+      // const filename = id + '.csv';
 
       try {
 
-        // get project's cameraConfigs, so we can map deplyment Ids to deployment data
-        const [project] = await context.models.Project.getProjects([user['curr_project']]);
-        const { categories } = await this.getLabels(user['curr_project']);
+        console.log('creating status document in s3...');
+        // create status document in S3
+        await s3.send(new PutObjectCommand({
+          Bucket: bucket,
+          Key: `${id}.json`,
+          Body: JSON.stringify({ status: 'Pending' }),
+          ContentType: 'application/json; charset=utf-8'
+        }));
 
-        // flatten image record transform stream
-        const flattenImg = await utils.flattenImgTransform(project, categories);
-
-        // conver objects to CSV string stream
-        const columns = context.config.CSV_EXPORT_COLUMNS.concat(categories);
-        const convertToCSV = stringify({ header: true, columns });
-
-        // write to S3 object stream
-        const { streamToS3, uploadPromise } = utils.streamToS3(filename, bucket, s3);
-
-        // stream in images from MongoDB, write to transformation stream
-        const query = utils.buildFilter(input.filters, user['curr_project']);
-        for await (const img of Image.find(query)) {
-          imageCount++;
-          if (utils.isImageReviewed(img)) {
-            reviewed++;
-            flattenImg.write(img);
-          } else {
-            notReviewed++;
-          }
-        }
-        flattenImg.end();
-
-        // pipe together transform and write streams
-        await stream.pipeline(
-          flattenImg,
-          convertToCSV,
-          streamToS3
-        );
-
-        // wait for upload complete
-        const { Bucket, Key } = await uploadPromise;
-
-        // get presigned url for new S3 object (expires in one hour)
-        const command = new GetObjectCommand({ Bucket, Key });
-        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        console.log('sending message to sqs queue: ', context.config['/EXPORTS/EXPORT_QUEUE_URL']);
+        // push message to SQS with { projectId, documentId, filters }
+        await sqs.send(new SendMessageCommand({
+          QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
+          MessageBody: JSON.stringify({
+            projectId: user['curr_project'],
+            documentId: id,
+            filters: input.filters
+          })
+        }));
 
         return {
-          url,
-          imageCount,
-          reviewedCount: { reviewed, notReviewed }
+          documentId: id
         };
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get getExportStatus() {
+    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async ({ documentId }, context) => {
+
+      console.log('gettingExportStatus...');
+
+      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+      try {
+
+        console.log('getting status object from s3');
+        const { Body } = await s3.send(new GetObjectCommand({
+          Bucket: bucket,
+          Key: `${documentId}.json`
+        }));
+
+        const objectText = await text(Body);
+        console.log('res: ', JSON.parse(objectText));
+        return JSON.parse(objectText);
 
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError

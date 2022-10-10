@@ -29,6 +29,9 @@ provider:
             - Fn::GetAtt:
                 - inferenceQueue
                 - Arn
+            - Fn::GetAtt:
+                - exportQueue
+                - Arn
         - Effect: Allow
           Action:
             - sagemaker:InvokeEndpoint
@@ -112,6 +115,17 @@ functions:
               - Arn
           batchSize: 1
     timeout: 120
+  export:
+    handler: src/export/handler.export
+    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - exportQueue
+              - Arn
+          batchSize: 1
+    timeout: 120
 
 resources:
   Resources:
@@ -146,6 +160,13 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
+    # Expprt SQS queue
+    exportQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: exportQueue-${self:provider.stage}
+        VisibilityTimeout: 120
+      
     # SSM Param - API URL
     SSMParameterApiurl:
       Type: AWS::SSM::Parameter
@@ -163,6 +184,15 @@ resources:
         Name: /ml/inference-queue-url-${opt:stage, self:provider.stage, 'dev'}
         Type: String
         Value: !Ref inferenceQueue
+
+    # SSM Param - export queue url
+    SSMParameterExportqueue:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Export queue url
+        Name: /exports/export-queue-url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: !Ref exportQueue
 
     # Exported data bucket
     S3BucketAnimlexporteddata:

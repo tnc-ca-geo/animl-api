@@ -1,4 +1,4 @@
 module.exports = `
-  type ExportCSVPayload {
+  input ExportStatusInput {
     documentId: ID!
   }`;

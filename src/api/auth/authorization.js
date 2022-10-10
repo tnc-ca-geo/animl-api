@@ -58,5 +58,5 @@ async function getUserInfo(req, config) {
 }
 
 module.exports = {
-  getUserInfo,
+  getUserInfo
 };
