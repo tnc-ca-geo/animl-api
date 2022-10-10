@@ -4,4 +4,5 @@ module.exports = `
     url: String
     imageCount: Int
     reviewedCount: ReviewedCount
+    error: String
   }`;

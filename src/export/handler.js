@@ -71,7 +71,6 @@ exports.export = async (event) => {
       const { Bucket, Key } = await uploadPromise;
       console.log('CSV upload complete');
 
-
       // get presigned url for new S3 object (expires in one hour)
       const command = new GetObjectCommand({ Bucket, Key });
       const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
@@ -91,13 +90,18 @@ exports.export = async (event) => {
       }));
 
     } catch (err) {
-      // TODO: add error to S3 object?
-      // await status.error(err.message);
-      // process.exit(1);
-
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      console.log('error exporting data: ', err);
+      // update status document in S3 with error
+      await s3.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: `${documentId}.json`,
+        Body: JSON.stringify({
+          status: 'Error',
+          error: err
+        }),
+        ContentType: 'application/json; charset=utf-8'
+      }));
+      process.exit(1);
     }
   }
 
