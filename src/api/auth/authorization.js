@@ -18,10 +18,10 @@ async function getUserInfo(req, config) {
 
   // else, call was made to /external (from the UI),
   // so decode the user's access token
-  let user = jwt.decode(
-      token.substring('Bearer '.length), // Everything after the Bearer prefix
-      null, // Secret doesn't matter since the APIG verifies
-      true // API Gateway handles verification, so we don't
+  const user = jwt.decode(
+    token.substring('Bearer '.length), // Everything after the Bearer prefix
+    null, // Secret doesn't matter since the APIG verifies
+    true // API Gateway handles verification, so we don't
   );
 
   // add selected project info to user
@@ -34,7 +34,7 @@ async function getUserInfo(req, config) {
     const projects = user['cognito:groups'].reduce((projects, group) => {
       const groupComponents = group.split('/');
       if (groupComponents.length !== 3) return projects;
-      
+
       const proj = groupComponents[1];
       const role = groupComponents[2];
       if (projects[proj]) {
@@ -48,15 +48,15 @@ async function getUserInfo(req, config) {
 
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');
     user['projects'] = projects;
-    user['curr_project_roles'] = projects[selectedProject] 
-    ? projects[selectedProject].roles 
-    : [];
-  } 
+    user['curr_project_roles'] = projects[selectedProject]
+      ? projects[selectedProject].roles
+      : [];
+  }
 
   return user;
 
 }
 
 module.exports = {
-    getUserInfo,
+  getUserInfo
 };

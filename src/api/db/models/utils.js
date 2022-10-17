@@ -4,6 +4,7 @@ const { ApolloError } = require('apollo-server-errors');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
+const { ApolloError } = require('apollo-server-errors');
 
 // TODO: this file is getting unwieldy, break up
 
@@ -200,6 +201,18 @@ const getUserSetData = (input) => {
       });
       return userData;
     },
+    'RidgeTec': (input) => {
+      if (!input.userComment) {
+        return null;
+      }
+      const userData = {};
+      input.userComment.split('\n').forEach((item) => {
+        if (item.includes('AccountId')) {
+          userData[item.split('=')[0]] = item.split('=')[1];
+        }
+      });
+      return userData;
+    },
     'RECONYX': (input) => {
       if (!input.userLabel) {
         return null;
@@ -210,7 +223,7 @@ const getUserSetData = (input) => {
     }
   };
 
-  const usd = (input.make && userDataMap[input.make])
+  return (input.make && userDataMap[input.make])
     ? userDataMap[input.make](input)
     : null;
 

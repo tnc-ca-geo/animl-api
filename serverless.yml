@@ -12,7 +12,7 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs16.x
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
@@ -28,6 +28,9 @@ provider:
           Resource:
             - Fn::GetAtt:
                 - inferenceQueue
+                - Arn
+            - Fn::GetAtt:
+                - exportQueue
                 - Arn
         - Effect: Allow
           Action:
@@ -46,6 +49,20 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource: "*"
+        - Effect: 'Allow'
+          Action:
+            - 's3:PutObject'
+            - 's3:GetObject'
+          Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Ref: S3BucketAnimlexporteddata
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - Ref: S3BucketAnimlexporteddata
+                - '/*'
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
@@ -98,6 +115,17 @@ functions:
               - Arn
           batchSize: 1
     timeout: 120
+  export:
+    handler: src/export/handler.export
+    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - exportQueue
+              - Arn
+          batchSize: 1
+    timeout: 120
 
 resources:
   Resources:
@@ -132,6 +160,13 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
+    # Expprt SQS queue
+    exportQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: exportQueue-${self:provider.stage}
+        VisibilityTimeout: 120
+      
     # SSM Param - API URL
     SSMParameterApiurl:
       Type: AWS::SSM::Parameter
@@ -150,14 +185,34 @@ resources:
         Type: String
         Value: !Ref inferenceQueue
 
-    # SSM Param - Megadetector API url
-    SSMParameterMegadetectorapiurl:
+    # SSM Param - export queue url
+    SSMParameterExportqueue:
       Type: AWS::SSM::Parameter
       Properties:
-        Description: Megadetector API url
-        Name: /ml/megadetector-api-url-${opt:stage, self:provider.stage, 'dev'}
+        Description: Export queue url
+        Name: /exports/export-queue-url-${opt:stage, self:provider.stage, 'dev'}
         Type: String
-        Value: 'https://aiforearth.azure-api.net/api/v1/camera-trap/sync/detect'
+        Value: !Ref exportQueue
+
+    # Exported data bucket
+    S3BucketAnimlexporteddata:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    # SSM Param - exported data bucket
+    SSMParameterAnimlexporteddata:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Animl exported data bucket name
+        Name: /exports/exported-data-bucket-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
 
     # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
     # contain secret keys so need to be created manually in the AWS console

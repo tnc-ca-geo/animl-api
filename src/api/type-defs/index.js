@@ -9,6 +9,9 @@ const DeleteLabelInput = require('./inputs/DeleteLabelInput');
 const DeleteObjectInput = require('./inputs/DeleteObjectInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 
+const ExportCSVInput = require('./inputs/ExportCSVInput');
+const ExportStatusInput = require('./inputs/ExportStatusInput');
+
 const QueryImageInput = require('./inputs/QueryImageInput');
 const QueryImagesInput = require('./inputs/QueryImagesInput');
 const QueryStatsInput = require('./inputs/QueryStatsInput');
@@ -45,6 +48,9 @@ const DeleteLabelPayload = require('./payloads/DeleteLabelPayload');
 const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
+const ExportCSVPayload = require('./payloads/ExportCSVPayload');
+const ExportStatusPayload = require('./payloads/ExportStatusPayload');
+
 const ImagesConnection = require('./payloads/ImagesConnection');
 const ImagesStats = require('./payloads/ImagesStats');
 
@@ -77,6 +83,8 @@ const typeDefStrings = [
   DeleteLabelInput,
   DeleteObjectInput,
   DeleteViewInput,
+  ExportCSVInput,
+  ExportStatusInput,
   QueryImageInput,
   QueryImagesInput,
   QueryStatsInput,
@@ -107,6 +115,8 @@ const typeDefStrings = [
   DeleteLabelPayload,
   DeleteObjectPayload,
   DeleteViewPayload,
+  ExportCSVPayload,
+  ExportStatusPayload,
   ImagesConnection,
   ImagesStats,
   RegisterCameraPayload,
@@ -117,7 +127,7 @@ const typeDefStrings = [
   // UpdateObjectsPayload,
   UpdateViewPayload,
   Mutation,
-  Query,
+  Query
 ];
 
 const typeDefs = typeDefStrings.join('');

@@ -25,7 +25,7 @@ const Project = {
 }
 
 module.exports = {
-  Project,
+  Project
   // Camera,
   // Image,
 };

@@ -1,7 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
-const { SSM, SecretsManager } = require('aws-sdk');
-const ssm = new SSM({ region: process.env.REGION });
-const secrets = new SecretsManager({ region: process.env.REGION });
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+const { SSMClient, GetParametersCommand } = require('@aws-sdk/client-ssm');
+const ssm = new SSMClient({ region: process.env.REGION });
+const secrets = new SecretsManagerClient({ region: process.env.REGION });
 
 /*
  *  Local config values
@@ -9,9 +10,23 @@ const secrets = new SecretsManager({ region: process.env.REGION });
 
 const localConfig = {
   TIME_FORMATS: {
-    EXIF: 'yyyy:LL:dd HH:mm:ss'
+    EXIF: 'YYYY:MM:DD HH:mm:ss'
   },
-  EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com'
+  EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com',
+  CSV_EXPORT_COLUMNS: [
+    '_id',
+    'originalFileName',
+    'dateAdded',
+    'dateTimeOriginal',
+    'cameraId',
+    'projectId',
+    'make',
+    'deploymentId',
+    'deploymentName',
+    'deploymentTimezone',
+    'deploymentLat',
+    'deploymentLong'
+  ]
 };
 
 /*
@@ -29,7 +44,9 @@ const ssmNames = [
   `/images/url-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/ml/mira-api-url-${process.env.STAGE}`,
-  `/ml/megadetector-sagemaker-name-${process.env.STAGE}`
+  `/ml/megadetector-sagemaker-name-${process.env.STAGE}`,
+  `/exports/exported-data-bucket-${process.env.STAGE}`,
+  `/exports/export-queue-url-${process.env.STAGE}`,
 ];
 
 const formatSSMParams = (ssmParams) => {
@@ -46,18 +63,19 @@ const formatSSMParams = (ssmParams) => {
 
 const getConfig = async function getConfig() {
   if (!cachedSSMParams) {
-    cachedSSMParams = ssm.getParameters({
+    const command = new GetParametersCommand({
       Names: ssmNames,
       WithDecryption: true
-    }).promise();
+    });
+    cachedSSMParams = await ssm.send(command);
   }
 
   try {
     const ssmParams = await cachedSSMParams;
-
-    const secretsResponse = await secrets.getSecretValue({
+    const command = new GetSecretValueCommand({
       SecretId: `api-key-${process.env.STAGE}`
-    }).promise();
+    });
+    const secretsResponse = await secrets.send(command);
     const secret = JSON.parse(secretsResponse.SecretString || '{}');
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');

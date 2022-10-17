@@ -3,9 +3,9 @@
  */
 
 const backupConfig = {
-    BACKUP_DIR: '/backups'
+  BACKUP_DIR: '/backups'
 };
 
 module.exports = {
-    backupConfig
+  backupConfig
 };

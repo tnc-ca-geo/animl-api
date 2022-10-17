@@ -1,10 +1,17 @@
+const stream = require('node:stream/promises');
+const { text } = require('node:stream/consumers');
 const _ = require('lodash');
+const { stringify } = require('csv-stringify');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
+const crypto = require('crypto');
 const Image = require('../schemas/Image');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
-const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES } = require('../../auth/roles');
+const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
 const { idMatch } = require('./utils');
 const retry = require('async-retry');
@@ -59,9 +66,7 @@ const generateImageModel = ({ user } = {}) => ({
         { $match: { 'projectId': projId } },
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
-        { $match: { 'objects.labels.validation.validated': {
-          $not: { $eq: false }
-        } } },
+        { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
         { $group: { _id: null, uniqueCategories: {
           $addToSet: '$objects.labels.category'
         } } }
@@ -467,6 +472,81 @@ const generateImageModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
+  }
+
+  get exportCSV() {
+    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async (input, context) => {
+
+      console.log('exporting to csv...');
+
+      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const sqs = new SQSClient({ region: process.env.AWS_DEFAULT_REGION });
+      const id = crypto.randomBytes(16).toString('hex');
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+      // const filename = id + '.csv';
+
+      try {
+
+        console.log('creating status document in s3...');
+        // create status document in S3
+        await s3.send(new PutObjectCommand({
+          Bucket: bucket,
+          Key: `${id}.json`,
+          Body: JSON.stringify({ status: 'Pending' }),
+          ContentType: 'application/json; charset=utf-8'
+        }));
+
+        console.log('sending message to sqs queue: ', context.config['/EXPORTS/EXPORT_QUEUE_URL']);
+        // push message to SQS with { projectId, documentId, filters }
+        await sqs.send(new SendMessageCommand({
+          QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
+          MessageBody: JSON.stringify({
+            projectId: user['curr_project'],
+            documentId: id,
+            filters: input.filters
+          })
+        }));
+
+        return {
+          documentId: id
+        };
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get getExportStatus() {
+    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async ({ documentId }, context) => {
+
+      console.log('gettingExportStatus...');
+
+      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+      try {
+
+        console.log('getting status object from s3');
+        const { Body } = await s3.send(new GetObjectCommand({
+          Bucket: bucket,
+          Key: `${documentId}.json`
+        }));
+
+        const objectText = await text(Body);
+        console.log('res: ', JSON.parse(objectText));
+        return JSON.parse(objectText);
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
   }
 
 });

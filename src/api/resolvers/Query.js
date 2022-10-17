@@ -8,29 +8,29 @@ const Query = {
     const count = await context.models.Image.countImages(input);
     const response = await context.models.Image.queryByFilter(input);
     const { previous, hasPrevious, next, hasNext, results } = response;
-    return {  // reurn ImagesConnection 
+    return {  // reurn ImagesConnection
       pageInfo: {
         previous,
-        hasPrevious, 
+        hasPrevious,
         next,
         hasNext,
-        count,
+        count
       },
       images: results
-    }
+    };
   },
 
   image: async (_, { input }, context) => {
     return await context.models.Image.queryById(input.imageId);
   },
 
-  // TODO: Now fetching labels as a field level resolver for Project, but we 
+  // TODO: Now fetching labels as a field level resolver for Project, but we
   // should reimplement this & call it when users create new label categories
 
   // labels: async (_, __, context) => {
   //   return await context.models.Image.getLabels();
   // },
-  
+
   cameras: async (_, { _ids }, context) => {
     return await context.models.Camera.getCameras(_ids);
   },
@@ -42,7 +42,15 @@ const Query = {
   stats: async (_, { input }, context) => {
     return await context.models.Image.getStats(input);
   },
-  
+
+  csv: async (_, { input }, context) => {
+    return await context.models.Image.exportCSV(input, context);
+  },
+
+  exportStatus: async (_, { input }, context) => {
+    return await context.models.Image.getExportStatus(input, context);
+  }
+
 };
 
 module.exports = Query;
