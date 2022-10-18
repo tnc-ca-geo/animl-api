@@ -1,4 +1,5 @@
-const { GraphQLServerLambda } = require('graphql-yoga');
+// const { GraphQLServerLambda } = require('graphql-yoga');
+const { ApolloServer, gql } = require('apollo-server-lambda');
 const { AuthenticationError } = require('apollo-server-errors');
 const { formatError } = require('./errors');
 const generateProjectModel = require('./db/models/Project');
@@ -46,22 +47,26 @@ const context = async ({ event: req }) => {
   };
 };
 
-const lambda = new GraphQLServerLambda({
+const server = new ApolloServer({
   typeDefs,
   resolvers,
   context,
+  csrfPrevention: true,
+  cache: 'bounded',
   middlewares: [authMiddleware],
   options: {
     formatError
   }
 });
 
-exports.playground = (event, context, callback) => {
-  context.callbackWaitsForEmptyEventLoop = false;
-  lambda.playgroundHandler(event, context, callback);
-};
+// exports.playground = (event, context, callback) => {
+//   context.callbackWaitsForEmptyEventLoop = false;
+//   server.playgroundHandler(event, context, callback);
+// };
 
-exports.server = (event, context, callback) => {
-  context.callbackWaitsForEmptyEventLoop = false;
-  lambda.graphqlHandler(event, context, callback);
-};
+// exports.server = (event, context, callback) => {
+//   context.callbackWaitsForEmptyEventLoop = false;  // TODO TIMEZONE: make sure it's ok to leave this out
+//   server.graphqlHandler(event, context, callback);
+// };
+
+exports.server = server.createHandler();

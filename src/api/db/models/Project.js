@@ -213,7 +213,7 @@ const generateProjectModel = ({ user } = {}) => ({
             // either build list of operations to bulk write,
             // or directly update and save.
 
-            // TODO TIME: also check whether we need to update at all?
+            // TODO TIMEZONE: also check whether we need to update at all?
             // no need to update if deployment ID hasn't changed
             // or TZ hasn't changed
 

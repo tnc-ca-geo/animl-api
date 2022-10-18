@@ -1,7 +1,7 @@
 const { transform } = require('stream-transform');
 const { PassThrough } = require('node:stream');
 const { Upload } = require('@aws-sdk/lib-storage');
-const moment = require('moment');
+const { DateTime } = require('luxon');
 const { idMatch }  = require('../api/db/models/utils');
 
 const flattenImgTransform = async (project, categories) => {
@@ -10,10 +10,12 @@ const flattenImgTransform = async (project, categories) => {
     const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, img.cameraId));
     const deployment = camConfig.deployments.find((dep) => idMatch(dep._id, img.deploymentId));
 
+    // TODO TIMEZONE: QA this - make sure luxon works
+
     const simpleImgRecord = {
       _id: img._id.toString(),
-      dateAdded: moment(img.dateAdded).format(),  // TODO: or use toISOString()? see https://stackoverflow.com/questions/25725019/how-do-i-format-a-date-as-iso-8601-in-moment-js
-      dateTimeOriginal: moment(img.dateTimeOriginal).format(),
+      dateAdded: DateTime.fromJSDate(img.dateAdded).toISO(),
+      dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
       cameraId: img.cameraId.toString(),
       projectId: img.projectId.toString(),
       make: img.make,

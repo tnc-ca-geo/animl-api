@@ -10,7 +10,7 @@ const secrets = new SecretsManagerClient({ region: process.env.REGION });
 
 const localConfig = {
   TIME_FORMATS: {
-    EXIF: 'YYYY:MM:DD HH:mm:ss'
+    EXIF: 'yyyy:LL:dd HH:mm:ss'
   },
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com',
   CSV_EXPORT_COLUMNS: [

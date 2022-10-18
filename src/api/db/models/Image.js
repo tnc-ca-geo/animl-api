@@ -143,8 +143,7 @@ const generateImageModel = ({ user } = {}) => ({
         md.deploymentId = deployment._id;
         md.timezone = deployment.timezone;
         console.log('md.dateTimeOriginal BEFORE TZ adjustment: ', md.dateTimeOriginal.toString());
-        md.dateTimeOriginal = md.dateTimeOriginal
-          .setZone(deployment.timezone, { keepLocalTime: true });
+        md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
         console.log('md.dateTimeOriginal AFTEr TZ adjustment: ', md.dateTimeOriginal.toString());
         console.log('md.dateTimeOriginal AFTEr TZ adjustment, valueOf(): ', md.dateTimeOriginal.valueOf());
 
@@ -472,7 +471,7 @@ const generateImageModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  }
+  },
 
   get exportCSV() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;

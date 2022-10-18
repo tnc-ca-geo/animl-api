@@ -25,13 +25,13 @@ const Date = new GraphQLScalarType({
     // back to the API they get parsed correctly by parseValue(),
     // let's serialize all external dates in EXIF format
 
-    // TODO TIME: is this worth revisiting? Perhaps convert all EXIF dates to
+    // TODO TIMEZONE: is this worth revisiting? Perhaps convert all EXIF dates to
     // ISO 8601 in animl-ingest and use ISO outside of animl-api instead
     // of EXIF format? Assess all of the points at which Dates are getting
     // passed into graphQL as inputs and see if we can't run w/ ISO instead
-    // Or maybe we just use Two "Date" scalar types
-    // (e.g. "ISODate" vs "EXIFDate")??
 
+    console.log('Date scalar - serialize() - original value: ', value);
+    console.log('Date scalar - serialize() - modified value: ', DateTime.fromJSDate(value).toISO());
     return DateTime.fromJSDate(value).toISO();
     // return dt.toFormat(localConfig.TIME_FORMATS.EXIF);
   },

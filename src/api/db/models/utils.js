@@ -4,7 +4,6 @@ const { ApolloError } = require('apollo-server-errors');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
 const Image = require('../schemas/Image');
-const { ApolloError } = require('apollo-server-errors');
 
 // TODO: this file is getting unwieldy, break up
 
@@ -154,6 +153,7 @@ const buildFilter = ({
 };
 
 const sanitizeMetadata = (md, config) => {
+  console.log('sanitizing metadata...');
   const sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -165,7 +165,7 @@ const sanitizeMetadata = (md, config) => {
       : key;
     sanitized[newKey] = md[key];
   }
-  // TODO TIME: a valid question is whether we need to store the dateTimeOriginal
+  // TODO TIMEZONE: a valid question is whether we need to store the dateTimeOriginal
   // at all anymore, or whether we should (a) keep it as is,
   // or (b) set it's zone before storing it
   // UPDATED THOUGHTS: we definitely need the dateTimeOriginal if we want to
@@ -365,6 +365,17 @@ const findDeployment = (img, camConfig, config, projTimeZone) => {
   // is in a different timezone than the project default and it could get
   // paired to the wrong deployment.
 
+  // It would be a pretty small chance though:
+  // the time between the correct deployment's start date and the image's real
+  // created date would have to be less than the # of hours off the project's
+  // default timezone is from the image's actual (but unknown) timezone. For example
+  // if the project's defaut timzeone was UTC+0 and the image's real timezone
+  // was UTC-7, essentially we'd be treating the image like it was created 7 hours
+  // later than it actually was, which means if there there is a more recent deployment
+  // than the one the image should fall in, and the image was created within
+  // 7 hours of that more recent deployment's start date, it would mistakenly
+  // get associated with that more recent deployment
+
   const exifFormat = config['TIME_FORMATS']['EXIF'];
   let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
     ? DateTime.fromFormat(img.dateTimeOriginal, exifFormat)
@@ -382,7 +393,7 @@ const findDeployment = (img, camConfig, config, projTimeZone) => {
       // image was taken before the deployment start date
       if (
         (shortestInterval === null || shortestInterval > timeDiff) &&
-                timeDiff >= 0
+        timeDiff >= 0
       ) {
         mostRecentDep = dep;
         shortestInterval = timeDiff;
