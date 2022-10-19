@@ -153,7 +153,6 @@ const buildFilter = ({
 };
 
 const sanitizeMetadata = (md, config) => {
-  console.log('sanitizing metadata...');
   const sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -165,21 +164,11 @@ const sanitizeMetadata = (md, config) => {
       : key;
     sanitized[newKey] = md[key];
   }
-  // TODO TIMEZONE: a valid question is whether we need to store the dateTimeOriginal
-  // at all anymore, or whether we should (a) keep it as is,
-  // or (b) set it's zone before storing it
-  // UPDATED THOUGHTS: we definitely need the dateTimeOriginal if we want to
-  // preserve the ability to re-set the timezone (i.e., if you change the TZ
-  // of the deployment it's associated with). We also want to store the TZ on
-  // the image record. So the questions now are - (1) do we modify dateTimeOriginal and
-  // bake in its current TZ offset, and forgo saving timezone as a separate field?
-  // and (2) if we just bake the offset into the dateTimeOriginal,
-  // do we need to convert to UTC anymore? won't Luxon handle comparing datetimes
-  // in different TZs for us?
-  // MORE THOUGHTS: so I think we do need to modify dateTimeOriginal (set TZ)
-  // because it implicitly gets set as UTC+0 regardless if we don't. Question
-  // is now do we need separate TZ name field or separate dateTimeUTC field
-  // I think yes to TZ name field,  no need to keep dateTimeUTC.
+
+  // TODO TIMEZONE: I don't love that this is here. We can't parse the dateTimeOriginal
+  // in the GraphQL layer's Date Scalar b/c the input type-def for createImage
+  // is a JSONObject of unknown shape. So the parsing has to live in the model
+  // layer somewhere, I'm just not sure this is the best place for it.
   const exifFormat = config['TIME_FORMATS']['EXIF'];
   const dto = DateTime.fromFormat(sanitized.dateTimeOriginal, exifFormat);
   sanitized.dateTimeOriginal = dto;
@@ -226,8 +215,6 @@ const getUserSetData = (input) => {
   return (input.make && userDataMap[input.make])
     ? userDataMap[input.make](input)
     : null;
-
-  return usd;
 };
 
 // Parse string coordinates to decimal degrees
@@ -271,7 +258,6 @@ const createImageRecord = (md) => {
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: DateTime.now(),
     dateTimeOriginal: md.dateTimeOriginal,
-    // dateTimeUTC: md.dateTimeUTC,
     timezone: md.timezone,
     cameraId: md.serialNumber,
     make: md.make,

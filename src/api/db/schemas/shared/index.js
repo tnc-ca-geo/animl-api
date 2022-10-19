@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-let PointSchema = new Schema({
+const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
-  coordinates: { type: [Number], required: true },
+  coordinates: { type: [Number], required: true }
 });
 
-let LocationSchema = new Schema({
+const LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
   altitude: { type: String },
-  name: { type: String },
+  name: { type: String }
   // azimuth: { type: Number },
 });
 
@@ -19,10 +19,10 @@ let LocationSchema = new Schema({
  *                true = correct prediction, false = incorrect prediction)
  */
 
-let ValidationSchema = new Schema({
+const ValidationSchema = new Schema({
   validated: { type: Boolean, default: false, required: true },
   validationDate: { type: Date, default: Date.now, required: true },
-  userId: { type: String },
+  userId: { type: String }
 });
 
 /*
@@ -32,7 +32,7 @@ let ValidationSchema = new Schema({
  *    bbox - [x, y, boxWidth, boxHeight], normalized
  */
 
-let LabelSchema = new Schema({
+const LabelSchema = new Schema({
   type: { type: String, enum: ['manual', 'ml'], requried: true },
   category: { type: String, default: 'none', required: true },
   conf: { type: Number },
@@ -41,27 +41,27 @@ let LabelSchema = new Schema({
   validation: { type: ValidationSchema },
   mlModel: { type: 'String', ref: 'Model' }, // if type === 'ml'
   mlModelVersion: { type: 'String' },
-  userId: { type: String }, // if type === 'manual'
+  userId: { type: String } // if type === 'manual'
 });
 
 /*
  * ObjectSchema
  *    bbox - [x, y, boxWidth, boxHeight], normalized
- *    locked - a user has reviewed the labels and validated at least one. 
- *             The most recently added validated label is considered the most 
- *             accurate. No single-click editing of catagory or bbox allowed 
+ *    locked - a user has reviewed the labels and validated at least one.
+ *             The most recently added validated label is considered the most
+ *             accurate. No single-click editing of catagory or bbox allowed
  *             unless first unlocked.
  */
 
-let ObjectSchema = new Schema({
+const ObjectSchema = new Schema({
   bbox: { type: [Number], required: true },
   locked: { type: Boolean, default: false, required: true },
-  labels: { type: [LabelSchema] },
+  labels: { type: [LabelSchema] }
 });
 
 module.exports = {
   PointSchema,
   LocationSchema,
   LabelSchema,
-  ObjectSchema,
+  ObjectSchema
 };

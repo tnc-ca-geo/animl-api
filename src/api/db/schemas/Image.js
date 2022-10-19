@@ -15,7 +15,6 @@ const ImageSchema = new Schema({
   fileTypeExtension: { type: String, required: true },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
-  // dateTimeUTC: { type: Date, required: true },
   timezone: { type: String, required: true },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
@@ -34,9 +33,6 @@ const ImageSchema = new Schema({
 ImageSchema.index(
   // TODO: revisit indexing. I'm not sure we really need to index by
   // cameraId if we're indexing by deployment.
-  // Also, currently we're sorting date in decending order (-1),
-  // (newest images first) but the front end is requesting oldest first by
-  // default.
   { cameraId: 1, dateTimeOriginal: -1 },
   { sparse: true }
 );

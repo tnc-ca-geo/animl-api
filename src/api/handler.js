@@ -1,5 +1,5 @@
 // const { GraphQLServerLambda } = require('graphql-yoga');
-const { ApolloServer, gql } = require('apollo-server-lambda');
+const { ApolloServer } = require('apollo-server-lambda');
 const { AuthenticationError } = require('apollo-server-errors');
 const { formatError } = require('./errors');
 const generateProjectModel = require('./db/models/Project');
@@ -27,15 +27,17 @@ const authMiddleware = async (resolve, parent, args, context, info) => {
   return await resolve(parent, args, context, info);
 };
 
-const context = async ({ event: req }) => {
+const context = async ({ event, context }) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   const config = await getConfig();
   await connectToDatabase(config);
-  const user = await getUserInfo(req, config);
-  console.log('req: ', req);
+  const user = await getUserInfo(event, config);
+  console.log('event: ', event);
   console.log('user: ', user);
 
   return {
-    ...req,
+    ...event,
+    ...context,
     user,
     config,
     models: {
@@ -51,22 +53,12 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context,
-  csrfPrevention: true,
-  cache: 'bounded',
+  csrfPrevention: true, // TODO APOLLO: double check what this setting does
+  cache: 'bounded', // TODO APOLLO: double check what this setting does
   middlewares: [authMiddleware],
   options: {
     formatError
   }
 });
-
-// exports.playground = (event, context, callback) => {
-//   context.callbackWaitsForEmptyEventLoop = false;
-//   server.playgroundHandler(event, context, callback);
-// };
-
-// exports.server = (event, context, callback) => {
-//   context.callbackWaitsForEmptyEventLoop = false;  // TODO TIMEZONE: make sure it's ok to leave this out
-//   server.graphqlHandler(event, context, callback);
-// };
 
 exports.server = server.createHandler();

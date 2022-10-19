@@ -194,7 +194,7 @@ const generateProjectModel = ({ user } = {}) => ({
         // NOTE: this function expects deps to be in chronological order!
         const operations = [];
         for (const [index, dep] of camConfig.deployments.entries()) {
-          console.log('deployment: ', dep);
+          console.log('Reviewing deployment: ', dep);
           const createdStart = dep.startDate || null;
           const createdEnd = camConfig.deployments[index + 1]
             ? camConfig.deployments[index + 1].startDate
@@ -210,46 +210,40 @@ const generateProjectModel = ({ user } = {}) => ({
 
           const imgs = await Image.find(filter);
           for (const img of imgs) {
-            // either build list of operations to bulk write,
-            // or directly update and save.
+            console.log('Reviewing image: ', img);
 
-            // TODO TIMEZONE: also check whether we need to update at all?
-            // no need to update if deployment ID hasn't changed
-            // or TZ hasn't changed
+            const update = {};
+            if (img.deploymentId.toString() !== dep._id.toString()) {
+              console.log('depIdChanged');
+              update.deploymentId = dep._id;
+            }
 
-            console.log('img timezone: ', img.timezone);
-            const tzChanged = img.timezone !== dep.timezone;
-            console.log('tzChanged: ', tzChanged);
-            const depIdChanged = img.deploymentId !== dep._id;
-            console.log('depIdChanged: ', depIdChanged);
-
-            if (tzChanged || depIdChanged) {
-              const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal);
-              console.log('dtOriginal: ', dtOriginal);
+            if (img.timezone !== dep.timezone) {
+              console.log('tzChanged');
+              const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal).setZone(img.timezone);
+              console.log('dtOriginal: ', dtOriginal.toISO());
               const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
-              console.log('newDT: ', newDT);
+              console.log('newDT: ', newDT.toISO());
+              update.dateTimeOriginal = newDT;
+              update.timezone = dep.timezone;
+            }
+
+            if (Object.entries(update).length > 0) {
               const op = {
-                updateOne: {
-                  filter: { _id: img._id },
-                  update: {
-                    deploymentId: dep._id,
-                    dateTimeUTC: newDT,
-                    timezone: dep.timezone
-                  }
-                }
+                updateOne: { filter: { _id: img._id }, update }
               };
               operations.push(op);
             }
+
+            // const update = {
+            //     deploymentId: dep._id
+            //     // timezone: dep.timezone
+            // };
+
+            // operations.push({ updateMany: { filter, update } });
           }
 
-          // const update = {
-          //     deploymentId: dep._id
-          //     // timezone: dep.timezone
-          // };
-
-          // operations.push({ updateMany: { filter, update } });
         }
-        console.log('about to perform bulkwrite operations: ', operations);
         await Image.bulkWrite(operations);
       }, { retries: 3 });
     };
