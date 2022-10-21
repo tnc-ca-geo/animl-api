@@ -1,7 +1,55 @@
 const Image = require('../api/db/schemas/Image');
 const ObjectId = require('mongoose').Types.ObjectId;
+const { DateTime } = require('luxon');
 
 const operations = {
+
+  'add-timezone-field': {
+    getIds: async () => (
+      await Image.find({}).select('_id')
+    ),
+    update: async () => {
+      console.log('adding timezone field to all images');
+      const tz = 'America/Los_Angeles';
+      return await Image.updateMany({}, { $set: { 'timezone': tz } });
+    }
+  },
+
+  'shift-dto': {
+    getIds: async () => (
+      await Image.find({}).select('_id')
+    ),
+    update: async () => {
+      console.log('shifting all dateTimeOriginal fields from UTC+0 to America/Los_Angeles time');
+      const operations = [];
+      const imgs = await Image.find({}, ['_id', 'dateTimeOriginal']);
+      try {
+        for (const img of imgs) {
+          // NOTE: 'Africa/Abidjan' is UTC+0.
+          // I tried using { setZone: true } instead thinking that because the
+          // ISO string stored in mongoDB had +0:00 it would be correctly set to
+          // a UTC+0 offset, but this was not the case. It read the date in
+          // my local Los Angeles time, so setting the zone didn't do anything
+          const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal, { zone: 'Africa/Abidjan' });
+          const newDT = dtOriginal.setZone('America/Los_Angeles', { keepLocalTime: true });
+          const op = {
+            updateOne: {
+              filter: { _id: img._id },
+              update : { dateTimeOriginal: newDT } }
+          };
+          operations.push(op);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+
+      try {
+        return await Image.bulkWrite(operations);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  },
 
   'remove-objects-w-no-labels': {
     getIds: async () => (

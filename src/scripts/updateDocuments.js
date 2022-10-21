@@ -17,7 +17,7 @@ const property = {
   default: 'no'
 };
 
-async function createLogFile(collecton, _ids) {
+async function createLogFile(collecton, _ids, operation) {
   const stage = process.env.STAGE || 'dev';
   const db = `animl-${stage}`;
   const dt = DateTime.now().setZone('utc').toFormat("yyyy-LL-dd'T'HHmm'Z'");
@@ -33,7 +33,7 @@ async function createLogFile(collecton, _ids) {
     const data = JSON.stringify({
       date: dt,
       db: db,
-      modification: 'Removed objects with empty labels arrays',
+      modification: operation,
       _ids
     });
     await fs.writeFileSync(fileName, data, 'utf8');
@@ -44,7 +44,7 @@ async function createLogFile(collecton, _ids) {
 
 async function updateDocuments() {
   // TODO: accept op as param
-  const op = 'update-labels-to-new-schema';
+  const op = 'COPY-OPERATION-NAME-HERE';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
@@ -64,10 +64,10 @@ async function updateDocuments() {
     prompt.start();
     const { confirmation } = await prompt.get(property);
     if (confirmation === 'yes' || confirmation === 'y') {
-      const res = await await operations[op].update();
+      const res = await operations[op].update();
       console.log('res: ', res);
       if (res.nModified === matchCount) {
-        await createLogFile('images', matchingImageIds);
+        await createLogFile('images', matchingImageIds, op);
       }
       else {
         const msg = `There was a discrepency between the number of matching 

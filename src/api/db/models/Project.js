@@ -234,15 +234,7 @@ const generateProjectModel = ({ user } = {}) => ({
               };
               operations.push(op);
             }
-
-            // const update = {
-            //     deploymentId: dep._id
-            //     // timezone: dep.timezone
-            // };
-
-            // operations.push({ updateMany: { filter, update } });
           }
-
         }
         await Image.bulkWrite(operations);
       }, { retries: 3 });

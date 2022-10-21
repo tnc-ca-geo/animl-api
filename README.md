@@ -29,8 +29,7 @@ This repository contains an AWS Lambda-based, GraphQl API for storing and
 fetching cameratrap data from a MongoDB database. The stack and and it's 
 associated deployment resources are managed with the 
 [Serverless Framework](serverless.com/). The stack includes:
-- [Graphql Yoga](https://github.com/prisma-labs/graphql-yoga), which itself is 
-based on [Apollo GraphQL Server](https://www.apollographql.com/docs/apollo-server/)
+- [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) via 
 [Mongoose](https://mongoosejs.com/)
 
