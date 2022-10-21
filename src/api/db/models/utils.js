@@ -152,7 +152,7 @@ const buildFilter = ({
   };
 };
 
-const sanitizeMetadata = (md, config) => {
+const sanitizeMetadata = (md) => {
   const sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -165,12 +165,11 @@ const sanitizeMetadata = (md, config) => {
     sanitized[newKey] = md[key];
   }
 
-  // TODO TIMEZONE: I don't love that this is here. We can't parse the dateTimeOriginal
+  // TODO: I don't love that this is here. We can't parse the dateTimeOriginal
   // in the GraphQL layer's Date Scalar b/c the input type-def for createImage
   // is a JSONObject of unknown shape. So the parsing has to live in the model
   // layer somewhere, I'm just not sure this is the best place for it.
-  const exifFormat = config['TIME_FORMATS']['EXIF'];
-  const dto = DateTime.fromFormat(sanitized.dateTimeOriginal, exifFormat);
+  const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
   sanitized.dateTimeOriginal = dto;
   return sanitized;
 };
@@ -334,7 +333,7 @@ const hasRole = (user, targetRoles = []) => {
 };
 
 // TODO: accomodate user-created deployments with no startDate?
-const findDeployment = (img, camConfig, config, projTimeZone) => {
+const findDeployment = (img, camConfig, projTimeZone) => {
   console.log('finding deployment for img: ', img);
   // find the deployment that's start date is closest to (but preceeds)
   // the image's created date
@@ -362,9 +361,8 @@ const findDeployment = (img, camConfig, config, projTimeZone) => {
   // 7 hours of that more recent deployment's start date, it would mistakenly
   // get associated with that more recent deployment
 
-  const exifFormat = config['TIME_FORMATS']['EXIF'];
   let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
-    ? DateTime.fromFormat(img.dateTimeOriginal, exifFormat)
+    ? DateTime.fromISO(img.dateTimeOriginal)
     : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
@@ -390,14 +388,14 @@ const findDeployment = (img, camConfig, config, projTimeZone) => {
   return mostRecentDep || defaultDep;
 };
 
-const mapImgToDep = (img, camConfig, config, projTimeZone) => {
+const mapImgToDep = (img, camConfig, projTimeZone) => {
   if (camConfig.deployments.length === 0) {
     throw new ApolloError('Camera config has no deployments');
   }
 
   return (camConfig.deployments.length === 1)
     ? camConfig.deployments[0]
-    : findDeployment(img, camConfig, config, projTimeZone);
+    : findDeployment(img, camConfig, projTimeZone);
 };
 
 const sortDeps = (deps) => {

@@ -1,4 +1,3 @@
-// const { GraphQLServerLambda } = require('graphql-yoga');
 const { ApolloServer } = require('apollo-server-lambda');
 const { AuthenticationError } = require('apollo-server-errors');
 const { formatError } = require('./errors');
@@ -53,8 +52,8 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context,
-  csrfPrevention: true, // TODO APOLLO: double check what this setting does
-  cache: 'bounded', // TODO APOLLO: double check what this setting does
+  csrfPrevention: true,
+  cache: 'bounded',
   middlewares: [authMiddleware],
   options: {
     formatError

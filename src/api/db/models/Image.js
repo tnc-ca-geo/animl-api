@@ -98,7 +98,7 @@ const generateImageModel = ({ user } = {}) => ({
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
       const successfulOps = [];
-      const md = utils.sanitizeMetadata(input.md, context.config);
+      const md = utils.sanitizeMetadata(input.md);
       let projectId = 'default_project';
 
       const saveImage = async (md) => {
@@ -134,7 +134,7 @@ const generateImageModel = ({ user } = {}) => ({
         console.log('Image.createImage() - project: ', project);
         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
         console.log('Image.createImage() - camConfig: ', camConfig);
-        const deployment = utils.mapImgToDep(md, camConfig, context.config, project.timezone);
+        const deployment = utils.mapImgToDep(md, camConfig, project.timezone);
         console.log('Image.createImage() - deployment: ', deployment);
         console.log('Image.createImage() - timezone: ', deployment.timezone);
 
