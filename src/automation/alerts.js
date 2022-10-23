@@ -8,7 +8,7 @@ const buildFrontendUrl = async (image, project, config) => {
   const url = config['/FRONTEND/URL'];
   const projId = image.projectId;
   const viewId = project.views.find((v) => v.name === 'All images')._id;
-  return `https://${url}/${projId}/${viewId}?img=${image._id}`;
+  return `https://${url}/app/${projId}/${viewId}?img=${image._id}`;
 };
 
 const makeEmail = async (rule, image, context) => {
