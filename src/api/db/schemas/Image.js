@@ -27,6 +27,7 @@ const ImageSchema = new Schema({
   userSetData: { type: Map, of: String },
   model: { type: String },
   location: { type: shared.LocationSchema },
+  triggerSource: { type: String },
   objects: { type: [shared.ObjectSchema] }
 });
 

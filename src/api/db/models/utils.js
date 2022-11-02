@@ -216,6 +216,32 @@ const getUserSetData = (input) => {
     : null;
 };
 
+// Parse trigger source (e.g. burst, timelapse, manual, PIR)
+// TODO: possibly combine with getUserSetData?
+const getTriggerSource = (input) => {
+  const userDataMap = {
+    'BuckEyeCam': (input) => {
+      if (!input.comment) {
+        return null;
+      }
+      let triggerSource = null;
+      input.comment.split('\n').forEach((item) => {
+        const [key, value] = item.split('=');
+        if (key === 'SOURCE') {
+          triggerSource = value;
+        }
+      });
+      return triggerSource;
+    },
+    'RidgeTec': (input) => null,
+    'RECONYX': (input) => null
+  };
+
+  return (input.make && userDataMap[input.make])
+    ? userDataMap[input.make](input)
+    : null;
+};
+
 // Parse string coordinates to decimal degrees
 // input e.g. - `34 deg 6' 25.59" N`
 const parseCoordinates = (md) => {
@@ -245,6 +271,7 @@ const createImageRecord = (md) => {
   console.log('creating image record with metadata: ', md);
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
+  const triggerSource = getTriggerSource(md);
 
   const location = coords && {
     geometry: { type: 'Point', coordinates: coords },
@@ -268,7 +295,8 @@ const createImageRecord = (md) => {
     ...(md.imageHeight && { imageHeight: md.imageHeight }),
     ...(md.MIMEType && { mimeType: md.MIMEType }),
     ...(userSetData && { userSetData: userSetData }),
-    ...(location && { location: location })
+    ...(location && { location: location }),
+    ...(triggerSource && { triggerSource: triggerSource })
   });
 
   return image;
