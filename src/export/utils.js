@@ -4,6 +4,20 @@ const { Upload } = require('@aws-sdk/lib-storage');
 const { DateTime } = require('luxon');
 const { idMatch }  = require('../api/db/models/utils');
 
+const sanitizeFilters = (filters) => {
+  const sanitizedFilters = {};
+  // parse ISO strings into DateTimes
+  for (const [key, value] of Object.entries(filters)) {
+    if ((key.includes('Start') || key.includes('End')) && value) {
+      const dt = !DateTime.isDateTime(value) ? DateTime.fromISO(value) : value;
+      sanitizedFilters[key] = dt;
+    } else {
+      sanitizedFilters[key] = value;
+    }
+  }
+  return sanitizedFilters;
+};
+
 const flattenImgTransform = async (project, categories) => {
 
   return transform((img) => {
@@ -27,7 +41,7 @@ const flattenImgTransform = async (project, categories) => {
       })
     };
 
-    // build flattened reprentation of objects/labels
+    // build flattened representation of objects/labels
     const catCounts = {};
     categories.forEach((cat) => catCounts[cat] = null );
     for (const obj of img.objects) {
@@ -67,6 +81,7 @@ const streamToS3 = (key, bucket, client) => {
 };
 
 module.exports = {
+  sanitizeFilters,
   flattenImgTransform,
   streamToS3
 };

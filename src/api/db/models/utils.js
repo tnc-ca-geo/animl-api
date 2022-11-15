@@ -289,14 +289,14 @@ const createImageRecord = (md) => {
     make: md.make,
     deploymentId: md.deploymentId,
     projectId: md.projectId,
-    ...(md.model && { model: md.model }),
-    ...(md.fileName && { originalFileName: md.fileName }),
-    ...(md.imageWidth && { imageWidth: md.imageWidth }),
+    ...(md.model &&       { model: md.model }),
+    ...(md.fileName &&    { originalFileName: md.fileName }),
+    ...(md.imageWidth &&  { imageWidth: md.imageWidth }),
     ...(md.imageHeight && { imageHeight: md.imageHeight }),
-    ...(md.MIMEType && { mimeType: md.MIMEType }),
-    ...(userSetData && { userSetData: userSetData }),
-    ...(location && { location: location }),
-    ...(triggerSource && { triggerSource: triggerSource })
+    ...(md.MIMEType &&    { mimeType: md.MIMEType }),
+    ...(userSetData &&    { userSetData: userSetData }),
+    ...(location &&       { location: location }),
+    ...(triggerSource &&  { triggerSource: triggerSource })
   });
 
   return image;

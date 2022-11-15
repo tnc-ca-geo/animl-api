@@ -1,10 +1,8 @@
 const stream = require('node:stream/promises');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const crypto = require('crypto');
 const { stringify } = require('csv-stringify');
 const { getConfig } = require('../config/config');
-const { ApolloError } = require('apollo-server-errors');
 const { connectToDatabase } = require('../api/db/connect');
 const generateImageModel = require('../api/db/models/Image');
 const generateProjectModel = require('../api/db/models/Project');
@@ -33,14 +31,14 @@ exports.export = async (event) => {
     let notReviewed = 0;
 
     try {
-      // get project's cameraConfigs, so we can map deplyment Ids to deployment data
+      // get project's cameraConfigs, so we can map deployment Ids to deployment data
       const [project] = await models.Project.getProjects([projectId]);
       const { categories } = await models.Image.getLabels(projectId);
 
       // flatten image record transform stream
       const flattenImg = await utils.flattenImgTransform(project, categories);
 
-      // conver objects to CSV string stream
+      // convert objects to CSV string stream
       const columns = config.CSV_EXPORT_COLUMNS.concat(categories);
       const convertToCSV = stringify({ header: true, columns });
 
@@ -48,7 +46,8 @@ exports.export = async (event) => {
       const { streamToS3, uploadPromise } = utils.streamToS3(filename, bucket, s3);
 
       // stream in images from MongoDB, write to transformation stream
-      const query = buildFilter(filters, projectId);
+      const sanitizedFilters = utils.sanitizeFilters(filters);
+      const query = buildFilter(sanitizedFilters, projectId);
       for await (const img of Image.find(query)) {
         imageCount++;
         if (isImageReviewed(img)) {
@@ -75,7 +74,7 @@ exports.export = async (event) => {
       const command = new GetObjectCommand({ Bucket, Key });
       const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
-      console.log('upading status document in s3');
+      console.log('updating status document in s3');
       // update status document in S3
       await s3.send(new PutObjectCommand({
         Bucket: bucket,
