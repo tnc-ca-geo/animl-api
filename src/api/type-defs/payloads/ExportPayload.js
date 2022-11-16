@@ -1,4 +1,4 @@
 module.exports = `
-  type ExportCSVPayload {
+  type ExportPayload {
     documentId: ID!
   }`;

@@ -9,7 +9,7 @@ const DeleteLabelInput = require('./inputs/DeleteLabelInput');
 const DeleteObjectInput = require('./inputs/DeleteObjectInput');
 const DeleteViewInput = require('./inputs/DeleteViewInput');
 
-const ExportCSVInput = require('./inputs/ExportCSVInput');
+const ExportInput = require('./inputs/ExportInput');
 const ExportStatusInput = require('./inputs/ExportStatusInput');
 
 const QueryImageInput = require('./inputs/QueryImageInput');
@@ -48,7 +48,7 @@ const DeleteLabelPayload = require('./payloads/DeleteLabelPayload');
 const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
 
-const ExportCSVPayload = require('./payloads/ExportCSVPayload');
+const ExportPayload = require('./payloads/ExportPayload');
 const ExportStatusPayload = require('./payloads/ExportStatusPayload');
 
 const ImagesConnection = require('./payloads/ImagesConnection');
@@ -83,7 +83,7 @@ const typeDefStrings = [
   DeleteLabelInput,
   DeleteObjectInput,
   DeleteViewInput,
-  ExportCSVInput,
+  ExportInput,
   ExportStatusInput,
   QueryImageInput,
   QueryImagesInput,
@@ -115,7 +115,7 @@ const typeDefStrings = [
   DeleteLabelPayload,
   DeleteObjectPayload,
   DeleteViewPayload,
-  ExportCSVPayload,
+  ExportPayload,
   ExportStatusPayload,
   ImagesConnection,
   ImagesStats,

@@ -470,17 +470,16 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  get exportCSV() {
+  get export() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
 
-      console.log('exporting to csv...');
+      console.log(`exporting to ${input.format}...`);
 
       const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const sqs = new SQSClient({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-      // const filename = id + '.csv';
 
       try {
 
@@ -500,7 +499,8 @@ const generateImageModel = ({ user } = {}) => ({
           MessageBody: JSON.stringify({
             projectId: user['curr_project'],
             documentId: id,
-            filters: input.filters
+            filters: input.filters,
+            format: input.format
           })
         }));
 

@@ -43,8 +43,8 @@ const Query = {
     return await context.models.Image.getStats(input);
   },
 
-  csv: async (_, { input }, context) => {
-    return await context.models.Image.exportCSV(input, context);
+  export: async (_, { input }, context) => {
+    return await context.models.Image.export(input, context);
   },
 
   exportStatus: async (_, { input }, context) => {

@@ -24,7 +24,7 @@ const flattenImgTransform = async (project, categories) => {
     const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, img.cameraId));
     const deployment = camConfig.deployments.find((dep) => idMatch(dep._id, img.deploymentId));
 
-    const simpleImgRecord = {
+    const flatImgRecord = {
       _id: img._id.toString(),
       dateAdded: DateTime.fromJSDate(img.dateAdded).toISO(),
       dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
@@ -55,15 +55,16 @@ const flattenImgTransform = async (project, categories) => {
     }
 
     return {
-      ...simpleImgRecord,
+      ...flatImgRecord,
       ...catCounts
     };
 
   });
 };
 
-const streamToS3 = (key, bucket, client) => {
+const streamToS3 = (format, key, bucket, client) => {
   // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
+  const contentType = format === 'csv' ? 'text/csv' : 'application/json; charset=utf-8';
   const pass = new PassThrough();
   const parallelUploads3 = new Upload({
     client,
@@ -71,7 +72,7 @@ const streamToS3 = (key, bucket, client) => {
       Bucket: bucket,
       Key: key,
       Body: pass,
-      ContentType: 'text/csv'
+      ContentType: contentType
     }
   });
   return {
