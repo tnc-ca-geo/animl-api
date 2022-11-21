@@ -1,8 +1,16 @@
 const { transform } = require('stream-transform');
 const { PassThrough } = require('node:stream');
 const { Upload } = require('@aws-sdk/lib-storage');
+const { CreateMultipartUploadCommand, UploadPartCommand } = require('@aws-sdk/client-s3');
 const { DateTime } = require('luxon');
 const { idMatch }  = require('../api/db/models/utils');
+const { ApolloError } = require('apollo-server-lambda');
+
+const findFirstValidLabel = (obj) => {
+  return obj.labels.find((label) => (
+    label.validation && label.validation.validated
+  ));
+};
 
 const sanitizeFilters = (filters) => {
   const sanitizedFilters = {};
@@ -45,9 +53,7 @@ const flattenImgTransform = async (project, categories) => {
     const catCounts = {};
     categories.forEach((cat) => catCounts[cat] = null );
     for (const obj of img.objects) {
-      const firstValidLabel = obj.labels.find((label) => (
-        label.validation && label.validation.validated
-      ));
+      const firstValidLabel = findFirstValidLabel(obj);
       if (firstValidLabel) {
         const cat = firstValidLabel.category;
         catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
@@ -66,7 +72,7 @@ const streamToS3 = (format, key, bucket, client) => {
   // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
   const contentType = format === 'csv' ? 'text/csv' : 'application/json; charset=utf-8';
   const pass = new PassThrough();
-  const parallelUploads3 = new Upload({
+  const parallelUploadS3 = new Upload({
     client,
     params: {
       Bucket: bucket,
@@ -77,12 +83,103 @@ const streamToS3 = (format, key, bucket, client) => {
   });
   return {
     streamToS3: pass,
-    uploadPromise: parallelUploads3.done()
+    promise: parallelUploadS3.done()
   };
+};
+
+const initiateMultipartUpload = async (client, params) => {
+  try {
+    const res = await client.send(new CreateMultipartUploadCommand(params));
+    return res;
+  } catch (err){
+    throw new ApolloError(err);
+  }
+};
+
+const streamUploadPart = (client, key, bucket, UploadId, partNumber) => {
+  const pass = new PassThrough();
+  const params = {
+    Key: key,
+    Bucket: bucket,
+    Body: pass,
+    UploadId: UploadId,
+    PartNumber: partNumber
+    // contentType: 'application/json; charset=utf-8'
+  };
+
+  console.log('creating stream upload part with params: ', params);
+
+  return {
+    streamPartToS3: pass,
+    uploadPromise: client.send(new UploadPartCommand(params))
+  };
+};
+
+const uploadPart = (client, key, bucket, body, UploadId, partNumber) => {
+  const params = {
+    Key: key,
+    Bucket: bucket,
+    Body: body,
+    UploadId: UploadId,
+    PartNumber: partNumber
+    // contentType: 'application/json; charset=utf-8'
+  };
+
+  console.log('creating upload part with params: ', params);
+
+  return {
+    uploadPromise: client.send(new UploadPartCommand(params))
+  };
+};
+
+const createCOCOImg = (img) => {
+  const fileNameNoExt = img.originalFileName.split('.')[0];
+  const archivePath = `${img.cameraId}/` +
+    `${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
+  return JSON.stringify({
+    id: img._id,
+    filename: img.originalFileName,
+    original_relative_path: archivePath,
+    datetime: img.dateTimeOriginal,
+    location: img.deploymentId,
+    ...(img.imageWidth &&  { width: img.imageWidth }),
+    ...(img.imageHeight && { height: img.imageHeight })
+  }, null, 4) + ',';  // TODO: figure out if it's the last image
+};
+
+// convert bbox in relative vals ([ymin, xmin, ymax, xmax])
+// to absolute values ([x,y,width,height])
+const relToAbs = (bbox, imageWidth, imageHeight) => {
+  const left =    Math.round(bbox[1] * imageWidth);
+  const top =     Math.round(bbox[0] * imageHeight);
+  const width =   Math.round((bbox[3] - bbox[1]) * imageWidth);
+  const height =  Math.round((bbox[2] - bbox[0]) * imageHeight);
+  return { left, top, width, height };
+};
+
+const createCOCOAnnotation = (object, img, catMap) => {
+  let anno;
+  const firstValidLabel = findFirstValidLabel(object);
+  if (firstValidLabel) {
+    const category = catMap.find((cat) => cat.name === firstValidLabel.category);
+    anno = JSON.stringify({
+      id: object._id,  // id copied from the object, not the label
+      image_id: img._id,
+      category_id: category.id,
+      sequence_level_annotation: false,
+      bbox: relToAbs(object.bbox, img.imageWidth, img.imageHeight)
+    }, null, 4) + ',';  // TODO: figure out if it's the last annotation
+  }
+  return anno;
 };
 
 module.exports = {
   sanitizeFilters,
   flattenImgTransform,
-  streamToS3
+  streamToS3,
+  initiateMultipartUpload,
+  streamUploadPart,
+  uploadPart,
+  createCOCOImg,
+  createCOCOAnnotation
 };
