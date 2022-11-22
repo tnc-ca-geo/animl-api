@@ -1,6 +1,6 @@
 const stream = require('node:stream/promises');
 const { DateTime } = require('luxon');
-const { S3Client, GetObjectCommand, PutObjectCommand, CompleteMultipartUploadCommand } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, UploadPartCopyCommand, CompleteMultipartUploadCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { stringify } = require('csv-stringify');
 const { getConfig } = require('../config/config');
@@ -98,14 +98,15 @@ exports.export = async (event) => {
       } else if (format === 'coco') {
         console.log('exporting to coco');
 
-        // // initiate multipart upload
-        // const initResponse = await utils.initiateMultipartUpload(s3, { Key: filename, Bucket: bucket });
-        // const mpUploadId = initResponse['UploadId'];
-        // console.log('multipart upload initiated: ', initResponse);
+        const IMG_COUNT_THRESHOLD = 18000;
 
-        // const imagesUpload = utils.streamUploadPart(s3, filename, bucket, mpUploadId, 1);
-        // const annotationsUpload = utils.streamUploadPart(s3, filename, bucket, mpUploadId, 2);
-        // const uploadPromises = [imagesUpload.uploadPromise, annotationsUpload.uploadPromise];
+        // get image count
+        const sanitizedFilters = utils.sanitizeFilters(filters);
+        const query = buildFilter(sanitizedFilters, projectId);
+        const imgCount = await Image.where(query).countDocuments();
+        console.log('imgCount: ', imgCount);
+        const multipart = imgCount > IMG_COUNT_THRESHOLD;
+        console.log('mulitpart: ', multipart);
 
         // create categories map
         let catMap = [{ 'name': 'empty' }];
@@ -142,21 +143,7 @@ exports.export = async (event) => {
           ContentType: 'application/json; charset=utf-8'
         })) };
 
-        // TODO: write transform stream that transforms MongoDB image record to
-        // (at least) 2 separate write streams: one for the "images" and one
-        // for "annotations"
-        // flatten image record transform stream
-        // const transformToCoco = await utils.transformToCoco(project, categories);
-
-        // for each new write stream, write to separate part of upload, and
-        // and await their completion
-
-        // let imgs = [];
-        // let annotations = [];
-
         // stream in images from MongoDB, write to transformation stream
-        const sanitizedFilters = utils.sanitizeFilters(filters);
-        const query = buildFilter(sanitizedFilters, projectId);
         for await (const img of Image.find(query)) {
           imageCount++;
           if (isImageReviewed(img)) {
@@ -195,6 +182,57 @@ exports.export = async (event) => {
           const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
           urls.push(url);
         }
+
+        // // TESTING object concatonation via multipart upload copy part
+
+        // // initiate multipart upload
+        // const mpObjKey = 'test-concat.json';
+        // const initResponse = await utils.initiateMultipartUpload(s3, { Key: mpObjKey, Bucket: bucket });
+        // const mpUploadId = initResponse['UploadId'];
+        // console.log('multipart upload initiated: ', mpUploadId);
+
+        // const imagesPartParams = {
+        //   Bucket: bucket,
+        //   Key: mpObjKey,
+        //   CopySource: `${bucket}/${uploads.images.filename}`,
+        //   PartNumber: 1,
+        //   UploadId: mpUploadId
+        // };
+        // console.log('imagesPartParams: ', imagesPartParams);
+
+        // const annoPartParams = {
+        //   Bucket: bucket,
+        //   Key: mpObjKey,
+        //   CopySource: `${bucket}/${uploads.annotations.filename}`,
+        //   PartNumber: 2,
+        //   UploadId: mpUploadId
+        // };
+        // console.log('annoPartParams: ', annoPartParams);
+
+        // // combine the parts
+        // const imagesPartRes = await s3.send(new UploadPartCopyCommand(imagesPartParams));
+        // const annoPartRes = await s3.send(new UploadPartCopyCommand(annoPartParams));
+
+        // console.log('uploading parts complete - imagesPartRes: ', imagesPartRes);
+        // console.log('uploading parts complete - annoPartRes: ', annoPartRes);
+
+        // const completedParts = [imagesPartRes, annoPartRes].map((m, i) => ({ ETag: m.CopyPartResult.ETag, PartNumber: i + 1 }));
+        // console.log('completed parts: ', completedParts);
+
+        // // complete multipart upload
+        // const s3ParamsComplete = {
+        //   Key: mpObjKey,
+        //   Bucket: bucket,
+        //   UploadId: mpUploadId,
+        //   MultipartUpload: {
+        //     Parts: completedParts
+        //   }
+        // };
+        // console.log('s3ParamsCompleteMPUpload: ', s3ParamsComplete);
+        // const result = await s3.send(new CompleteMultipartUploadCommand(s3ParamsComplete));
+        // console.log('multipart upload complete! ', result);
+
+        // // END TESTING
 
         console.log('updating status document in s3 with urls: ', urls);
         // update status document in S3

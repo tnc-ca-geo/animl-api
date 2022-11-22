@@ -25,6 +25,7 @@ const buildFilter = ({
   addedEnd,
   labels,
   reviewed,
+  notReviewed,
   custom
 }, projectId) => {
 
@@ -62,14 +63,14 @@ const buildFilter = ({
     } };
   }
 
-  let reviewedFilter = {};
+  let notReviewedFilter = {};
   if (reviewed === false) {
-
-    // incldue images that need review, i.e.:
+    // incldue images that ARE NOT reviewed, i.e.:
     // have at least one unlocked object,
     // no objects at all,
     // OR all invalidated labels
-    reviewedFilter = { $or: [
+
+    notReviewedFilter = { $or: [
       { 'objects.locked': false },
       { objects: { $size: 0 } },
       { objects: { $not: {
@@ -81,6 +82,31 @@ const buildFilter = ({
         }
       } } }
     ] };
+  }
+
+  let reviewedFilter = {};
+  if (notReviewed === false) {
+
+    // include images that ARE reviewed, i.e.:
+    // has objects, all objects are locked, 
+    // and not all of the labels are invalidated
+
+    // const hasObjs = img.objects.length > 0;
+    // const hasUnlockedObjs = img.objects.some((obj) => obj.locked === false);
+    // const hasAllInvalidatedLabels = !img.objects.some((obj) => (
+    //   obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated)
+    // ));
+    // const reviewed = (hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels)
+
+    reviewedFilter = {
+      'objects.0': { '$exists': true },
+      'objects.locked': { $ne: false },
+      'objects.labels': { $elemMatch: { $or: [
+        { validation: null },
+        { 'validation.validated': true }
+      ] } }
+    };
+
   }
 
   let labelsFilter = {};
@@ -146,6 +172,7 @@ const buildFilter = ({
       dateCreatedFilter,
       dateAddedFilter,
       reviewedFilter,
+      notReviewedFilter,
       labelsFilter,
       customFilter
     ]

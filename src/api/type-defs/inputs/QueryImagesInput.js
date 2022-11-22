@@ -8,6 +8,7 @@ module.exports = `
     deployments: [String!]
     labels: [String]
     reviewed: Boolean
+    notReviewed: Boolean
     custom: String
   }
 
