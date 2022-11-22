@@ -118,6 +118,15 @@ const uploadPart = (client, key, bucket, body, UploadId, partNumber) => {
   };
 };
 
+const getReviewedObjects = (img) => {
+  return img.objects.filter((obj) => {
+    const hasValidatedLabel = obj.labels.find((label) => (
+      label.validation && label.validation.validated
+    ));
+    return obj.locked && hasValidatedLabel;
+  });
+};
+
 const createCOCOImg = (img) => {
   const fileNameNoExt = img.originalFileName.split('.')[0];
   const archivePath = `${img.cameraId}/${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
@@ -164,6 +173,7 @@ module.exports = {
   streamToS3,
   initiateMultipartUpload,
   uploadPart,
+  getReviewedObjects,
   createCOCOImg,
   createCOCOAnnotation
 };

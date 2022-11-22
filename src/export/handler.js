@@ -12,6 +12,9 @@ const { buildFilter, isImageReviewed } = require('../api/db/models/utils');
 const utils = require('./utils');
 const { ApolloError } = require('apollo-server-lambda');
 
+const IMG_COUNT_THRESHOLD = 18000;
+const ONLY_INCLUDE_REVIEWED = true;
+
 exports.export = async (event) => {
   if (!event.Records || !event.Records.length) return;
   const config = await getConfig();
@@ -36,6 +39,10 @@ exports.export = async (event) => {
     let reviewed = 0;
     let notReviewed = 0;
 
+    const sanitizedFilters = utils.sanitizeFilters(filters, ONLY_INCLUDE_REVIEWED);
+    const query = buildFilter(sanitizedFilters, projectId);
+    console.log('query: ', query);
+
     try {
 
       // get project's cameraConfigs, so we can map deployment Ids to deployment data
@@ -56,8 +63,6 @@ exports.export = async (event) => {
         const { streamToS3, promise } = utils.streamToS3(format, filename, bucket, s3);
 
         // stream in images from MongoDB, write to transformation stream
-        const sanitizedFilters = utils.sanitizeFilters(filters);
-        const query = buildFilter(sanitizedFilters, projectId);
         for await (const img of Image.find(query)) {
           imageCount++;
           if (isImageReviewed(img)) {
@@ -101,13 +106,7 @@ exports.export = async (event) => {
       } else if (format === 'coco') {
         console.log('exporting to coco');
 
-        const IMG_COUNT_THRESHOLD = 18000;
-        const ONLY_INCLUDE_REVIEWED = true;
-
         // get image count
-        const sanitizedFilters = utils.sanitizeFilters(filters, ONLY_INCLUDE_REVIEWED);
-        const query = buildFilter(sanitizedFilters, projectId);
-        console.log('query: ', query);
         const imgCount = await Image.where(query).countDocuments();
         console.log('imgCount: ', imgCount);
         const multipart = imgCount > IMG_COUNT_THRESHOLD;
@@ -158,12 +157,7 @@ exports.export = async (event) => {
             imagesUpload.streamToS3.write(imgString);
 
             // create COCO annotation record, write to upload stream
-            const reviewedObjects = img.objects.filter((obj) => {
-              const hasValidatedLabel = obj.labels.find((label) => (
-                label.validation && label.validation.validated
-              ));
-              return obj.locked && hasValidatedLabel;
-            });
+            const reviewedObjects = utils.getReviewedObjects(img);
             for (const [o, obj] of reviewedObjects.entries()) {
               const annoObj = utils.createCOCOAnnotation(obj, img, catMap);
               let annoString = JSON.stringify(annoObj, null, 4);
@@ -232,9 +226,55 @@ exports.export = async (event) => {
           presignedURL = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
         } else {
-          // TODO: image count is small enough to read into memory, build COCO file,
-          // and send to S3 via putObjectCommand
+          // TODO: image count is small enough to read all the images into memory, 
+          // build COCO file, and send to S3 via putObjectCommand
           console.log('upload via put');
+
+          const imagesArray = [];
+          const annotationsArray = [];
+
+          // get all images from MongoDB
+          const images = await Image.find(query);
+          // console.log('found images: ', images);
+
+          // iterate though them, building COCO images array and annotations array
+          for (const img of images) {
+            // create COCO image record, add to in-memory array
+            const imgObj = utils.createCOCOImg(img);
+            imagesArray.push(imgObj);
+
+            // create COCO annotation record, add to in-memory array
+            const reviewedObjects = utils.getReviewedObjects(img);
+            for (const obj of reviewedObjects) {
+              const annoObj = utils.createCOCOAnnotation(obj, img, catMap);
+              annotationsArray.push(annoObj);
+            }
+          }
+
+          // combine images, annotations, categories, and info objects, stringify
+          const exportString = JSON.stringify({
+            images: imagesArray,
+            annotations: annotationsArray,
+            categories: catMap,
+            info: info
+          }, null, 4);
+
+          console.log('uploading to s3...');
+
+          // upload to S3 via putObject
+          const res = await s3.send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: `${documentId}_coco.json`,
+            Body: exportString,
+            ContentType: 'application/json; charset=utf-8'
+          }));
+
+          console.log('successfully uploaded to s3: ', res);
+
+          // create presigned URL
+          // get presigned url for final COCO file (expires in one hour)
+          const command = new GetObjectCommand({ Bucket: bucket, Key: `${documentId}_coco.json` });
+          presignedURL = await getSignedUrl(s3, command, { expiresIn: 3600 });
         }
 
         console.log('updating status document in s3 with urls: ', presignedURL);
@@ -250,38 +290,6 @@ exports.export = async (event) => {
           }),
           ContentType: 'application/json; charset=utf-8'
         }));
-
-
-
-
-        // imgs = JSON.stringify(imgs, null, 4);
-        // annotations = JSON.stringify(annotations, null, 4);
-
-        // const imagesPart = utils.uploadPart(s3, filename, bucket, imgs, mpUploadId, 1);
-        // const annotationsPart = utils.uploadPart(s3, filename, bucket, annotations, mpUploadId, 2);
-        // const uploadPromises = [imagesPart.uploadPromise, annotationsPart.uploadPromise];
-
-        // transformToCoco.end();
-        // const parts = await Promise.allSettled(uploadPromises);
-        // console.log('finished uploading all the parts: ', parts);
-        // parts.forEach((part) => {
-        //   console.log('part metadata: ', part.value['$metadata']);
-        // });
-        // const completedParts = parts.map((m, i) => ({ ETag: m.value.ETag, PartNumber: i + 1 }));
-        // console.log('completed parts: ', completedParts);
-
-        // // complete multipart upload
-        // const s3ParamsComplete = {
-        //   Key: filename,
-        //   Bucket: bucket,
-        //   UploadId: mpUploadId,
-        //   MultipartUpload: {
-        //     Parts: completedParts
-        //   }
-        // };
-        // console.log('s3ParamsCompleteMPUpload: ', s3ParamsComplete);
-        // const result = await s3.send(new CompleteMultipartUploadCommand(s3ParamsComplete));
-        // console.log('multipart upload complete! ', result);
 
       } else {
         console.log('unsupported format: ', format);
