@@ -29,6 +29,9 @@ exports.export = async (event) => {
     const ext = format === 'coco' ? '.json' : '.csv';
     const filename = documentId + ext;
     const bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+    let presignedURL = null;
+    // TODO: figure out better way to get this info
+    // now that we're only querying for reviewed images
     let imageCount = 0;
     let reviewed = 0;
     let notReviewed = 0;
@@ -99,154 +102,155 @@ exports.export = async (event) => {
         console.log('exporting to coco');
 
         const IMG_COUNT_THRESHOLD = 18000;
+        const ONLY_INCLUDE_REVIEWED = true;
 
         // get image count
-        const sanitizedFilters = utils.sanitizeFilters(filters);
+        const sanitizedFilters = utils.sanitizeFilters(filters, ONLY_INCLUDE_REVIEWED);
         const query = buildFilter(sanitizedFilters, projectId);
+        console.log('query: ', query);
         const imgCount = await Image.where(query).countDocuments();
         console.log('imgCount: ', imgCount);
         const multipart = imgCount > IMG_COUNT_THRESHOLD;
         console.log('mulitpart: ', multipart);
 
-        // create categories map
+        // create categories map & string
         let catMap = [{ 'name': 'empty' }];
         categories.forEach((cat) => {
           if (cat !== 'empty') catMap.push({ 'name': cat });
         });
         catMap = catMap.map((cat, i) => ({ 'id': i, 'name': cat.name }));
-        console.log('catMap: ', catMap);
+        const catString = JSON.stringify(catMap, null, 4);
 
-        const uploads = {
-          images: { filename: `${documentId}_images${ext}` },
-          annotations: { filename: `${documentId}_annotations${ext}` },
-          categories: { filename: `${documentId}_categories${ext}` },
-          info: { filename: `${documentId}_info${ext}` }
+        // create info object & string
+        const info = {
+          version : '1.0',
+          description : `Image data exported from Animl project '${projectId}'.` +
+            ` Export ID: ${documentId}`,
+          year : DateTime.now().get('year'),
+          date_created: DateTime.now().toISO()
         };
+        const infoString = JSON.stringify(info, null, 4);
 
-        uploads.images.upload = utils.streamToS3(format, uploads.images.filename, bucket, s3);
-        uploads.annotations.upload = utils.streamToS3(format, uploads.annotations.filename, bucket, s3);
-        uploads.categories.upload = { promise: s3.send(new PutObjectCommand({
-          Bucket: bucket,
-          Key: uploads.categories.filename,
-          Body: JSON.stringify(catMap, null, 4),
-          ContentType: 'application/json; charset=utf-8'
-        })) };
-        uploads.info.upload = { promise: s3.send(new PutObjectCommand({
-          Bucket: bucket,
-          Key: uploads.info.filename,
-          Body: JSON.stringify({
-            version : '1.0',
-            description : `Image data exported from Animl project '${projectId}'. Export ID: ${documentId}`,
-            year : DateTime.now().get('year'),
-            date_created: DateTime.now().toISO()
-          }, null, 4),
-          ContentType: 'application/json; charset=utf-8'
-        })) };
+        if (multipart) {
 
-        // stream in images from MongoDB, write to transformation stream
-        for await (const img of Image.find(query)) {
-          imageCount++;
-          if (isImageReviewed(img)) {
-            reviewed++;
-            console.log('img: ', img);
-            const imgRecord = utils.createCOCOImg(img);
-            uploads.images.upload.streamToS3.write(imgRecord);
+          console.log('uploading via streaming to s3 and & mulitpart upload to concatonate files');
 
-            for (const obj of img.objects) {
-              const annoRecord = utils.createCOCOAnnotation(obj, img, catMap);
-              if (annoRecord) {
-                uploads.annotations.upload.streamToS3.write(annoRecord);
-              }
+          // prep upload parts
+          const imagesFilename = `${documentId}_images${ext}`;
+          const annotationsFilename = `${documentId}_annotations${ext}`;
+          const imagesUpload = utils.streamToS3(format, imagesFilename, bucket, s3);
+          const annotationsUpload = utils.streamToS3(format, annotationsFilename, bucket, s3);
+
+          // stream in image documents from MongoDB, split out and write images 
+          // and annotations to their respective upload streams
+          imagesUpload.streamToS3.write('{"images": [');
+          annotationsUpload.streamToS3.write('], "annotations": [');
+
+          let i = 0;
+          for await (const img of Image.find(query)) {
+            i++;
+
+            // create COCO image record, write to upload stream
+            const imgObj = utils.createCOCOImg(img);
+            let imgString = JSON.stringify(imgObj, null, 4);
+            imgString = i === imgCount ? imgString : imgString + ', ';
+            // console.log('imgString: ', imgString);
+            imagesUpload.streamToS3.write(imgString);
+
+            // create COCO annotation record, write to upload stream
+            const reviewedObjects = img.objects.filter((obj) => {
+              const hasValidatedLabel = obj.labels.find((label) => (
+                label.validation && label.validation.validated
+              ));
+              return obj.locked && hasValidatedLabel;
+            });
+            for (const [o, obj] of reviewedObjects.entries()) {
+              const annoObj = utils.createCOCOAnnotation(obj, img, catMap);
+              let annoString = JSON.stringify(annoObj, null, 4);
+              annoString = (i === imgCount && o === reviewedObjects.length - 1)
+                ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
+                : annoString + ', ';
+              // console.log('annoString: ', annoString);
+              annotationsUpload.streamToS3.write(annoString);
             }
-
-          } else {
-            notReviewed++;
           }
+
+          // end both upload streams and wait for promises to finish
+          imagesUpload.streamToS3.end();
+          annotationsUpload.streamToS3.end();
+          const res = await Promise.allSettled([
+            imagesUpload.promise,
+            annotationsUpload.promise
+          ]);
+          console.log('finished uploading all the files: ', res);
+
+          // concatonate images and annotations .json files
+          // via multipart upload copy part
+
+          // initiate multipart upload
+          const completeCocoFilename = `${documentId}_coco.json`;
+          const initResponse = await utils.initiateMultipartUpload(s3, {
+            Key: completeCocoFilename,
+            Bucket: bucket
+          });
+          const mpUploadId = initResponse['UploadId'];
+          console.log('multipart upload initiated: ', mpUploadId);
+
+          // combine the parts
+          const parts = [imagesFilename, annotationsFilename].map((filename, i) => ({
+            params: {
+              Bucket: bucket,
+              Key: completeCocoFilename,
+              CopySource: `${bucket}/${filename}`,
+              PartNumber: i + 1,
+              UploadId: mpUploadId
+            }
+          }));
+          console.log('parts params: ', parts);
+          const imagesPartRes = await s3.send(new UploadPartCopyCommand(parts[0].params));
+          const annoPartRes = await s3.send(new UploadPartCopyCommand(parts[1].params));
+          console.log('uploading parts complete - imagesPartRes: ', imagesPartRes);
+          console.log('uploading parts complete - annoPartRes: ', annoPartRes);
+          const completedParts = [imagesPartRes, annoPartRes].map((m, i) => ({
+            ETag: m.CopyPartResult.ETag, PartNumber: i + 1
+          }));
+          console.log('completed parts: ', completedParts);
+
+          // complete multipart upload
+          const s3ParamsComplete = {
+            Key: completeCocoFilename,
+            Bucket: bucket,
+            UploadId: mpUploadId,
+            MultipartUpload: { Parts: completedParts }
+          };
+          console.log('s3ParamsCompleteMPUpload: ', s3ParamsComplete);
+          const result = await s3.send(new CompleteMultipartUploadCommand(s3ParamsComplete));
+          console.log('multipart upload complete! ', result);
+
+          // get presigned url for final COCO file (expires in one hour)
+          const command = new GetObjectCommand({ Bucket: bucket, Key: completeCocoFilename });
+          presignedURL = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+        } else {
+          // TODO: image count is small enough to read into memory, build COCO file,
+          // and send to S3 via putObjectCommand
+          console.log('upload via put');
         }
-        uploads.images.upload.streamToS3.end();
-        uploads.annotations.upload.streamToS3.end();
 
-        const res = await Promise.allSettled([
-          uploads.images.upload.promise,
-          uploads.annotations.upload.promise,
-          uploads.categories.upload.promise,
-          uploads.info.upload.promise
-        ]);
-
-        console.log('finished uploading all the files: ', res);
-
-        const urls = [];
-        for (const { filename } of Object.values(uploads)) {
-          // get presigned url for new S3 object (expires in one hour)
-          const command = new GetObjectCommand({ Bucket: bucket, Key: filename });
-          const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-          urls.push(url);
-        }
-
-        // // TESTING object concatonation via multipart upload copy part
-
-        // // initiate multipart upload
-        // const mpObjKey = 'test-concat.json';
-        // const initResponse = await utils.initiateMultipartUpload(s3, { Key: mpObjKey, Bucket: bucket });
-        // const mpUploadId = initResponse['UploadId'];
-        // console.log('multipart upload initiated: ', mpUploadId);
-
-        // const imagesPartParams = {
-        //   Bucket: bucket,
-        //   Key: mpObjKey,
-        //   CopySource: `${bucket}/${uploads.images.filename}`,
-        //   PartNumber: 1,
-        //   UploadId: mpUploadId
-        // };
-        // console.log('imagesPartParams: ', imagesPartParams);
-
-        // const annoPartParams = {
-        //   Bucket: bucket,
-        //   Key: mpObjKey,
-        //   CopySource: `${bucket}/${uploads.annotations.filename}`,
-        //   PartNumber: 2,
-        //   UploadId: mpUploadId
-        // };
-        // console.log('annoPartParams: ', annoPartParams);
-
-        // // combine the parts
-        // const imagesPartRes = await s3.send(new UploadPartCopyCommand(imagesPartParams));
-        // const annoPartRes = await s3.send(new UploadPartCopyCommand(annoPartParams));
-
-        // console.log('uploading parts complete - imagesPartRes: ', imagesPartRes);
-        // console.log('uploading parts complete - annoPartRes: ', annoPartRes);
-
-        // const completedParts = [imagesPartRes, annoPartRes].map((m, i) => ({ ETag: m.CopyPartResult.ETag, PartNumber: i + 1 }));
-        // console.log('completed parts: ', completedParts);
-
-        // // complete multipart upload
-        // const s3ParamsComplete = {
-        //   Key: mpObjKey,
-        //   Bucket: bucket,
-        //   UploadId: mpUploadId,
-        //   MultipartUpload: {
-        //     Parts: completedParts
-        //   }
-        // };
-        // console.log('s3ParamsCompleteMPUpload: ', s3ParamsComplete);
-        // const result = await s3.send(new CompleteMultipartUploadCommand(s3ParamsComplete));
-        // console.log('multipart upload complete! ', result);
-
-        // // END TESTING
-
-        console.log('updating status document in s3 with urls: ', urls);
+        console.log('updating status document in s3 with urls: ', presignedURL);
         // update status document in S3
         await s3.send(new PutObjectCommand({
           Bucket: bucket,
           Key: `${documentId}.json`,
           Body: JSON.stringify({
             status: 'Success',
-            urls: urls,
+            urls: [presignedURL], // TODO: revert back to just sending one URL
             imageCount,
             reviewedCount: { reviewed, notReviewed }
           }),
           ContentType: 'application/json; charset=utf-8'
         }));
+
 
 
 

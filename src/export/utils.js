@@ -12,7 +12,7 @@ const findFirstValidLabel = (obj) => {
   ));
 };
 
-const sanitizeFilters = (filters) => {
+const sanitizeFilters = (filters, onlyIncludeReviewed) => {
   const sanitizedFilters = {};
   // parse ISO strings into DateTimes
   for (const [key, value] of Object.entries(filters)) {
@@ -22,6 +22,11 @@ const sanitizeFilters = (filters) => {
     } else {
       sanitizedFilters[key] = value;
     }
+  }
+
+  // add notReviewed = false filter
+  if (onlyIncludeReviewed && (sanitizedFilters.notReviewed !== false)) {
+    sanitizedFilters.notReviewed = false;
   }
   return sanitizedFilters;
 };
@@ -96,25 +101,6 @@ const initiateMultipartUpload = async (client, params) => {
   }
 };
 
-const streamUploadPart = (client, key, bucket, UploadId, partNumber) => {
-  const pass = new PassThrough();
-  const params = {
-    Key: key,
-    Bucket: bucket,
-    Body: pass,
-    UploadId: UploadId,
-    PartNumber: partNumber
-    // contentType: 'application/json; charset=utf-8'
-  };
-
-  console.log('creating stream upload part with params: ', params);
-
-  return {
-    streamPartToS3: pass,
-    uploadPromise: client.send(new UploadPartCommand(params))
-  };
-};
-
 const uploadPart = (client, key, bucket, body, UploadId, partNumber) => {
   const params = {
     Key: key,
@@ -134,17 +120,16 @@ const uploadPart = (client, key, bucket, body, UploadId, partNumber) => {
 
 const createCOCOImg = (img) => {
   const fileNameNoExt = img.originalFileName.split('.')[0];
-  const archivePath = `${img.cameraId}/` +
-    `${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
-  return JSON.stringify({
+  const archivePath = `${img.cameraId}/${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
+  return {
     id: img._id,
-    filename: img.originalFileName,
+    file_name: img.originalFileName,
     original_relative_path: archivePath,
     datetime: img.dateTimeOriginal,
     location: img.deploymentId,
     ...(img.imageWidth &&  { width: img.imageWidth }),
     ...(img.imageHeight && { height: img.imageHeight })
-  }, null, 4) + ',';  // TODO: figure out if it's the last image
+  };
 };
 
 // convert bbox in relative vals ([ymin, xmin, ymax, xmax])
@@ -162,13 +147,13 @@ const createCOCOAnnotation = (object, img, catMap) => {
   const firstValidLabel = findFirstValidLabel(object);
   if (firstValidLabel) {
     const category = catMap.find((cat) => cat.name === firstValidLabel.category);
-    anno = JSON.stringify({
+    anno = {
       id: object._id,  // id copied from the object, not the label
       image_id: img._id,
       category_id: category.id,
       sequence_level_annotation: false,
       bbox: relToAbs(object.bbox, img.imageWidth, img.imageHeight)
-    }, null, 4) + ',';  // TODO: figure out if it's the last annotation
+    };
   }
   return anno;
 };
@@ -178,7 +163,6 @@ module.exports = {
   flattenImgTransform,
   streamToS3,
   initiateMultipartUpload,
-  streamUploadPart,
   uploadPart,
   createCOCOImg,
   createCOCOAnnotation

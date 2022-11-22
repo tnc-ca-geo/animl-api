@@ -65,15 +65,19 @@ const buildFilter = ({
 
   let notReviewedFilter = {};
   if (reviewed === false) {
-    // incldue images that ARE NOT reviewed, i.e.:
-    // have at least one unlocked object,
-    // no objects at all,
-    // OR all invalidated labels
 
+    // NOTE: this is a bit un-intuitive. Because a filter value of
+    // reviewed === null means that we want to *include* reviewed images,
+    // and because filters are by nature exclusionary (i.e, "only return documents
+    // that match my query"), when reviewed === false, we're actually saying,
+    // "only show me the not-reviewed images".
+    // The same logic applies to notReviewed === false, below.
+
+    // include images that ARE NOT reviewed, i.e.:
     notReviewedFilter = { $or: [
-      { 'objects.locked': false },
-      { objects: { $size: 0 } },
-      { objects: { $not: {
+      { 'objects.locked': false },  // have at least one unlocked object,
+      { objects: { $size: 0 } },  // no objects at all,
+      { objects: { $not: {  // OR all invalidated labels
         $elemMatch: {
           labels: { $elemMatch: { $or: [
             { validation: null },
@@ -88,20 +92,10 @@ const buildFilter = ({
   if (notReviewed === false) {
 
     // include images that ARE reviewed, i.e.:
-    // has objects, all objects are locked, 
-    // and not all of the labels are invalidated
-
-    // const hasObjs = img.objects.length > 0;
-    // const hasUnlockedObjs = img.objects.some((obj) => obj.locked === false);
-    // const hasAllInvalidatedLabels = !img.objects.some((obj) => (
-    //   obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated)
-    // ));
-    // const reviewed = (hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels)
-
     reviewedFilter = {
-      'objects.0': { '$exists': true },
-      'objects.locked': { $ne: false },
-      'objects.labels': { $elemMatch: { $or: [
+      'objects.0': { '$exists': true }, // have objects
+      'objects.locked': { $ne: false }, // all objects are locked
+      'objects.labels': { $elemMatch: { $or: [  // AND not all labels are invalidated
         { validation: null },
         { 'validation.validated': true }
       ] } }
