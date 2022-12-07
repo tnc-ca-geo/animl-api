@@ -1,8 +1,12 @@
 module.exports = `
+  type ExportError {
+    message: String
+  }
+
   type ExportStatusPayload {
     status: String!
-    urls: [String]
+    url: String
     imageCount: Int
     reviewedCount: ReviewedCount
-    error: String
+    error: [ExportError]
   }`;
