@@ -31,10 +31,8 @@ class Export {
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000;  // TODO: Move to config?
-    // TODO: figure out better way to get this info
-    // now that we're only querying for reviewed images
-    // this.reviewed = 0;
-    // this.notReviewed = 0;
+    this.reviewedCount = 0;
+    this.notReviewedCount = 0;
 
     this.status = 'Pending';
     this.errs = [];
@@ -43,10 +41,22 @@ class Export {
   async init() {
     console.log('initializing Export');
     try {
-      const sanitizedFilters = this.sanitizeFilters(this.filters, this.onlyIncludeReviewed);
+      const sanitizedFilters = this.sanitizeFilters();
+      const notReviewedQuery = buildFilter(
+        { ...sanitizedFilters, reviewed: false },
+        this.projectId
+      );
+      this.notReviewedCount = await this.getCount(notReviewedQuery);
+
+      // add notReviewed = false filter
+      if (this.onlyIncludeReviewed && (sanitizedFilters.notReviewed !== false)) {
+        sanitizedFilters.notReviewed = false;
+      }
       this.query = buildFilter(sanitizedFilters, this.projectId);
-      this.imageCount = await this.getCount();
+      this.imageCount = await this.getCount(this.query);
+      this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
+
       const [project] = await this.projectModel.getProjects([this.projectId]);
       const { categories } = await this.imageModel.getLabels(this.projectId);
       this.project = project;
@@ -57,16 +67,16 @@ class Export {
     }
   }
 
-  async getCount() {
+  async getCount(query) {
     console.log('getting image count');
-    let imageCount = this.imageCount;
+    let count = null;
     try {
-      imageCount = await Image.where(this.query).countDocuments();
+      count = await Image.where(query).countDocuments();
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error counting images');
     }
-    return imageCount;
+    return count;
   }
 
   async toCSV() {
@@ -168,8 +178,11 @@ class Export {
           status: this.status,
           error: this.errs,
           url: this.presignedURL,
-          imageCount: this.imageCount
-          // reviewedCount: { this.reviewed, this.notReviewed }
+          imageCount: this.imageCount,
+          reviewedCount: {
+            reviewed: this.reviewedCount,
+            notReviewed: this.notReviewedCount
+          }
         }),
         ContentType: 'application/json; charset=utf-8'
       }));
@@ -347,11 +360,6 @@ class Export {
       } else {
         sanitizedFilters[key] = value;
       }
-    }
-
-    // add notReviewed = false filter
-    if (this.onlyIncludeReviewed && (sanitizedFilters.notReviewed !== false)) {
-      sanitizedFilters.notReviewed = false;
     }
     return sanitizedFilters;
   }
