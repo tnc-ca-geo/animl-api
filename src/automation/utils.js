@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const { buildFilter } = require('../api/db/models/utils');
+const { buildPipeline } = require('../api/db/models/utils');
 const Image = require('../api/db/schemas/Image');
 
 
@@ -25,15 +25,18 @@ const includedInView = async (image, view, projectId) => {
   // image should have already been saved before we handle the event.
 
   // Alternatively, Sift.js (https://github.com/crcn/sift.js) sounds very
-  // promising but wouldn't work if we move to aggregation-pipeline-based querying
+  // promising but won't work know that we've moved to aggregation-pipeline-based querying
 
   // Another option would be to break the automation rule handling into it's own
   // service/lambda so that we can trigger it and return from mutation resolver
   // without waiting for the callstack to be built and executed.
 
-  const viewQuery = buildFilter(view.filters, projectId);
-  const query = { _id: image._id, ...viewQuery };
-  const res = await Image.find(query);
+  console.log('included in view?');
+  const viewPipeline = buildPipeline(view.filters, projectId);
+  viewPipeline.push({ $match: { _id: image._id } });
+  const res = await Image.aggregate(viewPipeline);
+  console.log('res: ', res);
+  console.log('included in view? ', res.length > 0);
   return res.length > 0;
 };
 

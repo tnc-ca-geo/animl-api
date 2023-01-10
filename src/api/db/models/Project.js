@@ -190,11 +190,10 @@ const generateProjectModel = ({ user } = {}) => ({
     const operation = async ({ projId, camConfig }) => {
       return await retry(async () => {
         // build array of operations from camConfig.deployments:
-        // for each deployment, build filter, update, then perform bulkWrite
+        // for each deployment, build filter, build update, then perform bulkWrite
         // NOTE: this function expects deps to be in chronological order!
         const operations = [];
         for (const [index, dep] of camConfig.deployments.entries()) {
-          console.log('Reviewing deployment: ', dep);
           const createdStart = dep.startDate || null;
           const createdEnd = camConfig.deployments[index + 1]
             ? camConfig.deployments[index + 1].startDate
@@ -210,20 +209,15 @@ const generateProjectModel = ({ user } = {}) => ({
 
           const imgs = await Image.find(filter);
           for (const img of imgs) {
-            console.log('Reviewing image: ', img);
 
             const update = {};
             if (img.deploymentId.toString() !== dep._id.toString()) {
-              console.log('depIdChanged');
               update.deploymentId = dep._id;
             }
 
             if (img.timezone !== dep.timezone) {
-              console.log('tzChanged');
               const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal).setZone(img.timezone);
-              console.log('dtOriginal: ', dtOriginal.toISO());
               const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
-              console.log('newDT: ', newDT.toISO());
               update.dateTimeOriginal = newDT;
               update.timezone = dep.timezone;
             }
@@ -241,7 +235,6 @@ const generateProjectModel = ({ user } = {}) => ({
     };
 
     try {
-      console.log('reMapImagesToDeps firing');
       await operation({ projId, camConfig });
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError

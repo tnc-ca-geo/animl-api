@@ -11,7 +11,7 @@ const { idMatch }  = require('../api/db/models/utils');
 const generateImageModel = require('../api/db/models/Image');
 const generateProjectModel = require('../api/db/models/Project');
 const Image = require('../api/db/schemas/Image');
-const { buildFilter } = require('../api/db/models/utils');
+const { buildPipeline } = require('../api/db/models/utils');
 
 class Export {
   constructor({ projectId, documentId, filters, format }, config) {
@@ -42,18 +42,18 @@ class Export {
     console.log('initializing Export');
     try {
       const sanitizedFilters = this.sanitizeFilters();
-      const notReviewedQuery = buildFilter(
+      const notReviewedPipeline = buildPipeline(
         { ...sanitizedFilters, reviewed: false },
         this.projectId
       );
-      this.notReviewedCount = await this.getCount(notReviewedQuery);
+      this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
       // add notReviewed = false filter
       if (this.onlyIncludeReviewed && (sanitizedFilters.notReviewed !== false)) {
         sanitizedFilters.notReviewed = false;
       }
-      this.query = buildFilter(sanitizedFilters, this.projectId);
-      this.imageCount = await this.getCount(this.query);
+      this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
+      this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
 
@@ -67,11 +67,15 @@ class Export {
     }
   }
 
-  async getCount(query) {
+  async getCount(pipeline) {
     console.log('getting image count');
     let count = null;
     try {
-      count = await Image.where(query).countDocuments();
+      const pipelineCopy = pipeline.map((stage) => ({ ...stage }));
+      pipelineCopy.push({ $count: 'count' });
+      const res = await Image.aggregate(pipelineCopy);
+      console.log('res: ', res);
+      count = res[0].count;
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error counting images');
@@ -89,7 +93,7 @@ class Export {
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
       // stream in images from MongoDB, write to transformation stream
-      for await (const img of Image.find(this.query)) {
+      for await (const img of Image.aggregate(this.pipeline)) {
         flattenImg.write(img);
       }
       flattenImg.end();
@@ -136,9 +140,9 @@ class Export {
 
       if (this.imageCount > this.imageCountThreshold) {
         // image count is too high to read all the images into memory, so
-        // stream the results in from DB, spliting out images and annotations
+        // stream the results in from DB, splitting out images and annotations
         // and streaming them separately to their own S3 objects, and then
-        // concatonate the objects via Multipart Upload copy part
+        // concatenate the objects via Multipart Upload copy part
         await this.multipartUpload(catString, infoString, catMap);
       } else {
         // image count is small enough to read all the images into memory, so
@@ -147,7 +151,7 @@ class Export {
       }
     } catch (err) {
       await this.error(err);
-      throw new ApolloError('error exporting to CSV');
+      throw new ApolloError('error exporting to COCO');
     }
 
     // get presigned url for new S3 object (expires in one hour)
@@ -210,14 +214,13 @@ class Export {
     annotationsUpload.streamToS3.write('], "annotations": [');
 
     let i = 0;
-    for await (const img of Image.find(this.query)) {
+    for await (const img of Image.aggregate(this.pipeline)) {
       i++;
 
       // create COCO image record, write to upload stream
       const imgObj = this.createCOCOImg(img);
       let imgString = JSON.stringify(imgObj, null, 4);
       imgString = i === this.imageCount ? imgString : imgString + ', ';
-      // console.log('imgString: ', imgString);
       imagesUpload.streamToS3.write(imgString);
 
       // create COCO annotation record, write to upload stream
@@ -228,7 +231,6 @@ class Export {
         annoString = (i === this.imageCount && o === reviewedObjects.length - 1)
           ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
           : annoString + ', ';
-        // console.log('annoString: ', annoString);
         annotationsUpload.streamToS3.write(annoString);
       }
     }
@@ -282,7 +284,7 @@ class Export {
     const annotationsArray = [];
 
     // get all images from MongoDB
-    const images = await Image.find(this.query);
+    const images = await Image.aggregate(this.pipeline);
     for (const img of images) {
       // create COCO image record, add to in-memory array
       const imgObj = this.createCOCOImg(img);
@@ -305,6 +307,7 @@ class Export {
     }, null, 4);
 
     // upload to S3 via putObject
+    console.log('uploading data to s3');
     const res = await this.s3.send(new PutObjectCommand({
       Bucket: this.bucket,
       Key: this.filename,

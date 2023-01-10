@@ -16,7 +16,7 @@ const buildImgUrl = (image, config, size = 'original') => {
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 };
 
-const buildFilter = ({
+const buildPipeline = ({
   cameras,
   deployments,
   createdStart,
@@ -29,41 +29,47 @@ const buildFilter = ({
   custom
 }, projectId) => {
 
-  let projectFilter = {};
+  const pipeline = [];
+
+  // match current project
   if (projectId) {
-    projectFilter = { projectId };
+    pipeline.push({ '$match': { 'projectId': projectId } });
   }
 
-  let camerasFilter = {};
+  // match cameras filter
   if (cameras) {
-    camerasFilter = { cameraId: { $in: cameras } };
+    pipeline.push({ '$match': { 'cameraId': { $in: cameras } } });
   }
 
-  let deploymentsFilter = {};
+  // match deployments filter
   if (deployments) {
-    const deploymentIds = deployments.map((depString) => (
-      new ObjectId(depString))  // have to cast string id to ObjectId
-    );
-    deploymentsFilter = { deploymentId: { $in: deploymentIds } };
+    // cast string id to ObjectId
+    const deploymentIds = deployments.map((depString) => new ObjectId(depString));
+    pipeline.push({ '$match': { 'deploymentId': { $in: deploymentIds } } });
   }
 
-  let dateCreatedFilter =  {};
+  // match date created filter
   if (createdStart || createdEnd) {
-    dateCreatedFilter = { dateTimeOriginal: {
-      ...(createdStart && { $gte: createdStart.toJSDate() }),
-      ...(createdEnd && { $lt: createdEnd.toJSDate() })
-    } };
+    pipeline.push({ '$match': {
+      'dateTimeOriginal': {
+        ...(createdStart && { $gte: createdStart.toJSDate() }),
+        ...(createdEnd && { $lt: createdEnd.toJSDate() })
+      }
+    } });
   }
 
-  let dateAddedFilter = {};
+  // match date added filter
   if (addedStart || addedEnd) {
-    dateAddedFilter = { dateAdded: {
-      ...(addedStart && { $gte: addedStart.toJSDate() }),
-      ...(addedEnd && { $lt: addedEnd.toJSDate() })
-    } };
+    console.log('adding date added filter');
+    pipeline.push({ '$match': {
+      'dateAdded': {
+        ...(addedStart && { $gte: addedStart.toJSDate() }),
+        ...(addedEnd && { $lt: addedEnd.toJSDate() })
+      }
+    } });
   }
 
-  let notReviewedFilter = {};
+  // match notReivewed filter
   if (reviewed === false) {
 
     // NOTE: this is a bit un-intuitive. Because a filter value of
@@ -74,7 +80,7 @@ const buildFilter = ({
     // The same logic applies to notReviewed === false, below.
 
     // include images that ARE NOT reviewed, i.e.:
-    notReviewedFilter = { $or: [
+    pipeline.push({ '$match': { $or: [
       { 'objects.locked': false },  // have at least one unlocked object,
       { objects: { $size: 0 } },  // no objects at all,
       { objects: { $not: {  // OR all invalidated labels
@@ -85,53 +91,62 @@ const buildFilter = ({
           ] } }
         }
       } } }
-    ] };
+    ] } });
   }
 
-  let reviewedFilter = {};
+  // match reviewedFilter
   if (notReviewed === false) {
-
     // include images that ARE reviewed, i.e.:
-    reviewedFilter = {
+    pipeline.push({ '$match': {
       'objects.0': { '$exists': true }, // have objects
       'objects.locked': { $ne: false }, // all objects are locked
       'objects.labels': { $elemMatch: { $or: [  // AND not all labels are invalidated
         { validation: null },
         { 'validation.validated': true }
       ] } }
-    };
-
+    } });
   }
 
-  let labelsFilter = {};
+  // match labels filter
   if (labels) {
-    labelsFilter = { $or: [
+    // map over objects & labels and filter for first validated label
+    pipeline.push({ '$set': {
+      'objects.firstValidLabel': {
+        $map: {
+          input: '$objects',
+          as: 'obj',
+          in: {
+            '$filter': {
+              input: '$$obj.labels',
+              as: 'label',
+              cond: { $eq: ['$$label.validation.validated', true] },
+              limit: 1
+            }
+          }
+        }
+      }
+    } });
 
-      // has an object that is locked,
-      // and it has a label that is both validated and included in filters
-      // NOTE: this is still not perfect: I'm not sure how to determine
-      // whether the FIRST validated label is included in the filters. Right
-      // now if there is ANY label that is both validated and is in filters,
-      // the image will pass the filter
-      { objects: { $elemMatch: {
-        locked: true,
-        labels: { $elemMatch: {
-          'validation.validated': true,
-          category: { $in: labels }
-        } }
-      } } },
+    const labelsFilter = {
+      $or: [
+        // has an object that is locked,
+        // and its first validated label is included in labels filter
+        { objects: { $elemMatch: {
+          locked: true,
+          'firstValidLabel.0.0.category': { $in: labels }
+        } } },
 
-      // OR has an object that is not locked, but it has label that is
-      // not-invalidated and included in filters
-      { objects: { $elemMatch: {
-        locked: false,
-        labels: { $elemMatch: {
-          'validation.validated': { $not: { $eq: false } },
-          category: { $in: labels }
-        } }
-      } } }
-
-    ] };
+        // has an object is not locked, but it has label that is
+        // not-invalidated and included in filters
+        { 'objects': { $elemMatch: {
+          locked: false,
+          labels: { $elemMatch: {
+            'validation.validated': { $not: { $eq: false } },
+            category: { $in: labels }
+          } }
+        } } }
+      ]
+    };
 
     // if labels includes "none", also return images with no objects
     if (labels.includes('none')) {
@@ -150,27 +165,17 @@ const buildFilter = ({
       ] };
       labelsFilter.$or.push(noObjectsFilter);
     }
+
+    pipeline.push({ '$match': labelsFilter });
   }
 
-
-  let customFilter = {};
+  // match custom filter
   if (custom) {
-    customFilter = parser.isFilterValid(custom);
+    pipeline.push({ '$match': parser.isFilterValid(custom) });
   }
 
-  return {
-    $and: [
-      projectFilter,
-      camerasFilter,
-      deploymentsFilter,
-      dateCreatedFilter,
-      dateAddedFilter,
-      reviewedFilter,
-      notReviewedFilter,
-      labelsFilter,
-      customFilter
-    ]
-  };
+  console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
+  return pipeline;
 };
 
 const sanitizeMetadata = (md) => {
@@ -491,7 +496,8 @@ const isImageReviewed = (image) => {
 
 module.exports = {
   buildImgUrl,
-  buildFilter,
+  // buildFilter,
+  buildPipeline,
   sanitizeMetadata,
   isLabelDupe,
   createImageRecord,

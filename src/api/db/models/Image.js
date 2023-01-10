@@ -5,6 +5,7 @@ const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
+const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
@@ -16,9 +17,12 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    const query = utils.buildFilter(input.filters, user['curr_project']);
-    const count = await Image.where(query).countDocuments();
-    return count;
+    console.log('ImageModel.countImages() - counting images...');
+    const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
+    pipeline.push({ $count: 'count' });
+    const res = await Image.aggregate(pipeline);
+    console.log('ImageModel.countImages() - res: ', res);
+    return res[0].count;
   },
 
   queryById: async (_id) => {
@@ -36,16 +40,16 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryByFilter: async (input) => {
+    console.log('queryByFilter filter: ', input);
     try {
-      const options = {
-        query: utils.buildFilter(input.filters, user['curr_project']),
+      const result = await MongoPaging.aggregate(Image.collection, {
+        aggregation: utils.buildPipeline(input.filters, user['curr_project']),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
         previous: input.previous
-      };
-      const result = await Image.paginate(options);
+      });
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -410,8 +414,10 @@ const generateImageModel = ({ user } = {}) => ({
     let multiReviewerCount = 0;
 
     try {
-      const query = utils.buildFilter(input.filters, user['curr_project']);
-      const images = await Image.find(query, ['objects']);
+      console.log('getting stats');
+      const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
+      const images = await Image.aggregate(pipeline);
+      console.log('images: ', images);
       imageCount = images.length;
       for (const img of images) {
 
