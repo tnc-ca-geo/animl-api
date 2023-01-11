@@ -22,7 +22,7 @@ const generateImageModel = ({ user } = {}) => ({
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     console.log('ImageModel.countImages() - res: ', res);
-    return res[0].count;
+    return res[0] ? res[0].count : 0;
   },
 
   queryById: async (_id) => {

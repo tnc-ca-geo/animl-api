@@ -75,7 +75,7 @@ class Export {
       pipelineCopy.push({ $count: 'count' });
       const res = await Image.aggregate(pipelineCopy);
       console.log('res: ', res);
-      count = res[0].count;
+      count = res[0] ? res[0].count : 0;
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error counting images');
