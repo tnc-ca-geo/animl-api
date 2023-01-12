@@ -17,11 +17,9 @@ const retry = require('async-retry');
 const generateImageModel = ({ user } = {}) => ({
 
   countImages: async (input) => {
-    console.log('ImageModel.countImages() - counting images...');
     const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
-    console.log('ImageModel.countImages() - res: ', res);
     return res[0] ? res[0].count : 0;
   },
 
@@ -40,7 +38,6 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   queryByFilter: async (input) => {
-    console.log('queryByFilter filter: ', input);
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
         aggregation: utils.buildPipeline(input.filters, user['curr_project']),
@@ -60,7 +57,6 @@ const generateImageModel = ({ user } = {}) => ({
 
   // TODO: this should be called getAllCategories or something like that
   getLabels: async (projId) => {
-    console.log('Image.getLabels() - projId: ', projId);
     try {
 
       const [categoriesAggregate] = await Image.aggregate([
@@ -115,7 +111,6 @@ const generateImageModel = ({ user } = {}) => ({
         const cameraId = md.serialNumber;
         const [existingCam] = await context.models.Camera.getCameras([cameraId]);
         if (!existingCam) {
-          console.log('Image.createImage() - no existing cam found, socreating one');
           await context.models.Camera.createCamera({
             projectId,
             cameraId,
@@ -127,26 +122,18 @@ const generateImageModel = ({ user } = {}) => ({
         }
         else {
           projectId = utils.findActiveProjReg(existingCam);
-          console.log('Image.createImage() - existing cam found, updating projectId to: ', projectId);
         }
 
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
-        console.log('Image.createImage() - project: ', project);
         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-        console.log('Image.createImage() - camConfig: ', camConfig);
         const deployment = utils.mapImgToDep(md, camConfig, project.timezone);
-        console.log('Image.createImage() - deployment: ', deployment);
-        console.log('Image.createImage() - timezone: ', deployment.timezone);
 
         // create image record
         md.projectId = projectId;
         md.deploymentId = deployment._id;
         md.timezone = deployment.timezone;
-        console.log('md.dateTimeOriginal BEFORE TZ adjustment: ', md.dateTimeOriginal.toString());
         md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
-        console.log('md.dateTimeOriginal AFTEr TZ adjustment: ', md.dateTimeOriginal.toString());
-        console.log('md.dateTimeOriginal AFTEr TZ adjustment, valueOf(): ', md.dateTimeOriginal.valueOf());
 
         const image = await saveImage(md);
         await automation.handleEvent({ event: 'image-added', image }, context);
@@ -157,7 +144,7 @@ const generateImageModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {
-            console.log('Image.createImage() - an error occured, so reversing successful cam-created operation');
+            console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
             // delete newly created camera record
             await Camera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
@@ -216,7 +203,6 @@ const generateImageModel = ({ user } = {}) => ({
   get updateObject() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      console.log('ImageModel.updateObject() - input: ', input);
 
       const operation = async ({ imageId, objectId, diffs }) => {
         return await retry(async (bail, attempt) => {
@@ -414,10 +400,8 @@ const generateImageModel = ({ user } = {}) => ({
     let multiReviewerCount = 0;
 
     try {
-      console.log('getting stats');
       const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
       const images = await Image.aggregate(pipeline);
-      console.log('images: ', images);
       imageCount = images.length;
       for (const img of images) {
 
@@ -480,16 +464,12 @@ const generateImageModel = ({ user } = {}) => ({
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
 
-      console.log(`exporting to ${input.format}...`);
-
       const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const sqs = new SQSClient({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
-
-        console.log('creating status document in s3...');
         // create status document in S3
         await s3.send(new PutObjectCommand({
           Bucket: bucket,
@@ -498,7 +478,6 @@ const generateImageModel = ({ user } = {}) => ({
           ContentType: 'application/json; charset=utf-8'
         }));
 
-        console.log('sending message to sqs queue: ', context.config['/EXPORTS/EXPORT_QUEUE_URL']);
         // push message to SQS with { projectId, documentId, filters }
         await sqs.send(new SendMessageCommand({
           QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
@@ -525,22 +504,17 @@ const generateImageModel = ({ user } = {}) => ({
   get getExportStatus() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async ({ documentId }, context) => {
-
-      console.log('gettingExportStatus...');
-
       const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
 
-        console.log('getting status object from s3');
         const { Body } = await s3.send(new GetObjectCommand({
           Bucket: bucket,
           Key: `${documentId}.json`
         }));
 
         const objectText = await text(Body);
-        console.log('res: ', JSON.parse(objectText));
         return JSON.parse(objectText);
 
       } catch (err) {
