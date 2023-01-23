@@ -450,11 +450,11 @@ class Export {
   relToAbs(bbox, imageWidth, imageHeight) {
     // convert bbox in relative vals ([ymin, xmin, ymax, xmax])
     // to absolute values ([x,y,width,height])
-    const left =    Math.round(bbox[1] * imageWidth);
-    const top =     Math.round(bbox[0] * imageHeight);
+    const x =       Math.round(bbox[1] * imageWidth);
+    const y =       Math.round(bbox[0] * imageHeight);
     const width =   Math.round((bbox[3] - bbox[1]) * imageWidth);
     const height =  Math.round((bbox[2] - bbox[0]) * imageHeight);
-    return { left, top, width, height };
+    return [x, y, width, height];
   }
 
 }
