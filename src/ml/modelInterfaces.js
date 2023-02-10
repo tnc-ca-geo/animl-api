@@ -29,6 +29,7 @@ const megadetector = async (params) => {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const detections = JSON.parse(body);
+    console.log('detections returned from megadetector endpoint: ', detections)
 
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,

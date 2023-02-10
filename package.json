@@ -16,6 +16,9 @@
         "update-docs": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/updateDocuments.js",
         "update-docs-dev": "STAGE=dev npm run update-docs",
         "update-docs-prod": "STAGE=prod npm run update-docs",
+        "create-project": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/createProject.js",
+        "create-project-dev": "STAGE=dev npm run create-project",
+        "create-project-prod": "STAGE=prod npm run create-project",
         "test": "tape test/**.test.js",
         "lint": "eslint src/**/*.js test/**.js"
     },
