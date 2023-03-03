@@ -45,7 +45,7 @@ const context = async ({ event, context }) => {
       Image: generateImageModel({ user }),
       Camera: generateCameraModel({ user }),
       MLModel: generateMLModelModel({ user }),
-      Batch: generateBatchModel({ user }),
+      Batch: generateBatchModel({ user })
     }
   };
 };

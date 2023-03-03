@@ -4,6 +4,10 @@ const Query = {
     return await context.models.Project.getProjects(_ids);
   },
 
+  batches: async (_, { _ids }, context) => {
+    return await context.models.Batch.getBatches(_ids);
+  },
+
   images: async (_, { input }, context) => {
     const count = await context.models.Image.countImages(input);
     const response = await context.models.Image.queryByFilter(input);

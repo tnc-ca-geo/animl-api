@@ -154,7 +154,7 @@ resources:
       Properties:
         QueueName: exportQueue-${self:provider.stage}
         VisibilityTimeout: 120
-      
+
     # SSM Param - API URL
     SSMParameterApiurl:
       Type: AWS::SSM::Parameter
