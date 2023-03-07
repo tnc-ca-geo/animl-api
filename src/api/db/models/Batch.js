@@ -60,13 +60,12 @@ const generateBatchModel = ({ user } = {}) => ({
           Bucket: `animl-images-ingestion-${process.env.STAGE}`,
           Key: randomUUID(),
           ContentType: 'application/zip',
-          Expires: 60
         };
 
         const s3 = new S3.S3Client();
         const put = new S3.PutObjectCommand(params);
 
-        const signedUrl = await getSignedUrl(s3, put, { expiresIn: 60 });
+        const signedUrl = await getSignedUrl(s3, put)
 
         return { url: signedUrl };
       } catch (err) {

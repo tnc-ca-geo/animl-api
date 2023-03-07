@@ -1,7 +1,7 @@
 const Mutation = {
   createUpload: async (_, { input }, context) => {
-    const upload = await context.models.Batch.createUpload(input, context);
-    return { upload };
+    const res = await context.models.Batch.createUpload(input, context);
+    return { ...res };
   },
 
   createBatch: async (_, { input }, context) => {
