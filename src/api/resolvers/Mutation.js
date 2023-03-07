@@ -4,6 +4,11 @@ const Mutation = {
     return { upload };
   },
 
+  createBatch: async (_, { input }, context) => {
+    const batch = await context.models.Batch.createBatch(input, context);
+    return { batch };
+  },
+
   createImage: async (_, { input }, context) => {
     const image = await context.models.Image.createImage(input, context);
     return { image };

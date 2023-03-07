@@ -57,6 +57,20 @@ provider:
             - Fn::Join:
               - ''
               - - 'arn:aws:s3:::'
+                - 'animl-images-ingestion-${process.env.STAGE}'
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - 'animl-images-ingestion-${process.env.STAGE}'
+                - '/*'
+        - Effect: 'Allow'
+          Action:
+            - 's3:PutObject'
+            - 's3:GetObject'
+          Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
                 - Ref: S3BucketAnimlexporteddata
             - Fn::Join:
               - ''

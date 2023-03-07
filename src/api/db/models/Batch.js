@@ -53,7 +53,6 @@ const generateBatchModel = ({ user } = {}) => ({
         }
     },
 
-
     get createUpload() {
         if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
         return async (input, context) => {
