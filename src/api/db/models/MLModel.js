@@ -27,7 +27,7 @@ const generateMLModelModel = ({ user } = {}) => ({
         const newModel = new MLModel(modelConfig);
         await newModel.save();
         return newModel;
-        
+
       }, { retries: 2 });
     };
 
@@ -38,8 +38,8 @@ const generateMLModelModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
 
- });
+});
 
- module.exports = generateMLModelModel;
+module.exports = generateMLModelModel;

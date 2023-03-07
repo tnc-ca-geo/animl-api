@@ -9,19 +9,19 @@ const Schema = mongoose.Schema;
  */
 
 // TODO: think about measuring model performance a bit more...
-let MLModelPerformanceSchema = new Schema({
+const MLModelPerformanceSchema = new Schema({
   invocationCount: { type: Number, required: true, default: 0 },
   validationCcount: { type: Number, required: true, default: 0 },
-  invalidationCount: { type: Number, required: true, default: 0 },
+  invalidationCount: { type: Number, required: true, default: 0 }
 });
 
 /*
  * MLModelSchema
- *    serves as "source" for options when new automation rules are being created 
+ *    serves as "source" for options when new automation rules are being created
  *    and for when applying model version to labels after inference
  */
 
-let MLModelSchema = new Schema({
+const MLModelSchema = new Schema({
   _id : { type: String, required: true }, /* _id is name of ml model */
   description: { type: String },
   version: { type: String, required: true },
@@ -31,8 +31,8 @@ let MLModelSchema = new Schema({
       _id: { type: String, required: true },
       name: { type: String, required: true }
     })],
-    required: true,
-  },
+    required: true
+  }
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
 

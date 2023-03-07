@@ -5,7 +5,7 @@ module.exports = `
   }
 `;
 
-// TODO: if we decide to get more surgical with the update, 
+// TODO: if we decide to get more surgical with the update,
 // return something like:
 
 // module.exports = `

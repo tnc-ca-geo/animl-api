@@ -505,7 +505,7 @@ const generateImageModel = ({ user } = {}) => ({
   get getExportStatus() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async ({ documentId }, context) => {
-      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {

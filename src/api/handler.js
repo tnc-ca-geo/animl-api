@@ -51,6 +51,7 @@ const context = async ({ event, context }) => {
 };
 
 const server = new ApolloServer({
+  includeStacktraceInErrorResponses: true,
   typeDefs,
   resolvers,
   context,
