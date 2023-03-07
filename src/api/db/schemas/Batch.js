@@ -8,12 +8,11 @@ let FiltersSchema = new Schema({
   processingEnd: { type: Date },
 });
 
-let ProjectSchema = new Schema({
+let BatchSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
-  name: { type: String, required: true },
   processingStart: { type: Date },
   processingEnd: { type: Date },
   total: { type: Number }
 });
 
-module.exports = mongoose.model('Batch', ProjectSchema);
+module.exports = mongoose.model('Batch', BatchSchema);

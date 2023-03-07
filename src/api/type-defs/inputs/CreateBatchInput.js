@@ -1,8 +1,5 @@
 module.exports = `
-  type Batch {
+  input CreateBatchInput {
     _id: String!
     processingStart: String!
-    processingEnd: String
-    total: Int
-  }
-`;
+}`;
