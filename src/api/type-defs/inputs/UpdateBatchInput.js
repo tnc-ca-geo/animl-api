@@ -1,6 +1,6 @@
 module.exports = `
   input UpdateBatchInput {
     _id: String!
-    total: String
+    total: Int
     processingEnd: String
 }`;
