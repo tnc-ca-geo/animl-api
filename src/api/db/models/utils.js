@@ -306,6 +306,7 @@ const createImageRecord = (md) => {
 
   const image = new Image({
     _id: md.hash,
+    batchId: md.batchId,
     bucket: md.prodBucket,
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: DateTime.now(),

@@ -12,6 +12,7 @@ const Schema = mongoose.Schema;
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
   bucket: { type: String, required: true },
+  batchId: { type: String },
   fileTypeExtension: { type: String, required: true },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
