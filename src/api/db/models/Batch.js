@@ -34,7 +34,19 @@ const generateBatchModel = ({ user } = {}) => ({
     }
   },
 
-  createBatch: () => {
+  queryById: async (_id) => {
+    const query = { _id };
+    try {
+      const batch = await Batch.findOne(query);
+      return batch;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  },
+
+  get createBatch() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
