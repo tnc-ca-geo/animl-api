@@ -62,15 +62,15 @@ const generateBatchModel = ({ user } = {}) => ({
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
-      const operation = async ({ batchId, update }) => {
+      const operation = async (input) => {
         return await retry(async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateObject operation! Try #: ${attempt}`);
           }
           // find image, apply object updates, and save
-          const batch = await this.queryById(batchId);
+          const batch = await this.queryById(input._id);
 
-          Object.assign(batch, update);
+          Object.assign(batch, input);
 
           await batch.save();
           return batch;

@@ -1,4 +1,4 @@
 module.exports = `
-  type CreateBatchPayload {
+  type BatchPayload {
     batch: Batch
   }`;
