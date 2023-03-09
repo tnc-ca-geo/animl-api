@@ -259,8 +259,8 @@ const getTriggerSource = (input) => {
       });
       return triggerSource;
     },
-    'RidgeTec': (input) => null,
-    'RECONYX': (input) => null
+    'RidgeTec': () => null,
+    'RECONYX': () => null
   };
 
   return (input.make && userDataMap[input.make])

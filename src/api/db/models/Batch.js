@@ -1,13 +1,8 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const { randomUUID } = require('crypto');
-const { fromTemporaryCredentials } = require('@aws-sdk/credential-providers');
 const S3 = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { HttpRequest } = require('@aws-sdk/protocol-http');
-const { formatUrl } = require('@aws-sdk/util-format-url');
-const { parseUrl } = require('@aws-sdk/url-parser');
-const { Hash } = require('@aws-sdk/hash-node');
 const Batch = require('../schemas/Batch');
 const retry = require('async-retry');
 const utils = require('./utils');
@@ -51,7 +46,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
     return async (input) => {
       const operation = async (input) => {
-        return await retry(async (bail) => {
+        return await retry(async () => {
           const newBatch = new Batch(input);
           console.error('PRE', newBatch);
           await newBatch.save();
@@ -102,7 +97,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
   get createUpload() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return async (input, context) => {
+    return async () => {
       try {
         const params = {
           Bucket: `animl-images-ingestion-${process.env.STAGE}`,

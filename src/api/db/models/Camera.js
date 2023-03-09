@@ -1,6 +1,5 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { CameraRegistrationError } = require('../../errors');
-const { GraphQLError } = require('graphql/error/GraphQLError');
 const Camera = require('../schemas/Camera');
 const retry = require('async-retry');
 const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
@@ -31,7 +30,7 @@ const generateCameraModel = ({ user } = {}) => ({
 
       const saveCamera = async (input) => {
         const { projectId, cameraId, make, model } = input;
-        return await retry(async (bail, attempt) => {
+        return await retry(async () => {
           const newCamera = new Camera({
             _id: cameraId,
             make,

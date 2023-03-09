@@ -1,6 +1,6 @@
 const MANAGER = 'project_manager';
 const MEMBER = 'project_member';
-const OBSERVER = 'project_observer';
+// const OBSERVER = 'project_observer';
 
 const EXPORT_DATA_ROLES =                [MANAGER, MEMBER];
 const WRITE_OBJECTS_ROLES =              [MANAGER, MEMBER];

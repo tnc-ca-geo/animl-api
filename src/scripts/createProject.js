@@ -10,17 +10,19 @@ const defaultViewsConfig = [{
   editable: false
 }];
 
-// Uncomment and edit config for new project below:
-// const newProjectConfig = [
-//   {
-//     _id: 'robinson_crusoe',
-//     name: 'Robinson Crusoe',
-//     description: 'Robinson Crusoe camera traps',
-//     timezone: 'America/Santiago',
-//     views: defaultViewsConfig,
-//     availableMLModels: ['megadetector']
-//   }
-// ];
+// Edit config for new project below:
+const newProjectConfig = [
+  {
+    _id: 'robinson_crusoe',
+    name: 'Robinson Crusoe',
+    description: 'Robinson Crusoe camera traps',
+    timezone: 'America/Santiago',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector']
+  }
+];
+
+if (newProjectConfig._id === 'robinson_crusoe') throw new Error('Edit New Project before running');
 
 async function createNewProject(params) {
   const { dbModels, newProjectConfig } = params;

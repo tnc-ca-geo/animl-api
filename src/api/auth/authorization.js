@@ -8,7 +8,7 @@ async function getUserInfo(req, config) {
 
   // if x-api-key header is present, call was to /internal path
   // and was made by an internal lambda
-  if (api_key == config['APIKEY']) {
+  if (api_key === config['APIKEY']) {
     return { 'is_superuser': true };
   }
 
