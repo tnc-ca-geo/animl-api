@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const shared = require('./shared');
 
 const FiltersSchema = new Schema({
   batches: { type: [String], default: undefined },

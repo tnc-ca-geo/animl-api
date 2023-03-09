@@ -6,14 +6,13 @@ const Schema = mongoose.Schema;
  *    invocationCount - number of times the model has been invoked
  *    correctCount  - number of times a reviewer validated the prediciton
  *    incorrectCount - number of times a reviewer invalidated the prediciton
+ * TODO: think about measuring model performance a bit more...
+ * const MLModelPerformanceSchema = new Schema({
+ *  invocationCount: { type: Number, required: true, default: 0 },
+ *  validationCcount: { type: Number, required: true, default: 0 },
+ *  invalidationCount: { type: Number, required: true, default: 0 }
+ * });
  */
-
-// TODO: think about measuring model performance a bit more...
-const MLModelPerformanceSchema = new Schema({
-  invocationCount: { type: Number, required: true, default: 0 },
-  validationCcount: { type: Number, required: true, default: 0 },
-  invalidationCount: { type: Number, required: true, default: 0 }
-});
 
 /*
  * MLModelSchema
