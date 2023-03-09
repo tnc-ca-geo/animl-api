@@ -26,6 +26,7 @@ provider:
           Action:
             - sqs:*
           Resource:
+            - !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:animl-ingest-${self:provider.stage}-batch-*'
             - Fn::GetAtt:
                 - inferenceQueue
                 - Arn
@@ -57,11 +58,11 @@ provider:
             - Fn::Join:
               - ''
               - - 'arn:aws:s3:::'
-                - 'animl-images-ingestion-${process.env.STAGE}'
+                - 'animl-images-ingestion-${self:provider.stage}'
             - Fn::Join:
               - ''
               - - 'arn:aws:s3:::'
-                - 'animl-images-ingestion-${process.env.STAGE}'
+                - 'animl-images-ingestion-${self:provider.stage}'
                 - '/*'
         - Effect: 'Allow'
           Action:
@@ -162,7 +163,7 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
-    # Expprt SQS queue
+    # Export SQS queue
     exportQueue:
       Type: AWS::SQS::Queue
       Properties:
