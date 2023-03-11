@@ -1,11 +1,14 @@
 const Query = {
-
   projects: async (_, { _ids }, context) => {
     return await context.models.Project.getProjects(_ids);
   },
 
   batches: async (_, { _ids }, context) => {
     return await context.models.Batch.getBatches(_ids);
+  },
+
+  batch: async (_, { _id }, context) => {
+    return await context.models.Batch.queryById(_id);
   },
 
   images: async (_, { input }, context) => {

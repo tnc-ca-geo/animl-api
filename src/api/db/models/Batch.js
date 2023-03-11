@@ -9,15 +9,7 @@ const utils = require('./utils');
 
 const generateBatchModel = ({ user } = {}) => ({
   getBatches: async (_ids) => {
-    let query = {};
-    if (user['is_superuser']) {
-      query = _ids ? { _id: { $in: _ids } } : {};
-    }
-    else {
-      const availIds = Object.keys(user['projects']);
-      const filteredIds = _ids && _ids.filter((_id) => availIds.includes(_id));
-      query = { _id: { $in: (filteredIds || availIds) } };
-    }
+    let query = { _id: { $in: _ids } };
 
     try {
       const batches = await Batch.find(query);

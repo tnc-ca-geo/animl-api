@@ -7,6 +7,7 @@ module.exports = `
     cameras(_ids: [String!]): [Camera]
     mlModels(_ids: [String!]): [MLModel]
     batches(_ids: [String!]): [Batch]
+    batch(_id: String!): Batch
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
     exportStatus(input: ExportStatusInput!): ExportStatusPayload
