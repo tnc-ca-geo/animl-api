@@ -8,7 +8,9 @@ const Query = {
   },
 
   batch: async (_, { _id }, context) => {
-    return await context.models.Batch.queryById(_id);
+    return await context.models.Batch.queryById(_id, {
+        remaining: true
+    });
   },
 
   images: async (_, { input }, context) => {

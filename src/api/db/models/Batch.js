@@ -2,6 +2,7 @@ const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const { randomUUID } = require('crypto');
 const S3 = require('@aws-sdk/client-s3');
+const SQS = require('@aws-sdk/client-sqs');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const Batch = require('../schemas/Batch');
 const retry = require('async-retry');
@@ -21,10 +22,26 @@ const generateBatchModel = ({ user } = {}) => ({
     }
   },
 
-  queryById: async (_id) => {
+  queryById: async (_id, params={}) => {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
+
+      if (params.remaining && batch.processingEnd) {
+        batch.remaining = 0;
+      } else if (params.remaining) {
+        const sqs = new SQS.SQSClient();
+
+        try {
+            await sqs.send(new SQS.ListQueuesCommand({
+              QueueNamePrefix: `animl-ingest-${process.env.STAGE}-${batch._id}`
+            }));
+        } catch (err) {
+            console.error(err);
+            batch.remaining = null;
+        }
+      }
+
       return batch;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -40,9 +57,7 @@ const generateBatchModel = ({ user } = {}) => ({
       const operation = async (input) => {
         return await retry(async () => {
           const newBatch = new Batch(input);
-          console.error('PRE', newBatch);
           await newBatch.save();
-          console.error('POST', newBatch);
           return newBatch;
         }, { retries: 2 });
       };
