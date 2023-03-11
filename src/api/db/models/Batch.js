@@ -33,9 +33,15 @@ const generateBatchModel = ({ user } = {}) => ({
         const sqs = new SQS.SQSClient();
 
         try {
-            await sqs.send(new SQS.ListQueuesCommand({
-              QueueNamePrefix: `animl-ingest-${process.env.STAGE}-${batch._id}`
+            const queue = await sqs.send(new SQS.getQueueAttributesCommand({
+              QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
+              AttributeNames: [
+                'ApproximateNumberOfMessages',
+                'ApproximateNumberOfMessagesNotVisible'
+              ]
             }));
+
+            batch.remaining = queue.Attributes.ApproximateNumberOfMessages + queue.Attributes.ApproximateNumberOfMessagesNotVisible;
         } catch (err) {
             console.error(err);
             batch.remaining = null;
