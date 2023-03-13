@@ -19,7 +19,7 @@ provider:
   environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
-    ACCOUNT: ${AWS::AccountId}
+    ACCOUNT: ${aws:accountId}
   iam:
     role:
       statements:
