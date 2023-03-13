@@ -27,6 +27,7 @@ const executeRule = {
         }));
       }
     } catch (err) {
+      console.error(`not ok - failed to post to SQS: ${err.message}`);
       throw new ApolloError(err);
     }
   },
