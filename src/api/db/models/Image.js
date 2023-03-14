@@ -101,13 +101,9 @@ const generateImageModel = ({ user } = {}) => ({
 
       const saveImage = async (md) => {
         return await retry(async (bail, attempt) => {
-          try {
           if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
           const newImage = utils.createImageRecord(md);
           return await newImage.save();
-          } catch (err) {
-                console.error('IMAGE ERROR', err.message, err);
-          }
         }, { retries: 2 });
       };
 

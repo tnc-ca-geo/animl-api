@@ -17,7 +17,6 @@ const executeRule = {
 
       if (payload.image.batchId) {
 
-          console.error(`https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}`)
         return await sqs.send(new SQS.SendMessageCommand({
           QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}`,
           MessageBody: JSON.stringify(message)
@@ -29,7 +28,6 @@ const executeRule = {
         }));
       }
     } catch (err) {
-      console.error(`not ok - failed to post to SQS: ${err.message}`);
       throw new ApolloError(err);
     }
   },

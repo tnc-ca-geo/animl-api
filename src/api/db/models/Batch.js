@@ -10,7 +10,7 @@ const utils = require('./utils');
 
 const generateBatchModel = ({ user } = {}) => ({
   getBatches: async (_ids) => {
-    let query = { _id: { $in: _ids } };
+    const query = { _id: { $in: _ids } };
 
     try {
       const batches = await Batch.find(query);
@@ -22,7 +22,7 @@ const generateBatchModel = ({ user } = {}) => ({
     }
   },
 
-  queryById: async (_id, params={}) => {
+  queryById: async (_id, params = {}) => {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
@@ -33,18 +33,18 @@ const generateBatchModel = ({ user } = {}) => ({
         const sqs = new SQS.SQSClient();
 
         try {
-            const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-              QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
-              AttributeNames: [
-                'ApproximateNumberOfMessages',
-                'ApproximateNumberOfMessagesNotVisible'
-              ]
-            }));
+          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+            QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
+            AttributeNames: [
+              'ApproximateNumberOfMessages',
+              'ApproximateNumberOfMessagesNotVisible'
+            ]
+          }));
 
-            batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+          batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
         } catch (err) {
-            console.error(err);
-            batch.remaining = null;
+          console.error(err);
+          batch.remaining = null;
         }
       }
 

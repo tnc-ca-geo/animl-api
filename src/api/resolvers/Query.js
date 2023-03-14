@@ -9,7 +9,7 @@ const Query = {
 
   batch: async (_, { _id }, context) => {
     return await context.models.Batch.queryById(_id, {
-        remaining: true
+      remaining: true
     });
   },
 
