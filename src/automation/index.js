@@ -16,6 +16,8 @@ const executeRule = {
       const message = { modelSource, catConfig, ...payload };
 
       if (payload.image.batchId) {
+
+          console.error(`https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}`)
         return await sqs.send(new SQS.SendMessageCommand({
           QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}`,
           MessageBody: JSON.stringify(message)
