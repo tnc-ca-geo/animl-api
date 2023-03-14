@@ -41,7 +41,7 @@ const generateBatchModel = ({ user } = {}) => ({
               ]
             }));
 
-            batch.remaining = queue.Attributes.ApproximateNumberOfMessages + queue.Attributes.ApproximateNumberOfMessagesNotVisible;
+            batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
         } catch (err) {
             console.error(err);
             batch.remaining = null;
