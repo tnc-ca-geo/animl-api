@@ -1,15 +1,13 @@
 const { buildImgUrl } = require('../api/db/models/utils');
 const SM = require('@aws-sdk/client-sagemaker-runtime');
+const agent = require('superagent');
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
 
-  console.error('URL', url);
   try {
-    const res = await fetch.get(url);
-    const body = await img.body.arrayBuffer();
-    console.error(body);
-
+    const res = await fetch(url);
+    const body = await res.arrayBuffer();
     return Buffer.from(body, 'binary');
   } catch (err) {
     throw new Error(err);
