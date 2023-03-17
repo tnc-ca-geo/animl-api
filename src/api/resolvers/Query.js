@@ -13,7 +13,7 @@ const Query = {
         next,
         hasNext
       },
-      images: results
+      batches: results
     };
   },
 
