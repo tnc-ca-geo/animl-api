@@ -25,7 +25,7 @@ const generateBatchModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous
       });
-      console.log('res: ', JSON.stringify(result));
+      // console.log('res: ', JSON.stringify(result));
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
