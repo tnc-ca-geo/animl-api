@@ -3,8 +3,18 @@ const Query = {
     return await context.models.Project.getProjects(_ids);
   },
 
-  batches: async (_, { _ids }, context) => {
-    return await context.models.Batch.getBatches(_ids);
+  batches: async (_, { input }, context) => {
+    const response = await context.models.Batch.queryByFilter(input);
+    const { previous, hasPrevious, next, hasNext, results } = response;
+    return {  // reurn ImagesConnection
+      pageInfo: {
+        previous,
+        hasPrevious,
+        next,
+        hasNext
+      },
+      images: results
+    };
   },
 
   batch: async (_, { _id }, context) => {

@@ -1,4 +1,5 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
+const MongoPaging = require('mongo-cursor-pagination');
 const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const { randomUUID } = require('crypto');
 const S3 = require('@aws-sdk/client-s3');
@@ -9,12 +10,23 @@ const retry = require('async-retry');
 const utils = require('./utils');
 
 const generateBatchModel = ({ user } = {}) => ({
-  getBatches: async (_ids) => {
-    const query = { _id: { $in: _ids } };
-
+  queryByFilter: async (input) => {
     try {
-      const batches = await Batch.find(query);
-      return batches;
+      const pipeline = [];
+      if (input.eTag) {
+        pipeline.push({ '$match': { 'eTag': input.eTag } });
+      }
+
+      const result = await MongoPaging.aggregate(Batch.collection, {
+        aggregation: pipeline,
+        limit: input.limit,
+        paginatedField: input.paginatedField,
+        sortAscending: input.sortAscending,
+        next: input.next,
+        previous: input.previous
+      });
+      // console.log('res: ', JSON.stringify(result));
+      return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
