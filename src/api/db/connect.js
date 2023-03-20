@@ -13,12 +13,8 @@ module.exports.connectToDatabase = async function connectToDb(config) {
     // We cache the promise instead of the connection itself to prevent race
     // conditions where connect is called more than once.
     const uri = config['/DB/MONGO_DB_URL'];
-    cachedConnectionPromise = mongoose.connect(uri, {
-      useCreateIndex: true,
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    cachedConnectionPromise = await mongoose.connect(uri, {
       bufferCommands: false,
-      bufferMaxEntries: 0,
       // TODO: double check auto indexing is off in prod environment
       ...((process.env.STAGE === 'prod') && { autoIndex: false })
     });
