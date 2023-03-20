@@ -5,6 +5,7 @@ module.exports = `
     processingStart: String!
     processingEnd: String
     remaining: Int
+    dead: Int
     total: Int
   }
 `;

@@ -41,6 +41,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
       if (params.remaining && batch.processingEnd) {
         batch.remaining = 0;
+        batch.dead = 0;
       } else if (params.remaining) {
         const sqs = new SQS.SQSClient();
 
@@ -57,6 +58,21 @@ const generateBatchModel = ({ user } = {}) => ({
         } catch (err) {
           console.error(err);
           batch.remaining = null;
+        }
+
+        try {
+          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+            QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
+            AttributeNames: [
+              'ApproximateNumberOfMessages',
+              'ApproximateNumberOfMessagesNotVisible'
+            ]
+          }));
+
+          batch.dead = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+        } catch (err) {
+          console.error(err);
+          batch.dead = null;
         }
       }
 
