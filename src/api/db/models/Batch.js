@@ -119,7 +119,6 @@ const generateBatchModel = ({ user } = {}) => ({
     return async (input) => {
       const operation = async (input) => {
         return await retry(async () => {
-          input.user = user._id;
           const newBatch = new Batch(input);
           await newBatch.save();
           return newBatch;
@@ -127,14 +126,17 @@ const generateBatchModel = ({ user } = {}) => ({
       };
 
       try {
+        const id = `batch-${randomUUID()}`;
         const batch = await operation({
-            _id: `batch-${randomUUID}`,
+            _id: id,
+            user: user.aud,
             originalFile: input.originalFile
+            uploadedFile: `${id}.zip`
         });
 
         const params = {
           Bucket: `animl-images-ingestion-${process.env.STAGE}`,
-          Key: batch._id,
+          Key: `${id}.zip`,
           ContentType: 'application/zip'
         };
 
@@ -143,7 +145,11 @@ const generateBatchModel = ({ user } = {}) => ({
 
         const signedUrl = await getSignedUrl(s3, put);
 
-        return { url: signedUrl };
+        return {
+            batch: batch._id,
+            user: user.aud,
+            url: signedUrl
+        };
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;

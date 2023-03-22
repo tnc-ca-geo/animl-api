@@ -1,6 +1,6 @@
 module.exports = `
   type CreateUploadPayload {
     batch: String!
-    uid: String!
+    user: String!
     url: String!
   }`;

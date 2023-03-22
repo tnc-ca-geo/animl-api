@@ -4,11 +4,6 @@ const Mutation = {
     return { ...res };
   },
 
-  createBatch: async (_, { input }, context) => {
-    const batch = await context.models.Batch.createBatch(input, context);
-    return { batch };
-  },
-
   updateBatch: async (_, { input }, context) => {
     const batch = await context.models.Batch.updateBatch(input, context);
     return { batch };

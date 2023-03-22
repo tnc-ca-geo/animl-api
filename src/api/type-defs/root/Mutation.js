@@ -2,7 +2,7 @@ module.exports = `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
 
-    createUpload(input: CreateUploadInput): CreateUploadPayload
+    createUpload(input: CreateUploadInput!): CreateUploadPayload
     updateBatch(input: UpdateBatchInput!): BatchPayload
 
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
