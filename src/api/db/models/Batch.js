@@ -127,17 +127,14 @@ const generateBatchModel = ({ user } = {}) => ({
       };
 
       try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+        const batch = await operation({
+            _id: `batch-${randomUUID}`,
+            originalFile: input.originalFile
+        });
 
-      try {
         const params = {
           Bucket: `animl-images-ingestion-${process.env.STAGE}`,
-          Key: randomUUID(),
+          Key: batch._id,
           ContentType: 'application/zip'
         };
 
@@ -148,6 +145,8 @@ const generateBatchModel = ({ user } = {}) => ({
 
         return { url: signedUrl };
       } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
     };

@@ -1,4 +1,4 @@
 module.exports = `
-  input UpdateUploadInput {
+  input CreateUploadInput {
     originalFile: String!
 }`;
