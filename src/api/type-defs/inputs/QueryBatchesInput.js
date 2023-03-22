@@ -6,4 +6,5 @@ module.exports = `
     next: String
     previous: String
     eTag: String
+    user: String
   }`;

@@ -83,51 +83,26 @@ const generateBatchModel = ({ user } = {}) => ({
     }
   },
 
-  get updateBatch() {
+  get createBatch() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
-      const operation = async (input) => {
-        return await retry(async (bail, attempt) => {
-          if (attempt > 1) {
-            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
-          }
-          // find image, apply object updates, and save
-          const batch = await this.queryById(input._id);
-
-          Object.assign(batch, input);
-
-          await batch.save();
-          return batch;
-
-        }, { retries: 2 });
-      };
-
-      try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
     };
   },
 
   get createUpload() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
     return async (input) => {
       const operation = async (input) => {
         return await retry(async () => {
-          input.user = user._id;
-          const newBatch = new Batch(input);
-          await newBatch.save();
-          return newBatch;
+          const newUpload = new Upload(input);
+          await newUpload.save();
+          return newUpload;
         }, { retries: 2 });
       };
 
       try {
-        return await operation(input);
+        await operation(input);
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
