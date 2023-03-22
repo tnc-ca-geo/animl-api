@@ -106,6 +106,7 @@ const generateBatchModel = ({ user } = {}) => ({
       try {
         return await operation(input);
       } catch (err) {
+        console.error(err);
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
@@ -130,7 +131,7 @@ const generateBatchModel = ({ user } = {}) => ({
         const batch = await operation({
             _id: id,
             user: user.aud,
-            originalFile: input.originalFile
+            originalFile: input.originalFile,
             uploadedFile: `${id}.zip`
         });
 
