@@ -42,11 +42,11 @@ const generateBatchModel = ({ user } = {}) => ({
         batch.remaining = 0;
         batch.dead = 0;
       } else if (params.remaining) {
-        const sqs = new SQS.SQSClient();
+        const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
         try {
           const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}.fifo`,
+            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}.fifo`,
             AttributeNames: [
               'ApproximateNumberOfMessages',
               'ApproximateNumberOfMessagesNotVisible'
@@ -61,7 +61,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
         try {
           const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq.fifo`,
+            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq.fifo`,
             AttributeNames: [
               'ApproximateNumberOfMessages',
               'ApproximateNumberOfMessagesNotVisible'
