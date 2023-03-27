@@ -6,6 +6,7 @@ const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
 const generateMLModelModel = require('./db/models/MLModel');
 const generateBatchModel = require('./db/models/Batch');
+const generateBatchErrorModel = require('./db/models/BatchError');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
 const Fields = require('./resolvers/Fields');
@@ -45,7 +46,8 @@ const context = async ({ event, context }) => {
       Image: generateImageModel({ user }),
       Camera: generateCameraModel({ user }),
       MLModel: generateMLModelModel({ user }),
-      Batch: generateBatchModel({ user })
+      Batch: generateBatchModel({ user }),
+      BatchError: generateBatchErrorModel({ user })
     }
   };
 };
