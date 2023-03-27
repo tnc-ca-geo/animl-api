@@ -26,7 +26,12 @@ const generateBatchErrorModel = ({ user } = {}) => ({
             created: new Date()
         });
 
-        return batcherr;
+        return {
+            _id: batcherr._id,
+            batch: batcherr.batch,
+            error: batcherr.error,
+            created: batcherr.created,
+        };
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;
