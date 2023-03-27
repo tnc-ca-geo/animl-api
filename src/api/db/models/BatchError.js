@@ -1,5 +1,6 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const BatchErrro = require('../schemas/BatchError');
+const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
+const BatchError = require('../schemas/BatchError');
 const retry = require('async-retry');
 const utils = require('./utils');
 const { randomUUID } = require('node:crypto');
@@ -20,7 +21,7 @@ const generateBatchErrorModel = ({ user } = {}) => ({
       try {
         const batcherr = await operation({
             _id: randomUUID(),
-            user: input.batch,
+            batch: input.batch,
             error: input.error,
             created: new Date()
         });

@@ -1,7 +1,7 @@
 const Mutation = {
   createBatchError: async (_, { input }, context) => {
     const error = await context.models.BatchError.createError(input, context);
-    return { error };
+    return { ...error };
   },
 
   createUpload: async (_, { input }, context) => {
