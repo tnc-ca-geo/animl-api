@@ -4,6 +4,7 @@ const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const { randomUUID } = require('crypto');
 const S3 = require('@aws-sdk/client-s3');
 const SQS = require('@aws-sdk/client-sqs');
+const Lambda = require('@aws-sdk/client-lambda');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const Batch = require('../schemas/Batch');
 const retry = require('async-retry');
@@ -81,6 +82,45 @@ const generateBatchModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
+  },
+
+  get stopBatch() {
+    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
+    return async (input) => {
+      const operation = async (input) => {
+        return await retry(async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
+          }
+          return await this.queryById(input._id);
+        }, { retries: 2 });
+      };
+
+      try {
+        const batch = await operation(input);
+        if (batch.processingEnd) throw new Error('Stack has already terminated');
+
+        const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
+
+        await lambda.send(new Lambda.InvokeCommand({
+            FunctionName: `IngestDelete-${process.env.STAGE}`,
+            InvocationType: 'Event',
+            Payload: JSON.stringify({
+                batch: batch._id
+            })
+        }));
+
+        return {
+            message: 'Batch Scheduled for Deletion'
+        }
+      } catch (err) {
+        console.error(err);
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
   },
 
   get updateBatch() {

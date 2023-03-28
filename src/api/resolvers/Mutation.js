@@ -19,6 +19,11 @@ const Mutation = {
     return { batch };
   },
 
+  stopBatch: async (_, { input }, context) => {
+    const res = await context.models.Batch.stopBatch(input, context);
+    return { ...res };
+  },
+
   createImage: async (_, { input }, context) => {
     const image = await context.models.Image.createImage(input, context);
     return { image };
