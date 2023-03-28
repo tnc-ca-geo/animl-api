@@ -5,7 +5,7 @@ const Mutation = {
   },
 
   createImageError: async (_, { input }, context) => {
-    const error = await context.models.ImgaeError.createError(input, context);
+    const error = await context.models.ImageError.createError(input, context);
     return { ...error };
   },
 
