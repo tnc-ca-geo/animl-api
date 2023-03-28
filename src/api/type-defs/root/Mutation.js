@@ -6,6 +6,7 @@ module.exports = `
     updateBatch(input: UpdateBatchInput!): BatchPayload
 
     createBatchError(input: CreateBatchErrorInput!): BatchError
+    createImageError(input: CreateImageErrorInput!): ImageError
 
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
     unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload
