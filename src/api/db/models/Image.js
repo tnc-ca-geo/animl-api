@@ -7,6 +7,7 @@ const { DuplicateError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
 const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
+const ImageError = require('../schemas/ImageError');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
@@ -29,6 +30,11 @@ const generateImageModel = ({ user } = {}) => ({
       : { _id };
     try {
       const image = await Image.findOne(query);
+
+      const epipeline = [];
+      epipeline.push({ '$match': { 'image': image._id } });
+      image.errors = await ImageError.aggregate(epipeline)
+
       return image;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
