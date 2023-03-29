@@ -2,6 +2,7 @@ module.exports = `
   type Image {
     _id: ID!
     batchId: Int
+    errors: [ImageError]
     bucket: String!
     fileTypeExtension: String!
     dateAdded: Date!

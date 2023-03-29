@@ -7,6 +7,7 @@ const SQS = require('@aws-sdk/client-sqs');
 const Lambda = require('@aws-sdk/client-lambda');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const Batch = require('../schemas/Batch');
+const BatchError = require('../schemas/BatchError');
 const retry = require('async-retry');
 const utils = require('./utils');
 
@@ -38,6 +39,10 @@ const generateBatchModel = ({ user } = {}) => ({
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
+
+      const epipeline = [];
+      epipeline.push({ '$match': { 'batch': batch._id } });
+      batch.errors = await BatchError.aggregate(epipeline)
 
       if (params.remaining && batch.processingEnd) {
         batch.remaining = 0;
