@@ -53,6 +53,10 @@ provider:
           Resource: "*"
         - Effect: 'Allow'
           Action:
+            - 'lambda:InvokeFunction'
+          Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:IngestDelete-${self:provider.stage}
+        - Effect: 'Allow'
+          Action:
             - 's3:PutObject'
             - 's3:GetObject'
           Resource:

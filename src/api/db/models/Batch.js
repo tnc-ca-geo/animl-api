@@ -98,7 +98,9 @@ const generateBatchModel = ({ user } = {}) => ({
       };
 
       try {
-        const batch = await operation(input);
+        const batch = await operation({
+            _id: input.batch
+        });
         if (batch.processingEnd) throw new Error('Stack has already terminated');
 
         const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
