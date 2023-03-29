@@ -68,8 +68,11 @@ const Query = {
 
   exportStatus: async (_, { input }, context) => {
     return await context.models.Image.getExportStatus(input, context);
-  }
+  },
 
+  priorityStatus: async (_, {}, context) => {
+    return await context.models.Batch.getPriorityStatus();
+  }
 };
 
 module.exports = Query;

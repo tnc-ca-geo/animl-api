@@ -11,6 +11,7 @@ module.exports = `
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
     exportStatus(input: ExportStatusInput!): ExportStatusPayload
+    priorityStatus: PriorityStatusPayload
   }
 `;
 
