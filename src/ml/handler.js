@@ -64,14 +64,10 @@ exports.inference = async (event) => {
     if (modelInterfaces.has(modelSource._id)) {
       const requestInference = modelInterfaces.get(modelSource._id);
 
-      console.error(JSON.stringify(image));
       if (image.batchId) {
-        console.log('making priority request');
-        const priority = await requestPriority(config);
-
-        console.error(JSON.stringify(priority));
-
-        return;
+        // Ensure manually uploaded images get priority
+        const priority = (await requestPriority(config)).priorityStatus.priority;
+        if (priority > 10) return;
       }
 
       const detections = await requestInference({
