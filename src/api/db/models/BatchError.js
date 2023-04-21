@@ -20,17 +20,17 @@ const generateBatchErrorModel = ({ user } = {}) => ({
 
       try {
         const batcherr = await operation({
-            _id: randomUUID(),
-            batch: input.batch,
-            error: input.error,
-            created: new Date()
+          _id: randomUUID(),
+          batch: input.batch,
+          error: input.error,
+          created: new Date()
         });
 
         return {
-            _id: batcherr._id,
-            batch: batcherr.batch,
-            error: batcherr.error,
-            created: batcherr.created,
+          _id: batcherr._id,
+          batch: batcherr.batch,
+          error: batcherr.error,
+          created: batcherr.created
         };
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError

@@ -70,7 +70,7 @@ const Query = {
     return await context.models.Image.getExportStatus(input, context);
   },
 
-  priorityStatus: async (_, {}, context) => {
+  priorityStatus: async (_, __, context) => {
     return await context.models.Batch.getPriorityStatus();
   }
 };

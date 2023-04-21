@@ -10,8 +10,8 @@ async function getUserInfo(req, config) {
   // and was made by an internal lambda
   if (api_key === config['APIKEY']) {
     return {
-        aud: 'internal',
-        is_superuser: true
+      aud: 'internal',
+      is_superuser: true
     };
   }
 

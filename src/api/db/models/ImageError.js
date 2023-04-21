@@ -20,19 +20,19 @@ const generateImageErrorModel = ({ user } = {}) => ({
 
       try {
         const imageerr = await operation({
-            _id: randomUUID(),
-            image: input.image,
-            batch: input.batch,
-            error: input.error,
-            created: new Date()
+          _id: randomUUID(),
+          image: input.image,
+          batch: input.batch,
+          error: input.error,
+          created: new Date()
         });
 
         return {
-            _id: imageerr._id,
-            image: imageerr.image,
-            batch: imageerr.batch,
-            error: imageerr.error,
-            created: imageerr.created,
+          _id: imageerr._id,
+          image: imageerr.image,
+          batch: imageerr.batch,
+          error: imageerr.error,
+          created: imageerr.created
         };
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError

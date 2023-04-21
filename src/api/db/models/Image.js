@@ -33,7 +33,7 @@ const generateImageModel = ({ user } = {}) => ({
 
       const epipeline = [];
       epipeline.push({ '$match': { 'image': image._id } });
-      image.errors = await ImageError.aggregate(epipeline)
+      image.errors = await ImageError.aggregate(epipeline);
 
       return image;
     } catch (err) {

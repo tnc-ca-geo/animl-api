@@ -42,7 +42,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
       const epipeline = [];
       epipeline.push({ '$match': { 'batch': batch._id } });
-      batch.errors = await BatchError.aggregate(epipeline)
+      batch.errors = await BatchError.aggregate(epipeline);
 
       if (params.remaining && batch.processingEnd) {
         batch.remaining = 0;
@@ -104,23 +104,23 @@ const generateBatchModel = ({ user } = {}) => ({
 
       try {
         const batch = await operation({
-            _id: input.batch
+          _id: input.batch
         });
         if (batch.processingEnd) throw new Error('Stack has already terminated');
 
         const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
 
         await lambda.send(new Lambda.InvokeCommand({
-            FunctionName: `IngestDelete-${process.env.STAGE}`,
-            InvocationType: 'Event',
-            Payload: JSON.stringify({
-                batch: batch._id
-            })
+          FunctionName: `IngestDelete-${process.env.STAGE}`,
+          InvocationType: 'Event',
+          Payload: JSON.stringify({
+            batch: batch._id
+          })
         }));
 
         return {
-            message: 'Batch Scheduled for Deletion'
-        }
+          message: 'Batch Scheduled for Deletion'
+        };
       } catch (err) {
         console.error(err);
         // if error is uncontrolled, throw new ApolloError
@@ -202,10 +202,10 @@ const generateBatchModel = ({ user } = {}) => ({
       try {
         const id = `batch-${randomUUID()}`;
         const batch = await operation({
-            _id: id,
-            user: user.aud,
-            originalFile: input.originalFile,
-            uploadedFile: `${id}.zip`
+          _id: id,
+          user: user.aud,
+          originalFile: input.originalFile,
+          uploadedFile: `${id}.zip`
         });
 
         const params = {
@@ -220,9 +220,9 @@ const generateBatchModel = ({ user } = {}) => ({
         const signedUrl = await getSignedUrl(s3, put);
 
         return {
-            batch: batch._id,
-            user: user.aud,
-            url: signedUrl
+          batch: batch._id,
+          user: user.aud,
+          url: signedUrl
         };
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
