@@ -113,9 +113,56 @@ const mira = async (params) => {
   }
 };
 
+const mirav2 = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox = label.bbox ? label.bbox : [0,0,1,1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: bbox
+  };
+
+  try {
+    const smr = new SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config['/ML/MIRAV2_SAGEMAKER_NAME']
+    });
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log('mirav2 predictions: ', predictions);
+
+    const filteredDets = [];
+    Object.keys(predictions).forEach((category) => {
+      // filter out disabled detections,
+      // empty detections, & detections below confThreshold
+      const conf = predictions[category];
+      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === category);
+      if (!disabled && conf >= confThreshold) {
+        filteredDets.push({
+          mlModel: modelSource._id,
+          mlModelVersion: modelSource.version,
+          type: 'ml',
+          bbox,
+          conf,
+          category
+        });
+      }
+    });
+
+    return filteredDets;
+
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+
 const modelInterfaces = new Map();
 modelInterfaces.set('megadetector', megadetector);
 modelInterfaces.set('mira', mira);
+modelInterfaces.set('mirav2', mirav2);
 
 module.exports = {
   modelInterfaces
