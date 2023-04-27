@@ -36,18 +36,19 @@ const localConfig = {
 
 let cachedSSMParams = null;
 
-// TODO: Update all of these with new SSM param names
+// TODO: SSM client can only fetch 10 names at a time.
+// Add a step to break this array into batches of 10 and request them iteratively
 const ssmNames = [
   `/db/mongo-db-url-${process.env.STAGE}`,
   `/frontend/url-${process.env.STAGE}`,
   `/api/url-${process.env.STAGE}`,
   `/images/url-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
-  `/ml/mira-api-url-${process.env.STAGE}`,
   `/ml/mirav2-sagemaker-name-${process.env.STAGE}`,
+  `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`,
   `/ml/megadetector-sagemaker-name-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
-  `/exports/export-queue-url-${process.env.STAGE}`,
+  `/exports/export-queue-url-${process.env.STAGE}`
 ];
 
 const formatSSMParams = (ssmParams) => {
