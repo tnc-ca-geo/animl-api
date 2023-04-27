@@ -29,7 +29,7 @@ const ValidationSchema = new Schema({
  * LabelSchema
  *    category - the actual label (e.g. "skunk")
  *    conf - confidence of prediction
- *    bbox - [x, y, boxWidth, boxHeight], normalized
+ *    bbox - [ymin, xmin, ymax, xmax], normalized (not absolute)
  */
 
 const LabelSchema = new Schema({
@@ -46,7 +46,7 @@ const LabelSchema = new Schema({
 
 /*
  * ObjectSchema
- *    bbox - [x, y, boxWidth, boxHeight], normalized
+ *    bbox - [ymin, xmin, ymax, xmax], normalized (not absolute)
  *    locked - a user has reviewed the labels and validated at least one.
  *             The most recently added validated label is considered the most
  *             accurate. No single-click editing of catagory or bbox allowed
