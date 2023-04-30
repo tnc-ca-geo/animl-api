@@ -38,6 +38,7 @@ const handleEvent = async (payload, context) => {
   try {
     const callstack = await utils.buildCallstack(payload, context);
     if (callstack.length === 0) return;
+    console.log(`automation rule callstack for ${payload.image.originalFileName}: `, callstack);
 
     await Promise.all(callstack.map(async (rule) => (
       await executeRule[rule.action.type](rule, payload, context)

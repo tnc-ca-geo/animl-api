@@ -48,7 +48,6 @@ const ViewSchema = new Schema({
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
   editable: { type: Boolean },
-  automationRules: { type: [AutomationRuleSchema] }
 });
 
 const DeploymentSchema = new Schema({
@@ -72,7 +71,8 @@ const ProjectSchema = new Schema({
   description: { type: String },
   views: { type: [ViewSchema], required: true },
   cameraConfigs: { type: [CameraConfigSchema] },
-  availableMLModels: { type: [{ type: String, ref: 'MLModel' }] }
+  availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
+  automationRules: { type: [AutomationRuleSchema] }
 });
 
 module.exports = mongoose.model('Project', ProjectSchema);
