@@ -31,7 +31,7 @@ const context = async ({ event, context }) => {
   const config = await getConfig();
   await connectToDatabase(config);
   const user = await getUserInfo(event, config);
-  console.log('event: ', event);
+  console.log('event: ', event.body);
   console.log('user: ', user);
 
   return {
