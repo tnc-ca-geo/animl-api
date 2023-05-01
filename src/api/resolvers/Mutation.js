@@ -30,6 +30,12 @@ const Mutation = {
     return { project };
   },
 
+  updateAutomationRules: async (_, { input }, context) => {
+    const automationRules = await context.models.Project.updateAutomationRules(input);
+    console.log('updated automation rules: ', automationRules);
+    return { automationRules };
+  },
+
   createDeployment: async (_, { input }, context) => {
     const cameraConfig = await context.models.Project.createDeployment(input);
     return { cameraConfig };

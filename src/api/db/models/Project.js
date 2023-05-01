@@ -6,7 +6,8 @@ const { sortDeps, hasRole, idMatch } = require('./utils');
 const retry = require('async-retry');
 const {
   WRITE_DEPLOYMENTS_ROLES,
-  WRITE_VIEWS_ROLES
+  WRITE_VIEWS_ROLES,
+  WRITE_AUTOMATION_RULES_ROLES
 } = require('../../auth/roles');
 const { localConfig } = require('../../../config/config');
 
@@ -172,6 +173,30 @@ const generateProjectModel = ({ user } = {}) => ({
           project.views = project.views.filter((v) => !idMatch(v._id, viewId));
           return await project.save();
 
+        }, { retries: 2 });
+      };
+
+      try {
+        return await operation(input);
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get updateAutomationRules() {
+    if (!hasRole(user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+
+      const operation = async ({ automationRules }) => {
+        return await retry(async () => {
+          console.log('attempting to update automation rules with: ', automationRules);
+          const [project] = await this.getProjects([user['curr_project']]);
+          project.automationRules = automationRules;
+          await project.save();
+          return project.automationRules;
         }, { retries: 2 });
       };
 

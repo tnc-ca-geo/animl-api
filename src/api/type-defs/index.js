@@ -25,6 +25,8 @@ const UpdateObjectInput = require('./inputs/UpdateObjectInput');
 // const UpdateObjectsInput = require('./inputs/UpdateObjectsInput');
 const UpdateViewInput = require('./inputs/UpdateViewInput');
 
+const UpdateAutomationRulesInput = require('./inputs/UpdateAutomationRulesInput');
+
 const AutomationRule = require('./objects/AutomationRule');
 const Camera = require('./objects/Camera');
 const Filters = require('./objects/Filters');
@@ -47,6 +49,8 @@ const DeleteDeploymentPayload = require('./payloads/DeleteDeploymentPayload');
 const DeleteLabelPayload = require('./payloads/DeleteLabelPayload');
 const DeleteObjectPayload = require('./payloads/DeleteObjectPayload');
 const DeleteViewPayload = require('./payloads/DeleteViewPayload');
+
+const UpdateAutomationRulesPayload = require('./payloads/UpdateAutomationRulesPayload');
 
 const ExportPayload = require('./payloads/ExportPayload');
 const ExportStatusPayload = require('./payloads/ExportStatusPayload');
@@ -95,6 +99,7 @@ const typeDefStrings = [
   UpdateObjectInput,
   // UpdateObjectsInput,
   UpdateViewInput,
+  UpdateAutomationRulesInput,
   AutomationRule,
   Camera,
   Filters,
@@ -115,6 +120,7 @@ const typeDefStrings = [
   DeleteLabelPayload,
   DeleteObjectPayload,
   DeleteViewPayload,
+  UpdateAutomationRulesPayload,
   ExportPayload,
   ExportStatusPayload,
   ImagesConnection,

@@ -20,6 +20,7 @@ module.exports = `
     timezone: String!
     description: String
     views: [View!]!
+    automationRules: [AutomationRule]
     cameraConfigs: [CameraConfig]
     labels: LabelList
     availableMLModels: [String]

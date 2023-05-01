@@ -8,6 +8,8 @@ module.exports = `
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload
     deleteView(input: DeleteViewInput!): DeleteViewPayload
+
+    updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
     
     createObject(input: CreateObjectInput!): CreateObjectPayload
     updateObject(input: UpdateObjectInput!): UpdateObjectPayload
