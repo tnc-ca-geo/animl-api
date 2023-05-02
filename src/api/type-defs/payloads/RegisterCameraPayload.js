@@ -1,7 +1,7 @@
 module.exports = `
   type RegisterCameraPayload {
     project: Project
-    cameras: [Camera]
+    wirelessCameras: [WirelessCamera]
   }
 `;
 

@@ -1,6 +1,6 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { CameraRegistrationError } = require('../../errors');
-const Camera = require('../schemas/Camera');
+const WirelessCamera = require('../schemas/WirelessCamera');
 const retry = require('async-retry');
 const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
 const { hasRole, idMatch } = require('./utils');
@@ -8,15 +8,16 @@ const { hasRole, idMatch } = require('./utils');
 
 const generateCameraModel = ({ user } = {}) => ({
 
-  getCameras: async (_ids) => {
+  getWirelessCameras: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
     // have at one point been assoicted with curr_project
     const projectId = user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
-      const cameras = await Camera.find(query);
-      return cameras;
+      const wirelessCameras = await WirelessCamera.find(query);
+      console.log('getWirelessCameras - found wirelessCameras: ', wirelessCameras)
+      return wirelessCameras;
     } catch (err) {
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err); /* error is uncontrolled, so throw new ApolloError */
@@ -28,10 +29,10 @@ const generateCameraModel = ({ user } = {}) => ({
       const successfulOps = [];
       const projectId = input.projectId || 'default_project';
 
-      const saveCamera = async (input) => {
+      const saveWirelessCamera = async (input) => {
         const { projectId, cameraId, make, model } = input;
         return await retry(async () => {
-          const newCamera = new Camera({
+          const newCamera = new WirelessCamera({
             _id: cameraId,
             make,
             projRegistrations: [{ projectId, active: true }],
@@ -43,10 +44,10 @@ const generateCameraModel = ({ user } = {}) => ({
       };
 
       try {
-        // create "source" Camera record
-        const camera = await saveCamera({ ...input, projectId });
+        // create Wireless Camera record
+        const camera = await saveWirelessCamera({ ...input, projectId });
         successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
-        // and CameraConfig record
+        // and CameraConfig record to the Project
         const project = await context.models.Project.createCameraConfig(
           projectId,
           camera._id
@@ -58,7 +59,7 @@ const generateCameraModel = ({ user } = {}) => ({
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-saved') {
-            await Camera.findOneAndDelete({ _id: op.info.cameraId });
+            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
           }
         }
 
@@ -78,16 +79,16 @@ const generateCameraModel = ({ user } = {}) => ({
       const projectId = user['curr_project'];
 
       try {
-        const cam = await Camera.findOne({ _id: cameraId });
+        const cam = await WirelessCamera.findOne({ _id: cameraId });
 
-        // if no camera found, create new "source" Camera record & cameraConfig
+        // if no camera found, create new Wireless Camera record & cameraConfig
         if (!cam) {
           const { project } = await this.createCamera(
             { projectId, cameraId, make },
             context
           );
-          const cameras = await this.getCameras();
-          return { cameras, project };
+          const wirelessCameras = await this.getWirelessCameras();
+          return { wirelessCameras, project };
         }
 
         // else if camera exists & is registered to default_project,
@@ -106,13 +107,13 @@ const generateCameraModel = ({ user } = {}) => ({
 
           await cam.save();
           successfulOps.push({ op: 'cam-registered', info: { cameraId } });
-          const cameras = await this.getCameras();
+          const wirelessCameras = await this.getWirelessCameras();
           const project = await context.models.Project.createCameraConfig(
             projectId,
             cam._id
           );
 
-          return { cameras, project };
+          return { wirelessCameras, project };
 
         }
         else {
@@ -152,8 +153,8 @@ const generateCameraModel = ({ user } = {}) => ({
 
       try {
 
-        const cameras = await Camera.find();
-        const cam = cameras.find((c) => idMatch(c._id, cameraId));
+        const wirelessCameras = await WirelessCamera.find();
+        const cam = wirelessCameras.find((c) => idMatch(c._id, cameraId));
 
         if (!cam) {
           const msg = `Couldn't find camera record for camera ${cameraId}`;
@@ -204,7 +205,7 @@ const generateCameraModel = ({ user } = {}) => ({
           addedNewCamConfig = true;
         }
 
-        return { cameras, ...(addedNewCamConfig && { project: defaultProj }) };
+        return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj }) };
 
       } catch (err) {
         // reverse successful operations

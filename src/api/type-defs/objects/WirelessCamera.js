@@ -5,7 +5,7 @@ module.exports = `
     active: Boolean!
   }
 
-  type Camera {
+  type WirelessCamera {
     _id: String!
     make: String!
     model: String

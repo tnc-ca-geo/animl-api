@@ -4,7 +4,7 @@ module.exports = `
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
     labels: LabelList
-    cameras(_ids: [String!]): [Camera]
+    wirelessCameras(_ids: [String!]): [WirelessCamera]
     mlModels(_ids: [String!]): [MLModel]
     batches(input: QueryBatchesInput!): BatchesConnection
     batch(_id: String!): Batch

@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
 const ImageError = require('../schemas/ImageError');
-const Camera = require('../schemas/Camera');
+const WirelessCamera = require('../schemas/WirelessCamera');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
@@ -116,7 +116,7 @@ const generateImageModel = ({ user } = {}) => ({
       try {
         // find camera record & active registration or create new one
         const cameraId = md.serialNumber;
-        const [existingCam] = await context.models.Camera.getCameras([cameraId]);
+        const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
         if (!existingCam) {
           await context.models.Camera.createCamera({
             projectId,
@@ -153,7 +153,7 @@ const generateImageModel = ({ user } = {}) => ({
           if (op.op === 'cam-created') {
             console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
             // delete newly created camera record
-            await Camera.findOneAndDelete({ _id: op.info.cameraId });
+            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
             const [proj] = await context.models.Project.getProjects([projectId]);
             proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => (

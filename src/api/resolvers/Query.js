@@ -50,8 +50,8 @@ const Query = {
   //   return await context.models.Image.getLabels();
   // },
 
-  cameras: async (_, { _ids }, context) => {
-    return await context.models.Camera.getCameras(_ids);
+  wirelessCameras: async (_, { _ids }, context) => {
+    return await context.models.Camera.getWirelessCameras(_ids);
   },
 
   mlModels: async (_, { _ids }, context) => {
