@@ -1,11 +1,8 @@
 const { ApolloError } = require('apollo-server-errors');
 const MLModel = require('../schemas/MLModel');
-const utils = require('./utils');
 const retry = require('async-retry');
 
-
-const generateMLModelModel = ({ user } = {}) => ({
-
+const generateMLModelModel = () => ({
   getMLModels: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
@@ -21,13 +18,13 @@ const generateMLModelModel = ({ user } = {}) => ({
   createMLModel: async (modelConfig) => {
 
     const operation = async (modelConfig) => {
-      return await retry(async (bail) => {
+      return await retry(async () => {
 
         // create new ML model record and save it
         const newModel = new MLModel(modelConfig);
         await newModel.save();
         return newModel;
-        
+
       }, { retries: 2 });
     };
 
@@ -38,8 +35,8 @@ const generateMLModelModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
 
- });
+});
 
- module.exports = generateMLModelModel;
+module.exports = generateMLModelModel;

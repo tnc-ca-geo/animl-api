@@ -1,6 +1,5 @@
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { CameraRegistrationError } = require('../../errors');
-const { GraphQLError } = require('graphql/error/GraphQLError');
 const Camera = require('../schemas/Camera');
 const retry = require('async-retry');
 const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
@@ -10,8 +9,8 @@ const { hasRole, idMatch } = require('./utils');
 const generateCameraModel = ({ user } = {}) => ({
 
   getCameras: async (_ids) => {
-    let query = _ids ? { _id: { $in: _ids } } : {};
-    // if user has curr_project, limit returned cameras to those that 
+    const query = _ids ? { _id: { $in: _ids } } : {};
+    // if user has curr_project, limit returned cameras to those that
     // have at one point been assoicted with curr_project
     const projectId = user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
@@ -31,12 +30,12 @@ const generateCameraModel = ({ user } = {}) => ({
 
       const saveCamera = async (input) => {
         const { projectId, cameraId, make, model } = input;
-        return await retry(async (bail, attempt) => {
+        return await retry(async () => {
           const newCamera = new Camera({
             _id: cameraId,
             make,
             projRegistrations: [{ projectId, active: true }],
-            ...(model && { model }),
+            ...(model && { model })
           });
           await newCamera.save();
           return newCamera;
@@ -45,8 +44,8 @@ const generateCameraModel = ({ user } = {}) => ({
 
       try {
         // create "source" Camera record
-        const camera = await saveCamera({...input, projectId });
-        successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id} });
+        const camera = await saveCamera({ ...input, projectId });
+        successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
         // and CameraConfig record
         const project = await context.models.Project.createCameraConfig(
           projectId,
@@ -84,18 +83,18 @@ const generateCameraModel = ({ user } = {}) => ({
         // if no camera found, create new "source" Camera record & cameraConfig
         if (!cam) {
           const { project } = await this.createCamera(
-            { projectId, cameraId, make }, 
+            { projectId, cameraId, make },
             context
           );
           const cameras = await this.getCameras();
           return { cameras, project };
         }
 
-        // else if camera exists & is registered to default_project, 
+        // else if camera exists & is registered to default_project,
         // reassign it to user's current project, else reject registration
         const activeReg = cam.projRegistrations.find((pr) => pr.active);
         if (activeReg.projectId === 'default_project') {
-          
+
           let foundProject = false;
           cam.projRegistrations.forEach((pr) => {
             if (pr.projectId === projectId) foundProject = true;
@@ -106,7 +105,7 @@ const generateCameraModel = ({ user } = {}) => ({
           }
 
           await cam.save();
-          successfulOps.push({ op: 'cam-registered', info: { cameraId }});
+          successfulOps.push({ op: 'cam-registered', info: { cameraId } });
           const cameras = await this.getCameras();
           const project = await context.models.Project.createCameraConfig(
             projectId,
@@ -119,9 +118,9 @@ const generateCameraModel = ({ user } = {}) => ({
         else {
           const msg = activeReg.projectId === projectId
             ? `This camera is already registered to the ${projectId} project!`
-            : `This camera is registered to a different project!`;
+            : 'This camera is registered to a different project!';
           throw new CameraRegistrationError(msg, {
-            currProjReg: activeReg.projectId 
+            currProjReg: activeReg.projectId
           });
         }
 
@@ -130,7 +129,7 @@ const generateCameraModel = ({ user } = {}) => ({
         for (const op of successfulOps) {
           if (op.op === 'cam-registered') {
             await this.unregisterCamera(
-              { cameraId: op.info.cameraId }, 
+              { cameraId: op.info.cameraId },
               context
             );
           }
@@ -162,7 +161,7 @@ const generateCameraModel = ({ user } = {}) => ({
         }
         const activeReg = cam.projRegistrations.find((pr) => pr.active);
         if (activeReg.projectId === 'default_project') {
-          const msg = `You can't unregister cameras from the default project`;
+          const msg = 'You can\'t unregister cameras from the default project';
           throw new CameraRegistrationError(msg);
         }
         else if (activeReg.projectId !== projectId) {
@@ -170,11 +169,11 @@ const generateCameraModel = ({ user } = {}) => ({
           throw new CameraRegistrationError(msg);
         }
 
-        // if active registration === curr_project, 
+        // if active registration === curr_project,
         // reset registration.active to false,
         // and set default_project registration to active
         activeReg.active = false;
-        let defaultProjReg = cam.projRegistrations.find((pr) => (
+        const defaultProjReg = cam.projRegistrations.find((pr) => (
           pr.projectId === 'default_project'
         ));
         if (defaultProjReg) defaultProjReg.active = true;
@@ -187,7 +186,7 @@ const generateCameraModel = ({ user } = {}) => ({
         await cam.save();
         successfulOps.push({ op: 'cam-unregistered', info: { cameraId } });
 
-        // make sure there's a Project.cameraConfig record for this camera 
+        // make sure there's a Project.cameraConfig record for this camera
         // in the default_project and create one if not
         let [defaultProj] = await context.models.Project.getProjects(
           ['default_project']
@@ -219,8 +218,8 @@ const generateCameraModel = ({ user } = {}) => ({
         throw new ApolloError(err);
       }
     };
-  },
+  }
 
- });
+});
 
- module.exports = generateCameraModel;
+module.exports = generateCameraModel;

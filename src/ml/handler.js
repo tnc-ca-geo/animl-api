@@ -3,7 +3,6 @@ const { modelInterfaces } = require('./modelInterfaces');
 const { getConfig } = require('../config/config');
 
 async function requestCreateLabels(input, config) {
-
   const variables = { input: input };
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
@@ -31,6 +30,23 @@ async function requestCreateLabels(input, config) {
   return await graphQLClient.request(mutation, variables);
 }
 
+async function requestPriority(config) {
+  const mutation = gql`
+    query Priority {
+      priorityStatus {
+        priority
+      }
+    }
+  `;
+
+  const graphQLClient = new GraphQLClient(
+    config['/API/URL'],
+    { headers: { 'x-api-key': config['APIKEY'] } }
+  );
+
+  return await graphQLClient.request(mutation);
+}
+
 
 exports.inference = async (event) => {
   const config = await getConfig();
@@ -47,6 +63,13 @@ exports.inference = async (event) => {
     // run inference
     if (modelInterfaces.has(modelSource._id)) {
       const requestInference = modelInterfaces.get(modelSource._id);
+
+      if (image.batchId) {
+        // Ensure manually uploaded images get priority
+        const priority = (await requestPriority(config)).priorityStatus.priority;
+        if (priority > 10) return;
+      }
+
       const detections = await requestInference({
         modelSource,
         catConfig,

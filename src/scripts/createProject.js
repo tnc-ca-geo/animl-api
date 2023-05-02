@@ -10,17 +10,19 @@ const defaultViewsConfig = [{
   editable: false
 }];
 
-// // Uncomment and edit config for new project below:
-// const newProjectConfig = [
-//   {
-//     _id: 'nzdoc',
-//     name: 'New Zealand DoC',
-//     description: 'NZ DoC National Eradication Team camera traps',
-//     timezone: 'Pacific/Auckland',
-//     views: defaultViewsConfig,
-//     availableMLModels: ['megadetector', 'nzdoc']
-//   }
-// ];
+// Edit config for new project below:
+const newProjectConfig = [
+  {
+    _id: 'robinson_crusoe',
+    name: 'Robinson Crusoe',
+    description: 'Robinson Crusoe camera traps',
+    timezone: 'America/Santiago',
+    views: defaultViewsConfig,
+    availableMLModels: ['megadetector']
+  }
+];
+
+if (newProjectConfig._id === 'robinson_crusoe') throw new Error('Edit New Project before running');
 
 // TODO: use client-cognito-identity-provider to automatically create cognito groups
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-cognito-identity-provider/index.html

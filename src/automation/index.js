@@ -1,12 +1,11 @@
 const { ApolloError } = require('apollo-server-errors');
-const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const SQS = require('@aws-sdk/client-sqs');
 const utils = require('./utils');
 const { sendEmail } = require('./alerts');
 
-const sqs = new SQSClient();
+const sqs = new SQS.SQSClient();
 
 const executeRule = {
-
   'run-inference': async (rule, payload, context) => {
     try {
       const mlModel = rule.action.mlModel;
@@ -15,11 +14,21 @@ const executeRule = {
       const catConfig = utils.buildCatConfig(modelSource, rule);
 
       const message = { modelSource, catConfig, ...payload };
-      const command = new SendMessageCommand({
-        QueueUrl: context.config['/ML/INFERENCE_QUEUE_URL'],
-        MessageBody: JSON.stringify(message)
-      });
-      return await sqs.send(command);
+
+      if (payload.image.batchId) {
+
+        return await sqs.send(new SQS.SendMessageCommand({
+          QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}.fifo`,
+          MessageBody: JSON.stringify(message),
+          MessageDeduplicationId: payload.image._id,
+          MessageGroupId: payload.image.batchId
+        }));
+      } else {
+        return await sqs.send(new SQS.SendMessageCommand({
+          QueueUrl: context.config['/ML/INFERENCE_QUEUE_URL'],
+          MessageBody: JSON.stringify(message)
+        }));
+      }
     } catch (err) {
       throw new ApolloError(err);
     }

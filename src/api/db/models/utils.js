@@ -259,8 +259,8 @@ const getTriggerSource = (input) => {
       });
       return triggerSource;
     },
-    'RidgeTec': (input) => null,
-    'RECONYX': (input) => null
+    'RidgeTec': () => null,
+    'RECONYX': () => null
   };
 
   return (input.make && userDataMap[input.make])
@@ -306,6 +306,7 @@ const createImageRecord = (md) => {
 
   const image = new Image({
     _id: md.hash,
+    batchId: md.batchId,
     bucket: md.prodBucket,
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: DateTime.now(),

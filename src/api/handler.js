@@ -5,6 +5,9 @@ const generateProjectModel = require('./db/models/Project');
 const generateImageModel = require('./db/models/Image');
 const generateCameraModel = require('./db/models/Camera');
 const generateMLModelModel = require('./db/models/MLModel');
+const generateBatchModel = require('./db/models/Batch');
+const generateBatchErrorModel = require('./db/models/BatchError');
+const generateImageErrorModel = require('./db/models/ImageError');
 const Query = require('./resolvers/Query');
 const Mutation = require('./resolvers/Mutation');
 const Fields = require('./resolvers/Fields');
@@ -42,13 +45,17 @@ const context = async ({ event, context }) => {
     models: {
       Project: generateProjectModel({ user }),
       Image: generateImageModel({ user }),
+      ImageError: generateImageErrorModel({ user }),
       Camera: generateCameraModel({ user }),
-      MLModel: generateMLModelModel({ user })
+      MLModel: generateMLModelModel({ user }),
+      Batch: generateBatchModel({ user }),
+      BatchError: generateBatchErrorModel({ user })
     }
   };
 };
 
 const server = new ApolloServer({
+  includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   typeDefs,
   resolvers,
   context,

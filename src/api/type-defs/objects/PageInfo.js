@@ -7,4 +7,4 @@ module.exports = `
     count: Int
   }`;
 
-  // TODO: should any of these be required?
+// TODO: should any of these be required?

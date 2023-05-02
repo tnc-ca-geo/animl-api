@@ -12,13 +12,14 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
   environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
+    ACCOUNT: ${aws:accountId}
   iam:
     role:
       statements:
@@ -26,6 +27,7 @@ provider:
           Action:
             - sqs:*
           Resource:
+            - !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:animl-ingest-${self:provider.stage}-batch-*'
             - Fn::GetAtt:
                 - inferenceQueue
                 - Arn
@@ -49,6 +51,24 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource: "*"
+        - Effect: 'Allow'
+          Action:
+            - 'lambda:InvokeFunction'
+          Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:IngestDelete-${self:provider.stage}
+        - Effect: 'Allow'
+          Action:
+            - 's3:PutObject'
+            - 's3:GetObject'
+          Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - 'animl-images-ingestion-${self:provider.stage}'
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - 'animl-images-ingestion-${self:provider.stage}'
+                - '/*'
         - Effect: 'Allow'
           Action:
             - 's3:PutObject'
@@ -148,13 +168,13 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
-    # Expprt SQS queue
+    # Export SQS queue
     exportQueue:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: exportQueue-${self:provider.stage}
         VisibilityTimeout: 120
-      
+
     # SSM Param - API URL
     SSMParameterApiurl:
       Type: AWS::SSM::Parameter

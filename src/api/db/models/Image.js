@@ -1,12 +1,13 @@
 const { text } = require('node:stream/consumers');
 const _ = require('lodash');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const S3 = require('@aws-sdk/client-s3');
+const SQS = require('@aws-sdk/client-sqs');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
 const { DuplicateError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
 const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
+const ImageError = require('../schemas/ImageError');
 const Camera = require('../schemas/Camera');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
@@ -29,6 +30,11 @@ const generateImageModel = ({ user } = {}) => ({
       : { _id };
     try {
       const image = await Image.findOne(query);
+
+      const epipeline = [];
+      epipeline.push({ '$match': { 'image': image._id } });
+      image.errors = await ImageError.aggregate(epipeline);
+
       return image;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -465,14 +471,14 @@ const generateImageModel = ({ user } = {}) => ({
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
 
-      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
-      const sqs = new SQSClient({ region: process.env.AWS_DEFAULT_REGION });
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
         // create status document in S3
-        await s3.send(new PutObjectCommand({
+        await s3.send(new S3.PutObjectCommand({
           Bucket: bucket,
           Key: `${id}.json`,
           Body: JSON.stringify({ status: 'Pending' }),
@@ -480,7 +486,7 @@ const generateImageModel = ({ user } = {}) => ({
         }));
 
         // push message to SQS with { projectId, documentId, filters }
-        await sqs.send(new SendMessageCommand({
+        await sqs.send(new SQS.SendMessageCommand({
           QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
           MessageBody: JSON.stringify({
             projectId: user['curr_project'],
@@ -505,12 +511,12 @@ const generateImageModel = ({ user } = {}) => ({
   get getExportStatus() {
     if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async ({ documentId }, context) => {
-      const s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
 
-        const { Body } = await s3.send(new GetObjectCommand({
+        const { Body } = await s3.send(new S3.GetObjectCommand({
           Bucket: bucket,
           Key: `${documentId}.json`
         }));

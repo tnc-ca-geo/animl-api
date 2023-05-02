@@ -1,16 +1,14 @@
-const agent = require('superagent');
 const { buildImgUrl } = require('../api/db/models/utils');
-const {
-  SageMakerRuntimeClient,
-  InvokeEndpointCommand
-} = require('@aws-sdk/client-sagemaker-runtime');
+const SM = require('@aws-sdk/client-sagemaker-runtime');
+const agent = require('superagent');
 
 const _getImage = async (image, config) => {
-  const url = buildImgUrl(image, config);
+  const url = 'http://' + buildImgUrl(image, config);
 
   try {
-    const img = await agent.get(url);
-    return Buffer.from(img.body, 'binary');
+    const res = await fetch(url);
+    const body = await res.arrayBuffer();
+    return Buffer.from(body, 'binary');
   } catch (err) {
     throw new Error(err);
   }
@@ -21,15 +19,15 @@ const megadetector = async (params) => {
   const imgBuffer = await _getImage(image, config);
 
   try {
-    const smr = new SageMakerRuntimeClient({ region: process.env.REGION });
-    const command = new InvokeEndpointCommand({
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
       Body: imgBuffer,
       EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
     });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const detections = JSON.parse(body);
-    console.log('detections returned from megadetector endpoint: ', detections)
+    console.log('detections returned from megadetector endpoint: ', detections);
 
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,

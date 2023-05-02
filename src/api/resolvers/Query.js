@@ -1,7 +1,26 @@
 const Query = {
-
   projects: async (_, { _ids }, context) => {
     return await context.models.Project.getProjects(_ids);
+  },
+
+  batches: async (_, { input }, context) => {
+    const response = await context.models.Batch.queryByFilter(input);
+    const { previous, hasPrevious, next, hasNext, results } = response;
+    return {  // reurn ImagesConnection
+      pageInfo: {
+        previous,
+        hasPrevious,
+        next,
+        hasNext
+      },
+      batches: results
+    };
+  },
+
+  batch: async (_, { _id }, context) => {
+    return await context.models.Batch.queryById(_id, {
+      remaining: true
+    });
   },
 
   images: async (_, { input }, context) => {
@@ -49,8 +68,11 @@ const Query = {
 
   exportStatus: async (_, { input }, context) => {
     return await context.models.Image.getExportStatus(input, context);
-  }
+  },
 
+  priorityStatus: async (_, __, context) => {
+    return await context.models.Batch.getPriorityStatus();
+  }
 };
 
 module.exports = Query;

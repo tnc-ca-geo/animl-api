@@ -17,7 +17,7 @@ const Schema = mongoose.Schema;
 
 /*
  * MLModelSchema
- *    serves as "source" for options when new automation rules are being created 
+ *    serves as "source" for options when new automation rules are being created
  *    and for when applying model version to labels after inference
  */
 

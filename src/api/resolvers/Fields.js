@@ -22,7 +22,7 @@ const Project = {
   labels: async (parent, __, context) => {
     return await context.models.Image.getLabels(parent._id);
   }
-}
+};
 
 module.exports = {
   Project

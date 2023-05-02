@@ -9,8 +9,6 @@ const {
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES
 } = require('../../auth/roles');
-const { localConfig } = require('../../../config/config');
-
 
 const generateProjectModel = ({ user } = {}) => ({
 

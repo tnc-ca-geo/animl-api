@@ -1,4 +1,28 @@
 const Mutation = {
+  createBatchError: async (_, { input }, context) => {
+    const error = await context.models.BatchError.createError(input, context);
+    return { ...error };
+  },
+
+  createImageError: async (_, { input }, context) => {
+    const error = await context.models.ImageError.createError(input, context);
+    return { ...error };
+  },
+
+  createUpload: async (_, { input }, context) => {
+    const res = await context.models.Batch.createUpload(input, context);
+    return { ...res };
+  },
+
+  updateBatch: async (_, { input }, context) => {
+    const batch = await context.models.Batch.updateBatch(input, context);
+    return { batch };
+  },
+
+  stopBatch: async (_, { input }, context) => {
+    const res = await context.models.Batch.stopBatch(input, context);
+    return { ...res };
+  },
 
   createImage: async (_, { input }, context) => {
     const image = await context.models.Image.createImage(input, context);
