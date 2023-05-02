@@ -1,6 +1,5 @@
 const { buildImgUrl } = require('../api/db/models/utils');
 const SM = require('@aws-sdk/client-sagemaker-runtime');
-const agent = require('superagent');
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
@@ -66,51 +65,6 @@ const megadetector = async (params) => {
   }
 };
 
-const mira = async (params) => {
-  const { modelSource, catConfig, image, label, config } = params;
-  const imgBuffer = await _getImage(image, config);
-  const bbox = label.bbox ? label.bbox : [0,0,1,1];
-
-  try {
-    let res = await agent
-      .post(config['/ML/MIRA_API_URL'])
-      .field('bbox', JSON.stringify(bbox))
-      .attach('image', imgBuffer, image._id + '.jpg');
-    res = JSON.parse(res.res.text);
-
-    const filteredDets = Object.values(res).reduce((dets, classifier) => {
-      // only evaluate top predictions
-      const [category, conf] = Object.entries(classifier.predictions)
-        .sort((a, b) => b[1] - a[1])[0];
-
-      // filter out disabled detections,
-      // empty detections, & detections below confThreshold
-      // NOTE: we disregard "empty" class detections from MIRA classifiers
-      // b/c we're using Megadetector to determine if objects are present
-      const { disabled, confThreshold } = catConfig.find((cat) => (
-        cat.name === category
-      ));
-      if (!disabled && category !== 'empty' && conf >= confThreshold) {
-        dets.push({
-          mlModel: modelSource._id,
-          mlModelVersion: modelSource.version,
-          type: 'ml',
-          bbox,
-          conf,
-          category
-        });
-      }
-
-      return dets;
-    }, []);
-
-    return filteredDets;
-
-  } catch (err) {
-    throw new Error(err);
-  }
-};
-
 const mirav2 = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
@@ -121,8 +75,8 @@ const mirav2 = async (params) => {
   };
 
   try {
-    const smr = new SageMakerRuntimeClient({ region: process.env.REGION });
-    const command = new InvokeEndpointCommand({
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
       EndpointName: config['/ML/MIRAV2_SAGEMAKER_NAME']
     });
@@ -166,8 +120,8 @@ const nzdoc = async (params) => {
   };
 
   try {
-    const smr = new SageMakerRuntimeClient({ region: process.env.REGION });
-    const command = new InvokeEndpointCommand({
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
       EndpointName: config['/ML/NZDOC_SAGEMAKER_NAME']
     });
@@ -204,7 +158,6 @@ const nzdoc = async (params) => {
 
 const modelInterfaces = new Map();
 modelInterfaces.set('megadetector', megadetector);
-modelInterfaces.set('mira', mira);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 
