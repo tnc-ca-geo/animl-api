@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 
 const BatchSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
+  projectId: { type: String, required: true },
   user: { type: String },
   eTag: { type: String },
   uploadedFile: { type: String },

@@ -203,6 +203,7 @@ const generateBatchModel = ({ user } = {}) => ({
         const id = `batch-${randomUUID()}`;
         const batch = await operation({
           _id: id,
+          projectId: user['curr_project'],
           user: user.aud,
           originalFile: input.originalFile,
           uploadedFile: `${id}.zip`

@@ -114,7 +114,7 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       try {
-        // find camera record & active registration or create new one
+        // find wireless camera record & active registration or create new one
         const cameraId = md.serialNumber;
         const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
         if (!existingCam) {

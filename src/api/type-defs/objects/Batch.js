@@ -1,6 +1,7 @@
 module.exports = `
   type Batch {
     _id: String!
+    projectId: String!
     eTag: String
     errors: [BatchError]
     processingStart: String
