@@ -62,6 +62,7 @@ const generateProjectModel = ({ user } = {}) => ({
           // make sure project doesn't already have a config for this cam
           const currCamConfig = project.cameraConfigs.find((c) => c._id === cameraId);
           if (!currCamConfig) {
+            console.log('couldnt find cameraConfig, so creating one...');
             project.cameraConfigs.push({
               _id: cameraId,
               deployments: [{

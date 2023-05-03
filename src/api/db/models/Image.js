@@ -9,6 +9,7 @@ const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
 const ImageError = require('../schemas/ImageError');
 const WirelessCamera = require('../schemas/WirelessCamera');
+const Batch = require('../schemas/Batch');
 const automation = require('../../../automation');
 const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
 const utils = require('./utils');
@@ -114,21 +115,37 @@ const generateImageModel = ({ user } = {}) => ({
       };
 
       try {
-        // find wireless camera record & active registration or create new one
         const cameraId = md.serialNumber;
-        const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
-        if (!existingCam) {
-          await context.models.Camera.createCamera({
-            projectId,
-            cameraId,
-            make: md.make,
-            ...(md.model && { model: md.model })
-          }, context);
 
-          successfulOps.push({ op: 'cam-created', info: { cameraId } });
-        }
-        else {
-          projectId = utils.findActiveProjReg(existingCam);
+        if (md.batchId) {
+          // handle image from bulk upload
+          console.log('processing image from bulk upload');
+          // find project
+          const batch = await Batch.findOne({ _id: md.batchId });
+          console.log('found batch: ', batch);
+          projectId = batch.projectId;
+          console.log('found projectId associated w/ batch: ', projectId);
+          // create camera config if there isn't one yet
+          await context.models.Project.createCameraConfig( projectId, cameraId );
+        } else {
+          // handle image from wireless camera
+          console.log('processing image from wireless camera');
+
+          // find wireless camera record & active registration or create new one
+          const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
+          if (!existingCam) {
+            await context.models.Camera.createWirelessCamera({
+              projectId,
+              cameraId,
+              make: md.make,
+              ...(md.model && { model: md.model })
+            }, context);
+
+            successfulOps.push({ op: 'cam-created', info: { cameraId } });
+          }
+          else {
+            projectId = utils.findActiveProjReg(existingCam);
+          }
         }
 
         // map image to deployment

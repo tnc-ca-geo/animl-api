@@ -24,7 +24,7 @@ const generateCameraModel = ({ user } = {}) => ({
     }
   },
 
-  get createCamera() {
+  get createWirelessCamera() {
     return async (input, context) => {
       const successfulOps = [];
       const projectId = input.projectId || 'default_project';
@@ -48,10 +48,7 @@ const generateCameraModel = ({ user } = {}) => ({
         const camera = await saveWirelessCamera({ ...input, projectId });
         successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
         // and CameraConfig record to the Project
-        const project = await context.models.Project.createCameraConfig(
-          projectId,
-          camera._id
-        );
+        const project = await context.models.Project.createCameraConfig( projectId, camera._id);
         return { camera, project };
 
       } catch (err) {
@@ -83,7 +80,7 @@ const generateCameraModel = ({ user } = {}) => ({
 
         // if no camera found, create new Wireless Camera record & cameraConfig
         if (!cam) {
-          const { project } = await this.createCamera(
+          const { project } = await this.createWirelessCamera(
             { projectId, cameraId, make },
             context
           );
