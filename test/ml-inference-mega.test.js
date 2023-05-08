@@ -1,7 +1,8 @@
 const tape = require('tape');
 const nock = require('nock');
 const path = require('path');
-const AWS = require('@mapbox/mock-aws-sdk-js');
+const Sinon = require('sinon');
+const SM = require('@aws-sdk/client-sagemaker-runtime');
 
 const { modelInterfaces } = require('../src/ml/modelInterfaces.js');
 
@@ -14,19 +15,23 @@ tape('ML-Inference Megadetector', async (t) => {
       'Content-Type': 'image/jpeg'
     });
 
-  AWS.stub('SageMakerRuntime', 'invokeEndpoint', async function(params) {
-    t.ok(params.Body instanceof Buffer);
+  Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
+    if (command instanceof SM.InvokeEndpointCommand) {
+      t.ok(command.input.Body instanceof Buffer);
 
-    return this.request.promise.returns(Promise.resolve({
-      Body: Buffer.from(JSON.stringify([{
-        x1: 0.45518332719802856,
-        y1: 0.28664860129356384,
-        x2: 0.6615734100341797,
-        y2: 0.5675788521766663,
-        confidence: 0.9314358830451965,
-        class: 1
-      }]))
-    }));
+      return Promise.resolve({
+        Body: Buffer.from(JSON.stringify([{
+          x1: 0.45518332719802856,
+          y1: 0.28664860129356384,
+          x2: 0.6615734100341797,
+          y2: 0.5675788521766663,
+          confidence: 0.9314358830451965,
+          class: 1
+        }]))
+      });
+    } else {
+      throw new Error('Unknown Command');
+    }
   });
 
   try {
@@ -73,7 +78,7 @@ tape('ML-Inference Megadetector', async (t) => {
     t.error(err);
   }
 
-  AWS.SageMakerRuntime.restore();
+  Sinon.restore();
   nock.cleanAll();
   t.end();
 });
