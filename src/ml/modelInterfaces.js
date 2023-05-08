@@ -17,7 +17,7 @@ async function megadetector(params) {
   const { modelSource, catConfig, image, config } = params;
   const Body = await _getImage(image, config);
 
-  const isBatch = image.image.batchId;
+  const isBatch = image.batchId;
 
   try {
     const EndpointName = config[`/ml/megadetector-${isBatch ? 'batch' : 'realtime'}-endpoint-${process.env.STAGE}`];

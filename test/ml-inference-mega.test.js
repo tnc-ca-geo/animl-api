@@ -1,5 +1,6 @@
 const tape = require('tape');
-const nock = require('nock');
+const fs = require('node:fs');
+const { MockAgent, setGlobalDispatcher } = require('undici');
 const path = require('path');
 const Sinon = require('sinon');
 const SM = require('@aws-sdk/client-sagemaker-runtime');
@@ -9,11 +10,15 @@ const { modelInterfaces } = require('../src/ml/modelInterfaces.js');
 process.env.REGION = 'us-east-1';
 
 tape('ML-Inference Megadetector', async (t) => {
-  nock('http://example.com')
-    .get('/original/1-original.png')
-    .reply(200, path.resolve(__dirname, './fixtures/cat.jpg'), {
-      'Content-Type': 'image/jpeg'
-    });
+  const mockAgent = new MockAgent();
+  setGlobalDispatcher(mockAgent);
+
+  const mockPool = mockAgent.get('http://example.com');
+
+  mockPool.intercept({
+    path: '/original/1-original.png',
+    method: 'GET'
+  }).reply(200, fs.readFileSync(path.resolve(__dirname, './fixtures/cat.jpg')));
 
   Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
     if (command instanceof SM.InvokeEndpointCommand) {
@@ -61,7 +66,7 @@ tape('ML-Inference Megadetector', async (t) => {
         fileTypeExtension: 'png'
       },
       config: {
-        '/IMAGES/URL': 'http://example.com',
+        '/IMAGES/URL': 'example.com',
         '/ML/MEGADETECTOR_SAGEMAKER_NAME': 'http://example.com'
       }
     });
@@ -79,6 +84,5 @@ tape('ML-Inference Megadetector', async (t) => {
   }
 
   Sinon.restore();
-  nock.cleanAll();
   t.end();
 });
