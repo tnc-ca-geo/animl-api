@@ -69,7 +69,7 @@ tape('ML-Inference Megadetector', async (t) => {
       },
       config: {
         '/IMAGES/URL': 'example.com',
-        '/ML/MEGADETECTOR-REALTIME-ENDPOINT-DEV': 'http://sagemaker-realtime-dev-endpoint.amazon.com'
+        '/ML/MEGADETECTOR_REALTIME_ENDPOINT': 'http://sagemaker-realtime-dev-endpoint.amazon.com'
       }
     });
 
@@ -149,7 +149,7 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
       },
       config: {
         '/IMAGES/URL': 'example.com',
-        '/ML/MEGADETECTOR-BATCH-ENDPOINT-DEV': 'http://sagemaker-batch-dev-endpoint.amazon.com'
+        '/ML/MEGADETECTOR_BATCH_ENDPOINT': 'http://sagemaker-batch-dev-endpoint.amazon.com'
       }
     });
 

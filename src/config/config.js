@@ -44,7 +44,6 @@ const ssmNames = [
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/ml/mirav2-sagemaker-name-${process.env.STAGE}`,
   `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`,
-  `/ml/megadetector-sagemaker-name-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/exports/export-queue-url-${process.env.STAGE}`,
   `/ml/megadetector-realtime-endpoint-${process.env.STAGE}`,
