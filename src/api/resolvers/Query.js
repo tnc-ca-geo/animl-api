@@ -68,7 +68,7 @@ const Query = {
 
   exportStatus: async (_, { input }, context) => {
     return await context.models.Image.getExportStatus(input, context);
-  },
+  }
 };
 
 module.exports = Query;

@@ -13,12 +13,14 @@ const _getImage = async (image, config) => {
   }
 };
 
-async function megadetector(params, batch = false) {
+async function megadetector(params) {
   const { modelSource, catConfig, image, config } = params;
   const Body = await _getImage(image, config);
 
+  const isBatch = image.image.batchId;
+
   try {
-    const EndpointName = config[`/ml/megadetector-${batch ? 'batch' : 'realtime'}-endpoint-${process.env.STAGE}`];
+    const EndpointName = config[`/ml/megadetector-${isBatch ? 'batch' : 'realtime'}-endpoint-${process.env.STAGE}`];
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
