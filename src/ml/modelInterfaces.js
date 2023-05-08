@@ -20,7 +20,7 @@ async function megadetector(params) {
   const isBatch = image.batchId;
 
   try {
-    const EndpointName = config[`/ml/megadetector-${isBatch ? 'batch' : 'realtime'}-endpoint-${process.env.STAGE}`];
+    const EndpointName = config[`/ML/MEGADETECTOR-${isBatch ? 'BATCH' : 'REALTIME'}-ENDPOINT-${process.env.STAGE.toUpperCase()}`];
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
