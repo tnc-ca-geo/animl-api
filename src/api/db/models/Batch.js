@@ -130,32 +130,6 @@ const generateBatchModel = ({ user } = {}) => ({
     };
   },
 
-  getPriorityStatus: async () => {
-    try {
-      const sqs = new SQS.SQSClient({ region: process.env.REGION });
-
-      const result = {};
-
-      const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-        QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/inferenceQueue-${process.env.STAGE}`,
-        AttributeNames: [
-          'ApproximateNumberOfMessages',
-          'ApproximateNumberOfMessagesNotVisible'
-        ]
-      }));
-
-      result.priority = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
-
-      // console.log('res: ', JSON.stringify(result));
-      return result;
-    } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
-    }
-
-  },
-
   get updateBatch() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 

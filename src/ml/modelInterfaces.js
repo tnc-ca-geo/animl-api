@@ -13,16 +13,14 @@ const _getImage = async (image, config) => {
   }
 };
 
-const megadetector = async (params) => {
+async function megadetector(params, batch = false) {
   const { modelSource, catConfig, image, config } = params;
-  const imgBuffer = await _getImage(image, config);
+  const Body = await _getImage(image, config);
 
   try {
+    const EndpointName = config[`/ml/megadetector-${batch ? 'batch' : 'realtime'}-endpoint-${process.env.STAGE}`];
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
-    const command = new SM.InvokeEndpointCommand({
-      Body: imgBuffer,
-      EndpointName: config['/ML/MEGADETECTOR_SAGEMAKER_NAME']
-    });
+    const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const detections = JSON.parse(body);
@@ -63,9 +61,9 @@ const megadetector = async (params) => {
   } catch (err) {
     throw new Error(err);
   }
-};
+}
 
-const mirav2 = async (params) => {
+async function mirav2(params) {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
   const bbox = label.bbox ? label.bbox : [0,0,1,1];
@@ -108,9 +106,9 @@ const mirav2 = async (params) => {
   } catch (err) {
     throw new Error(err);
   }
-};
+}
 
-const nzdoc = async (params) => {
+async function nzdoc(params) {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
   const bbox = label.bbox ? label.bbox : [0,0,1,1];
@@ -153,7 +151,7 @@ const nzdoc = async (params) => {
   } catch (err) {
     throw new Error(err);
   }
-};
+}
 
 
 const modelInterfaces = new Map();
@@ -161,6 +159,4 @@ modelInterfaces.set('megadetector', megadetector);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 
-module.exports = {
-  modelInterfaces
-};
+module.exports = { modelInterfaces };

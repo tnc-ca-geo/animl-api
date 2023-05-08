@@ -47,7 +47,7 @@ const ViewSchema = new Schema({
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
-  editable: { type: Boolean },
+  editable: { type: Boolean }
 });
 
 const DeploymentSchema = new Schema({

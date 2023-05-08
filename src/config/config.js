@@ -61,23 +61,23 @@ function formatSSMParams(ssmParams) {
     formattedParams[key] = param.Value;
   }
   return formattedParams;
-};
+}
 
 async function getConfig() {
   if (!cachedSSMParams) {
     do {
-        cachedSSMParams = await ssm.send(new GetParametersCommand({
-          Names: ssmNames.splice(0, 10),
-          WithDecryption: true
-        }));
+      const res = await ssm.send(new GetParametersCommand({
+        Names: ssmNames.splice(0, 10),
+        WithDecryption: true
+      }));
 
-        if (!cachedSSMParams) {
-            cachedSSMParams = res;
-        } else {
-            cachedSSMParams.Parameters.push(...res.Parameters);
-            cachedSSMParams.InvalidParameters.push(...res.InvalidParameters);
-        }
-    } while (ssmNames.length)
+      if (!cachedSSMParams) {
+        cachedSSMParams = res;
+      } else {
+        cachedSSMParams.Parameters.push(...res.Parameters);
+        cachedSSMParams.InvalidParameters.push(...res.InvalidParameters);
+      }
+    } while (ssmNames.length);
   }
 
   try {
@@ -100,7 +100,7 @@ async function getConfig() {
   } catch (err) {
     throw new ApolloError(err);
   }
-};
+}
 
 module.exports = {
   localConfig,
