@@ -16,7 +16,7 @@ const generateCameraModel = ({ user } = {}) => ({
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
       const wirelessCameras = await WirelessCamera.find(query);
-      console.log('getWirelessCameras - found wirelessCameras: ', wirelessCameras)
+      console.log('getWirelessCameras - found wirelessCameras: ', wirelessCameras);
       return wirelessCameras;
     } catch (err) {
       if (err instanceof ApolloError) throw err;

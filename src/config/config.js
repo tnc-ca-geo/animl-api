@@ -36,8 +36,6 @@ const localConfig = {
 
 let cachedSSMParams = null;
 
-// TODO: SSM client can only fetch 10 names at a time.
-// Add a step to break this array into batches of 10 and request them iteratively
 const ssmNames = [
   `/db/mongo-db-url-${process.env.STAGE}`,
   `/frontend/url-${process.env.STAGE}`,
@@ -46,12 +44,13 @@ const ssmNames = [
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/ml/mirav2-sagemaker-name-${process.env.STAGE}`,
   `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`,
-  `/ml/megadetector-sagemaker-name-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
-  `/exports/export-queue-url-${process.env.STAGE}`
+  `/exports/export-queue-url-${process.env.STAGE}`,
+  `/ml/megadetector-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-batch-endpoint-${process.env.STAGE}`
 ];
 
-const formatSSMParams = (ssmParams) => {
+function formatSSMParams(ssmParams) {
   const formattedParams = {};
   for (const param of ssmParams.Parameters) {
     const key = param.Name
@@ -61,23 +60,31 @@ const formatSSMParams = (ssmParams) => {
     formattedParams[key] = param.Value;
   }
   return formattedParams;
-};
+}
 
-const getConfig = async function getConfig() {
+async function getConfig() {
   if (!cachedSSMParams) {
-    const command = new GetParametersCommand({
-      Names: ssmNames,
-      WithDecryption: true
-    });
-    cachedSSMParams = await ssm.send(command);
+    do {
+      const res = await ssm.send(new GetParametersCommand({
+        Names: ssmNames.splice(0, 10),
+        WithDecryption: true
+      }));
+
+      if (!cachedSSMParams) {
+        cachedSSMParams = res;
+      } else {
+        cachedSSMParams.Parameters.push(...res.Parameters);
+        cachedSSMParams.InvalidParameters.push(...res.InvalidParameters);
+      }
+    } while (ssmNames.length);
   }
 
   try {
     const ssmParams = await cachedSSMParams;
-    const command = new GetSecretValueCommand({
+    const secretsResponse = await secrets.send(new GetSecretValueCommand({
       SecretId: `api-key-${process.env.STAGE}`
-    });
-    const secretsResponse = await secrets.send(command);
+    }));
+
     const secret = JSON.parse(secretsResponse.SecretString || '{}');
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');
@@ -92,10 +99,9 @@ const getConfig = async function getConfig() {
   } catch (err) {
     throw new ApolloError(err);
   }
-};
+}
 
 module.exports = {
   localConfig,
   getConfig
 };
-
