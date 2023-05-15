@@ -30,6 +30,37 @@ async function requestCreateLabels(input, config) {
   return await graphQLClient.request(mutation, variables);
 }
 
+async function singleInference(config, record) {
+  const { modelSource, catConfig, image, label } = JSON.parse(record.body);
+
+  console.log(`record body: ${record.body}`);
+
+  // run inference
+  if (modelInterfaces.has(modelSource._id)) {
+    const requestInference = modelInterfaces.get(modelSource._id);
+
+    const detections = await requestInference({
+      modelSource,
+      catConfig,
+      image,
+      label,
+      config
+    });
+
+    // if successful, make create label request
+    if (detections.length) {
+      await requestCreateLabels({
+        imageId: image._id,
+        labels: detections
+      }, config);
+      // TODO: gracefully handle failed label creation
+    }
+
+  } else {
+    // TODO: gracefully handle model not found
+  }
+}
+
 exports.inference = async (event) => {
   const config = await getConfig();
 
@@ -37,39 +68,7 @@ exports.inference = async (event) => {
 
   if (!event.Records || !event.Records.length) return;
 
-  const records = [];
-  for (const record of event.Records) {
-    records.push((async function() {
-      const { modelSource, catConfig, image, label } = JSON.parse(record.body);
-
-      console.log(`record body: ${record.body}`);
-
-      // run inference
-      if (modelInterfaces.has(modelSource._id)) {
-        const requestInference = modelInterfaces.get(modelSource._id);
-
-        const detections = await requestInference({
-          modelSource,
-          catConfig,
-          image,
-          label,
-          config
-        });
-
-        // if successful, make create label request
-        if (detections.length) {
-          await requestCreateLabels({
-            imageId: image._id,
-            labels: detections
-          }, config);
-          // TODO: gracefully handle failed label creation
-        }
-
-      } else {
-        // TODO: gracefully handle model not found
-      }
-    })());
-  }
-
-  await Promise.all(records);
+  await Promise.all(event.Records.map((record) => {
+    return singleInference(config, record);
+  }));
 };
