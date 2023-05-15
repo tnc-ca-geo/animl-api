@@ -39,7 +39,7 @@ exports.inference = async (event) => {
 
   const records = [];
   for (const record of event.Records) {
-    records.push(async function() {
+    records.push((async function() {
       const { modelSource, catConfig, image, label } = JSON.parse(record.body);
 
       console.log(`record body: ${record.body}`);
@@ -68,7 +68,7 @@ exports.inference = async (event) => {
       } else {
         // TODO: gracefully handle model not found
       }
-    }
+    })());
   }
 
   await Promise.all(records);
