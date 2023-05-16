@@ -19,9 +19,7 @@ const executeRule = {
 
         return await sqs.send(new SQS.SendMessageCommand({
           QueueUrl: `https://sqs.${process.env.AWS_DEFAULT_REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${payload.image.batchId}`,
-          MessageBody: JSON.stringify(message),
-          MessageDeduplicationId: payload.image._id,
-          MessageGroupId: payload.image.batchId
+          MessageBody: JSON.stringify(message)
         }));
       } else {
         return await sqs.send(new SQS.SendMessageCommand({
