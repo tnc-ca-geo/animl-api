@@ -52,7 +52,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
         try {
           const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}.fifo`,
+            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
             AttributeNames: [
               'ApproximateNumberOfMessages',
               'ApproximateNumberOfMessagesNotVisible'
@@ -67,7 +67,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
         try {
           const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq.fifo`,
+            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
             AttributeNames: [
               'ApproximateNumberOfMessages',
               'ApproximateNumberOfMessagesNotVisible'
