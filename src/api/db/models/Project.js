@@ -60,7 +60,7 @@ const generateProjectModel = ({ user } = {}) => ({
           const [project] = await this.getProjects([projectId]);
 
           // make sure project doesn't already have a config for this cam
-          const currCamConfig = project.cameraConfigs.find((c) => c._id === cameraId);
+          const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
           if (!currCamConfig) {
             console.log('couldnt find cameraConfig, so creating one...');
             project.cameraConfigs.push({

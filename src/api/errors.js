@@ -18,6 +18,13 @@ class DuplicateError extends ApolloError {
   }
 }
 
+class DuplicateLabelError extends ApolloError {
+  constructor(message) {
+    super(message, 'DUPLICATE_LABEL');
+    Object.defineProperty(this, 'name', { value: 'DuplicateLabelError' });
+  }
+}
+
 class DBValidationError extends ApolloError {
   constructor(message) {
     super(message, 'DB_VALIDATION_FAILED');
@@ -74,6 +81,7 @@ function formatError (err) {
 
 module.exports = {
   DuplicateError,
+  DuplicateLabelError,
   DBValidationError,
   CameraRegistrationError,
   formatError

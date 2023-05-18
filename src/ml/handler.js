@@ -49,11 +49,23 @@ async function singleInference(config, record) {
 
     // if successful, make create label request
     if (detections.length) {
-      await requestCreateLabels({
-        imageId: image._id,
-        labels: detections
-      }, config);
-      // TODO: gracefully handle failed label creation
+      try {
+        await requestCreateLabels({
+          imageId: image._id,
+          labels: detections
+        }, config);
+      } catch (err) {
+        // don't fail messages that produce duplicate label errors
+        // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
+        // https://github.com/jasonkuhrt/graphql-request/issues/201
+        const errParsed = JSON.parse(JSON.stringify(err));
+        const hasDuplicateLabelErrors = errParsed.response.errors.some((e) => (
+          e.extensions.code === 'DUPLICATE_LABEL'
+        ));
+        if (!hasDuplicateLabelErrors) {
+          throw err;
+        }
+      }
     }
 
   } else {
