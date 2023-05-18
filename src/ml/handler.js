@@ -78,9 +78,23 @@ exports.inference = async (event) => {
 
   console.log('event: ', event);
 
-  if (!event.Records || !event.Records.length) return;
+  const batchItemFailures = [];
+  if (!event.Records || !event.Records.length) {
+    return { batchItemFailures };
+  }
 
-  await Promise.all(event.Records.map((record) => {
+  const results = await Promise.allSettled(event.Records.map((record) => {
     return singleInference(config, record);
   }));
+
+
+  for (let i = 0; i < results.length; i++) {
+    if (!(results[i] instanceof Error)) continue;
+
+    batchItemFailures.push({
+      itemIdentifier: event.Records[i].messageId
+    });
+  }
+
+  return { batchItemFailures };
 };
