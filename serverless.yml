@@ -122,6 +122,7 @@ functions:
               - inferenceQueue
               - Arn
           batchSize: 1
+          functionResponseType: ReportBatchItemFailures
     timeout: 120
   export:
     handler: src/export/handler.export

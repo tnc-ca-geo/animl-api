@@ -328,7 +328,6 @@ const generateImageModel = ({ user } = {}) => ({
 
           await image.save();
           return { image, newLabel: labelRecord };
-
         }, { retries: 2 });
       };
 
