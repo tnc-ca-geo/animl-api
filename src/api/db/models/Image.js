@@ -3,7 +3,7 @@ const _ = require('lodash');
 const S3 = require('@aws-sdk/client-s3');
 const SQS = require('@aws-sdk/client-sqs');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { DuplicateError, DBValidationError } = require('../../errors');
+const { DuplicateError, DuplicateLabelError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
 const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
@@ -288,6 +288,8 @@ const generateImageModel = ({ user } = {}) => ({
     };
   },
 
+  // TODO: make this only accept a single label at a time
+  // to make dealing with errors simpler
   get createLabels() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
@@ -297,7 +299,7 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find image, create label record
           const image = await this.queryById(imageId);
-          if (utils.isLabelDupe(image, label)) return;
+          if (utils.isLabelDupe(image, label)) throw new DuplicateLabelError();
           const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
 
@@ -348,6 +350,7 @@ const generateImageModel = ({ user } = {}) => ({
         return image;
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
+        console.log('error occured: ', err);
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
