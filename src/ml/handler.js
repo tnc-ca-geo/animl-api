@@ -33,7 +33,7 @@ async function requestCreateLabels(input, config) {
 async function singleInference(config, record) {
   const { modelSource, catConfig, image, label } = JSON.parse(record.body);
 
-  console.log(`record body: ${record.body}`);
+  console.log(`message related to image ${image._id}: ${record.body}`);
 
   // run inference
   if (modelInterfaces.has(modelSource._id)) {
@@ -55,6 +55,7 @@ async function singleInference(config, record) {
           labels: detections
         }, config);
       } catch (err) {
+        console.log(`requestCreateLabels() ERROR on image ${image._id}: ${err}`);
         // don't fail messages that produce duplicate label errors
         // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
         // https://github.com/jasonkuhrt/graphql-request/issues/201
@@ -87,13 +88,18 @@ exports.inference = async (event) => {
     return singleInference(config, record);
   }));
 
+  console.log('results: ', results);
 
   for (let i = 0; i < results.length; i++) {
-    if (!(results[i] instanceof Error)) continue;
+    if (!(results[i].reason instanceof Error)) continue;
 
     batchItemFailures.push({
       itemIdentifier: event.Records[i].messageId
     });
+  }
+
+  if (batchItemFailures.length > 0) {
+    console.log('ERROR - batchItemFailures: ', batchItemFailures);
   }
 
   return { batchItemFailures };
