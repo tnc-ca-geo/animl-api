@@ -3,6 +3,7 @@ module.exports = `
     _id: String!
     eTag: String
     total: Int
+    overrideSerial: String
     processingEnd: String
     processingStart: String
     originalFile: String
