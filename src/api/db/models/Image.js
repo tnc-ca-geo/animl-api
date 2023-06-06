@@ -3,7 +3,7 @@ const _ = require('lodash');
 const S3 = require('@aws-sdk/client-s3');
 const SQS = require('@aws-sdk/client-sqs');
 const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { DuplicateError, DBValidationError } = require('../../errors');
+const { DuplicateError, DuplicateLabelError, DBValidationError } = require('../../errors');
 const crypto = require('crypto');
 const MongoPaging = require('mongo-cursor-pagination');
 const Image = require('../schemas/Image');
@@ -119,18 +119,12 @@ const generateImageModel = ({ user } = {}) => ({
 
         if (md.batchId) {
           // handle image from bulk upload
-          console.log('processing image from bulk upload');
-          // find project
           const batch = await Batch.findOne({ _id: md.batchId });
-          console.log('found batch: ', batch);
           projectId = batch.projectId;
-          console.log('found projectId associated w/ batch: ', projectId);
           // create camera config if there isn't one yet
           await context.models.Project.createCameraConfig( projectId, cameraId );
         } else {
           // handle image from wireless camera
-          console.log('processing image from wireless camera');
-
           // find wireless camera record & active registration or create new one
           const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
           if (!existingCam) {
@@ -181,6 +175,8 @@ const generateImageModel = ({ user } = {}) => ({
         }
 
         const msg = err.message.toLowerCase();
+        console.log(`Image.createImage() ERROR on image ${md.hash}: ${err}`);
+
         if (err instanceof ApolloError) {
           throw err;
         }
@@ -288,6 +284,8 @@ const generateImageModel = ({ user } = {}) => ({
     };
   },
 
+  // TODO: make this only accept a single label at a time
+  // to make dealing with errors simpler
   get createLabels() {
     if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
@@ -297,7 +295,7 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find image, create label record
           const image = await this.queryById(imageId);
-          if (utils.isLabelDupe(image, label)) return;
+          if (utils.isLabelDupe(image, label)) throw new DuplicateLabelError();
           const authorId = label.mlModel || label.userId;
           const labelRecord = utils.createLabelRecord(label, authorId);
 
@@ -328,7 +326,6 @@ const generateImageModel = ({ user } = {}) => ({
 
           await image.save();
           return { image, newLabel: labelRecord };
-
         }, { retries: 2 });
       };
 
@@ -348,6 +345,7 @@ const generateImageModel = ({ user } = {}) => ({
         return image;
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
+        console.log(`Image.createLabel() ERROR on image ${input.imageId}: ${err}`);
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }

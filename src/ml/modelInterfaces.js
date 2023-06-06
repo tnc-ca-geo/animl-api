@@ -26,7 +26,7 @@ async function megadetector(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const detections = JSON.parse(body);
-    console.log('detections returned from megadetector endpoint: ', detections);
+    console.log(`detections returned from megadetector endpoint for image ${image._id}: ${detections}`);
 
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,
@@ -61,6 +61,7 @@ async function megadetector(params) {
     return filteredDets;
 
   } catch (err) {
+    console.log(`megadetector() ERROR on image ${image._id}: ${err}`);
     throw new Error(err);
   }
 }
@@ -83,7 +84,7 @@ async function mirav2(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const predictions = JSON.parse(body);
-    console.log('mirav2 predictions: ', predictions);
+    console.log(`mirav2 predictions for image ${image._id}: ${predictions}`);
 
     const filteredDets = [];
     Object.keys(predictions).forEach((category) => {
@@ -106,6 +107,7 @@ async function mirav2(params) {
     return filteredDets;
 
   } catch (err) {
+    console.log(`mirav2() ERROR on image ${image._id}: ${err}`);
     throw new Error(err);
   }
 }
@@ -128,7 +130,7 @@ async function nzdoc(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const predictions = JSON.parse(body);
-    console.log('nzdoc predictions: ', predictions);
+    console.log(`nzdoc predictions for image ${image._id}: ${predictions}`);
 
     const filteredDets = [];
     Object.keys(predictions).forEach((category) => {
@@ -151,6 +153,7 @@ async function nzdoc(params) {
     return filteredDets;
 
   } catch (err) {
+    console.log(`nzdoc() ERROR on image ${image._id}: ${err}`);
     throw new Error(err);
   }
 }

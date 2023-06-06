@@ -122,6 +122,11 @@ functions:
               - inferenceQueue
               - Arn
           batchSize: 1
+          functionResponseType: ReportBatchItemFailures
+    timeout: 120
+  batchinference:
+    handler: src/ml/handler.inference
+    reservedConcurrency: 10 # max number of lambdas to invoke at one time
     timeout: 120
   export:
     handler: src/export/handler.export
