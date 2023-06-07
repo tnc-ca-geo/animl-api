@@ -17,7 +17,6 @@ const { idMatch } = require('./utils');
 const retry = require('async-retry');
 
 const generateImageModel = ({ user } = {}) => ({
-
   countImages: async (input) => {
     const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
     pipeline.push({ $count: 'count' });
@@ -101,28 +100,25 @@ const generateImageModel = ({ user } = {}) => ({
   // for some of the new images? Investigate
   get createImage() {
     if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
     return async (input, context) => {
       const successfulOps = [];
       const md = utils.sanitizeMetadata(input.md);
       let projectId = 'default_project';
 
-      const saveImage = async (md) => {
-        return await retry(async (bail, attempt) => {
-          if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
-          const newImage = utils.createImageRecord(md);
-          return await newImage.save();
-        }, { retries: 2 });
-      };
+      // Images will be attempted to be stored in the database to preserve the state of the image
+      // regardless of whether the system was able to process them. If known errors are thrown, they will
+      // be added to this array to be submitted as ImageError objects that reference the created Image
+      const errors = [];
 
       try {
         const cameraId = md.serialNumber;
 
-        if (md.batchId) {
-          // handle image from bulk upload
+        if (md.batchId) { // handle image from bulk upload
           const batch = await Batch.findOne({ _id: md.batchId });
           projectId = batch.projectId;
           // create camera config if there isn't one yet
-          await context.models.Project.createCameraConfig( projectId, cameraId );
+          await context.models.Project.createCameraConfig(projectId, cameraId);
         } else {
           // handle image from wireless camera
           // find wireless camera record & active registration or create new one
@@ -145,20 +141,40 @@ const generateImageModel = ({ user } = {}) => ({
         // map image to deployment
         const [project] = await context.models.Project.getProjects([projectId]);
         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-        const deployment = utils.mapImgToDep(md, camConfig, project.timezone);
+
+        let deployment = { _id: null, timezone: project.timezone };
+        try {
+          deployment = utils.mapImgToDep(md, camConfig, project.timezone);
+        } catch (err) {
+          if (err.code === 'NoDeployments') errors.push(err);
+          else throw err;
+        }
 
         // create image record
         md.projectId = projectId;
         md.deploymentId = deployment._id;
         md.timezone = deployment.timezone;
+
         md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
 
-        const image = await saveImage(md);
-        await automation.handleEvent({ event: 'image-added', image }, context);
+        const image = await retry(async (bail, attempt) => {
+          if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
+          const newImage = utils.createImageRecord(md);
+          return await newImage.save();
+        }, { retries: 2 });
+
+        if (!errors.length) {
+          await automation.handleEvent({ event: 'image-added', image }, context);
+        } else {
+          for (let i = 0; i < errors.length; i++) {
+            errors[i] = new ImageError({ image: image._id, batch: md.batchId, error: errors[i].message });
+            await errors[i].save();
+          }
+        }
+
+        image.errors = errors;
         return image;
-
       } catch (err) {
-
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {

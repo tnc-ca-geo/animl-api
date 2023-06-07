@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const { randomUUID } = require('node:crypto');
 
 const BatchErrorSchema = new Schema({
-  _id: { type: String, required: true },  /* _id is name in_snake_case */
+  _id: { type: String, default: randomUUID, required: true },  /* _id is name in_snake_case */
   batch: { type: String, required: true },
-  created: { type: Date, required: true },
+  created: { type: Date, default: Date.now, required: true },
   error: { type: String, required: true }
 });
 

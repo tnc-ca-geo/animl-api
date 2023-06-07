@@ -3,7 +3,6 @@ const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const ImageError = require('../schemas/ImageError');
 const retry = require('async-retry');
 const utils = require('./utils');
-const { randomUUID } = require('node:crypto');
 
 const generateImageErrorModel = ({ user } = {}) => ({
   get createError() {
@@ -20,11 +19,9 @@ const generateImageErrorModel = ({ user } = {}) => ({
 
       try {
         const imageerr = await operation({
-          _id: randomUUID(),
           image: input.image,
           batch: input.batch,
-          error: input.error,
-          created: new Date()
+          error: input.error
         });
 
         return {

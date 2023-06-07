@@ -19,7 +19,7 @@ const ImageSchema = new Schema({
   timezone: { type: String, required: true },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
-  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
+  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment' },
   projectId: { type: String, required: true, ref: 'Project' },
   originalFileName: { type: String },
   imageWidth: { type: Number },

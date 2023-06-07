@@ -1,9 +1,8 @@
 const { DateTime } = require('luxon');
 const _ = require('lodash');
-const { ApolloError } = require('apollo-server-errors');
 const ObjectId = require('mongoose').Types.ObjectId;
 const parser = require('mongodb-query-parser');
-const Image = require('../schemas/Image');
+const Image = require('../schemas/Image.js');
 
 // TODO: this file is getting unwieldy, break up
 
@@ -305,7 +304,7 @@ const createImageRecord = (md) => {
   };
 
   const image = new Image({
-    _id: md.hash,
+    _id: md.projectId + ':' + md.hash,
     batchId: md.batchId,
     bucket: md.prodBucket,
     fileTypeExtension: md.fileTypeExtension,
@@ -445,7 +444,9 @@ const findDeployment = (img, camConfig, projTimeZone) => {
 
 const mapImgToDep = (img, camConfig, projTimeZone) => {
   if (camConfig.deployments.length === 0) {
-    throw new ApolloError('Camera config has no deployments');
+    const err = new Error('Camera config has no deployments');
+    err.code = 'NoDeployments';
+    throw err;
   }
 
   return (camConfig.deployments.length === 1)
@@ -475,8 +476,9 @@ const sortDeps = (deps) => {
 const findActiveProjReg = (camera) => {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
-    const err = 'Can\'t find active project registration on camera';
-    throw new ApolloError(err);
+    const err = new Error('Can\'t find active project registration on camera');
+    err.code = 'NoRegistration';
+    throw err;
   }
 
   return activeProjReg.projectId;
