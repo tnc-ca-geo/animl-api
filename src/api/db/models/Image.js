@@ -158,7 +158,7 @@ const generateImageModel = ({ user } = {}) => ({
 
         // Image Size Limit
         if (md.imageBytes >= 4 * 1000000) {
-            errors.push(new Error('Image Size Exceed 4mb'));
+          errors.push(new Error('Image Size Exceed 4mb'));
         }
 
         md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
