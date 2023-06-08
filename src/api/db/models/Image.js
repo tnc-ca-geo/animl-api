@@ -143,6 +143,7 @@ const generateImageModel = ({ user } = {}) => ({
         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
 
         let deployment = { _id: null, timezone: project.timezone };
+
         try {
           deployment = utils.mapImgToDep(md, camConfig, project.timezone);
         } catch (err) {
@@ -154,6 +155,11 @@ const generateImageModel = ({ user } = {}) => ({
         md.projectId = projectId;
         md.deploymentId = deployment._id;
         md.timezone = deployment.timezone;
+
+        // Image Size Limit
+        if (md.imageBytes >= 4 * 1000000) {
+            errors.push(new Error('Image Size Exceed 4mb'));
+        }
 
         md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
 
