@@ -24,6 +24,7 @@ const ImageSchema = new Schema({
   originalFileName: { type: String },
   imageWidth: { type: Number },
   imageHeight: { type: Number },
+  imageBytes: { type: Number },
   mimeType: { type: String },
   userSetData: { type: Map, of: String },
   model: { type: String },

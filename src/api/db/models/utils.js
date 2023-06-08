@@ -319,6 +319,7 @@ const createImageRecord = (md) => {
     ...(md.fileName &&    { originalFileName: md.fileName }),
     ...(md.imageWidth &&  { imageWidth: md.imageWidth }),
     ...(md.imageHeight && { imageHeight: md.imageHeight }),
+    ...(md.imageBytes &&  { imageBytes: md.imageBytes }),
     ...(md.MIMEType &&    { mimeType: md.MIMEType }),
     ...(userSetData &&    { userSetData: userSetData }),
     ...(location &&       { location: location }),
