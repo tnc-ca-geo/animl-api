@@ -112,11 +112,17 @@ const generateImageModel = ({ user } = {}) => ({
       const errors = [];
 
       try {
-        const cameraId = md.serialNumber;
+        let cameraId = md.serialNumber;
 
         if (md.batchId) { // handle image from bulk upload
           const batch = await Batch.findOne({ _id: md.batchId });
           projectId = batch.projectId;
+
+          if (batch.overrideSerial) {
+            md.serialNumber = batch.overrideSerial;
+            cameraId = batch.overrideSerial;
+          }
+
           // create camera config if there isn't one yet
           await context.models.Project.createCameraConfig(projectId, cameraId);
         } else {
