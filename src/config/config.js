@@ -46,8 +46,10 @@ const ssmNames = [
   `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/exports/export-queue-url-${process.env.STAGE}`,
-  `/ml/megadetector-realtime-endpoint-${process.env.STAGE}`,
-  `/ml/megadetector-batch-endpoint-${process.env.STAGE}`
+  `/ml/megadetector-v5a-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5a-batch-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5b-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5b-batch-endpoint-${process.env.STAGE}`
 ];
 
 function formatSSMParams(ssmParams) {
