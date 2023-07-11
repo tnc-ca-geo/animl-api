@@ -114,7 +114,7 @@ functions:
     timeout: 30
   inference:
     handler: src/ml/handler.inference
-    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    reservedConcurrency: 20
     events:
       - sqs:
           arn:
@@ -126,11 +126,11 @@ functions:
     timeout: 120
   batchinference:
     handler: src/ml/handler.inference
-    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    reservedConcurrency: 8
     timeout: 120
   export:
     handler: src/export/handler.export
-    reservedConcurrency: 10 # max number of lambdas to invoke at one time
+    reservedConcurrency: 10
     events:
       - sqs:
           arn:
