@@ -42,7 +42,7 @@ tape('ML-Inference Megadetector', async (t) => {
   });
 
   try {
-    const inference = await modelInterfaces.get('megadetector')({
+    const inference = await modelInterfaces.get('megadetector_v5a')({
       modelSource: {
         _id: 1,
         version: 2
@@ -69,7 +69,7 @@ tape('ML-Inference Megadetector', async (t) => {
       },
       config: {
         '/IMAGES/URL': 'example.com',
-        '/ML/MEGADETECTOR_REALTIME_ENDPOINT': 'http://sagemaker-realtime-dev-endpoint.amazon.com'
+        '/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT': 'http://sagemaker-realtime-dev-endpoint.amazon.com'
       }
     });
 
