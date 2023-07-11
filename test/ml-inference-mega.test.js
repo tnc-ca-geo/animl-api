@@ -7,7 +7,7 @@ const SM = require('@aws-sdk/client-sagemaker-runtime');
 
 const { modelInterfaces } = require('../src/ml/modelInterfaces.js');
 
-process.env.REGION = 'us-east-1';
+process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';
 
 tape('ML-Inference Megadetector', async (t) => {
@@ -44,8 +44,8 @@ tape('ML-Inference Megadetector', async (t) => {
   try {
     const inference = await modelInterfaces.get('megadetector_v5a')({
       modelSource: {
-        _id: 1,
-        version: 2
+        _id: 'megadetector_v5a',
+        version: 'v5.0a'
       },
       catConfig: [{
         _id: 1,
@@ -74,8 +74,8 @@ tape('ML-Inference Megadetector', async (t) => {
     });
 
     t.deepEquals(inference, [{
-      mlModel: 1,
-      mlModelVersion: 2,
+      mlModel: 'megadetector_v5a',
+      mlModelVersion: 'v5.0a',
       type: 'ml',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
@@ -121,10 +121,10 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
   });
 
   try {
-    const inference = await modelInterfaces.get('megadetector')({
+    const inference = await modelInterfaces.get('megadetector_v5a')({
       modelSource: {
-        _id: 1,
-        version: 2
+        _id: 'megadetector_v5a',
+        version: 'v5.0a'
       },
       catConfig: [{
         _id: 1,
@@ -149,13 +149,13 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
       },
       config: {
         '/IMAGES/URL': 'example.com',
-        '/ML/MEGADETECTOR_BATCH_ENDPOINT': 'http://sagemaker-batch-dev-endpoint.amazon.com'
+        '/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT': 'http://sagemaker-batch-dev-endpoint.amazon.com'
       }
     });
 
     t.deepEquals(inference, [{
-      mlModel: 1,
-      mlModelVersion: 2,
+      mlModel: 'megadetector_v5a',
+      mlModelVersion: 'v5.0a',
       type: 'ml',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
