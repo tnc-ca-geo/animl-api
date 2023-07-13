@@ -178,7 +178,7 @@ const generateBatchModel = ({ user } = {}) => ({
         const batch = await operation({
           _id: id,
           projectId: user['curr_project'],
-          user: user.aud,
+          user: user.sub,
           originalFile: input.originalFile,
           uploadedFile: `${id}.zip`
         });
@@ -196,7 +196,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
         return {
           batch: batch._id,
-          user: user.aud,
+          user: user.sub,
           url: signedUrl
         };
       } catch (err) {
