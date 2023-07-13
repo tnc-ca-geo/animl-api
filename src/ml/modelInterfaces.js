@@ -76,11 +76,13 @@ async function mirav2(params) {
     bbox: bbox
   };
 
+  const isBatch = image.batchId;
+
   try {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config['/ML/MIRAV2_SAGEMAKER_NAME']
+      EndpointName: config[`/ML/MIRAV2_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`]
     });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
@@ -122,11 +124,13 @@ async function nzdoc(params) {
     bbox: bbox
   };
 
+  const isBatch = image.batchId;
+
   try {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config['/ML/NZDOC_SAGEMAKER_NAME']
+      EndpointName: config[`/ML/NZDOC_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`]
     });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
