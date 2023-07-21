@@ -37,6 +37,28 @@ const generateImageErrorModel = ({ user } = {}) => ({
         throw new ApolloError(err);
       }
     };
+  },
+
+  get clearErrors() {
+    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
+    return async (input) => {
+      const operation = async (input) => {
+        return await retry(async () => {
+          return await ImageError.batch(input);
+        }, { retries: 2 });
+      };
+
+      try {
+        await operation(input);
+
+        return { message: 'Cleared' };
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
   }
 });
 

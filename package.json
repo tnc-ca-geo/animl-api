@@ -48,7 +48,7 @@
         "lodash": "^4.17.20",
         "luxon": "^3.2.1",
         "mongo-cursor-pagination": "^8.1.2",
-        "mongodb-query-parser": "^2.4.3",
+        "mongodb-query-parser": "^3.0.0",
         "mongoose": "^7.0.0",
         "prompt": "^1.2.0",
         "stream-transform": "^3.2.0",
