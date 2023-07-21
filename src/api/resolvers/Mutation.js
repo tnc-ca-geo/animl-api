@@ -10,7 +10,7 @@ const Mutation = {
   },
 
   clearImageErrors: async (_, { input }, context) => {
-    const error = await context.models.ImageError.clearErrors(input, context);
+    const res = await context.models.ImageError.clearErrors(input, context);
     return { ...res };
   },
 
