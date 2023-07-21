@@ -12,7 +12,7 @@ import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Fields from './resolvers/Fields.js';
 import Scalars from './resolvers/Scalars.js';
-import typeDefs from './type-defs.js';
+import typeDefs from './type-defs/index.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
 import { getUserInfo } from './auth/authorization.js';
@@ -54,7 +54,7 @@ const context = async ({ event, context }) => {
   };
 };
 
-const server = new ApolloServer({
+const srv = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   typeDefs,
   resolvers,
@@ -67,7 +67,7 @@ const server = new ApolloServer({
   }
 });
 
-const server = server.createHandler();
+const server = srv.createHandler();
 
 export {
     server

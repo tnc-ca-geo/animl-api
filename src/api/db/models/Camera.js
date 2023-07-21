@@ -1,9 +1,9 @@
-import { ApolloError, ForbiddenError } from 'apollo-server-errors');
-import { CameraRegistrationError } from '../../errors');
-import WirelessCamera from '../schemas/WirelessCamera');
-import retry from 'async-retry');
-import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles');
-import { hasRole, idMatch } from './utils');
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { CameraRegistrationError } from '../../errors';
+import WirelessCamera from '../schemas/WirelessCamera';
+import retry from 'async-retry';
+import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles';
+import { hasRole, idMatch } from './utils';
 
 const generateCameraModel = ({ user } = {}) => ({
   getWirelessCameras: async (_ids) => {
