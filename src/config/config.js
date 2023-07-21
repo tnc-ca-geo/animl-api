@@ -1,6 +1,7 @@
-const { ApolloError } = require('apollo-server-errors');
-const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
-const { SSMClient, GetParametersCommand } = require('@aws-sdk/client-ssm');
+import { ApolloError } from 'apollo-server-errors';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { SSMClient, GetParametersCommand } from '@aws-sdk/client-ssm';
+
 const ssm = new SSMClient({ region: process.env.REGION });
 const secrets = new SecretsManagerClient({ region: process.env.REGION });
 
@@ -106,7 +107,7 @@ async function getConfig() {
   }
 }
 
-module.exports = {
+export {
   localConfig,
   getConfig
 };

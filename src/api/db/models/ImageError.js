@@ -1,8 +1,8 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
-const ImageError = require('../schemas/ImageError');
-const retry = require('async-retry');
-const utils = require('./utils');
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import ImageError from '../schemas/ImageError.js';
+import retry from 'async-retry';
+import utils from './utils.js';
 
 const generateImageErrorModel = ({ user } = {}) => ({
   get createError() {
@@ -62,4 +62,4 @@ const generateImageErrorModel = ({ user } = {}) => ({
   }
 });
 
-module.exports = generateImageErrorModel;
+export default generateImageErrorModel;

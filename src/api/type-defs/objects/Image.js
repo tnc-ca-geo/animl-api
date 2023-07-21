@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Image {
     _id: ID!
     batchId: Int

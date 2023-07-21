@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Batch {
     _id: String!
     projectId: String!

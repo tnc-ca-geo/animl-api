@@ -1,7 +1,7 @@
-const { ApolloError } = require('apollo-server-errors');
-const SQS = require('@aws-sdk/client-sqs');
-const utils = require('./utils');
-const { sendEmail } = require('./alerts');
+import { ApolloError } from 'apollo-server-errors';
+import SQS from '@aws-sdk/client-sqs';
+import utils from './utils.js';
+import { sendEmail } from './alerts.js';
 
 const sqs = new SQS.SQSClient();
 
@@ -56,6 +56,6 @@ const handleEvent = async (payload, context) => {
   }
 };
 
-module.exports = {
+export {
   handleEvent
 };

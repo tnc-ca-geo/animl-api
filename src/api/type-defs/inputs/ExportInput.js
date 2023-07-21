@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   enum Format {
     csv
     coco

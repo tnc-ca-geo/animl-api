@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Deployment {
     _id: ID!
     name: String!

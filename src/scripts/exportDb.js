@@ -1,13 +1,16 @@
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const execSync = util.promisify(require('child_process').execSync);
-const appRoot = require('app-root-path');
-const { DateTime } = require('luxon');
-const { ApolloError } = require('apollo-server-errors');
-const { connectToDatabase } = require('../api/db/connect');
-const { getConfig } = require('../config/config');
-const { backupConfig } = require('./backupConfig');
+import fs from 'node:fs';
+import path from 'node:path';
+import util from 'node:util';
+import { execSync as eS } from 'child_process';
+
+import appRoot from 'app-root-path';
+import { DateTime } from 'luxon';
+import { ApolloError } from 'apollo-server-errors';
+import { connectToDatabase } from '../api/db/connect.js';
+import { getConfig } from '../config/config.js';
+import { backupConfig } from './backupConfig.js';
+
+const execSync = util.promisify(eS);
 
 async function listCollections(config) {
   let db;

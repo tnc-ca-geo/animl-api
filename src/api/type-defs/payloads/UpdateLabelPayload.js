@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type UpdateLabelPayload {
     image: Image
   }`;

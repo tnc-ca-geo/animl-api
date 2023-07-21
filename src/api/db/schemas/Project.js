@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import shared = from './shared.js';
+
 const Schema = mongoose.Schema;
-const shared = require('./shared');
 
 const AutomationRuleSchema = new Schema({
   name: { type: String, required: true },
@@ -75,4 +76,4 @@ const ProjectSchema = new Schema({
   automationRules: { type: [AutomationRuleSchema] }
 });
 
-module.exports = mongoose.model('Project', ProjectSchema);
+export default mongoose.model('Project', ProjectSchema);

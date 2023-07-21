@@ -1,13 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const { ApolloError } = require('apollo-server-errors');
-const { DateTime } = require('luxon');
-const appRoot = require('app-root-path');
-const prompt = require('prompt');
-const { connectToDatabase } = require('../api/db/connect');
-const { getConfig } = require('../config/config');
-const { backupConfig } = require('./backupConfig');
-const { operations } = require('./operations');
+import fs from 'node:fs';
+import path from 'node:path';
+import { ApolloError } from 'apollo-server-errors';
+import { DateTime } from 'luxon';
+import appRoot from 'app-root-path';
+import prompt from 'prompt';
+import { connectToDatabase } from '../api/db/connect.js';
+import { getConfig } from '../config/config.js';
+import { backupConfig } from './backupConfig.js';
+import { operations } from './operations.js';
 
 const property = {
   name: 'confirmation',
@@ -70,7 +70,7 @@ async function updateDocuments() {
         await createLogFile('images', matchingImageIds, op);
       }
       else {
-        const msg = `There was a discrepency between the number of matching 
+        const msg = `There was a discrepency between the number of matching
           documents and the number of modified documents`;
         throw new ApolloError(msg);
       }

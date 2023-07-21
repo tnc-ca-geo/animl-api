@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-const MongoPaging = require('mongo-cursor-pagination');
-const shared = require('./shared');
+import mongoose from 'mongoose';
+import MongoPaging from 'mongo-cursor-pagination';
+import  shared from './shared.js';
+
 const Schema = mongoose.Schema;
 
 /*
@@ -48,4 +49,4 @@ ImageSchema.on('index', (e) => {
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
-module.exports = mongoose.model('Image', ImageSchema);
+export default mongoose.model('Image', ImageSchema);

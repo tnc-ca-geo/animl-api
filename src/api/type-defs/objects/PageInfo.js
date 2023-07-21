@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type PageInfo {
     previous: String
     hasPrevious: Boolean

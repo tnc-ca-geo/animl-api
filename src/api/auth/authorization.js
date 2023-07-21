@@ -1,4 +1,4 @@
-const jwt = require('jwt-simple');
+import jwt from 'jwt-simple';
 
 const BEARER_TOKEN_PATTERN = /^Bearer [-_=.0-9a-zA-Z]+$/i;
 
@@ -60,6 +60,6 @@ async function getUserInfo(req, config) {
 
 }
 
-module.exports = {
+export {
   getUserInfo
 };

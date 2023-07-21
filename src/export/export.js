@@ -1,17 +1,17 @@
-const stream = require('node:stream/promises');
-const { PassThrough } = require('node:stream');
-const { Upload } = require('@aws-sdk/lib-storage');
-const { S3Client, CreateMultipartUploadCommand, UploadPartCopyCommand, CompleteMultipartUploadCommand, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { ApolloError } = require('apollo-server-lambda');
-const { transform } = require('stream-transform');
-const { stringify } = require('csv-stringify');
-const { DateTime } = require('luxon');
-const { idMatch }  = require('../api/db/models/utils');
-const generateImageModel = require('../api/db/models/Image');
-const generateProjectModel = require('../api/db/models/Project');
-const Image = require('../api/db/schemas/Image');
-const { buildPipeline } = require('../api/db/models/utils');
+import stream from 'node:stream/promises';
+import { PassThrough } from 'node:stream';
+import { Upload } from '@aws-sdk/lib-storage';
+import { S3Client, CreateMultipartUploadCommand, UploadPartCopyCommand, CompleteMultipartUploadCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { ApolloError } from 'apollo-server-lambda';
+import { transform } from 'stream-transform';
+import { stringify } from 'csv-stringify';
+import { DateTime } from 'luxon';
+import { idMatch }  from '../api/db/models/utils.js';
+import generateImageModel from '../api/db/models/Image.js';
+import generateProjectModel from '../api/db/models/Project.js';
+import Image from '../api/db/schemas/Image.js';
+import { buildPipeline } from '../api/db/models/utils.js';
 
 class Export {
   constructor({ projectId, documentId, filters, format }, config) {
@@ -459,6 +459,6 @@ class Export {
 
 }
 
-module.exports = {
+export {
   Export
 };

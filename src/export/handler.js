@@ -1,9 +1,9 @@
-const { Export } = require('./export');
-const { getConfig } = require('../config/config');
-const { connectToDatabase } = require('../api/db/connect');
-const { ApolloError } = require('apollo-server-lambda');
+import { Export } from './export.js';
+import { getConfig } from '../config/config.js';
+import { connectToDatabase } from '../api/db/connect.js';
+import { ApolloError } from 'apollo-server-lambda';
 
-exports.export = async (event) => {
+export default async function(event) {
   if (!event.Records || !event.Records.length) return;
   const config = await getConfig();
   await connectToDatabase(config);

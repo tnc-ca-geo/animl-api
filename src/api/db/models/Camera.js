@@ -1,13 +1,11 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { CameraRegistrationError } = require('../../errors');
-const WirelessCamera = require('../schemas/WirelessCamera');
-const retry = require('async-retry');
-const { WRITE_CAMERA_REGISTRATION_ROLES } = require('../../auth/roles');
-const { hasRole, idMatch } = require('./utils');
-
+import { ApolloError, ForbiddenError } from 'apollo-server-errors');
+import { CameraRegistrationError } from '../../errors');
+import WirelessCamera from '../schemas/WirelessCamera');
+import retry from 'async-retry');
+import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles');
+import { hasRole, idMatch } from './utils');
 
 const generateCameraModel = ({ user } = {}) => ({
-
   getWirelessCameras: async (_ids) => {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
@@ -220,4 +218,4 @@ const generateCameraModel = ({ user } = {}) => ({
 
 });
 
-module.exports = generateCameraModel;
+export default generateCameraModel;

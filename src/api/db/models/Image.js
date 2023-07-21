@@ -1,20 +1,20 @@
-const { text } = require('node:stream/consumers');
-const _ = require('lodash');
-const S3 = require('@aws-sdk/client-s3');
-const SQS = require('@aws-sdk/client-sqs');
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { DuplicateError, DuplicateLabelError, DBValidationError } = require('../../errors');
-const crypto = require('crypto');
-const MongoPaging = require('mongo-cursor-pagination');
-const Image = require('../schemas/Image');
-const ImageError = require('../schemas/ImageError');
-const WirelessCamera = require('../schemas/WirelessCamera');
-const Batch = require('../schemas/Batch');
-const automation = require('../../../automation');
-const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
-const utils = require('./utils');
-const { idMatch } = require('./utils');
-const retry = require('async-retry');
+import { text } from 'node:stream/consumers';
+import _ from 'lodash';
+import S3 from '@aws-sdk/client-s3';
+import SQS from '@aws-sdk/client-sqs';
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
+import crypto from 'crypto';
+import MongoPaging from 'mongo-cursor-pagination';
+import Image from '../schemas/Image.js';
+import ImageError from '../schemas/ImageError.js';
+import WirelessCamera from '../schemas/WirelessCamera.js';
+import Batch from '../schemas/Batch.js';
+import automation from '../../../automation.js';
+import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import utils from './utils.js';
+import { idMatch } from './utils.js';
+import retry from 'async-retry';
 
 const generateImageModel = ({ user } = {}) => ({
   countImages: async (input) => {
@@ -581,4 +581,4 @@ const generateImageModel = ({ user } = {}) => ({
 
 });
 
-module.exports = generateImageModel;
+export default generateImageModel;

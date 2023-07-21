@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
 
 const typeDefStrings = [];
 for (const entry_top of fs.readdirSync(path.resolve(__dirname))) {
@@ -10,7 +10,7 @@ for (const entry_top of fs.readdirSync(path.resolve(__dirname))) {
     if (!fs.lstatSync(full).isFile()) continue;
     if (path.parse(full).ext !== '.js') continue;
 
-    typeDefStrings.push(require(path.resolve(__dirname, entry_top, entry_sub)));
+    typeDefStrings.push((await import(path.resolve(__dirname, entry_top, entry_sub))).default);
   }
 }
 
@@ -18,4 +18,4 @@ for (const entry_top of fs.readdirSync(path.resolve(__dirname))) {
 // 'ImageCreateInput' rather than 'CreateImageInput' for alphabetical grouping
 // by DB collection/schema type
 
-module.exports = typeDefStrings.join('');
+export default typeDefStrings.join('');

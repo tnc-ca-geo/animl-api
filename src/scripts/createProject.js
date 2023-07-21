@@ -1,7 +1,7 @@
-const { ApolloError } = require('apollo-server-errors');
-const { getConfig } = require('../config/config');
-const { connectToDatabase } = require('../api/db/connect');
-const generateProjectModel = require('../api/db/models/Project');
+import { ApolloError } from 'apollo-server-errors';
+import { getConfig } from '../config/config.js';
+import { connectToDatabase } from '../api/db/connect.js';
+import generateProjectModel from '../api/db/models/Project.js';
 
 const defaultViewsConfig = [{
   name: 'All images',

@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input QueryBatchesInput {
     paginatedField: String
     sortAscending: Boolean

@@ -1,15 +1,15 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const MongoPaging = require('mongo-cursor-pagination');
-const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
-const { randomUUID } = require('crypto');
-const S3 = require('@aws-sdk/client-s3');
-const SQS = require('@aws-sdk/client-sqs');
-const Lambda = require('@aws-sdk/client-lambda');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const Batch = require('../schemas/Batch');
-const BatchError = require('../schemas/BatchError');
-const retry = require('async-retry');
-const utils = require('./utils');
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import MongoPaging from 'mongo-cursor-pagination';
+import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { randomUUID } from 'node:crypto';
+import S3 from '@aws-sdk/client-s3';
+import SQS from '@aws-sdk/client-sqs';
+import Lambda from '@aws-sdk/client-lambda';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Batch from '../schemas/Batch.js';
+import BatchError from '../schemas/BatchError.js';
+import retry from 'async-retry';
+import utils from './utils.js';
 
 const generateBatchModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
@@ -208,4 +208,4 @@ const generateBatchModel = ({ user } = {}) => ({
   }
 });
 
-module.exports = generateBatchModel;
+export default generateBatchModel;

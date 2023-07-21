@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type AutomationEvent {
     type: String!
     label: String

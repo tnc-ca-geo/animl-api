@@ -1,11 +1,11 @@
-const tape = require('tape');
-const fs = require('node:fs');
-const { MockAgent, setGlobalDispatcher } = require('undici');
-const path = require('path');
-const Sinon = require('sinon');
-const SM = require('@aws-sdk/client-sagemaker-runtime');
+import tape from 'tape';
+import fs from 'node:fs';
+import { MockAgent, setGlobalDispatcher } from 'undici';
+import path from 'node:path';
+import Sinon from 'sinon';
+import SM from '@aws-sdk/client-sagemaker-runtime';
 
-const { modelInterfaces } = require('../src/ml/modelInterfaces.js');
+import { modelInterfaces } from '../src/ml/modelInterfaces.js';
 
 process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';

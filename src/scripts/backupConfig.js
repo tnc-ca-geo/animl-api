@@ -6,6 +6,6 @@ const backupConfig = {
   BACKUP_DIR: '/backups'
 };
 
-module.exports = {
+export {
   backupConfig
 };

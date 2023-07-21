@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Query {
     projects(_ids: [String!]): [Project]
     image(input: QueryImageInput!): Image

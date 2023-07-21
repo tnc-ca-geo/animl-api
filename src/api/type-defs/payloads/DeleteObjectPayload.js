@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type DeleteObjectPayload {
     image: Image
   }`;

@@ -1,6 +1,6 @@
-const { ApolloError } = require('apollo-server-errors');
-const MLModel = require('../schemas/MLModel');
-const retry = require('async-retry');
+import { ApolloError } from 'apollo-server-errors';
+import MLModel from '../schemas/MLModel.js';
+import retry from 'async-retry';
 
 const generateMLModelModel = () => ({
   getMLModels: async (_ids) => {
@@ -39,4 +39,4 @@ const generateMLModelModel = () => ({
 
 });
 
-module.exports = generateMLModelModel;
+export default generateMLModelModel;

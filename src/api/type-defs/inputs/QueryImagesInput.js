@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input FiltersInput {
     createdStart: Date
     createdEnd: Date

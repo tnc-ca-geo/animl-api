@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
-const { ApolloError } = require('apollo-server-errors');
+import mongoose from 'mongoose';
+import  { ApolloError } from 'apollo-server-errors';
+
 // TODO: consider using multiple connections (one per model)
 // to reduce risk of slow trains
 // https://mongoosejs.com/docs/connections.html#multiple_connections
@@ -7,7 +8,7 @@ const { ApolloError } = require('apollo-server-errors');
 
 let cachedConnectionPromise = null;
 
-module.exports.connectToDatabase = async function connectToDb(config) {
+async function connectToDatabase(config) {
   if (!cachedConnectionPromise) {
     // If no connection promise is cached, create a new one.
     // We cache the promise instead of the connection itself to prevent race
@@ -27,3 +28,7 @@ module.exports.connectToDatabase = async function connectToDb(config) {
     throw new ApolloError(err);
   }
 };
+
+export {
+    connectToDatabase
+}
