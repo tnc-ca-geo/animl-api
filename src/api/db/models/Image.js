@@ -122,7 +122,11 @@ const generateImageModel = ({ user } = {}) => ({
             md.serialNumber = batch.overrideSerial;
             cameraId = batch.overrideSerial;
           }
+        }
 
+        if (!cameraId || cameraId === 'unknown') {
+          errors.push(new Error('Unknown Serial Number'));
+        } else if (md.batchId) {
           // create camera config if there isn't one yet
           await context.models.Project.createCameraConfig(projectId, cameraId);
         } else {
