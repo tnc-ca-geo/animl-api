@@ -9,7 +9,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import Batch from '../schemas/Batch.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import utils from './utils.js';
+import { hasRole } from './utils.js';
 
 const generateBatchModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
@@ -90,7 +90,7 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get stopBatch() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
@@ -131,7 +131,7 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get updateBatch() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
@@ -162,7 +162,7 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get createUpload() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {

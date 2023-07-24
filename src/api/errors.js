@@ -3,7 +3,7 @@ import {
   formatApolloErrors,
   toApolloError
 } from 'apollo-server-errors';
-import { GraphQLError } from 'graphql/error/GraphQLError';
+import { GraphQLError } from 'graphql/error/GraphQLError.js';
 
 // Apollo errors docs:
 // https://www.apollographql.com/docs/apollo-server/data/errors/

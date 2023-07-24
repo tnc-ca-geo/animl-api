@@ -1,12 +1,12 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError from '../schemas/BatchError.js';
-import retry from 'async-retey';
-import utils from './utils.js';
+import retry from 'async-retry';
+import { hasRole } from './utils.js';
 
 const generateBatchErrorModel = ({ user } = {}) => ({
   get createError() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {

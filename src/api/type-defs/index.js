@@ -2,15 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const typeDefStrings = [];
-for (const entry_top of fs.readdirSync(path.resolve(__dirname))) {
-  if (!fs.lstatSync(path.resolve(__dirname, entry_top)).isDirectory()) continue;
+const base = new URL(path.parse(import.meta.url).dir).pathname;
 
-  for (const entry_sub of fs.readdirSync(path.resolve(__dirname, entry_top))) {
-    const full = path.resolve(__dirname, entry_top, entry_sub);
+for (const entry_top of fs.readdirSync(base)) {
+  if (!fs.lstatSync(path.resolve(base, entry_top)).isDirectory()) continue;
+
+  for (const entry_sub of fs.readdirSync(path.resolve(base, entry_top))) {
+    const full = path.resolve(path.resolve(base, entry_top, entry_sub));
     if (!fs.lstatSync(full).isFile()) continue;
     if (path.parse(full).ext !== '.js') continue;
 
-    typeDefStrings.push((await import(path.resolve(__dirname, entry_top, entry_sub))).default);
+    typeDefStrings.push((await import(path.resolve(base, entry_top, entry_sub))).default);
   }
 }
 

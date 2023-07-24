@@ -1,6 +1,9 @@
 import { ApolloError } from 'apollo-server-errors';
 import SQS from '@aws-sdk/client-sqs';
-import utils from './utils.js';
+import {
+    buildCatConfig,
+    buildCallstack
+} from './utils.js';
 import { sendEmail } from './alerts.js';
 
 const sqs = new SQS.SQSClient();
@@ -11,7 +14,7 @@ const executeRule = {
       const mlModel = rule.action.mlModel;
       const modelSources = await context.models.MLModel.getMLModels([mlModel]);
       const modelSource = modelSources[0];
-      const catConfig = utils.buildCatConfig(modelSource, rule);
+      const catConfig = buildCatConfig(modelSource, rule);
 
       const message = { modelSource, catConfig, ...payload };
 
@@ -43,7 +46,7 @@ const executeRule = {
 
 const handleEvent = async (payload, context) => {
   try {
-    const callstack = await utils.buildCallstack(payload, context);
+    const callstack = await buildCallstack(payload, context);
     if (callstack.length === 0) return;
     console.log(`automation rule callstack for ${payload.image.originalFileName}: `, callstack);
 

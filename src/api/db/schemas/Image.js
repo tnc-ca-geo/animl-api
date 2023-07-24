@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
-import  shared from './shared.js';
+import {
+    LocationSchema,
+    ObjectSchema
+} from './shared/index.js';
 
 const Schema = mongoose.Schema;
 
@@ -29,9 +32,9 @@ const ImageSchema = new Schema({
   mimeType: { type: String },
   userSetData: { type: Map, of: String },
   model: { type: String },
-  location: { type: shared.LocationSchema },
+  location: { type: LocationSchema },
   triggerSource: { type: String },
-  objects: { type: [shared.ObjectSchema] }
+  objects: { type: [ObjectSchema] }
 });
 
 ImageSchema.index(

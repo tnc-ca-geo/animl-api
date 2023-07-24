@@ -26,7 +26,7 @@ const Date = new GraphQLScalarType({
   }
 });
 
-export {
+export default {
   JSONObject,
   Date
 };

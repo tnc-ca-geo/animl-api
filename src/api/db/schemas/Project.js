@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import shared = from './shared.js';
+import { LocationSchema } from './shared/index.js';
 
 const Schema = mongoose.Schema;
 
@@ -54,7 +54,7 @@ const ViewSchema = new Schema({
 const DeploymentSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
-  location: { type: shared.LocationSchema },
+  location: { type: LocationSchema },
   timezone: { type: String, required: true },
   startDate: { type: Date },
   editable: { type: Boolean }
