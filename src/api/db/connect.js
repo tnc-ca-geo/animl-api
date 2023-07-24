@@ -27,8 +27,8 @@ async function connectToDatabase(config) {
   } catch (err) {
     throw new ApolloError(err);
   }
-};
+}
 
 export {
-    connectToDatabase
-}
+  connectToDatabase
+};

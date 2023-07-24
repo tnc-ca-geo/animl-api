@@ -5,7 +5,7 @@ import generateProjectModel from './db/models/Project.js';
 import generateImageModel from './db/models/Image.js';
 import generateCameraModel from './db/models/Camera.js';
 import generateMLModelModel from './db/models/MLModel.js';
-import generateBatchModel from'./db/models/Batch.js';
+import generateBatchModel from './db/models/Batch.js';
 import generateBatchErrorModel from './db/models/BatchError.js';
 import generateImageErrorModel from './db/models/ImageError.js';
 import Query from './resolvers/Query.js';
@@ -70,5 +70,5 @@ const srv = new ApolloServer({
 const server = srv.createHandler();
 
 export {
-    server
-}
+  server
+};

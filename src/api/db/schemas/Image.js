@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import {
-    LocationSchema,
-    ObjectSchema
+  LocationSchema,
+  ObjectSchema
 } from './shared/index.js';
 
 const Schema = mongoose.Schema;

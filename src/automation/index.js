@@ -1,8 +1,8 @@
 import { ApolloError } from 'apollo-server-errors';
 import SQS from '@aws-sdk/client-sqs';
 import {
-    buildCatConfig,
-    buildCallstack
+  buildCatConfig,
+  buildCallstack
 } from './utils.js';
 import { sendEmail } from './alerts.js';
 

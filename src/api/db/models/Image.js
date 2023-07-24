@@ -13,15 +13,15 @@ import Batch from '../schemas/Batch.js';
 import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import {
-    hasRole,
-    buildPipeline,
-    mapImgToDep,
-    sanitizeMetadata,
-    isLabelDupe,
-    createImageRecord,
-    createLabelRecord,
-    isImageReviewed,
-    findActiveProjReg
+  hasRole,
+  buildPipeline,
+  mapImgToDep,
+  sanitizeMetadata,
+  isLabelDupe,
+  createImageRecord,
+  createLabelRecord,
+  isImageReviewed,
+  findActiveProjReg
 } from './utils.js';
 import { idMatch } from './utils.js';
 import retry from 'async-retry';
