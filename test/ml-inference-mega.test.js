@@ -7,6 +7,8 @@ import SM from '@aws-sdk/client-sagemaker-runtime';
 
 import { modelInterfaces } from '../src/ml/modelInterfaces.js';
 
+const base = new URL(path.parse(import.meta.url).dir).pathname;
+
 process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';
 
@@ -19,7 +21,7 @@ tape('ML-Inference Megadetector', async (t) => {
   mockPool.intercept({
     path: '/original/1-original.png',
     method: 'GET'
-  }).reply(200, fs.readFileSync(path.resolve(__dirname, './fixtures/cat.jpg')));
+  }).reply(200, fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')));
 
   Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
     if (command instanceof SM.InvokeEndpointCommand) {
@@ -98,7 +100,7 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
   mockPool.intercept({
     path: '/original/1-original.png',
     method: 'GET'
-  }).reply(200, fs.readFileSync(path.resolve(__dirname, './fixtures/cat.jpg')));
+  }).reply(200, fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')));
 
   Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
     if (command instanceof SM.InvokeEndpointCommand) {
