@@ -51,7 +51,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
 
       try {
         await operation({
-            batch: input.batch
+          batch: input.batch
         });
 
         return { message: 'Cleared' };
