@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type ImageError {
     _id: String!
     batch: String

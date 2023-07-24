@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
+
 const Schema = mongoose.Schema;
-const { randomUUID } = require('node:crypto');
 
 const BatchErrorSchema = new Schema({
   _id: { type: String, default: randomUUID, required: true },  /* _id is name in_snake_case */
@@ -15,4 +16,4 @@ BatchErrorSchema.on('index', (e) => {
   console.log('BatchError Indexing Error', e);
 });
 
-module.exports = mongoose.model('BatchError', BatchErrorSchema);
+export default mongoose.model('BatchError', BatchErrorSchema);

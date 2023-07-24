@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input ObjectDiffsInput {
     locked: Boolean
     bbox: [Float!]

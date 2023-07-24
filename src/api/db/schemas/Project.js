@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import { LocationSchema } from './shared/index.js';
+
 const Schema = mongoose.Schema;
-const shared = require('./shared');
 
 const AutomationRuleSchema = new Schema({
   name: { type: String, required: true },
@@ -53,7 +54,7 @@ const ViewSchema = new Schema({
 const DeploymentSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
-  location: { type: shared.LocationSchema },
+  location: { type: LocationSchema },
   timezone: { type: String, required: true },
   startDate: { type: Date },
   editable: { type: Boolean }
@@ -75,4 +76,4 @@ const ProjectSchema = new Schema({
   automationRules: { type: [AutomationRuleSchema] }
 });
 
-module.exports = mongoose.model('Project', ProjectSchema);
+export default mongoose.model('Project', ProjectSchema);

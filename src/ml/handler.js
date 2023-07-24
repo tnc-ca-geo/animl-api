@@ -1,6 +1,6 @@
-const { GraphQLClient, gql } = require('graphql-request');
-const { modelInterfaces } = require('./modelInterfaces');
-const { getConfig } = require('../config/config');
+import { GraphQLClient, gql } from 'graphql-request';
+import { modelInterfaces } from './modelInterfaces.js';
+import { getConfig } from '../config/config.js';
 
 async function requestCreateLabels(input, config) {
   const variables = { input: input };

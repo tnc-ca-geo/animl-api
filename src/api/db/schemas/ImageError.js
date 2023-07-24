@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
+
 const Schema = mongoose.Schema;
-const { randomUUID } = require('node:crypto');
 
 const ImageErrorSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },  /* _id is name in_snake_case */
@@ -16,4 +17,4 @@ ImageErrorSchema.on('index', (e) => {
   console.log('ImageError Indexing Error', e);
 });
 
-module.exports = mongoose.model('ImageError', ImageErrorSchema);
+export default mongoose.model('ImageError', ImageErrorSchema);

@@ -1,5 +1,6 @@
 {
     "name": "animl-serverless",
+    "type": "module",
     "version": "1.0.0",
     "description": "Lambda-based graphQL API for camera trap data managment platform",
     "main": "src/handler.js",

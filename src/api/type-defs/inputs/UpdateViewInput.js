@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input ViewDiffsInput {
     name: String
     description: String

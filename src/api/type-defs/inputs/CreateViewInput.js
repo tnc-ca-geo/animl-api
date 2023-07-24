@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input CreateViewInput {
     filters: FiltersInput!
     name: String!

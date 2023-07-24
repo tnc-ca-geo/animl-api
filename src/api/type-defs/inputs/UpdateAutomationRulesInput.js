@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input AutomationEventInput {
     type: String!
     label: String

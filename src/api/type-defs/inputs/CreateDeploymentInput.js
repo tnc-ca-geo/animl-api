@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input PointInput {
     type: String!
     coordinates: [Float!]!

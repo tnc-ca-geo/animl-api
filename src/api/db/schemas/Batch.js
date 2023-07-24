@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
-const MongoPaging = require('mongo-cursor-pagination');
+import mongoose from 'mongoose';
+import MongoPaging from 'mongo-cursor-pagination';
+
 const Schema = mongoose.Schema;
 
 const BatchSchema = new Schema({
@@ -23,4 +24,4 @@ BatchSchema.on('index', (e) => {
 
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 
-module.exports = mongoose.model('Batch', BatchSchema);
+export default mongoose.model('Batch', BatchSchema);

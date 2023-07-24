@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type RegisterCameraPayload {
     project: Project
     wirelessCameras: [WirelessCamera]

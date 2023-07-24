@@ -1,7 +1,6 @@
 org: animl
 app: animl
 service: animl-api
-# variablesResolutionMode: 20210326
 
 plugins:
   - serverless-offline
@@ -12,7 +11,6 @@ package:
 
 provider:
   name: aws
-  runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
@@ -20,6 +18,12 @@ provider:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
     ACCOUNT: ${aws:accountId}
+
+  ecr:
+    images:
+      base:
+        path: .
+
   iam:
     role:
       statements:
@@ -90,7 +94,9 @@ provider:
 
 functions:
   graphql:
-    handler: src/api/handler.server
+    image:
+      name: base
+      command: src/api/handler.server
     events:
     - http:
         path: /
@@ -113,7 +119,9 @@ functions:
     memorySize: 3008
     timeout: 30
   inference:
-    handler: src/ml/handler.inference
+    image:
+      name: base
+      command: src/ml/handler.inference
     reservedConcurrency: 20
     events:
       - sqs:
@@ -125,11 +133,15 @@ functions:
           functionResponseType: ReportBatchItemFailures
     timeout: 120
   batchinference:
-    handler: src/ml/handler.inference
+    image:
+      name: base
+      command: src/ml/handler.inference
     reservedConcurrency: 8
     timeout: 120
   export:
-    handler: src/export/handler.export
+    image:
+      name: base
+      command: src/export/handler.export
     reservedConcurrency: 10
     events:
       - sqs:

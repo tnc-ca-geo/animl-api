@@ -1,14 +1,14 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { DateTime } = require('luxon');
-const Project = require('../schemas/Project');
-const Image = require('../schemas/Image');
-const { sortDeps, hasRole, idMatch } = require('./utils');
-const retry = require('async-retry');
-const {
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { DateTime } from 'luxon';
+import Project from '../schemas/Project.js';
+import Image from '../schemas/Image.js';
+import { sortDeps, hasRole, idMatch } from './utils.js';
+import retry from 'async-retry';
+import {
   WRITE_DEPLOYMENTS_ROLES,
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES
-} = require('../../auth/roles');
+} from '../../auth/roles.js';
 
 const generateProjectModel = ({ user } = {}) => ({
 
@@ -386,4 +386,4 @@ const generateProjectModel = ({ user } = {}) => ({
 
 });
 
-module.exports = generateProjectModel;
+export default generateProjectModel;

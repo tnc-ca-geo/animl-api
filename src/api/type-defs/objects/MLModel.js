@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Categories {
     _id: String!
     name: String!

@@ -79,7 +79,7 @@ const buildCallstack = async (payload, context) => {
   return callstack;
 };
 
-module.exports = {
+export {
   buildCatConfig,
   buildCallstack
 };

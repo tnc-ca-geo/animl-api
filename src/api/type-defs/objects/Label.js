@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Validation {
     validated: Boolean!
     validationDate: Date!

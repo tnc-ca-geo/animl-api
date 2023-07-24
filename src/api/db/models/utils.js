@@ -1,8 +1,10 @@
-const { DateTime } = require('luxon');
-const _ = require('lodash');
-const ObjectId = require('mongoose').Types.ObjectId;
-const parser = require('mongodb-query-parser');
-const Image = require('../schemas/Image.js');
+import { DateTime } from 'luxon';
+import _ from 'lodash';
+import mongoose from 'mongoose';
+import parser from 'mongodb-query-parser';
+import Image from '../schemas/Image.js';
+
+const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
@@ -498,7 +500,7 @@ const isImageReviewed = (image) => {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 };
 
-module.exports = {
+export {
   buildImgUrl,
   // buildFilter,
   buildPipeline,

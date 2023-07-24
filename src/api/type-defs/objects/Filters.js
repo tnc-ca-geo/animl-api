@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Filters {
     cameras: [String]
     deployments: [String]

@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
 

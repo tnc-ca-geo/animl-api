@@ -1,18 +1,5 @@
-FROM ubuntu:22.04
+FROM public.ecr.aws/lambda/nodejs:18
 
-ENV HOME=/home/animl
-WORKDIR $HOME
-COPY ./ $HOME/
-
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y curl git
-
-RUN export NODEV='18.16.0' \
-    && curl "https://nodejs.org/dist/v${NODEV}/node-v${NODEV}-linux-x64.tar.gz" | tar -xzv \
-    && cp ./node-v${NODEV}-linux-x64/bin/node /usr/bin/ \
-    && ./node-v${NODEV}-linux-x64/bin/npm install -g npm
+COPY . ${LAMBDA_TASK_ROOT}/
 
 RUN npm install
-
-CMD npm run lint && npm test
-

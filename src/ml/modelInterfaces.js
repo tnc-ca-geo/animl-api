@@ -1,5 +1,5 @@
-const { buildImgUrl } = require('../api/db/models/utils');
-const SM = require('@aws-sdk/client-sagemaker-runtime');
+import { buildImgUrl } from '../api/db/models/utils.js';
+import SM from '@aws-sdk/client-sagemaker-runtime';
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
@@ -170,4 +170,4 @@ modelInterfaces.set('megadetector_v5b', megadetector);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 
-module.exports = { modelInterfaces };
+export { modelInterfaces };

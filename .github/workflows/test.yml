@@ -22,7 +22,7 @@ jobs:
           ref: ${{github.event.pull_request.head.sha || github.sha}}
 
       - name: Docker API Build
-        run: docker build -t api .
+        run: docker build -t test -f Dockerfile-test .
 
       - name: Docker API Test Run
-        run: docker run api
+        run: docker run test
