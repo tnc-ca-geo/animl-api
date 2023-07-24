@@ -45,12 +45,14 @@ const generateImageErrorModel = ({ user } = {}) => ({
     return async (input) => {
       const operation = async (input) => {
         return await retry(async () => {
-          return await ImageError.batch(input);
+          return await ImageError.deleteMany(input);
         }, { retries: 2 });
       };
 
       try {
-        await operation(input);
+        await operation({
+            batch: input.batch
+        });
 
         return { message: 'Cleared' };
       } catch (err) {
