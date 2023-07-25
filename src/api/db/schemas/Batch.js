@@ -7,6 +7,7 @@ const BatchSchema = new Schema({
   projectId: { type: String, required: true },
   user: { type: String },
   eTag: { type: String },
+  overrideSerial: { type: String },
   uploadedFile: { type: String },
   originalFile: { type: String },
   processingStart: { type: Date },

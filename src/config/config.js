@@ -42,12 +42,17 @@ const ssmNames = [
   `/api/url-${process.env.STAGE}`,
   `/images/url-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
-  `/ml/mirav2-sagemaker-name-${process.env.STAGE}`,
-  `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`,
+  `/ml/mirav2-sagemaker-name-${process.env.STAGE}`, // TODO: remove after deploying to prod
+  `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`, // TODO: remove after deploying to prod
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/exports/export-queue-url-${process.env.STAGE}`,
-  `/ml/megadetector-realtime-endpoint-${process.env.STAGE}`,
-  `/ml/megadetector-batch-endpoint-${process.env.STAGE}`
+  `/ml/megadetector-v5a-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5a-batch-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5b-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v5b-batch-endpoint-${process.env.STAGE}`,
+  `/ml/mirav2-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/mirav2-batch-endpoint-${process.env.STAGE}`,
+  `/ml/nzdoc-batch-endpoint-${process.env.STAGE}` // NOTE: currently only supporting batch endpoint for nzdoc
 ];
 
 function formatSSMParams(ssmParams) {

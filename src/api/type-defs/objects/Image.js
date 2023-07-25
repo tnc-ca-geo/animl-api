@@ -15,6 +15,7 @@ module.exports = `
     originalFileName: String
     imageWidth: Int
     imageHeight: Int
+    imageBytes: Int
     mimeType: String
     userSetData: JSONObject
     model: String,

@@ -3,7 +3,6 @@ const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
 const BatchError = require('../schemas/BatchError');
 const retry = require('async-retry');
 const utils = require('./utils');
-const { randomUUID } = require('node:crypto');
 
 const generateBatchErrorModel = ({ user } = {}) => ({
   get createError() {
@@ -20,10 +19,8 @@ const generateBatchErrorModel = ({ user } = {}) => ({
 
       try {
         const batcherr = await operation({
-          _id: randomUUID(),
           batch: input.batch,
-          error: input.error,
-          created: new Date()
+          error: input.error
         });
 
         return {

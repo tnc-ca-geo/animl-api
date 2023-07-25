@@ -18,9 +18,10 @@ async function megadetector(params) {
   const Body = await _getImage(image, config);
 
   const isBatch = image.batchId;
+  const version = modelSource.version === 'v5.0a' ? 'V5A' : 'V5B';
 
   try {
-    const EndpointName = config[`/ML/MEGADETECTOR_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`];
+    const EndpointName = config[`/ML/MEGADETECTOR_${version}_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`];
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
@@ -75,11 +76,13 @@ async function mirav2(params) {
     bbox: bbox
   };
 
+  const isBatch = image.batchId;
+
   try {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config['/ML/MIRAV2_SAGEMAKER_NAME']
+      EndpointName: config[`/ML/MIRAV2_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`]
     });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
@@ -121,11 +124,13 @@ async function nzdoc(params) {
     bbox: bbox
   };
 
+  const isBatch = image.batchId;
+
   try {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config['/ML/NZDOC_SAGEMAKER_NAME']
+      EndpointName: config[`/ML/NZDOC_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`]
     });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
@@ -160,7 +165,8 @@ async function nzdoc(params) {
 
 
 const modelInterfaces = new Map();
-modelInterfaces.set('megadetector', megadetector);
+modelInterfaces.set('megadetector_v5a', megadetector);
+modelInterfaces.set('megadetector_v5b', megadetector);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 

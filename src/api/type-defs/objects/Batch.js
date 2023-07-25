@@ -6,6 +6,7 @@ module.exports = `
     errors: [BatchError]
     processingStart: String
     processingEnd: String
+    overrideSerial: String
     originalFile: String
     uploadedfile: String
     remaining: Int
