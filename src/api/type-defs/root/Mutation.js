@@ -10,6 +10,7 @@ export default `
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
     clearImageErrors(input: ClearImageErrorsInput!): StandardPayload
+    clearBatchErrors(input: ClearBatchErrorsInput!): StandardPayload
 
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
     unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload

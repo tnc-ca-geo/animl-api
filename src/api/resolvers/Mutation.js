@@ -14,6 +14,11 @@ const Mutation = {
     return { ...res };
   },
 
+  clearBatchErrors: async (_, { input }, context) => {
+    const res = await context.models.BatchError.clearErrors(input, context);
+    return { ...res };
+  },
+
   createUpload: async (_, { input }, context) => {
     const res = await context.models.Batch.createUpload(input, context);
     return { ...res };
