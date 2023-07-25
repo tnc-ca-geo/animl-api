@@ -140,8 +140,8 @@ const generateBatchModel = ({ user } = {}) => ({
           const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
           await sqs.send(new SQS.StartMessageMoveTaskCommand({
-            SourceArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}`,
-            DestinationArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}-dlq`
+            SourceArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
+            DestinationArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}`
           }));
 
           return batch;
