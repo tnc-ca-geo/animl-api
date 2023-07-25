@@ -24,6 +24,11 @@ const Mutation = {
     return { batch };
   },
 
+  redriveBatch: async (_, { input }, context) => {
+    const res = await context.models.Batch.redriveBatch(input, context);
+    return { ...res };
+  },
+
   stopBatch: async (_, { input }, context) => {
     const res = await context.models.Batch.stopBatch(input, context);
     return { ...res };

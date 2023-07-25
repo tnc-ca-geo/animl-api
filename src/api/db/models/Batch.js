@@ -95,17 +95,14 @@ const generateBatchModel = ({ user } = {}) => ({
     return async (input) => {
       const operation = async (input) => {
         return await retry(async (bail, attempt) => {
-          if (attempt > 1) {
-            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
-          }
+          if (attempt > 1) console.log(`Retrying stopBatch operation! Try #: ${attempt}`);
+
           return await this.queryById(input._id);
         }, { retries: 2 });
       };
 
       try {
-        const batch = await operation({
-          _id: input.batch
-        });
+        const batch = await operation({ _id: input.batch });
         if (batch.processingEnd) throw new Error('Stack has already terminated');
 
         const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
@@ -118,9 +115,44 @@ const generateBatchModel = ({ user } = {}) => ({
           })
         }));
 
-        return {
-          message: 'Batch Scheduled for Deletion'
-        };
+        return { message: 'Batch Scheduled for Deletion' };
+      } catch (err) {
+        console.error(err);
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get redriveBatch() {
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
+    return async (input) => {
+      const operation = async (input) => {
+        return await retry(async (bail, attempt) => {
+          if (attempt > 1) console.log(`Retrying redriveBatch operation! Try #: ${attempt}`);
+
+          // Ensure the batch actually exists
+          const batch = await this.queryById(input.batch);
+          if (batch.processingEnd) throw new Error('Stack has already terminated');
+
+          const sqs = new SQS.SQSClient({ region: process.env.REGION });
+
+          await sqs.send(new SQS.StartMessageMoveTaskCommand({
+            SourceArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}`,
+            DestinationArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}-dlq`
+          }));
+
+          return batch;
+
+        }, { retries: 2 });
+      };
+
+      try {
+        await operation(input);
+
+        return { message: 'Batch Redrive Initiated' };
       } catch (err) {
         console.error(err);
         // if error is uncontrolled, throw new ApolloError
@@ -136,9 +168,8 @@ const generateBatchModel = ({ user } = {}) => ({
     return async (input) => {
       const operation = async (input) => {
         return await retry(async (bail, attempt) => {
-          if (attempt > 1) {
-            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
-          }
+          if (attempt > 1) console.log(`Retrying updateBatch operation! Try #: ${attempt}`);
+
           // find image, apply object updates, and save
           const batch = await this.queryById(input._id);
 
