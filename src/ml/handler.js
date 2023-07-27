@@ -74,7 +74,7 @@ async function singleInference(config, record) {
   }
 }
 
-exports.inference = async (event) => {
+async function inference(event) {
   const config = await getConfig();
 
   console.log('event: ', event);
@@ -104,3 +104,7 @@ exports.inference = async (event) => {
 
   return { batchItemFailures };
 };
+
+export {
+    inference
+}
