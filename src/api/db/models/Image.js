@@ -135,38 +135,44 @@ const generateImageModel = ({ user } = {}) => ({
           md.dateTimeOriginal = DateTime.fromJSDate(new Date());
         }
 
-        if (!errors.length && md.batchId) {
-          // create camera config if there isn't one yet
-          await context.models.Project.createCameraConfig(projectId, cameraId);
-        } else if (!errors.length) {
-          // handle image from wireless camera
-          // find wireless camera record & active registration or create new one
-          const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
-          if (!existingCam) {
-            await context.models.Camera.createWirelessCamera({
-              projectId,
-              cameraId,
-              make: md.make,
-              ...(md.model && { model: md.model })
-            }, context);
-
-            successfulOps.push({ op: 'cam-created', info: { cameraId } });
-          } else {
-            projectId = findActiveProjReg(existingCam);
-          }
-        }
-
-        // map image to deployment
-        const [project] = await context.models.Project.getProjects([projectId]);
-        const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-
+        let project;
         let deployment = { _id: null, timezone: project.timezone };
 
-        try {
-          deployment = mapImgToDep(md, camConfig, project.timezone);
-        } catch (err) {
-          if (err.code === 'NoDeployments') errors.push(err);
-          else throw err;
+        if (!errors.length) {
+          if (md.batchId) {
+            // create camera config if there isn't one yet
+            await context.models.Project.createCameraConfig(projectId, cameraId);
+          } else if (!errors.length) {
+            // handle image from wireless camera
+            // find wireless camera record & active registration or create new one
+            const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
+            if (!existingCam) {
+              await context.models.Camera.createWirelessCamera({
+                projectId,
+                cameraId,
+                make: md.make,
+                ...(md.model && { model: md.model })
+              }, context);
+
+              successfulOps.push({ op: 'cam-created', info: { cameraId } });
+            } else {
+              projectId = findActiveProjReg(existingCam);
+            }
+          }
+
+          // map image to deployment
+          [project] = await context.models.Project.getProjects([projectId]);
+          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+
+          try {
+            deployment = mapImgToDep(md, camConfig, project.timezone);
+          } catch (err) {
+            if (err.code === 'NoDeployments') errors.push(err);
+            else throw err;
+          }
+        } else {
+          // Get Default Project as there are errors - There will be no deployments added
+          [project] = await context.models.Project.getProjects([projectId]);
         }
 
         // create image record
