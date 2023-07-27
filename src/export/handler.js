@@ -3,7 +3,7 @@ import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { ApolloError } from 'apollo-server-lambda';
 
-export default async function(event) {
+async function handler(event) {
   if (!event.Records || !event.Records.length) return;
   const config = await getConfig();
   await connectToDatabase(config);
@@ -33,3 +33,7 @@ export default async function(event) {
 
   return true;
 }
+
+export {
+  handler
+};

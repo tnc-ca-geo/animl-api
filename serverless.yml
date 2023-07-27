@@ -141,7 +141,7 @@ functions:
   export:
     image:
       name: base
-      command: src/export/handler.export
+      command: src/export/handler.handler
     reservedConcurrency: 10
     events:
       - sqs:
