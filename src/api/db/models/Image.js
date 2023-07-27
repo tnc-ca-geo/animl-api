@@ -173,12 +173,13 @@ const generateImageModel = ({ user } = {}) => ({
         } else {
           // Get Default Project as there are errors - There will be no deployments added
           [project] = await context.models.Project.getProjects([projectId]);
+          deployment.timezone = project.timezone;
         }
 
         // create image record
         md.projectId = projectId;
         md.deploymentId = deployment._id;
-        md.timezone = deployment.timezone || project.timezone;
+        md.timezone = deployment.timezone;
 
         // Image Size Limit
         if (md.imageBytes >= 4 * 1000000) {
