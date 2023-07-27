@@ -72,9 +72,7 @@ const generateImageModel = ({ user } = {}) => ({
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
         { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
-        { $group: { _id: null, uniqueCategories: {
-          $addToSet: '$objects.labels.category'
-        } } }
+        { $group: { _id: null, uniqueCategories: { $addToSet: '$objects.labels.category' } } }
       ]);
 
       const categories = categoriesAggregate

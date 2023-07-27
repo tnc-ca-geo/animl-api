@@ -37,6 +37,12 @@ const buildPipeline = ({
     pipeline.push({ '$match': { 'projectId': projectId } });
   }
 
+  // Ignore Null Deployments - If we eventually add required: true to deployments, remove this
+  pipeline.push({ '$match': {
+    'deploymentId': { $ne: null }
+    }
+  });
+
   // match cameras filter
   if (cameras) {
     pipeline.push({ '$match': { 'cameraId': { $in: cameras } } });
