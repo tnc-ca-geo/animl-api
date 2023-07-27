@@ -196,8 +196,14 @@ const sanitizeMetadata = (md) => {
   // in the GraphQL layer's Date Scalar b/c the input type-def for createImage
   // is a JSONObject of unknown shape. So the parsing has to live in the model
   // layer somewhere, I'm just not sure this is the best place for it.
-  const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
-  sanitized.dateTimeOriginal = dto;
+  if (sanitized.dateTimeOriginal && sanitized.dateTimeOriginal !== 'unknown') {
+    const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
+    sanitized.dateTimeOriginal = dto;
+  } else {
+    // The IngestImage function should generally set this to unknown if it isn't parsable
+    // but this is included just to be sure
+    sanitized.dateTimeOriginal = 'unknown';
+  }
   return sanitized;
 };
 

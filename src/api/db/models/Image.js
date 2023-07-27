@@ -1,10 +1,11 @@
 import { text } from 'node:stream/consumers';
+import { DateTime } from 'luxon';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
 import ImageError from '../schemas/ImageError.js';
@@ -12,17 +13,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
-import {
-  hasRole,
-  buildPipeline,
-  mapImgToDep,
-  sanitizeMetadata,
-  isLabelDupe,
-  createImageRecord,
-  createLabelRecord,
-  isImageReviewed,
-  findActiveProjReg
-} from './utils.js';
+import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import retry from 'async-retry';
 
@@ -136,10 +127,18 @@ const generateImageModel = ({ user } = {}) => ({
 
         if (!cameraId || cameraId === 'unknown') {
           errors.push(new Error('Unknown Serial Number'));
-        } else if (md.batchId) {
+        }
+
+        if (!md.dateTimeOriginal === 'unknown') {
+          errors.push(new Error('Unknown DateTimeOriginal'));
+          // Required to get an Image entry into the DB so we can attach an error
+          md.dateTimeOriginal = DateTime.fromJSDate(new Date());
+        }
+
+        if (!errors.length && md.batchId) {
           // create camera config if there isn't one yet
           await context.models.Project.createCameraConfig(projectId, cameraId);
-        } else {
+        } else if (!errors.length) {
           // handle image from wireless camera
           // find wireless camera record & active registration or create new one
           const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
@@ -152,8 +151,7 @@ const generateImageModel = ({ user } = {}) => ({
             }, context);
 
             successfulOps.push({ op: 'cam-created', info: { cameraId } });
-          }
-          else {
+          } else {
             projectId = findActiveProjReg(existingCam);
           }
         }
