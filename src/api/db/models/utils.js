@@ -40,7 +40,7 @@ const buildPipeline = ({
   // Ignore Null Deployments - If we eventually add required: true to deployments, remove this
   pipeline.push({ '$match': {
     'deploymentId': { $ne: null }
-    }
+  }
   });
 
   // match cameras filter

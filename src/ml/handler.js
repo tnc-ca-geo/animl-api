@@ -103,8 +103,8 @@ async function inference(event) {
   }
 
   return { batchItemFailures };
-};
+}
 
 export {
-    inference
-}
+  inference
+};
