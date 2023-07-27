@@ -136,7 +136,7 @@ const generateImageModel = ({ user } = {}) => ({
         }
 
         let project;
-        let deployment = { _id: null, timezone: project.timezone };
+        let deployment = { _id: null, timezone: null };
 
         if (!errors.length) {
           if (md.batchId) {
@@ -178,7 +178,7 @@ const generateImageModel = ({ user } = {}) => ({
         // create image record
         md.projectId = projectId;
         md.deploymentId = deployment._id;
-        md.timezone = deployment.timezone;
+        md.timezone = deployment.timezone || project.timezone;
 
         // Image Size Limit
         if (md.imageBytes >= 4 * 1000000) {
