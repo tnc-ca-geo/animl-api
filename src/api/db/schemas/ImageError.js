@@ -17,4 +17,9 @@ ImageErrorSchema.on('index', (e) => {
   console.log('ImageError Indexing Error', e);
 });
 
-export default mongoose.model('ImageError', ImageErrorSchema);
+const ImageError = mongoose.model('ImageError', ImageErrorSchema);
+
+export {
+  ImageErrorSchema,
+  ImageError
+};
