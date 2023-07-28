@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import mongoose from 'mongoose';
-import parser from 'mongodb-query-parser';
+import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -178,7 +178,7 @@ const buildPipeline = ({
 
   // match custom filter
   if (custom) {
-    pipeline.push({ '$match': parser.isFilterValid(custom) });
+    pipeline.push({ '$match': isFilterValid(custom) });
   }
 
   console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
