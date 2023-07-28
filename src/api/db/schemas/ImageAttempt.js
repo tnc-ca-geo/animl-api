@@ -25,9 +25,7 @@ const ImageMetadataSchema = new Schema({
   imageHeight: { type: Number },
   imageBytes: { type: Number },
   mimeType: { type: String },
-  userSetData: { type: Map, of: String },
   model: { type: String },
-  triggerSource: { type: String }
 });
 
 /*
