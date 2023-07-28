@@ -106,6 +106,7 @@ const generateImageModel = ({ user } = {}) => ({
       let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
       let existingCam;
       let imageId;
+      let imageAttempt;
 
       try {
 
@@ -136,8 +137,8 @@ const generateImageModel = ({ user } = {}) => ({
           imageId = projectId + ':' + md.hash;
 
           // create an ImageAttempt record (if one doesn't already exist)
-          const existingAttempt = await ImageAttempt.findOne({ _id: imageId });
-          if (!existingAttempt) {
+          imageAttempt = await ImageAttempt.findOne({ _id: imageId });
+          if (!imageAttempt) {
             const metadata = new ImageMetadata({
               _id: imageId,
               bucket: md.prodBucket,
@@ -156,13 +157,13 @@ const generateImageModel = ({ user } = {}) => ({
               ...(md.MIMEType && { mimeType: md.MIMEType })
             });
 
-            const attempt = new ImageAttempt({
+            imageAttempt = new ImageAttempt({
               _id: imageId,
               projectId,
               batchId: md.batchId,
               metadata
             });
-            await attempt.save();
+            await imageAttempt.save();
             successfulOps.push({ op: 'attempt-created', info: { cameraId } });
           }
 
@@ -226,11 +227,27 @@ const generateImageModel = ({ user } = {}) => ({
           errors.push(err);
         }
 
+        // Step 4 - if there were errors in the array, create ImageErrors for them   
+        if (errors.length) {
+          for (let i = 0; i < errors.length; i++) {
+            errors[i] = new ImageError({
+              image: imageId,
+              batch: md.batchId,
+              error: errors[i].message
+            });
+            await errors[i].save();
+          }
+        }
+
+        // return imageAttempt
+        imageAttempt.errors = errors;
+        return imageAttempt;
+
       } catch (err) {
         // reverse successful operations
         for (const op of successfulOps) {
           // TODO: reverse attempt-created? Probably not...
-
+          // TODO: reverse ImageErrors? Probably don't want to do that either
           if (op.op === 'cam-created') {
             console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
             // delete newly created camera record
