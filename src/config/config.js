@@ -43,8 +43,6 @@ const ssmNames = [
   `/api/url-${process.env.STAGE}`,
   `/images/url-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
-  `/ml/mirav2-sagemaker-name-${process.env.STAGE}`, // TODO: remove after deploying to prod
-  `/ml/nzdoc-sagemaker-name-${process.env.STAGE}`, // TODO: remove after deploying to prod
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/exports/export-queue-url-${process.env.STAGE}`,
   `/ml/megadetector-v5a-realtime-endpoint-${process.env.STAGE}`,
