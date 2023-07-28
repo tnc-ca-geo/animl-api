@@ -1,5 +1,5 @@
-const { buildImgUrl } = require('../api/db/models/utils');
-const SM = require('@aws-sdk/client-sagemaker-runtime');
+import { buildImgUrl } from '../api/db/models/utils.js';
+import SM from '@aws-sdk/client-sagemaker-runtime';
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
@@ -27,7 +27,7 @@ async function megadetector(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const detections = JSON.parse(body);
-    console.log(`detections returned from megadetector endpoint for image ${image._id}: ${detections}`);
+    console.log(`detections returned from megadetector endpoint for image ${image._id}: ${body}`);
 
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,
@@ -87,7 +87,7 @@ async function mirav2(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const predictions = JSON.parse(body);
-    console.log(`mirav2 predictions for image ${image._id}: ${predictions}`);
+    console.log(`mirav2 predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
     Object.keys(predictions).forEach((category) => {
@@ -135,7 +135,7 @@ async function nzdoc(params) {
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
     const predictions = JSON.parse(body);
-    console.log(`nzdoc predictions for image ${image._id}: ${predictions}`);
+    console.log(`nzdoc predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
     Object.keys(predictions).forEach((category) => {
@@ -170,4 +170,4 @@ modelInterfaces.set('megadetector_v5b', megadetector);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 
-module.exports = { modelInterfaces };
+export { modelInterfaces };

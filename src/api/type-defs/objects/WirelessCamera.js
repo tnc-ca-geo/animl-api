@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type ProjectRegistration {
     _id: ID!
     projectId: String!

@@ -71,4 +71,4 @@ const Query = {
   }
 };
 
-module.exports = Query;
+export default Query;

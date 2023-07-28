@@ -1,6 +1,8 @@
-const Image = require('../api/db/schemas/Image');
-const ObjectId = require('mongoose').Types.ObjectId;
-const { DateTime } = require('luxon');
+import Image from '../api/db/schemas/Image.js';
+import Mongoose from 'mongoose';
+import { DateTime } from 'luxon';
+
+const ObjectId = Mongoose.Types.ObjectId;
 
 const operations = {
 
@@ -172,6 +174,7 @@ const operations = {
   }
 
 };
-module.exports = {
+
+export {
   operations
 };

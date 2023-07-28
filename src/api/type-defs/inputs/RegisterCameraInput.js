@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input RegisterCameraInput {
     cameraId: ID!
     make: String!

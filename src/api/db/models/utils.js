@@ -1,8 +1,10 @@
-const { DateTime } = require('luxon');
-const _ = require('lodash');
-const ObjectId = require('mongoose').Types.ObjectId;
-const parser = require('mongodb-query-parser');
-const Image = require('../schemas/Image.js');
+import { DateTime } from 'luxon';
+import _ from 'lodash';
+import mongoose from 'mongoose';
+import parser from 'mongodb-query-parser';
+import Image from '../schemas/Image.js';
+
+const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
@@ -34,6 +36,12 @@ const buildPipeline = ({
   if (projectId) {
     pipeline.push({ '$match': { 'projectId': projectId } });
   }
+
+  // Ignore Null Deployments - If we eventually add required: true to deployments, remove this
+  pipeline.push({ '$match': {
+    'deploymentId': { $ne: null }
+  }
+  });
 
   // match cameras filter
   if (cameras) {
@@ -194,8 +202,14 @@ const sanitizeMetadata = (md) => {
   // in the GraphQL layer's Date Scalar b/c the input type-def for createImage
   // is a JSONObject of unknown shape. So the parsing has to live in the model
   // layer somewhere, I'm just not sure this is the best place for it.
-  const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
-  sanitized.dateTimeOriginal = dto;
+  if (sanitized.dateTimeOriginal && sanitized.dateTimeOriginal !== 'unknown') {
+    const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
+    sanitized.dateTimeOriginal = dto;
+  } else {
+    // The IngestImage function should generally set this to unknown if it isn't parsable
+    // but this is included just to be sure
+    sanitized.dateTimeOriginal = 'unknown';
+  }
   return sanitized;
 };
 
@@ -498,7 +512,7 @@ const isImageReviewed = (image) => {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 };
 
-module.exports = {
+export {
   buildImgUrl,
   // buildFilter,
   buildPipeline,

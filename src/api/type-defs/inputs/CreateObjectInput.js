@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input ObjectInput {
     _id: ID!
     bbox: [Float!]

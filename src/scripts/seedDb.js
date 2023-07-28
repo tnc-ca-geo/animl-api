@@ -1,8 +1,8 @@
-const { ApolloError } = require('apollo-server-errors');
-const { getConfig } = require('../config/config');
-const { connectToDatabase } = require('../api/db/connect');
-const generateProjectModel = require('../api/db/models/Project');
-const generateMLModelModel = require('../api/db/models/MLModel');
+import { ApolloError } from 'apollo-server-errors';
+import { getConfig } from '../config/config.js';
+import { connectToDatabase } from '../api/db/connect.js';
+import generateProjectModel from '../api/db/models/Project.js';
+import generateMLModelModel from '../api/db/models/MLModel.js';
 
 const defaultMLModelsConfig = [
   {

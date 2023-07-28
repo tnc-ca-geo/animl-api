@@ -1,21 +1,21 @@
-const { ApolloServer } = require('apollo-server-lambda');
-const { AuthenticationError } = require('apollo-server-errors');
-const { formatError } = require('./errors');
-const generateProjectModel = require('./db/models/Project');
-const generateImageModel = require('./db/models/Image');
-const generateCameraModel = require('./db/models/Camera');
-const generateMLModelModel = require('./db/models/MLModel');
-const generateBatchModel = require('./db/models/Batch');
-const generateBatchErrorModel = require('./db/models/BatchError');
-const generateImageErrorModel = require('./db/models/ImageError');
-const Query = require('./resolvers/Query');
-const Mutation = require('./resolvers/Mutation');
-const Fields = require('./resolvers/Fields');
-const Scalars = require('./resolvers/Scalars');
-const typeDefs = require('./type-defs');
-const { getConfig } = require('../config/config');
-const { connectToDatabase } = require('./db/connect');
-const { getUserInfo } = require('./auth/authorization');
+import { ApolloServer } from 'apollo-server-lambda';
+import { AuthenticationError } from 'apollo-server-errors';
+import { formatError } from './errors.js';
+import generateProjectModel from './db/models/Project.js';
+import generateImageModel from './db/models/Image.js';
+import generateCameraModel from './db/models/Camera.js';
+import generateMLModelModel from './db/models/MLModel.js';
+import generateBatchModel from './db/models/Batch.js';
+import generateBatchErrorModel from './db/models/BatchError.js';
+import generateImageErrorModel from './db/models/ImageError.js';
+import Query from './resolvers/Query.js';
+import Mutation from './resolvers/Mutation.js';
+import Fields from './resolvers/Fields.js';
+import Scalars from './resolvers/Scalars.js';
+import typeDefs from './type-defs/index.js';
+import { getConfig } from '../config/config.js';
+import { connectToDatabase } from './db/connect.js';
+import { getUserInfo } from './auth/authorization.js';
 
 const resolvers = {
   Query,
@@ -54,7 +54,7 @@ const context = async ({ event, context }) => {
   };
 };
 
-const server = new ApolloServer({
+const srv = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   typeDefs,
   resolvers,
@@ -67,4 +67,8 @@ const server = new ApolloServer({
   }
 });
 
-exports.server = server.createHandler();
+const server = srv.createHandler();
+
+export {
+  server
+};

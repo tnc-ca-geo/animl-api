@@ -1,9 +1,9 @@
-const {
+import {
   ApolloError,
   formatApolloErrors,
   toApolloError
-} = require('apollo-server-errors');
-const { GraphQLError } = require('graphql/error/GraphQLError');
+} from 'apollo-server-errors';
+import { GraphQLError } from 'graphql/error/GraphQLError.js';
 
 // Apollo errors docs:
 // https://www.apollographql.com/docs/apollo-server/data/errors/
@@ -79,7 +79,7 @@ function formatError (err) {
   return error;
 }
 
-module.exports = {
+export {
   DuplicateError,
   DuplicateLabelError,
   DBValidationError,

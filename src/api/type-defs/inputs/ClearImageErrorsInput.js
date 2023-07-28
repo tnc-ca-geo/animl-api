@@ -1,4 +1,4 @@
 export default `
-  input StopBatchInput {
+  input ClearImageErrorsInput {
     batch: String!
 }`;

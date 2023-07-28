@@ -1,15 +1,15 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const MongoPaging = require('mongo-cursor-pagination');
-const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
-const { randomUUID } = require('crypto');
-const S3 = require('@aws-sdk/client-s3');
-const SQS = require('@aws-sdk/client-sqs');
-const Lambda = require('@aws-sdk/client-lambda');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const Batch = require('../schemas/Batch');
-const BatchError = require('../schemas/BatchError');
-const retry = require('async-retry');
-const utils = require('./utils');
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import MongoPaging from 'mongo-cursor-pagination';
+import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { randomUUID } from 'node:crypto';
+import S3 from '@aws-sdk/client-s3';
+import SQS from '@aws-sdk/client-sqs';
+import Lambda from '@aws-sdk/client-lambda';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Batch from '../schemas/Batch.js';
+import BatchError from '../schemas/BatchError.js';
+import retry from 'async-retry';
+import { hasRole } from './utils.js';
 
 const generateBatchModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
@@ -90,22 +90,19 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get stopBatch() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
         return await retry(async (bail, attempt) => {
-          if (attempt > 1) {
-            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
-          }
+          if (attempt > 1) console.log(`Retrying stopBatch operation! Try #: ${attempt}`);
+
           return await this.queryById(input._id);
         }, { retries: 2 });
       };
 
       try {
-        const batch = await operation({
-          _id: input.batch
-        });
+        const batch = await operation({ _id: input.batch });
         if (batch.processingEnd) throw new Error('Stack has already terminated');
 
         const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
@@ -118,9 +115,44 @@ const generateBatchModel = ({ user } = {}) => ({
           })
         }));
 
-        return {
-          message: 'Batch Scheduled for Deletion'
-        };
+        return { message: 'Batch Scheduled for Deletion' };
+      } catch (err) {
+        console.error(err);
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get redriveBatch() {
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
+    return async (input) => {
+      const operation = async (input) => {
+        return await retry(async (bail, attempt) => {
+          if (attempt > 1) console.log(`Retrying redriveBatch operation! Try #: ${attempt}`);
+
+          // Ensure the batch actually exists
+          const batch = await this.queryById(input.batch);
+          if (batch.processingEnd) throw new Error('Stack has already terminated');
+
+          const sqs = new SQS.SQSClient({ region: process.env.REGION });
+
+          await sqs.send(new SQS.StartMessageMoveTaskCommand({
+            SourceArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
+            DestinationArn: `arn:aws:sqs:${process.env.REGION}:${process.env.ACCOUNT}:animl-ingest-${process.env.STAGE}-${batch._id}`
+          }));
+
+          return batch;
+
+        }, { retries: 2 });
+      };
+
+      try {
+        await operation(input);
+
+        return { message: 'Batch Redrive Initiated' };
       } catch (err) {
         console.error(err);
         // if error is uncontrolled, throw new ApolloError
@@ -131,14 +163,13 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get updateBatch() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
         return await retry(async (bail, attempt) => {
-          if (attempt > 1) {
-            console.log(`Retrying updateObject operation! Try #: ${attempt}`);
-          }
+          if (attempt > 1) console.log(`Retrying updateBatch operation! Try #: ${attempt}`);
+
           // find image, apply object updates, and save
           const batch = await this.queryById(input._id);
 
@@ -162,7 +193,7 @@ const generateBatchModel = ({ user } = {}) => ({
   },
 
   get createUpload() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
@@ -208,4 +239,4 @@ const generateBatchModel = ({ user } = {}) => ({
   }
 });
 
-module.exports = generateBatchModel;
+export default generateBatchModel;

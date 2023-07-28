@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input CreateImageErrorInput {
     error: String!
     image: String

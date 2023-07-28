@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
 const ProjectRegistrationSchema = new Schema({
@@ -13,4 +13,4 @@ const WirelessCameraSchema = new Schema({
   projRegistrations: { type: [ProjectRegistrationSchema] }
 }, { collection: 'wirelesscameras' });
 
-module.exports = mongoose.model('WirelessCameraSchema', WirelessCameraSchema);
+export default mongoose.model('WirelessCameraSchema', WirelessCameraSchema);

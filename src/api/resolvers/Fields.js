@@ -24,7 +24,7 @@ const Project = {
   }
 };
 
-module.exports = {
+export default {
   Project
   // Camera,
   // Image,

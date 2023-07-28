@@ -1,24 +1,25 @@
-const { text } = require('node:stream/consumers');
-const _ = require('lodash');
-const S3 = require('@aws-sdk/client-s3');
-const SQS = require('@aws-sdk/client-sqs');
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { DuplicateError, DuplicateLabelError, DBValidationError } = require('../../errors');
-const crypto = require('crypto');
-const MongoPaging = require('mongo-cursor-pagination');
-const Image = require('../schemas/Image');
-const ImageError = require('../schemas/ImageError');
-const WirelessCamera = require('../schemas/WirelessCamera');
-const Batch = require('../schemas/Batch');
-const automation = require('../../../automation');
-const { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } = require('../../auth/roles');
-const utils = require('./utils');
-const { idMatch } = require('./utils');
-const retry = require('async-retry');
+import { text } from 'node:stream/consumers';
+import { DateTime } from 'luxon';
+import _ from 'lodash';
+import S3 from '@aws-sdk/client-s3';
+import SQS from '@aws-sdk/client-sqs';
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
+import crypto from 'node:crypto';
+import MongoPaging from 'mongo-cursor-pagination';
+import Image from '../schemas/Image.js';
+import ImageError from '../schemas/ImageError.js';
+import WirelessCamera from '../schemas/WirelessCamera.js';
+import Batch from '../schemas/Batch.js';
+import { handleEvent } from '../../../automation/index.js';
+import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
+import { idMatch } from './utils.js';
+import retry from 'async-retry';
 
 const generateImageModel = ({ user } = {}) => ({
   countImages: async (input) => {
-    const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
+    const pipeline = buildPipeline(input.filters, user['curr_project']);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
@@ -46,7 +47,7 @@ const generateImageModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
-        aggregation: utils.buildPipeline(input.filters, user['curr_project']),
+        aggregation: buildPipeline(input.filters, user['curr_project']),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
@@ -71,9 +72,7 @@ const generateImageModel = ({ user } = {}) => ({
         { $unwind: '$objects' },
         { $unwind: '$objects.labels' },
         { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
-        { $group: { _id: null, uniqueCategories: {
-          $addToSet: '$objects.labels.category'
-        } } }
+        { $group: { _id: null, uniqueCategories: { $addToSet: '$objects.labels.category' } } }
       ]);
 
       const categories = categoriesAggregate
@@ -99,11 +98,11 @@ const generateImageModel = ({ user } = {}) => ({
   // some issues occur due to the camera record not being created fast enough
   // for some of the new images? Investigate
   get createImage() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input, context) => {
       const successfulOps = [];
-      const md = utils.sanitizeMetadata(input.md);
+      const md = sanitizeMetadata(input.md);
       let projectId = 'default_project';
 
       // Images will be attempted to be stored in the database to preserve the state of the image
@@ -122,39 +121,57 @@ const generateImageModel = ({ user } = {}) => ({
             md.serialNumber = batch.overrideSerial;
             cameraId = batch.overrideSerial;
           }
-
-          // create camera config if there isn't one yet
-          await context.models.Project.createCameraConfig(projectId, cameraId);
-        } else {
-          // handle image from wireless camera
-          // find wireless camera record & active registration or create new one
-          const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
-          if (!existingCam) {
-            await context.models.Camera.createWirelessCamera({
-              projectId,
-              cameraId,
-              make: md.make,
-              ...(md.model && { model: md.model })
-            }, context);
-
-            successfulOps.push({ op: 'cam-created', info: { cameraId } });
-          }
-          else {
-            projectId = utils.findActiveProjReg(existingCam);
-          }
         }
 
-        // map image to deployment
-        const [project] = await context.models.Project.getProjects([projectId]);
-        const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+        if (!cameraId || cameraId === 'unknown') {
+          errors.push(new Error('Unknown Serial Number'));
+        }
 
-        let deployment = { _id: null, timezone: project.timezone };
+        if (!md.dateTimeOriginal === 'unknown') {
+          errors.push(new Error('Unknown DateTimeOriginal'));
+          // Required to get an Image entry into the DB so we can attach an error
+          md.dateTimeOriginal = DateTime.fromJSDate(new Date());
+        }
 
-        try {
-          deployment = utils.mapImgToDep(md, camConfig, project.timezone);
-        } catch (err) {
-          if (err.code === 'NoDeployments') errors.push(err);
-          else throw err;
+        let project;
+        let deployment = { _id: null, timezone: null };
+
+        if (!errors.length) {
+          if (md.batchId) {
+            // create camera config if there isn't one yet
+            await context.models.Project.createCameraConfig(projectId, cameraId);
+          } else if (!errors.length) {
+            // handle image from wireless camera
+            // find wireless camera record & active registration or create new one
+            const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
+            if (!existingCam) {
+              await context.models.Camera.createWirelessCamera({
+                projectId,
+                cameraId,
+                make: md.make,
+                ...(md.model && { model: md.model })
+              }, context);
+
+              successfulOps.push({ op: 'cam-created', info: { cameraId } });
+            } else {
+              projectId = findActiveProjReg(existingCam);
+            }
+          }
+
+          // map image to deployment
+          [project] = await context.models.Project.getProjects([projectId]);
+          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+
+          try {
+            deployment = mapImgToDep(md, camConfig, project.timezone);
+          } catch (err) {
+            if (err.code === 'NoDeployments') errors.push(err);
+            else throw err;
+          }
+        } else {
+          // Get Default Project as there are errors - There will be no deployments added
+          [project] = await context.models.Project.getProjects([projectId]);
+          deployment.timezone = project.timezone;
         }
 
         // create image record
@@ -171,12 +188,12 @@ const generateImageModel = ({ user } = {}) => ({
 
         const image = await retry(async (bail, attempt) => {
           if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
-          const newImage = utils.createImageRecord(md);
+          const newImage = createImageRecord(md);
           return await newImage.save();
         }, { retries: 2 });
 
         if (!errors.length) {
-          await automation.handleEvent({ event: 'image-added', image }, context);
+          await handleEvent({ event: 'image-added', image }, context);
         } else {
           for (let i = 0; i < errors.length; i++) {
             errors[i] = new ImageError({ image: image._id, batch: md.batchId, error: errors[i].message });
@@ -220,7 +237,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get createObject() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
 
       const operation = async ({ imageId, object }) => {
@@ -249,7 +266,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get updateObject() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
 
       const operation = async ({ imageId, objectId, diffs }) => {
@@ -284,7 +301,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get deleteObject() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
 
       const operation = async ({ imageId, objectId }) => {
@@ -315,7 +332,7 @@ const generateImageModel = ({ user } = {}) => ({
   // TODO: make this only accept a single label at a time
   // to make dealing with errors simpler
   get createLabels() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
 
       const operation = async ({ imageId, objectId, label }) => {
@@ -323,9 +340,9 @@ const generateImageModel = ({ user } = {}) => ({
 
           // find image, create label record
           const image = await this.queryById(imageId);
-          if (utils.isLabelDupe(image, label)) throw new DuplicateLabelError();
+          if (isLabelDupe(image, label)) throw new DuplicateLabelError();
           const authorId = label.mlModel || label.userId;
-          const labelRecord = utils.createLabelRecord(label, authorId);
+          const labelRecord = createLabelRecord(label, authorId);
 
           // if objectId was specified, find object and save label to it
           // else try to match to existing object bbox and merge label into that
@@ -363,7 +380,7 @@ const generateImageModel = ({ user } = {}) => ({
           const res = await operation({ ...input, label });
           image = res.image;
           if (label.mlModel) {
-            await automation.handleEvent({
+            await handleEvent({
               event: 'label-added',
               label: res.newLabel,
               image
@@ -381,7 +398,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get updateLabel() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
 
       const operation = async (input) => {
@@ -412,7 +429,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get deleteLabel() {
-    if (!utils.hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
 
       const operation = async ({ imageId, objectId, labelId }) => {
@@ -450,13 +467,13 @@ const generateImageModel = ({ user } = {}) => ({
     let multiReviewerCount = 0;
 
     try {
-      const pipeline = utils.buildPipeline(input.filters, user['curr_project']);
+      const pipeline = buildPipeline(input.filters, user['curr_project']);
       const images = await Image.aggregate(pipeline);
       imageCount = images.length;
       for (const img of images) {
 
         // increment reviewedCount
-        utils.isImageReviewed(img) ? reviewed++ : notReviewed++;
+        isImageReviewed(img) ? reviewed++ : notReviewed++;
 
         // build reviwer list
         let reviewers = [];
@@ -511,7 +528,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get export() {
-    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
 
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
@@ -552,7 +569,7 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get getExportStatus() {
-    if (!utils.hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async ({ documentId }, context) => {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
@@ -577,4 +594,4 @@ const generateImageModel = ({ user } = {}) => ({
 
 });
 
-module.exports = generateImageModel;
+export default generateImageModel;

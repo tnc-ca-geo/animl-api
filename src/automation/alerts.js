@@ -1,6 +1,6 @@
-const { ApolloError } = require('apollo-server-errors');
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
-const { buildImgUrl, idMatch } = require('../api/db/models/utils');
+import { ApolloError } from 'apollo-server-errors';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
 
 const ses = new SESClient({ apiVersion: '2010-12-01' });
 
@@ -67,6 +67,6 @@ const sendEmail = async (rule, image, context) => {
   }
 };
 
-module.exports = {
+export {
   sendEmail
 };

@@ -1,6 +1,7 @@
-const { DateTime } = require('luxon');
-const { GraphQLScalarType } = require('graphql');
-const GraphQLJSON = require('graphql-type-json');
+import { DateTime } from 'luxon';
+import { GraphQLScalarType } from 'graphql';
+import GraphQLJSON from 'graphql-type-json';
+
 const JSONObject = GraphQLJSON.GraphQLJSONObject;
 
 // Good explanation of the difference between
@@ -25,7 +26,7 @@ const Date = new GraphQLScalarType({
   }
 });
 
-module.exports = {
+export default {
   JSONObject,
   Date
 };

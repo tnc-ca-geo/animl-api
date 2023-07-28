@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type UpdateDeploymentPayload {
     cameraConfig: CameraConfig
   }`;

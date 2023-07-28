@@ -9,6 +9,16 @@ const Mutation = {
     return { ...error };
   },
 
+  clearImageErrors: async (_, { input }, context) => {
+    const res = await context.models.ImageError.clearErrors(input, context);
+    return { ...res };
+  },
+
+  clearBatchErrors: async (_, { input }, context) => {
+    const res = await context.models.BatchError.clearErrors(input, context);
+    return { ...res };
+  },
+
   createUpload: async (_, { input }, context) => {
     const res = await context.models.Batch.createUpload(input, context);
     return { ...res };
@@ -17,6 +27,11 @@ const Mutation = {
   updateBatch: async (_, { input }, context) => {
     const batch = await context.models.Batch.updateBatch(input, context);
     return { batch };
+  },
+
+  redriveBatch: async (_, { input }, context) => {
+    const res = await context.models.Batch.redriveBatch(input, context);
+    return { ...res };
   },
 
   stopBatch: async (_, { input }, context) => {
@@ -112,4 +127,4 @@ const Mutation = {
 
 };
 
-module.exports = Mutation;
+export default Mutation;

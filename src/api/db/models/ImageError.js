@@ -1,12 +1,12 @@
-const { ApolloError, ForbiddenError } = require('apollo-server-errors');
-const { WRITE_IMAGES_ROLES } = require('../../auth/roles');
-const ImageError = require('../schemas/ImageError');
-const retry = require('async-retry');
-const utils = require('./utils');
+import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import ImageError from '../schemas/ImageError.js';
+import retry from 'async-retry';
+import { hasRole } from './utils.js';
 
 const generateImageErrorModel = ({ user } = {}) => ({
   get createError() {
-    if (!utils.hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
     return async (input) => {
       const operation = async (input) => {
@@ -37,7 +37,31 @@ const generateImageErrorModel = ({ user } = {}) => ({
         throw new ApolloError(err);
       }
     };
+  },
+
+  get clearErrors() {
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+
+    return async (input) => {
+      const operation = async (input) => {
+        return await retry(async () => {
+          return await ImageError.deleteMany(input);
+        }, { retries: 2 });
+      };
+
+      try {
+        await operation({
+          batch: input.batch
+        });
+
+        return { message: 'Cleared' };
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
   }
 });
 
-module.exports = generateImageErrorModel;
+export default generateImageErrorModel;

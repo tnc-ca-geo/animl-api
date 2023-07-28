@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   input UpdateBatchInput {
     _id: String!
     eTag: String

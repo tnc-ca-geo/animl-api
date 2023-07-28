@@ -1,6 +1,10 @@
-const mongoose = require('mongoose');
-const MongoPaging = require('mongo-cursor-pagination');
-const shared = require('./shared');
+import mongoose from 'mongoose';
+import MongoPaging from 'mongo-cursor-pagination';
+import {
+  LocationSchema,
+  ObjectSchema
+} from './shared/index.js';
+
 const Schema = mongoose.Schema;
 
 /*
@@ -28,9 +32,9 @@ const ImageSchema = new Schema({
   mimeType: { type: String },
   userSetData: { type: Map, of: String },
   model: { type: String },
-  location: { type: shared.LocationSchema },
+  location: { type: LocationSchema },
   triggerSource: { type: String },
-  objects: { type: [shared.ObjectSchema] }
+  objects: { type: [ObjectSchema] }
 });
 
 ImageSchema.index(
@@ -48,4 +52,4 @@ ImageSchema.on('index', (e) => {
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
-module.exports = mongoose.model('Image', ImageSchema);
+export default mongoose.model('Image', ImageSchema);

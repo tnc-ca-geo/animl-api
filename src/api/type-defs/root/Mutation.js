@@ -1,13 +1,16 @@
-module.exports = `
+export default `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
 
     createUpload(input: CreateUploadInput!): CreateUploadPayload
     updateBatch(input: UpdateBatchInput!): BatchPayload
     stopBatch(input: StopBatchInput!): StandardPayload
+    redriveBatch(input: RedriveBatchInput!): StandardPayload
 
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
+    clearImageErrors(input: ClearImageErrorsInput!): StandardPayload
+    clearBatchErrors(input: ClearBatchErrorsInput!): StandardPayload
 
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
     unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload
@@ -17,7 +20,7 @@ module.exports = `
     deleteView(input: DeleteViewInput!): DeleteViewPayload
 
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
-    
+
     createObject(input: CreateObjectInput!): CreateObjectPayload
     updateObject(input: UpdateObjectInput!): UpdateObjectPayload
     deleteObject(input: DeleteObjectInput!): DeleteObjectPayload

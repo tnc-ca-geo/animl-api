@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+
 const Schema = mongoose.Schema;
 
 // /*
@@ -41,4 +42,4 @@ MLModelSchema.index(
   { unique: true, sparse: true }
 );
 
-module.exports = mongoose.model('MLModel', MLModelSchema);
+export default mongoose.model('MLModel', MLModelSchema);

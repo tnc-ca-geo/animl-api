@@ -1,4 +1,4 @@
-module.exports = `
+export default `
   type ReviewedCount {
     reviewed: Int!
     notReviewed: Int!
