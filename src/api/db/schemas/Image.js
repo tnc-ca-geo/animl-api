@@ -9,7 +9,7 @@ const Schema = mongoose.Schema;
 
 /*
  * ImageSchema
- *    _id - hash of image generated in animl-ingest
+ *    _id - "<project_id>:<image_hash>"
  *    userSetData  - user configured EXIF data
  */
 

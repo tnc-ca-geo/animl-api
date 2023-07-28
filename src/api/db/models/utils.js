@@ -401,7 +401,7 @@ const hasRole = (user, targetRoles = []) => {
   return user['is_superuser'] || hasAuthorizedRole;
 };
 
-// TODO: accomodate user-created deployments with no startDate?
+// TODO: accommodate user-created deployments with no startDate?
 const findDeployment = (img, camConfig, projTimeZone) => {
   console.log('finding deployment for img: ', img);
   // find the deployment that's start date is closest to (but preceeds)

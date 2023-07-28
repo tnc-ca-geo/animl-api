@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import ImageMetadata from './ImageMetadata';
 
 const Schema = mongoose.Schema;
 
@@ -8,7 +9,7 @@ const ImageAttemptSchema = new Schema({
   projectId: { type: String, required: true, ref: 'Project' },
   batch: { type: String },
   created: { type: Date, default: Date.now, required: true },
-  metadata: { type: Object }
+  metadata: { type: ImageMetadata }
 });
 
 ImageAttemptSchema.index({ batch: 1 });

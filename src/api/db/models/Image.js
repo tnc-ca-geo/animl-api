@@ -93,10 +93,6 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
-  // BUG: I think when you upload multiple images at once from the same camera,
-  // and there's not yet a camera record associated with it,
-  // some issues occur due to the camera record not being created fast enough
-  // for some of the new images? Investigate
   get createImage() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
