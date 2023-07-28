@@ -1,4 +1,4 @@
 export default `
   type CreateImagePayload {
-    image: Image
+    imageAttempt: ImageAttempt
   }`;
