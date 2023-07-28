@@ -103,6 +103,7 @@ const generateImageModel = ({ user } = {}) => ({
       const errors = [];
       const md = sanitizeMetadata(input.md);
       let projectId = 'default_project';
+      let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
       let existingCam;
       let imageId;
 
@@ -112,8 +113,6 @@ const generateImageModel = ({ user } = {}) => ({
         try {
           // NOTE: to create the record, we need go generate the image's _id,
           // which means we need to know what project it belongs to
-
-          let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
 
           if (md.batchId) {
             // if it's from a batch, find the batch record, and use its projectId
@@ -172,9 +171,66 @@ const generateImageModel = ({ user } = {}) => ({
           throw new ApolloError(err);
         }
 
+        // Step 2 - validate metadata and create Image record
+        try {
+          // test serial number
+          if (!cameraId || cameraId === 'unknown') {
+            errors.push(new Error('Unknown Serial Number'));
+          }
+
+          // test dateTimeOriginal
+          if (!md.dateTimeOriginal === 'unknown') {
+            errors.push(new Error('Unknown DateTimeOriginal'));
+          }
+
+          // test image size
+          if (md.imageBytes >= 4 * 1000000) {
+            errors.push(new Error('Image Size Exceed 4mb'));
+          }
+
+          if (!errors.length) {
+            if (md.batchId) {
+              // create camera config if there isn't one yet
+              await context.models.Project.createCameraConfig(projectId, cameraId);
+            } else if (!existingCam) {
+              await context.models.Camera.createWirelessCamera({
+                projectId,
+                cameraId,
+                make: md.make,
+                ...(md.model && { model: md.model })
+              }, context);
+              successfulOps.push({ op: 'cam-created', info: { cameraId } });
+            }
+
+            // map image to deployment
+            const [project] = await context.models.Project.getProjects([projectId]);
+            const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+            const deployment = mapImgToDep(md, camConfig, project.timezone);
+
+            md.projectId = projectId;
+            md.deploymentId = deployment._id;
+            md.timezone = deployment.timezone;
+            md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
+
+            const image = await retry(async (bail, attempt) => {
+              if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
+              const newImage = createImageRecord(md);
+              return await newImage.save();
+            }, { retries: 2 });
+
+            await handleEvent({ event: 'image-added', image }, context);
+          }
+        } catch (err) {
+          // here I don't think we want to re-throw the error, and instead add them
+          // to the error array so that we can create ImageErrors for them
+          errors.push(err);
+        }
+
       } catch (err) {
         // reverse successful operations
         for (const op of successfulOps) {
+          // TODO: reverse attempt-created? Probably not...
+
           if (op.op === 'cam-created') {
             console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
             // delete newly created camera record
