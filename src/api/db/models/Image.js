@@ -107,7 +107,6 @@ const generateImageModel = ({ user } = {}) => ({
       let imageAttempt;
 
       // TODO: double check recording and reversal of successful ops - make sure it's doing what we want
-      // TODO: add back in required! fields from Image and any code that was added to make images with incomplete metadata not fail
       // TODO: make sure we're not double-adding ImageErrors anywhere
 
       try {
@@ -141,7 +140,7 @@ const generateImageModel = ({ user } = {}) => ({
           console.log(`imageId: ${md.imageId}`);
 
           // create an ImageAttempt record (if one doesn't already exist)
-          imageAttempt = await ImageAttempt.findOne({ _id: imageId });
+          imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
           console.log(`existing imageAttempt?: ${JSON.stringify(imageAttempt)}`);
           if (!imageAttempt) {
             imageAttempt = new ImageAttempt({
@@ -284,145 +283,6 @@ const generateImageModel = ({ user } = {}) => ({
       }
     };
   },
-
-  // get createImage() {
-  //   if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-  //   return async (input, context) => {
-  //     const successfulOps = [];
-  //     const md = sanitizeMetadata(input.md);
-  //     let projectId = 'default_project';
-
-  //     // Images will be attempted to be stored in the database to preserve the state of the image
-  //     // regardless of whether the system was able to process them. If known errors are thrown, they will
-  //     // be added to this array to be submitted as ImageError objects that reference the created Image
-  //     const errors = [];
-
-  //     try {
-  //       let cameraId = md.serialNumber;
-
-  //       if (md.batchId) { // handle image from bulk upload
-  //         const batch = await Batch.findOne({ _id: md.batchId });
-  //         projectId = batch.projectId;
-
-  //         if (batch.overrideSerial) {
-  //           md.serialNumber = batch.overrideSerial;
-  //           cameraId = batch.overrideSerial;
-  //         }
-  //       }
-
-  //       if (!cameraId || cameraId === 'unknown') {
-  //         errors.push(new Error('Unknown Serial Number'));
-  //       }
-
-  //       if (!md.dateTimeOriginal === 'unknown') {
-  //         errors.push(new Error('Unknown DateTimeOriginal'));
-  //         // Required to get an Image entry into the DB so we can attach an error
-  //         md.dateTimeOriginal = DateTime.fromJSDate(new Date());
-  //       }
-
-  //       let project;
-  //       let deployment = { _id: null, timezone: null };
-
-  //       if (!errors.length) {
-  //         if (md.batchId) {
-  //           // create camera config if there isn't one yet
-  //           await context.models.Project.createCameraConfig(projectId, cameraId);
-  //         } else if (!errors.length) {
-  //           // handle image from wireless camera
-  //           // find wireless camera record & active registration or create new one
-  //           const [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
-  //           if (!existingCam) {
-  //             await context.models.Camera.createWirelessCamera({
-  //               projectId,
-  //               cameraId,
-  //               make: md.make,
-  //               ...(md.model && { model: md.model })
-  //             }, context);
-
-  //             successfulOps.push({ op: 'cam-created', info: { cameraId } });
-  //           } else {
-  //             projectId = findActiveProjReg(existingCam);
-  //           }
-  //         }
-
-  //         // map image to deployment
-  //         [project] = await context.models.Project.getProjects([projectId]);
-  //         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-
-  //         try {
-  //           deployment = mapImgToDep(md, camConfig, project.timezone);
-  //         } catch (err) {
-  //           if (err.code === 'NoDeployments') errors.push(err);
-  //           else throw err;
-  //         }
-  //       } else {
-  //         // Get Default Project as there are errors - There will be no deployments added
-  //         [project] = await context.models.Project.getProjects([projectId]);
-  //         deployment.timezone = project.timezone;
-  //       }
-
-  //       // create image record
-  //       md.projectId = projectId;
-  //       md.deploymentId = deployment._id;
-  //       md.timezone = deployment.timezone;
-
-  //       // Image Size Limit
-  //       if (md.imageBytes >= 4 * 1000000) {
-  //         errors.push(new Error('Image Size Exceed 4mb'));
-  //       }
-
-  //       md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
-
-  //       const image = await retry(async (bail, attempt) => {
-  //         if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
-  //         const newImage = createImageRecord(md);
-  //         return await newImage.save();
-  //       }, { retries: 2 });
-
-  //       if (!errors.length) {
-  //         await handleEvent({ event: 'image-added', image }, context);
-  //       } else {
-  //         for (let i = 0; i < errors.length; i++) {
-  //           errors[i] = new ImageError({ image: image._id, batch: md.batchId, error: errors[i].message });
-  //           await errors[i].save();
-  //         }
-  //       }
-
-  //       image.errors = errors;
-  //       return image;
-  //     } catch (err) {
-  //       // reverse successful operations
-  //       for (const op of successfulOps) {
-  //         if (op.op === 'cam-created') {
-  //           console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
-  //           // delete newly created camera record
-  //           await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
-  //           // find project, remove newly created cameraConfig record
-  //           const [proj] = await context.models.Project.getProjects([projectId]);
-  //           proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => (
-  //             !idMatch(camConfig._id, op.info.cameraId)
-  //           ));
-  //           proj.save();
-  //         }
-  //       }
-
-  //       const msg = err.message.toLowerCase();
-  //       console.log(`Image.createImage() ERROR on image ${md.hash}: ${err}`);
-
-  //       if (err instanceof ApolloError) {
-  //         throw err;
-  //       }
-  //       else if (msg.includes('duplicate')) {
-  //         throw new DuplicateError(err);
-  //       }
-  //       else if (msg.includes('validation')) {
-  //         throw new DBValidationError(err);
-  //       }
-  //       throw new ApolloError(err);
-  //     }
-  //   };
-  // },
 
   get createObject() {
     if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
