@@ -37,12 +37,6 @@ const buildPipeline = ({
     pipeline.push({ '$match': { 'projectId': projectId } });
   }
 
-  // Ignore Null Deployments - If we eventually add required: true to deployments, remove this
-  pipeline.push({ '$match': {
-    'deploymentId': { $ne: null }
-  }
-  });
-
   // match cameras filter
   if (cameras) {
     pipeline.push({ '$match': { 'cameraId': { $in: cameras } } });
@@ -315,7 +309,7 @@ const createImageRecord = (md) => {
   };
 
   const image = new Image({
-    _id: md.projectId + ':' + md.hash,
+    _id: md.imageId,
     batchId: md.batchId,
     bucket: md.prodBucket,
     fileTypeExtension: md.fileTypeExtension,

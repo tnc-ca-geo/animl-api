@@ -104,12 +104,15 @@ const generateImageModel = ({ user } = {}) => ({
       let projectId = 'default_project';
       let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
       let existingCam;
-      let imageId;
       let imageAttempt;
+
+      // TODO: double check recording and reversal of successful ops - make sure it's doing what we want
+      // TODO: add back in required! fields from Image and any code that was added to make images with incomplete metadata not fail
+      // TODO: make sure we're not double-adding ImageErrors anywhere
 
       try {
 
-        // Step 1 - create ImageAttempt record
+        // create ImageAttempt record
         try {
           // NOTE: to create the record, we need go generate the image's _id,
           // which means we need to know what project it belongs to
@@ -134,19 +137,19 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           // create an imageID
-          imageId = projectId + ':' + md.hash;
-          console.log(`imageId: ${imageId}`);
+          md.imageId = projectId + ':' + md.hash;
+          console.log(`imageId: ${md.imageId}`);
 
           // create an ImageAttempt record (if one doesn't already exist)
           imageAttempt = await ImageAttempt.findOne({ _id: imageId });
           console.log(`existing imageAttempt?: ${JSON.stringify(imageAttempt)}`);
           if (!imageAttempt) {
             imageAttempt = new ImageAttempt({
-              _id: imageId,
+              _id: md.imageId,
               projectId,
               batchId: md.batchId,
               metadata: {
-                _id: imageId,
+                _id: md.imageId,
                 bucket: md.prodBucket,
                 batchId: md.batchId,
                 dateAdded: DateTime.now(),
@@ -234,7 +237,7 @@ const generateImageModel = ({ user } = {}) => ({
           for (let i = 0; i < errors.length; i++) {
             console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
             errors[i] = new ImageError({
-              image: imageId,
+              image: md.imageId,
               batch: md.batchId,
               error: errors[i].message
             });
@@ -266,7 +269,7 @@ const generateImageModel = ({ user } = {}) => ({
         }
 
         const msg = err.message.toLowerCase();
-        console.log(`Image.createImage() ERROR on image ${md.hash}: ${err}`);
+        console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
 
         if (err instanceof ApolloError) {
           throw err;
