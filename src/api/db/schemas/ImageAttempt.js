@@ -25,7 +25,7 @@ const ImageMetadataSchema = new Schema({
   imageHeight: { type: Number },
   imageBytes: { type: Number },
   mimeType: { type: String },
-  model: { type: String },
+  model: { type: String }
 });
 
 /*
