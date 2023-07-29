@@ -205,11 +205,8 @@ const sanitizeMetadata = (md) => {
   if (sanitized.dateTimeOriginal && sanitized.dateTimeOriginal !== 'unknown') {
     const dto = DateTime.fromISO(sanitized.dateTimeOriginal);
     sanitized.dateTimeOriginal = dto;
-  } else {
-    // The IngestImage function should generally set this to unknown if it isn't parsable
-    // but this is included just to be sure
-    sanitized.dateTimeOriginal = 'unknown';
   }
+
   return sanitized;
 };
 

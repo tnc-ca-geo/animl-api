@@ -17,7 +17,6 @@ import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../.
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import retry from 'async-retry';
-import ImageMetadata from '../schemas/ImageMetadata.js';
 
 const generateImageModel = ({ user } = {}) => ({
   countImages: async (input) => {
@@ -140,33 +139,33 @@ const generateImageModel = ({ user } = {}) => ({
 
           // create an ImageAttempt record (if one doesn't already exist)
           imageAttempt = await ImageAttempt.findOne({ _id: imageId });
+          console.log(`existing imageAttempt?: ${JSON.stringify(imageAttempt)}`);
           if (!imageAttempt) {
-            const metadata = new ImageMetadata({
-              _id: imageId,
-              bucket: md.prodBucket,
-              batchId: md.batchId,
-              dateAdded: DateTime.now(),
-              cameraId: cameraId,
-              ...(md.fileTypeExtension && { fileTypeExtension: md.fileTypeExtension }),
-              ...(md.dateTimeOriginal && { dateTimeOriginal: md.dateTimeOriginal }),
-              ...(md.timezone && { timezone: md.timezone }),
-              ...(md.make && { make: md.make }),
-              ...(md.model && { model: md.model }),
-              ...(md.fileName && { originalFileName: md.fileName }),
-              ...(md.imageWidth && { imageWidth: md.imageWidth }),
-              ...(md.imageHeight && { imageHeight: md.imageHeight }),
-              ...(md.imageBytes && { imageBytes: md.imageBytes }),
-              ...(md.MIMEType && { mimeType: md.MIMEType })
-            });
-
             imageAttempt = new ImageAttempt({
               _id: imageId,
               projectId,
               batchId: md.batchId,
-              metadata
+              metadata: {
+                _id: imageId,
+                bucket: md.prodBucket,
+                batchId: md.batchId,
+                dateAdded: DateTime.now(),
+                cameraId: cameraId,
+                ...(md.fileTypeExtension && { fileTypeExtension: md.fileTypeExtension }),
+                ...(md.dateTimeOriginal && { dateTimeOriginal: md.dateTimeOriginal }),
+                ...(md.timezone && { timezone: md.timezone }),
+                ...(md.make && { make: md.make }),
+                ...(md.model && { model: md.model }),
+                ...(md.fileName && { originalFileName: md.fileName }),
+                ...(md.imageWidth && { imageWidth: md.imageWidth }),
+                ...(md.imageHeight && { imageHeight: md.imageHeight }),
+                ...(md.imageBytes && { imageBytes: md.imageBytes }),
+                ...(md.MIMEType && { mimeType: md.MIMEType })
+              }
             });
             await imageAttempt.save();
-            successfulOps.push({ op: 'attempt-created', info: { cameraId } });
+            console.log(`new imageAttempt: ${JSON.stringify(imageAttempt)}`);
+            successfulOps.push({ op: 'attempt-created', info: { cameraId } });  // might not need this
           }
 
         } catch (err) {
@@ -182,7 +181,7 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           // test dateTimeOriginal
-          if (!md.dateTimeOriginal === 'unknown') {
+          if (!md.dateTimeOriginal) {
             errors.push(new Error('Unknown DateTimeOriginal'));
           }
 
@@ -192,6 +191,7 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           if (!errors.length) {
+            console.log('no errors so far! creating image record...');
             if (md.batchId) {
               // create camera config if there isn't one yet
               await context.models.Project.createCameraConfig(projectId, cameraId);
@@ -220,7 +220,7 @@ const generateImageModel = ({ user } = {}) => ({
               const newImage = createImageRecord(md);
               return await newImage.save();
             }, { retries: 2 });
-
+            console.log(`image successfully created: ${JSON.stringify(image)}`);
             await handleEvent({ event: 'image-added', image }, context);
           }
         } catch (err) {
@@ -229,9 +229,10 @@ const generateImageModel = ({ user } = {}) => ({
           errors.push(err);
         }
 
-        // Step 4 - if there were errors in the array, create ImageErrors for them   
+        // Step 4 - if there were errors in the array, create ImageErrors for them
         if (errors.length) {
           for (let i = 0; i < errors.length; i++) {
+            console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
             errors[i] = new ImageError({
               image: imageId,
               batch: md.batchId,
@@ -243,6 +244,7 @@ const generateImageModel = ({ user } = {}) => ({
 
         // return imageAttempt
         imageAttempt.errors = errors;
+        console.log(`returning imageAttempt: ${imageAttempt}`);
         return imageAttempt;
 
       } catch (err) {
