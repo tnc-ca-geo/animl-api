@@ -114,10 +114,9 @@ const generateImageErrorModel = ({ user } = {}) => ({
         }));
 
         const lambda = new AWSLambda.LambdaClient({ region: process.env.AWS_DEFAULT_REGION });
-        const FunctionName = 'REPLACE';
 
         await lambda.send(new AWSLambda.InvokeCommand({
-          FunctionName,
+          FunctionName: `animl-api-${process.env.STAGE}-export`,
           InvocationType: 'Event',
           Payload: Buffer.from(JSON.stringify({
             filters: input.filters

@@ -1,4 +1,4 @@
 export default `
   input ExportErrorsInput {
-    filters: QueryImageErrorsInput!
+    filters: ImageErrorsFilterInput!
   }`;
