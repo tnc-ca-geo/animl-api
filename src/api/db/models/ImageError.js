@@ -8,7 +8,7 @@ import { hasRole } from './utils.js';
 const generateImageErrorModel = ({ user } = {}) => ({
   countImageErrors: async (input) => {
     const res = await ImageError.aggregate([
-      { $batch: input.batch },
+      { '$match': { 'batch': input.batch } },
       { $count: 'count' }
     ]);
     return res[0] ? res[0].count : 0;
@@ -16,9 +16,9 @@ const generateImageErrorModel = ({ user } = {}) => ({
 
   queryByFilter: async (input) => {
     try {
-      const result = await MongoPaging.aggregate(Image.collection, {
+      const result = await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [
-            { $batch: input.batch },
+            { '$match': { 'batch': input.batch } },
         ],
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -26,7 +26,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous
       });
-      // console.log('res: ', JSON.stringify(result));
+      console.log('res: ', JSON.stringify(result));
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError

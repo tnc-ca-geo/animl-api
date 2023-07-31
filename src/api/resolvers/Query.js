@@ -51,7 +51,7 @@ const Query = {
         hasNext,
         count
       },
-      images: results
+      errors: results
     };
   },
 
