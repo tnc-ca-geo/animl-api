@@ -135,28 +135,6 @@ const generateImageErrorModel = ({ user } = {}) => ({
       }
     };
   },
-
-  get getExportStatus() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return async ({ documentId }, context) => {
-      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-      try {
-        const { Body } = await s3.send(new S3.GetObjectCommand({
-          Bucket: bucket,
-          Key: `${documentId}.json`
-        }));
-
-        const objectText = await text(Body);
-        return JSON.parse(objectText);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
-  }
 });
 
 export default generateImageErrorModel;
