@@ -78,6 +78,10 @@ const Query = {
     return await context.models.Image.getStats(input);
   },
 
+  exportErrors: async (_, { input }, context) => {
+    return await context.models.ImageError.export(input, context);
+  },
+
   export: async (_, { input }, context) => {
     return await context.models.Image.export(input, context);
   },

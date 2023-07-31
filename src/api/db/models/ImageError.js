@@ -1,9 +1,13 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { text } from 'node:stream/consumers';
+import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
+import crypto from 'node:crypto';
 import ImageError from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
+import AWSLambda from '@aws-sdk/client-lambda';
+import S3 from '@aws-sdk/client-s3';
 
 const generateImageErrorModel = ({ user } = {}) => ({
   countImageErrors: async (input) => {
@@ -18,7 +22,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
     try {
       const result = await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [
-            { '$match': { 'batch': input.batch } },
+          { '$match': { 'batch': input.batch } }
         ],
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -85,6 +89,67 @@ const generateImageErrorModel = ({ user } = {}) => ({
         });
 
         return { message: 'Cleared' };
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get export() {
+    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async (input, context) => {
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const id = crypto.randomBytes(16).toString('hex');
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+      try {
+        // create status document in S3
+        await s3.send(new S3.PutObjectCommand({
+          Bucket: bucket,
+          Key: `${id}.json`,
+          Body: JSON.stringify({ status: 'Pending' }),
+          ContentType: 'application/json; charset=utf-8'
+        }));
+
+        const lambda = new AWSLambda.LambdaClient({ region: process.env.AWS_DEFAULT_REGION });
+        const FunctionName = 'REPLACE';
+
+        await lambda.send(new AWSLambda.InvokeCommand({
+          FunctionName,
+          InvocationType: 'Event',
+          Payload: Buffer.from(JSON.stringify({
+            filters: input.filters
+          }))
+        }));
+
+        return {
+          documentId: id
+        };
+
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get getExportStatus() {
+    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async ({ documentId }, context) => {
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+      try {
+        const { Body } = await s3.send(new S3.GetObjectCommand({
+          Bucket: bucket,
+          Key: `${documentId}.json`
+        }));
+
+        const objectText = await text(Body);
+        return JSON.parse(objectText);
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;

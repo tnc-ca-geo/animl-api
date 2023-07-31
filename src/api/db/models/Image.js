@@ -575,7 +575,6 @@ const generateImageModel = ({ user } = {}) => ({
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
-
         const { Body } = await s3.send(new S3.GetObjectCommand({
           Bucket: bucket,
           Key: `${documentId}.json`
