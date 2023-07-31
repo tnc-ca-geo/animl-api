@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { ImageError } from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
-import AWSLambda from '@aws-sdk/client-lambda';
+import SQS from '@aws-sdk/client-sqs';
 import S3 from '@aws-sdk/client-s3';
 
 const generateImageErrorModel = ({ user } = {}) => ({
@@ -101,6 +101,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
     if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
     return async (input, context) => {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
       const id = crypto.randomBytes(16).toString('hex');
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
@@ -113,14 +114,13 @@ const generateImageErrorModel = ({ user } = {}) => ({
           ContentType: 'application/json; charset=utf-8'
         }));
 
-        const lambda = new AWSLambda.LambdaClient({ region: process.env.AWS_DEFAULT_REGION });
-
-        await lambda.send(new AWSLambda.InvokeCommand({
-          FunctionName: `animl-api-${process.env.STAGE}-export`,
-          InvocationType: 'Event',
-          Payload: Buffer.from(JSON.stringify({
-            filters: input.filters
-          }))
+        await sqs.send(new SQS.SendMessageCommand({
+          QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
+          MessageBody: JSON.stringify({
+            type: 'ImageErrors',
+            documentId: id,
+            filters: input.filters,
+          })
         }));
 
         return {
