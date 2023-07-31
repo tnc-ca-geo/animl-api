@@ -1,6 +1,6 @@
 export default `
   input ImageErrorsFilterInput {
-    batch: String
+    batch: String!
     custom: String
   }
 
