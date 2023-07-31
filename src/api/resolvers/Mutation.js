@@ -40,8 +40,8 @@ const Mutation = {
   },
 
   createImage: async (_, { input }, context) => {
-    const image = await context.models.Image.createImage(input, context);
-    return { image };
+    const imageAttempt = await context.models.Image.createImage(input, context);
+    return { imageAttempt };
   },
 
   registerCamera: async (_, { input }, context) => {

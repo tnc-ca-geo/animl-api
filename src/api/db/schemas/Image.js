@@ -9,7 +9,7 @@ const Schema = mongoose.Schema;
 
 /*
  * ImageSchema
- *    _id - hash of image generated in animl-ingest
+ *    _id - "<project_id>:<image_hash>"
  *    userSetData  - user configured EXIF data
  */
 
@@ -23,7 +23,7 @@ const ImageSchema = new Schema({
   timezone: { type: String, required: true },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
-  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment' },
+  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
   projectId: { type: String, required: true, ref: 'Project' },
   originalFileName: { type: String },
   imageWidth: { type: Number },
