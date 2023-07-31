@@ -38,8 +38,7 @@ const ImageAttemptSchema = new Schema({
   projectId: { type: String, required: true, ref: 'Project' },
   batch: { type: String },
   created: { type: Date, default: Date.now, required: true },
-  metadata: { type: ImageMetadataSchema },
-  errors: { type: [ImageErrorSchema] }
+  metadata: { type: ImageMetadataSchema }
 });
 
 ImageAttemptSchema.index({ batch: 1 });

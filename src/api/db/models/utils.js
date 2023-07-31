@@ -3,6 +3,7 @@ import _ from 'lodash';
 import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
+import ImageAttempt from '../schemas/ImageAttempt.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -204,6 +205,32 @@ const sanitizeMetadata = (md) => {
   return sanitized;
 };
 
+const createImageAttemptRecord = (md) => {
+  console.log('creating ImageAttempt record with metadata: ', md);
+  return new ImageAttempt({
+    _id: md.imageId,
+    projectId: md.projectId,
+    batchId: md.batchId,
+    metadata: {
+      _id: md.imageId,
+      bucket: md.prodBucket,
+      batchId: md.batchId,
+      dateAdded: DateTime.now(),
+      cameraId: md.serialNumber,
+      ...(md.fileTypeExtension && { fileTypeExtension: md.fileTypeExtension }),
+      ...(md.dateTimeOriginal && { dateTimeOriginal: md.dateTimeOriginal }),
+      ...(md.timezone && { timezone: md.timezone }),
+      ...(md.make && { make: md.make }),
+      ...(md.model && { model: md.model }),
+      ...(md.fileName && { originalFileName: md.fileName }),
+      ...(md.imageWidth && { imageWidth: md.imageWidth }),
+      ...(md.imageHeight && { imageHeight: md.imageHeight }),
+      ...(md.imageBytes && { imageBytes: md.imageBytes }),
+      ...(md.MIMEType && { mimeType: md.MIMEType })
+    }
+  });
+};
+
 // Unpack user-set exif tags
 const getUserSetData = (input) => {
   const userDataMap = {
@@ -298,7 +325,7 @@ const parseCoordinates = (md) => {
 
 // Map image metadata to image schema
 const createImageRecord = (md) => {
-  console.log('creating image record with metadata: ', md);
+  console.log('creating ImageRecord with metadata: ', md);
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
   const triggerSource = getTriggerSource(md);
@@ -308,7 +335,7 @@ const createImageRecord = (md) => {
     ...(md.GPSAltitude && { altitude: md.GPSAltitude })
   };
 
-  const image = new Image({
+  return new Image({
     _id: md.imageId,
     batchId: md.batchId,
     bucket: md.prodBucket,
@@ -330,8 +357,6 @@ const createImageRecord = (md) => {
     ...(location &&       { location: location }),
     ...(triggerSource &&  { triggerSource: triggerSource })
   });
-
-  return image;
 };
 
 const isLabelDupe = (image, newLabel) => {
@@ -505,10 +530,10 @@ const isImageReviewed = (image) => {
 
 export {
   buildImgUrl,
-  // buildFilter,
   buildPipeline,
   sanitizeMetadata,
   isLabelDupe,
+  createImageAttemptRecord,
   createImageRecord,
   createLabelRecord,
   hasRole,

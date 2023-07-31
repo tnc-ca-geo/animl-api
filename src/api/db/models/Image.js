@@ -1,5 +1,4 @@
 import { text } from 'node:stream/consumers';
-import { DateTime } from 'luxon';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -14,7 +13,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
-import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
+import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import retry from 'async-retry';
 
@@ -106,16 +105,13 @@ const generateImageModel = ({ user } = {}) => ({
       let existingCam;
       let imageAttempt;
 
-      // TODO: double check recording and reversal of successful ops - make sure it's doing what we want
-      // TODO: make sure we're not double-adding ImageErrors anywhere
-
       try {
 
-        // create ImageAttempt record
+        // 1. create ImageAttempt record
         try {
           // NOTE: to create the record, we need go generate the image's _id,
           // which means we need to know what project it belongs to
-          console.log('Step 1 - create ImageAttempt record');
+          console.log('Creating ImageAttempt record');
 
           if (md.batchId) {
             // if it's from a batch, find the batch record, and use its projectId
@@ -136,6 +132,7 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           // create an imageID
+          md.projectId = projectId;
           md.imageId = projectId + ':' + md.hash;
           console.log(`imageId: ${md.imageId}`);
 
@@ -143,31 +140,9 @@ const generateImageModel = ({ user } = {}) => ({
           imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
           console.log(`existing imageAttempt?: ${JSON.stringify(imageAttempt)}`);
           if (!imageAttempt) {
-            imageAttempt = new ImageAttempt({
-              _id: md.imageId,
-              projectId,
-              batchId: md.batchId,
-              metadata: {
-                _id: md.imageId,
-                bucket: md.prodBucket,
-                batchId: md.batchId,
-                dateAdded: DateTime.now(),
-                cameraId: cameraId,
-                ...(md.fileTypeExtension && { fileTypeExtension: md.fileTypeExtension }),
-                ...(md.dateTimeOriginal && { dateTimeOriginal: md.dateTimeOriginal }),
-                ...(md.timezone && { timezone: md.timezone }),
-                ...(md.make && { make: md.make }),
-                ...(md.model && { model: md.model }),
-                ...(md.fileName && { originalFileName: md.fileName }),
-                ...(md.imageWidth && { imageWidth: md.imageWidth }),
-                ...(md.imageHeight && { imageHeight: md.imageHeight }),
-                ...(md.imageBytes && { imageBytes: md.imageBytes }),
-                ...(md.MIMEType && { mimeType: md.MIMEType })
-              }
-            });
+            imageAttempt = createImageAttemptRecord(md);
             await imageAttempt.save();
             console.log(`new imageAttempt: ${JSON.stringify(imageAttempt)}`);
-            successfulOps.push({ op: 'attempt-created', info: { cameraId } });  // might not need this
           }
 
         } catch (err) {
@@ -175,7 +150,7 @@ const generateImageModel = ({ user } = {}) => ({
           throw new ApolloError(err);
         }
 
-        // Step 2 - validate metadata and create Image record
+        // 2. validate metadata and create Image record
         try {
           // test serial number
           if (!cameraId || cameraId === 'unknown') {
@@ -212,7 +187,6 @@ const generateImageModel = ({ user } = {}) => ({
             const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
             const deployment = mapImgToDep(md, camConfig, project.timezone);
 
-            md.projectId = projectId;
             md.deploymentId = deployment._id;
             md.timezone = deployment.timezone;
             md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
@@ -226,20 +200,28 @@ const generateImageModel = ({ user } = {}) => ({
             await handleEvent({ event: 'image-added', image }, context);
           }
         } catch (err) {
-          // here I don't think we want to re-throw the error, and instead add them
-          // to the error array so that we can create ImageErrors for them
+          // add any errors to the error array so that we can create ImageErrors for them
           errors.push(err);
+
+          // reverse successful operations
+          for (const op of successfulOps) {
+            if (op.op === 'cam-created') {
+              console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
+              // delete newly created wireless camera record
+              await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
+              // find project, remove newly created cameraConfig record
+              const [proj] = await context.models.Project.getProjects([projectId]);
+              proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
+              proj.save();
+            }
+          }
         }
 
-        // Step 4 - if there were errors in the array, create ImageErrors for them
+        // 3. if there were errors in the array, create ImageErrors for them
         if (errors.length) {
           for (let i = 0; i < errors.length; i++) {
             console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
-            errors[i] = new ImageError({
-              image: md.imageId,
-              batch: md.batchId,
-              error: errors[i].message
-            });
+            errors[i] = new ImageError({ image: md.imageId, batch: md.batchId, error: errors[i].message });
             await errors[i].save();
           }
         }
@@ -250,25 +232,12 @@ const generateImageModel = ({ user } = {}) => ({
         return imageAttempt;
 
       } catch (err) {
-        // reverse successful operations
-        for (const op of successfulOps) {
-          // TODO: reverse attempt-created? Probably not...
-          // TODO: reverse ImageErrors? Probably don't want to do that either
-          if (op.op === 'cam-created') {
-            console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
-            // delete newly created camera record
-            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
-            // find project, remove newly created cameraConfig record
-            const [proj] = await context.models.Project.getProjects([projectId]);
-            proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => (
-              !idMatch(camConfig._id, op.info.cameraId)
-            ));
-            proj.save();
-          }
-        }
+        // Fallback catch for unforeseen errors
+        console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
 
         const msg = err.message.toLowerCase();
-        console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
+        const imageError = new ImageError({ image: md.imageId, batch: md.batchId, error: msg });
+        await imageError.save();
 
         if (err instanceof ApolloError) {
           throw err;
