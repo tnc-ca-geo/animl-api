@@ -39,6 +39,22 @@ const Query = {
     };
   },
 
+  imageErrors: async (_, { input }, context) => {
+    const count = await context.models.ImageError.countImageErrors(input);
+    const response = await context.models.ImageError.queryByFilter(input);
+    const { previous, hasPrevious, next, hasNext, results } = response;
+    return {  // reurn ImagesConnection
+      pageInfo: {
+        previous,
+        hasPrevious,
+        next,
+        hasNext,
+        count
+      },
+      images: results
+    };
+  },
+
   image: async (_, { input }, context) => {
     return await context.models.Image.queryById(input.imageId);
   },

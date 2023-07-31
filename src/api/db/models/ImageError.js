@@ -1,10 +1,40 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import MongoPaging from 'mongo-cursor-pagination';
 import ImageError from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 
 const generateImageErrorModel = ({ user } = {}) => ({
+  countImageErrors: async (input) => {
+    const res = await ImageError.aggregate([
+      { $batch: input.batch },
+      { $count: 'count' }
+    ]);
+    return res[0] ? res[0].count : 0;
+  },
+
+  queryByFilter: async (input) => {
+    try {
+      const result = await MongoPaging.aggregate(Image.collection, {
+        aggregation: [
+            { $batch: input.batch },
+        ],
+        limit: input.limit,
+        paginatedField: input.paginatedField,
+        sortAscending: input.sortAscending,
+        next: input.next,
+        previous: input.previous
+      });
+      // console.log('res: ', JSON.stringify(result));
+      return result;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  },
+
   get createError() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 

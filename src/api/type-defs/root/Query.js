@@ -3,6 +3,7 @@ export default `
     projects(_ids: [String!]): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
+    imageErrors(input: QueryImageErrorsInput!): ImageErrorsConnection
     labels: LabelList
     wirelessCameras(_ids: [String!]): [WirelessCamera]
     mlModels(_ids: [String!]): [MLModel]
