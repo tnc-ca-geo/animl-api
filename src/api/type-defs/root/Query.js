@@ -11,7 +11,7 @@ export default `
     batch(_id: String!): Batch
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
-    exportErrors(input: QueryImageErrorsInput!): ExportPayload
+    exportErrors(input: ExportErrorsInput!): ExportPayload
     exportStatus(input: ExportStatusInput!): ExportStatusPayload
   }
 `;

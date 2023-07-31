@@ -1,7 +1,6 @@
 export default `
   input ImageErrorsFilterInput {
     batch: String!
-    custom: String
   }
 
   input QueryImageErrorsInput {

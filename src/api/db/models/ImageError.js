@@ -22,7 +22,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
     try {
       const result = await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [
-          { '$match': { 'batch': input.batch } }
+          { '$match': { 'batch': input.filters.batch } }
         ],
         limit: input.limit,
         paginatedField: input.paginatedField,
