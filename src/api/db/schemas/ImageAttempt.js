@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
-import { ImageErrorSchema } from './ImageError.js';
 
 const Schema = mongoose.Schema;
 

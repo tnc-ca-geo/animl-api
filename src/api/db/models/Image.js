@@ -138,15 +138,12 @@ const generateImageModel = ({ user } = {}) => ({
 
           // create an ImageAttempt record (if one doesn't already exist)
           imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
-          console.log(`existing imageAttempt?: ${JSON.stringify(imageAttempt)}`);
           if (!imageAttempt) {
             imageAttempt = createImageAttemptRecord(md);
             await imageAttempt.save();
-            console.log(`new imageAttempt: ${JSON.stringify(imageAttempt)}`);
           }
 
         } catch (err) {
-          // an error here would be a complete failure and we'd want to return early
           throw new ApolloError(err);
         }
 
@@ -168,7 +165,6 @@ const generateImageModel = ({ user } = {}) => ({
           }
 
           if (!errors.length) {
-            console.log('no errors so far! creating image record...');
             if (md.batchId) {
               // create camera config if there isn't one yet
               await context.models.Project.createCameraConfig(projectId, cameraId);
@@ -228,7 +224,6 @@ const generateImageModel = ({ user } = {}) => ({
 
         // return imageAttempt
         imageAttempt.errors = errors;
-        console.log(`returning imageAttempt: ${imageAttempt}`);
         return imageAttempt;
 
       } catch (err) {
