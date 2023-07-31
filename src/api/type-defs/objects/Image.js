@@ -1,7 +1,7 @@
 export default `
   type Image {
     _id: ID!
-    batchId: Int
+    batchId: String
     errors: [ImageError]
     bucket: String!
     fileTypeExtension: String!

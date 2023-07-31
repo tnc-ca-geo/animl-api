@@ -3,7 +3,7 @@ import { text } from 'node:stream/consumers';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';
-import ImageError from '../schemas/ImageError.js';
+import { ImageError } from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 import AWSLambda from '@aws-sdk/client-lambda';
