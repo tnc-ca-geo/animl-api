@@ -118,7 +118,8 @@ const generateImageErrorModel = ({ user } = {}) => ({
           MessageBody: JSON.stringify({
             type: 'ImageErrors',
             documentId: id,
-            filters: input.filters
+            filters: input.filters,
+            format: 'csv'
           })
         }));
 

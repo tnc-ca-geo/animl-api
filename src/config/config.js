@@ -14,6 +14,13 @@ const localConfig = {
     EXIF: 'yyyy:LL:dd HH:mm:ss'
   },
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com',
+  CSV_EXPORT_ERROR_COLUMNS: [
+    '_id',
+    'created',
+    'image',
+    'batch',
+    'error'
+  ],
   CSV_EXPORT_COLUMNS: [
     '_id',
     'originalFileName',
