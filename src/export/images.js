@@ -183,12 +183,12 @@ export default class ImageExport {
           error: this.errs,
           url: this.presignedURL,
           count: this.imageCount,
-            meta: {
-              reviewedCount: {
-                reviewed: this.reviewedCount,
-                notReviewed: this.notReviewedCount
-              }
+          meta: {
+            reviewedCount: {
+              reviewed: this.reviewedCount,
+              notReviewed: this.notReviewedCount
             }
+          }
         }),
         ContentType: 'application/json; charset=utf-8'
       }));
