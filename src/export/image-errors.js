@@ -103,6 +103,8 @@ export default class ImageExport {
     console.log(`updating ${this.documentId}.json status document`);
     // TODO: make sure the status document exists first
     try {
+      console.log(`s3://${this.bucket}/${this.documentId}.json`);
+
       const res = await this.s3.send(new S3.PutObjectCommand({
         Bucket: this.bucket,
         Key: `${this.documentId}.json`,
