@@ -182,11 +182,13 @@ export default class ImageExport {
           status: this.status,
           error: this.errs,
           url: this.presignedURL,
-          imageCount: this.imageCount,
-          reviewedCount: {
-            reviewed: this.reviewedCount,
-            notReviewed: this.notReviewedCount
-          }
+          count: this.imageCount,
+            meta: {
+              reviewedCount: {
+                reviewed: this.reviewedCount,
+                notReviewed: this.notReviewedCount
+              }
+            }
         }),
         ContentType: 'application/json; charset=utf-8'
       }));

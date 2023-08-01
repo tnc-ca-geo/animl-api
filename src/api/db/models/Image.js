@@ -594,7 +594,6 @@ const generateImageModel = ({ user } = {}) => ({
 
         const objectText = await text(Body);
         return JSON.parse(objectText);
-
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;

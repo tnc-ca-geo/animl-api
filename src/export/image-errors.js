@@ -113,7 +113,8 @@ export default class ImageExport {
           status: this.status,
           error: this.errs,
           url: this.presignedURL,
-          errorCount: this.errorCount
+          count: this.errorCount,
+          meta: {}
         }),
         ContentType: 'application/json; charset=utf-8'
       }));

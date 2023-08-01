@@ -44,6 +44,4 @@ async function handler(event) {
   return true;
 }
 
-export {
-  handler
-};
+export { handler };
