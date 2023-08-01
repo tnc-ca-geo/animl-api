@@ -28,7 +28,7 @@ export default class ImageExport {
     console.log('initializing Export');
     try {
       this.errorCount = await this.getCount(this.pipeline);
-      console.log('errorCount: ', this.imageCount);
+      console.log('errorCount: ', this.errorCount);
 
     } catch (err) {
       await this.error(err);
