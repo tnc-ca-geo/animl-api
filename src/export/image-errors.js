@@ -5,7 +5,7 @@ import S3 from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ApolloError } from 'apollo-server-lambda';
 import { stringify } from 'csv-stringify';
-import ImageError from '../api/db/schemas/ImageError.js';
+import { ImageError } from '../api/db/schemas/ImageError.js';
 
 export default class ImageExport {
   constructor({ documentId, filters, format }, config) {
