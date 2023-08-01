@@ -12,6 +12,7 @@ export default class ImageExport {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.ext = '.csv';
+    this.documentId = documentId;
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     this.errorCount = 0;
