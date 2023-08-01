@@ -13,27 +13,31 @@ async function handler(event) {
     console.log(`record body: ${record.body}`);
     const params = JSON.parse(record.body);
 
+    let dataExport;
+
     if (params.type === 'ImageErrors') {
-
+      dataExport = new ImageErrorExport(params, config);
     } else {
-      const dataExport = new ImageExport(params, config);
-      await dataExport.init();
+      dataExport = new ImageExport(params, config);
+    }
 
-      try {
-        if (params.format === 'csv') {
-          await dataExport.toCSV();
-        } else if (params.format === 'coco') {
-          await dataExport.toCOCO();
-        } else {
-          throw new ApolloError(`unsupported export format (${params.format})`);
-        }
-        await dataExport.success();
-      } catch (err) {
-        console.log('error exporting data: ', err);
-        // update status document in S3 with error
-        await dataExport.error(err);
-        process.exit(1);
+    await dataExport.init();
+
+    try {
+      if (!params.format || params.format === 'csv') {
+        await dataExport.toCSV();
+      } else if (params.format === 'coco') {
+        await dataExport.toCOCO();
+      } else {
+        throw new ApolloError(`unsupported export format (${params.format})`);
       }
+
+      await dataExport.success();
+    } catch (err) {
+      console.log('error exporting data: ', err);
+      // update status document in S3 with error
+      await dataExport.error(err);
+      process.exit(1);
     }
   }
 

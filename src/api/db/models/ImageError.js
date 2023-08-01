@@ -1,5 +1,4 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { text } from 'node:stream/consumers';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';
@@ -119,7 +118,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
           MessageBody: JSON.stringify({
             type: 'ImageErrors',
             documentId: id,
-            filters: input.filters,
+            filters: input.filters
           })
         }));
 
@@ -133,7 +132,7 @@ const generateImageErrorModel = ({ user } = {}) => ({
         throw new ApolloError(err);
       }
     };
-  },
+  }
 });
 
 export default generateImageErrorModel;
