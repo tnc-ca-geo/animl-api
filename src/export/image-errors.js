@@ -132,7 +132,6 @@ export default class ImageExport {
 
   streamToS3(filename) {
     // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
-    const contentType = this.format === 'csv' ? 'text/csv' : 'application/json; charset=utf-8';
     const pass = new PassThrough();
     const parallelUploadS3 = new Upload({
       client: this.s3,
@@ -140,7 +139,7 @@ export default class ImageExport {
         Bucket: this.bucket,
         Key: filename,
         Body: pass,
-        ContentType: contentType
+        ContentType: 'text/csv'
       }
     });
 
