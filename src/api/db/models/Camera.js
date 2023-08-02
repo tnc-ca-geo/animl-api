@@ -4,6 +4,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
 import { hasRole, idMatch } from './utils.js';
+import { ProjectModel } from './project.js';
 
 export class CameraModelView {
   static async getWirelessCameras(_ids, user) {
@@ -22,7 +23,7 @@ export class CameraModelView {
     }
   }
 
-  static async createWirelessCamera(input, context) {
+  static async createWirelessCamera(input) {
     const successfulOps = [];
     const projectId = input.projectId || 'default_project';
 
@@ -45,7 +46,7 @@ export class CameraModelView {
       const camera = await saveWirelessCamera({ ...input, projectId });
       successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
       // and CameraConfig record to the Project
-      const project = await context.models.Project.createCameraConfig( projectId, camera._id);
+      const project = await ProjectModel.createCameraConfig( projectId, camera._id);
       return { camera, project };
 
     } catch (err) {
@@ -63,7 +64,7 @@ export class CameraModelView {
     }
   }
 
-  static async registerCamera(user, input, context) {
+  static async registerCamera(input, user) {
     const successfulOps = [];
     const projectId = user['curr_project'];
 
@@ -76,7 +77,7 @@ export class CameraModelView {
           projectId,
           cameraId: input.cameraId,
           make: input.make
-        }, context);
+        });
         const wirelessCameras = await this.getWirelessCameras();
         return { wirelessCameras, project };
       }
@@ -98,7 +99,7 @@ export class CameraModelView {
         await cam.save();
         successfulOps.push({ op: 'cam-registered', info: { cameraId: input.cameraId } });
         const wirelessCameras = await this.getWirelessCameras();
-        const project = await context.models.Project.createCameraConfig(
+        const project = await ProjectModel.createCameraConfig(
           projectId,
           cam._id
         );
@@ -120,12 +121,79 @@ export class CameraModelView {
       for (const op of successfulOps) {
         if (op.op === 'cam-registered') {
           await this.unregisterCamera(
-            { cameraId: op.info.cameraId },
-            context
+            { cameraId: op.info.cameraId }, user
           );
         }
       }
 
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async unregisterCamera(input, user) {
+    const successfulOps = [];
+    const projectId = user['curr_project'];
+
+    try {
+
+      const wirelessCameras = await WirelessCamera.find();
+      const cam = wirelessCameras.find((c) => idMatch(c._id, input.cameraId));
+
+      if (!cam) {
+        const msg = `Couldn't find camera record for camera ${input.cameraId}`;
+        throw new CameraRegistrationError(msg);
+      }
+      const activeReg = cam.projRegistrations.find((pr) => pr.active);
+      if (activeReg.projectId === 'default_project') {
+        const msg = 'You can\'t unregister cameras from the default project';
+        throw new CameraRegistrationError(msg);
+      }
+      else if (activeReg.projectId !== projectId) {
+        const msg = `This camera is not currently registered to ${projectId}`;
+        throw new CameraRegistrationError(msg);
+      }
+
+      // if active registration === curr_project,
+      // reset registration.active to false,
+      // and set default_project registration to active
+      activeReg.active = false;
+      const defaultProjReg = cam.projRegistrations.find((pr) => (
+        pr.projectId === 'default_project'
+      ));
+      if (defaultProjReg) defaultProjReg.active = true;
+      else {
+        cam.projRegistrations.push({
+          projectId: 'default_project',
+          active: true
+        });
+      }
+      await cam.save();
+      successfulOps.push({ op: 'cam-unregistered', info: { cameraId: input.cameraId } });
+
+      // make sure there's a Project.cameraConfig record for this camera
+      // in the default_project and create one if not
+      let [defaultProj] = await ProjectModel.getProjects(['default_project']);
+
+      let addedNewCamConfig = false;
+      const camConfig = defaultProj.cameraConfigs.find((cc) => (
+        idMatch(cc._id, input.cameraId)
+      ));
+      if (!camConfig) {
+        defaultProj = await ProjectModel.createCameraConfig('default_project', input.cameraId);
+        addedNewCamConfig = true;
+      }
+
+      return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj }) };
+
+    } catch (err) {
+      // reverse successful operations
+      for (const op of successfulOps) {
+        if (op.op === 'cam-unregistered') {
+          await this.registerCamera({ cameraId: op.info.cameraId }, user);
+        }
+      }
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
@@ -144,86 +212,16 @@ const generateCameraModel = ({ user } = {}) => ({
   get registerCamera() {
     if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
 
-    return async (input, context) => {
-      return await CameraModelView.registerCamera(input, context, user);
+    return async (input) => {
+      return await CameraModelView.registerCamera(input, user);
     };
   },
 
   get unregisterCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) {
-      throw new ForbiddenError;
-    }
-    return async ({ cameraId }, context) => {
-      const successfulOps = [];
-      const projectId = user['curr_project'];
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
 
-      try {
-
-        const wirelessCameras = await WirelessCamera.find();
-        const cam = wirelessCameras.find((c) => idMatch(c._id, cameraId));
-
-        if (!cam) {
-          const msg = `Couldn't find camera record for camera ${cameraId}`;
-          throw new CameraRegistrationError(msg);
-        }
-        const activeReg = cam.projRegistrations.find((pr) => pr.active);
-        if (activeReg.projectId === 'default_project') {
-          const msg = 'You can\'t unregister cameras from the default project';
-          throw new CameraRegistrationError(msg);
-        }
-        else if (activeReg.projectId !== projectId) {
-          const msg = `This camera is not currently registered to ${projectId}`;
-          throw new CameraRegistrationError(msg);
-        }
-
-        // if active registration === curr_project,
-        // reset registration.active to false,
-        // and set default_project registration to active
-        activeReg.active = false;
-        const defaultProjReg = cam.projRegistrations.find((pr) => (
-          pr.projectId === 'default_project'
-        ));
-        if (defaultProjReg) defaultProjReg.active = true;
-        else {
-          cam.projRegistrations.push({
-            projectId: 'default_project',
-            active: true
-          });
-        }
-        await cam.save();
-        successfulOps.push({ op: 'cam-unregistered', info: { cameraId } });
-
-        // make sure there's a Project.cameraConfig record for this camera
-        // in the default_project and create one if not
-        let [defaultProj] = await context.models.Project.getProjects(
-          ['default_project']
-        );
-
-        let addedNewCamConfig = false;
-        const camConfig = defaultProj.cameraConfigs.find((cc) => (
-          idMatch(cc._id, cameraId)
-        ));
-        if (!camConfig) {
-          defaultProj = await context.models.Project.createCameraConfig(
-            'default_project',
-            cameraId
-          );
-          addedNewCamConfig = true;
-        }
-
-        return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj }) };
-
-      } catch (err) {
-        // reverse successful operations
-        for (const op of successfulOps) {
-          if (op.op === 'cam-unregistered') {
-            await this.registerCamera({ cameraId: op.info.cameraId }, context);
-          }
-        }
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+    return async (input) => {
+      return await CameraModelView.unregisterCamera(input, user);
     };
   }
 

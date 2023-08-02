@@ -15,6 +15,7 @@ import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
+import { ProjectModel } from './project.js';
 import retry from 'async-retry';
 
 export class ImageModel {
@@ -163,7 +164,7 @@ export class ImageModel {
         if (!errors.length) {
           if (md.batchId) {
             // create camera config if there isn't one yet
-            await context.models.Project.createCameraConfig(projectId, cameraId);
+            await ProjectModel.createCameraConfig(projectId, cameraId);
           } else if (!existingCam) {
             await context.models.Camera.createWirelessCamera({
               projectId,

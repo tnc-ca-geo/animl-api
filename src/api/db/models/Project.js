@@ -10,9 +10,8 @@ import {
   WRITE_AUTOMATION_RULES_ROLES
 } from '../../auth/roles.js';
 
-const generateProjectModel = ({ user } = {}) => ({
-
-  getProjects: async (_ids) => {
+export class ProjectModel {
+  static async getProjects(_ids, user) {
     let query = {};
     if (user['is_superuser']) {
       query = _ids ? { _id: { $in: _ids } } : {};
@@ -31,9 +30,9 @@ const generateProjectModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
 
-  createProject: async (input) => {
+  static async createProject(input) {
     const operation = async (input) => {
       return await retry(async () => {
         const newProject = new Project(input);
@@ -49,168 +48,146 @@ const generateProjectModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
 
-  get createCameraConfig() {
-    return async (projectId, cameraId) => {
+  static async createCameraConfig(projectId, cameraId) {
+    const operation = async (projectId, cameraId) => {
+      return await retry(async () => {
+        const [project] = await this.getProjects([projectId]);
 
-      const operation = async (projectId, cameraId) => {
-        return await retry(async () => {
-
-          const [project] = await this.getProjects([projectId]);
-
-          // make sure project doesn't already have a config for this cam
-          const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-          if (!currCamConfig) {
-            console.log('couldnt find cameraConfig, so creating one...');
-            project.cameraConfigs.push({
-              _id: cameraId,
-              deployments: [{
-                name: 'default',
-                timezone: project.timezone,
-                description: 'This is the default deployment. It is not editable',
-                editable: false
-              }]
-            });
-            await project.save();
-          }
-          return project;
-
-        }, { retries: 2 });
-      };
-
-      try {
-        return await operation(projectId, cameraId);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
-  },
-
-  get createView() {
-    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-
-      const operation = async (input) => {
-        return await retry(async () => {
-
-          // find project, add new view, and save
-          const [project] = await this.getProjects([user['curr_project']]);
-          const newView = {
-            name: input.name,
-            filters: input.filters,
-            ...(input.description && { description: input.description }),
-            editable: input.editable
-          };
-          project.views.push(newView);
-          const updatedProj = await project.save();
-          return updatedProj.views.find((v) => v.name === newView.name);
-
-        }, { retries: 2 });
-      };
-
-      try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
-  },
-
-  get updateView() {
-    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-
-      const operation = async ({ viewId, diffs }) => {
-        return await retry(async (bail) => {
-          // find view
-          const [project] = await this.getProjects([user['curr_project']]);
-          const view = project.views.find((v) => idMatch(v._id, viewId));
-          if (!view.editable) {
-            bail(new ForbiddenError(`View ${view.name} is not editable`));
-          }
-
-          // appy updates & save project
-          for (const [key, newVal] of Object.entries(diffs)) {
-            view[key] = newVal;
-          }
-          const updatedProj = await project.save();
-          return updatedProj.views.find((v) => idMatch(v._id, viewId));
-
-        }, { retries: 2 });
-      };
-
-      try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
-  },
-
-  get deleteView() {
-    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-
-      const operation = async ({ viewId }) => {
-        return await retry(async (bail) => {
-
-          // find view
-          const [project] = await this.getProjects([user['curr_project']]);
-          const view = project.views.find((v) => idMatch(v._id, viewId));
-          if (!view.editable) {
-            bail(new ForbiddenError(`View ${view.name} is not editable`));
-          }
-
-          // remove view from project and save
-          project.views = project.views.filter((v) => !idMatch(v._id, viewId));
-          return await project.save();
-
-        }, { retries: 2 });
-      };
-
-      try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
-  },
-
-  get updateAutomationRules() {
-    if (!hasRole(user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-
-      const operation = async ({ automationRules }) => {
-        return await retry(async () => {
-          console.log('attempting to update automation rules with: ', automationRules);
-          const [project] = await this.getProjects([user['curr_project']]);
-          project.automationRules = automationRules;
+        // make sure project doesn't already have a config for this cam
+        const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+        if (!currCamConfig) {
+          console.log('couldnt find cameraConfig, so creating one...');
+          project.cameraConfigs.push({
+            _id: cameraId,
+            deployments: [{
+              name: 'default',
+              timezone: project.timezone,
+              description: 'This is the default deployment. It is not editable',
+              editable: false
+            }]
+          });
           await project.save();
-          return project.automationRules;
-        }, { retries: 2 });
-      };
+        }
+        return project;
 
-      try {
-        return await operation(input);
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+      }, { retries: 2 });
     };
-  },
 
-  reMapImagesToDeps: async ({ projId, camConfig }) => {
+    try {
+      return await operation(projectId, cameraId);
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
 
+  static async createView(input, user) {
+    const operation = async (input) => {
+      return await retry(async () => {
+        // find project, add new view, and save
+        const [project] = await this.getProjects([user['curr_project']]);
+        const newView = {
+          name: input.name,
+          filters: input.filters,
+          ...(input.description && { description: input.description }),
+          editable: input.editable
+        };
+        project.views.push(newView);
+        const updatedProj = await project.save();
+        return updatedProj.views.find((v) => v.name === newView.name);
+
+      }, { retries: 2 });
+    };
+
+    try {
+      return await operation(input);
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateView(input, user) {
+    const operation = async (input) => {
+      return await retry(async (bail) => {
+        // find view
+        const [project] = await this.getProjects([user['curr_project']]);
+        const view = project.views.find((v) => idMatch(v._id, input.viewId));
+        if (!view.editable) {
+          bail(new ForbiddenError(`View ${view.name} is not editable`));
+        }
+
+        // appy updates & save project
+        for (const [key, newVal] of Object.entries(input.diffs)) {
+          view[key] = newVal;
+        }
+        const updatedProj = await project.save();
+        return updatedProj.views.find((v) => idMatch(v._id, input.viewId));
+
+      }, { retries: 2 });
+    };
+
+    try {
+      return await operation(input);
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteView(input, user) {
+    const operation = async (input) => {
+      return await retry(async (bail) => {
+
+        // find view
+        const [project] = await this.getProjects([user['curr_project']]);
+        const view = project.views.find((v) => idMatch(v._id, input.viewId));
+        if (!view.editable) {
+          bail(new ForbiddenError(`View ${view.name} is not editable`));
+        }
+
+        // remove view from project and save
+        project.views = project.views.filter((v) => !idMatch(v._id, input.viewId));
+        return await project.save();
+
+      }, { retries: 2 });
+    };
+
+    try {
+      return await operation(input);
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateAutomationRules(input, user) {
+    const operation = async ({ automationRules }) => {
+      return await retry(async () => {
+        console.log('attempting to update automation rules with: ', automationRules);
+        const [project] = await this.getProjects([user['curr_project']]);
+        project.automationRules = automationRules;
+        await project.save();
+        return project.automationRules;
+      }, { retries: 2 });
+    };
+
+    try {
+      return await operation(input);
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async reMapImagesToDeps({ projId, camConfig }) {
     const operation = async ({ projId, camConfig }) => {
       return await retry(async () => {
         // build array of operations from camConfig.deployments:
@@ -265,122 +242,169 @@ const generateProjectModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
+  }
+
+  static async createDeployment(input, user) {
+    const operation = async ({ cameraId, deployment }) => {
+      return await retry(async () => {
+
+        // find camera config
+        const [project] = await this.getProjects([user['curr_project']]);
+        const camConfig = project.cameraConfigs.find((cc) => (
+          idMatch(cc._id, cameraId)
+        ));
+
+        // add new deployment, sort them, and save project
+        camConfig.deployments.push(deployment);
+        camConfig.deployments = sortDeps(camConfig.deployments);
+        await project.save();
+        return { project, camConfig };
+
+      }, { retries: 2 });
+    };
+
+    try {
+      const { project, camConfig } = await operation(input);
+      // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
+      await this.reMapImagesToDeps({ projId: project._id, camConfig });
+      return camConfig;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateDeployment(input, user) {
+    const operation = async ({ cameraId, deploymentId, diffs }) => {
+      return await retry(async (bail) => {
+
+        // find deployment
+        const [project] = await this.getProjects([user['curr_project']]);
+        const camConfig = project.cameraConfigs.find((cc) => (
+          idMatch(cc._id, cameraId)
+        ));
+        const deployment = camConfig.deployments.find((dep) => (
+          idMatch(dep._id, deploymentId)
+        ));
+        if (deployment.name === 'default') {
+          bail(new ForbiddenError(`View ${deployment.name} is not editable`));
+        }
+
+        // apply updates, sort deployments, and save project
+        for (const [key, newVal] of Object.entries(diffs)) {
+          deployment[key] = newVal;
+        }
+        camConfig.deployments = sortDeps(camConfig.deployments);
+        await project.save();
+        return { project, camConfig };
+
+      }, { retries: 2 });
+    };
+
+    try {
+      const { project, camConfig } = await operation(input);
+      // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
+      if (Object.keys(input.diffs).includes('startDate')) {
+        await this.reMapImagesToDeps({ projId: project._id, camConfig });
+      }
+      return camConfig;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteDeployment(input, user) {
+    const operation = async ({ cameraId, deploymentId }) => {
+      return await retry(async () => {
+
+        // find camera config
+        const [project] = await this.getProjects([user['curr_project']]);
+        const camConfig = project.cameraConfigs.find((cc) => (
+          idMatch(cc._id, cameraId)
+        ));
+
+        // filter out deployment, sort remaining ones, and save project
+        camConfig.deployments = camConfig.deployments.filter((dep) => (
+          !idMatch(dep._id, deploymentId)
+        ));
+        camConfig.deployments = sortDeps(camConfig.deployments);
+        await project.save();
+        return { project, camConfig };
+
+      }, { retries: 2 });
+    };
+
+    try {
+      const { project, camConfig } = await operation(input);
+      // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
+      await this.reMapImagesToDeps({ projId: project._id, camConfig });
+      return camConfig;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+}
+
+const generateProjectModel = ({ user } = {}) => ({
+  get getProjects() {
+    return async (input) => {
+      return await ProjectModel.getProjects(input, user);
+    };
+  },
+
+  createProject: ProjectModel.createProject,
+
+  get createView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+      return ProjectModel.createView(input, user);
+    };
+  },
+
+  get updateView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+      return ProjectModel.updateView(input, user);
+    };
+  },
+
+  get deleteView() {
+    if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+      return ProjectModel.deleteView(input, user);
+    };
+  },
+
+  get updateAutomationRules() {
+    if (!hasRole(user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+      return ProjectModel.updateAutomationRules(input, user);
+    };
   },
 
   get createDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-
-      const operation = async ({ cameraId, deployment }) => {
-        return await retry(async () => {
-
-          // find camera config
-          const [project] = await this.getProjects([user['curr_project']]);
-          const camConfig = project.cameraConfigs.find((cc) => (
-            idMatch(cc._id, cameraId)
-          ));
-
-          // add new deployment, sort them, and save project
-          camConfig.deployments.push(deployment);
-          camConfig.deployments = sortDeps(camConfig.deployments);
-          await project.save();
-          return { project, camConfig };
-
-        }, { retries: 2 });
-      };
-
-      try {
-        const { project, camConfig } = await operation(input);
-        // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-        await this.reMapImagesToDeps({ projId: project._id, camConfig });
-        return camConfig;
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+      return ProjectModel.createDeployment(input, user);
     };
   },
 
   get updateDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-
-      const operation = async ({ cameraId, deploymentId, diffs }) => {
-        return await retry(async (bail) => {
-
-          // find deployment
-          const [project] = await this.getProjects([user['curr_project']]);
-          const camConfig = project.cameraConfigs.find((cc) => (
-            idMatch(cc._id, cameraId)
-          ));
-          const deployment = camConfig.deployments.find((dep) => (
-            idMatch(dep._id, deploymentId)
-          ));
-          if (deployment.name === 'default') {
-            bail(new ForbiddenError(`View ${deployment.name} is not editable`));
-          }
-
-          // apply updates, sort deployments, and save project
-          for (const [key, newVal] of Object.entries(diffs)) {
-            deployment[key] = newVal;
-          }
-          camConfig.deployments = sortDeps(camConfig.deployments);
-          await project.save();
-          return { project, camConfig };
-
-        }, { retries: 2 });
-      };
-
-      try {
-        const { project, camConfig } = await operation(input);
-        // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-        if (Object.keys(input.diffs).includes('startDate')) {
-          await this.reMapImagesToDeps({ projId: project._id, camConfig });
-        }
-        return camConfig;
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+      return ProjectModel.updateDeployment(input, user);
     };
   },
 
   get deleteDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
     return async (input) => {
-
-      const operation = async ({ cameraId, deploymentId }) => {
-        return await retry(async () => {
-
-          // find camera config
-          const [project] = await this.getProjects([user['curr_project']]);
-          const camConfig = project.cameraConfigs.find((cc) => (
-            idMatch(cc._id, cameraId)
-          ));
-
-          // filter out deployment, sort remaining ones, and save project
-          camConfig.deployments = camConfig.deployments.filter((dep) => (
-            !idMatch(dep._id, deploymentId)
-          ));
-          camConfig.deployments = sortDeps(camConfig.deployments);
-          await project.save();
-          return { project, camConfig };
-
-        }, { retries: 2 });
-      };
-
-      try {
-        const { project, camConfig } = await operation(input);
-        // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-        await this.reMapImagesToDeps({ projId: project._id, camConfig });
-        return camConfig;
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
+      return ProjectModel.deleteDeployment(input, user);
     };
   }
 
