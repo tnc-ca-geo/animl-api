@@ -93,6 +93,25 @@ const generateImageModel = ({ user } = {}) => ({
     }
   },
 
+  get deleteImage() {
+    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return async (input) => {
+      const operation = async ({ imageId }) => {
+        return await retry(async () => {
+          await image.deleteOne({ _id: imageId });
+        }, { retries: 2 });
+      };
+
+      try {
+        return await operation(input);
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
   get createImage() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
