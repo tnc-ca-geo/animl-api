@@ -10,6 +10,7 @@ import Batch from '../schemas/Batch.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
+import { ImageErrorModel } from './ImageError.js';
 
 const generateBatchModel = ({ user } = {}) => ({
   queryByFilter: async (input) => {
@@ -43,6 +44,8 @@ const generateBatchModel = ({ user } = {}) => ({
       const epipeline = [];
       epipeline.push({ '$match': { 'batch': batch._id } });
       batch.errors = await BatchError.aggregate(epipeline);
+
+      batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
 
       if (params.remaining && batch.processingEnd) {
         batch.remaining = 0;

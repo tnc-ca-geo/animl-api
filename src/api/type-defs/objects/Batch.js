@@ -4,6 +4,7 @@ export default `
     projectId: String!
     eTag: String
     errors: [BatchError]
+    imageErrors: Int
     processingStart: String
     processingEnd: String
     overrideSerial: String
