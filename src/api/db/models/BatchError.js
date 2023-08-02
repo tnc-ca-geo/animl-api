@@ -66,4 +66,5 @@ const generateBatchErrorModel = ({ user } = {}) => ({
   }
 });
 
+
 export default generateBatchErrorModel;
