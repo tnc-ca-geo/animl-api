@@ -131,24 +131,17 @@ const generateImageErrorModel = ({ user } = {}) => ({
 
   get createError() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return await ImageErrorModel.createError(input);
-    };
+    return ImageErrorModel.createError;
   },
 
   get clearErrors() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
-      return await ImageErrorModel.clearErrors(input);
-    };
+    return ImageErrorModel.clearErrors;
   },
 
   get export() {
     if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return async (input, context) => {
-      return await ImageErrorModel.export(input, context);
-    };
+    return ImageErrorModel.export;
   }
 });
 

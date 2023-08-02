@@ -4,11 +4,8 @@ import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 
-const generateBatchErrorModel = ({ user } = {}) => ({
-  get createError() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
+export class BatchErrorModel {
+    static async createError(input) {
       const operation = async (input) => {
         return await retry(async () => {
           const newBatchError = new BatchError(input);
@@ -34,13 +31,9 @@ const generateBatchErrorModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    };
-  },
+    }
 
-  get clearErrors() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
+    static async clearErrors(input) {
       const operation = async (input) => {
         return await retry(async () => {
           return await BatchError.deleteMany(input);
@@ -58,7 +51,18 @@ const generateBatchErrorModel = ({ user } = {}) => ({
         if (err instanceof ApolloError) throw err;
         throw new ApolloError(err);
       }
-    };
+    }
+}
+
+const generateBatchErrorModel = ({ user } = {}) => ({
+  get createError() {
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchErrorModel.createError
+  },
+
+  get clearErrors() {
+    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchErrorModel.clearErrors(input);
   }
 });
 
