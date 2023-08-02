@@ -5,8 +5,8 @@ import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
 import { hasRole, idMatch } from './utils.js';
 
-const generateCameraModel = ({ user } = {}) => ({
-  getWirelessCameras: async (_ids) => {
+export class CameraModelView {
+  static async getWirelessCameras(_ids, user) {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
     // have at one point been assoicted with curr_project
@@ -20,121 +20,132 @@ const generateCameraModel = ({ user } = {}) => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err); /* error is uncontrolled, so throw new ApolloError */
     }
-  },
+  }
 
-  get createWirelessCamera() {
-    return async (input, context) => {
-      const successfulOps = [];
-      const projectId = input.projectId || 'default_project';
+  static async createWirelessCamera(input, context) {
+    const successfulOps = [];
+    const projectId = input.projectId || 'default_project';
 
-      const saveWirelessCamera = async (input) => {
-        const { projectId, cameraId, make, model } = input;
-        return await retry(async () => {
-          const newCamera = new WirelessCamera({
-            _id: cameraId,
-            make,
-            projRegistrations: [{ projectId, active: true }],
-            ...(model && { model })
-          });
-          await newCamera.save();
-          return newCamera;
-        }, { retries: 2 });
-      };
+    const saveWirelessCamera = async (input) => {
+      const { projectId, cameraId, make, model } = input;
+      return await retry(async () => {
+        const newCamera = new WirelessCamera({
+          _id: cameraId,
+          make,
+          projRegistrations: [{ projectId, active: true }],
+          ...(model && { model })
+        });
+        await newCamera.save();
+        return newCamera;
+      }, { retries: 2 });
+    };
 
-      try {
-        // create Wireless Camera record
-        const camera = await saveWirelessCamera({ ...input, projectId });
-        successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
-        // and CameraConfig record to the Project
-        const project = await context.models.Project.createCameraConfig( projectId, camera._id);
-        return { camera, project };
+    try {
+      // create Wireless Camera record
+      const camera = await saveWirelessCamera({ ...input, projectId });
+      successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
+      // and CameraConfig record to the Project
+      const project = await context.models.Project.createCameraConfig( projectId, camera._id);
+      return { camera, project };
 
-      } catch (err) {
+    } catch (err) {
 
-        // reverse successful operations
-        for (const op of successfulOps) {
-          if (op.op === 'cam-saved') {
-            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
-          }
+      // reverse successful operations
+      for (const op of successfulOps) {
+        if (op.op === 'cam-saved') {
+          await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
+        }
+      }
+
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async registerCamera(user, input, context) {
+    const successfulOps = [];
+    const projectId = user['curr_project'];
+
+    try {
+      const cam = await WirelessCamera.findOne({ _id: input.cameraId });
+
+      // if no camera found, create new Wireless Camera record & cameraConfig
+      if (!cam) {
+        const { project } = await this.createWirelessCamera({
+          projectId,
+          cameraId: input.cameraId,
+          make: input.make
+        }, context);
+        const wirelessCameras = await this.getWirelessCameras();
+        return { wirelessCameras, project };
+      }
+
+      // else if camera exists & is registered to default_project,
+      // reassign it to user's current project, else reject registration
+      const activeReg = cam.projRegistrations.find((pr) => pr.active);
+      if (activeReg.projectId === 'default_project') {
+
+        let foundProject = false;
+        cam.projRegistrations.forEach((pr) => {
+          if (pr.projectId === projectId) foundProject = true;
+          pr.active = (pr.projectId === projectId);
+        });
+        if (!foundProject) {
+          cam.projRegistrations.push({ projectId, active: true });
         }
 
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
+        await cam.save();
+        successfulOps.push({ op: 'cam-registered', info: { cameraId: input.cameraId } });
+        const wirelessCameras = await this.getWirelessCameras();
+        const project = await context.models.Project.createCameraConfig(
+          projectId,
+          cam._id
+        );
+
+        return { wirelessCameras, project };
+
       }
-    };
-  },
+      else {
+        const msg = activeReg.projectId === projectId
+          ? `This camera is already registered to the ${projectId} project!`
+          : 'This camera is registered to a different project!';
+        throw new CameraRegistrationError(msg, {
+          currProjReg: activeReg.projectId
+        });
+      }
 
-  get registerCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) {
-      throw new ForbiddenError;
-    }
-    return async ({ cameraId, make }, context) => {
-      const successfulOps = [];
-      const projectId = user['curr_project'];
-
-      try {
-        const cam = await WirelessCamera.findOne({ _id: cameraId });
-
-        // if no camera found, create new Wireless Camera record & cameraConfig
-        if (!cam) {
-          const { project } = await this.createWirelessCamera(
-            { projectId, cameraId, make },
+    } catch (err) {
+      // reverse successful operations
+      for (const op of successfulOps) {
+        if (op.op === 'cam-registered') {
+          await this.unregisterCamera(
+            { cameraId: op.info.cameraId },
             context
           );
-          const wirelessCameras = await this.getWirelessCameras();
-          return { wirelessCameras, project };
         }
-
-        // else if camera exists & is registered to default_project,
-        // reassign it to user's current project, else reject registration
-        const activeReg = cam.projRegistrations.find((pr) => pr.active);
-        if (activeReg.projectId === 'default_project') {
-
-          let foundProject = false;
-          cam.projRegistrations.forEach((pr) => {
-            if (pr.projectId === projectId) foundProject = true;
-            pr.active = (pr.projectId === projectId);
-          });
-          if (!foundProject) {
-            cam.projRegistrations.push({ projectId, active: true });
-          }
-
-          await cam.save();
-          successfulOps.push({ op: 'cam-registered', info: { cameraId } });
-          const wirelessCameras = await this.getWirelessCameras();
-          const project = await context.models.Project.createCameraConfig(
-            projectId,
-            cam._id
-          );
-
-          return { wirelessCameras, project };
-
-        }
-        else {
-          const msg = activeReg.projectId === projectId
-            ? `This camera is already registered to the ${projectId} project!`
-            : 'This camera is registered to a different project!';
-          throw new CameraRegistrationError(msg, {
-            currProjReg: activeReg.projectId
-          });
-        }
-
-      } catch (err) {
-        // reverse successful operations
-        for (const op of successfulOps) {
-          if (op.op === 'cam-registered') {
-            await this.unregisterCamera(
-              { cameraId: op.info.cameraId },
-              context
-            );
-          }
-        }
-
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
       }
+
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+}
+
+const generateCameraModel = ({ user } = {}) => ({
+  get getWirelessCameras() {
+    return async (input) => {
+      return await CameraModelView.getWirelessCameras(input, user);
+    };
+  },
+  createWirelessCamera: CameraModelView.createWirelesscamera,
+
+  get registerCamera() {
+    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+
+    return async (input, context) => {
+      return await CameraModelView.registerCamera(input, context, user);
     };
   },
 

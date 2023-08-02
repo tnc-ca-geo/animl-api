@@ -183,7 +183,7 @@ export class BatchModel {
     }
   }
 
-  static async createUpload(user, input) {
+  static async createUpload(input, user) {
     const operation = async (input) => {
       return await retry(async () => {
         const newBatch = new Batch(input);
@@ -248,7 +248,7 @@ const generateBatchModel = ({ user } = {}) => ({
   get createUpload() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return async (input) => {
-      return await BatchModel.createUpload(user, input);
+      return await BatchModel.createUpload(input, user);
     };
   }
 });
