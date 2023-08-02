@@ -587,7 +587,6 @@ const generateImageModel = ({ user } = {}) => ({
       const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
 
       try {
-
         const { Body } = await s3.send(new S3.GetObjectCommand({
           Bucket: bucket,
           Key: `${documentId}.json`
@@ -595,7 +594,6 @@ const generateImageModel = ({ user } = {}) => ({
 
         const objectText = await text(Body);
         return JSON.parse(objectText);
-
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;

@@ -3,6 +3,7 @@ export default `
     projects(_ids: [String!]): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
+    imageErrors(input: QueryImageErrorsInput!): ImageErrorsConnection
     labels: LabelList
     wirelessCameras(_ids: [String!]): [WirelessCamera]
     mlModels(_ids: [String!]): [MLModel]
@@ -10,6 +11,7 @@ export default `
     batch(_id: String!): Batch
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
+    exportErrors(input: ExportErrorsInput!): ExportPayload
     exportStatus(input: ExportStatusInput!): ExportStatusPayload
   }
 `;

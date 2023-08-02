@@ -1,10 +1,43 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import MongoPaging from 'mongo-cursor-pagination';
+import crypto from 'node:crypto';
 import { ImageError } from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
+import SQS from '@aws-sdk/client-sqs';
+import S3 from '@aws-sdk/client-s3';
 
 const generateImageErrorModel = ({ user } = {}) => ({
+  countImageErrors: async (input) => {
+    const res = await ImageError.aggregate([
+      { '$match': { 'batch': input.batch } },
+      { $count: 'count' }
+    ]);
+    return res[0] ? res[0].count : 0;
+  },
+
+  queryByFilter: async (input) => {
+    try {
+      const result = await MongoPaging.aggregate(ImageError.collection, {
+        aggregation: [
+          { '$match': { 'batch': input.filters.batch } }
+        ],
+        limit: input.limit,
+        paginatedField: input.paginatedField,
+        sortAscending: input.sortAscending,
+        next: input.next,
+        previous: input.previous
+      });
+      console.log('res: ', JSON.stringify(result));
+      return result;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  },
+
   get createError() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
 
@@ -55,6 +88,45 @@ const generateImageErrorModel = ({ user } = {}) => ({
         });
 
         return { message: 'Cleared' };
+      } catch (err) {
+        // if error is uncontrolled, throw new ApolloError
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
+    };
+  },
+
+  get export() {
+    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return async (input, context) => {
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+      const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
+      const id = crypto.randomBytes(16).toString('hex');
+      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+      try {
+        // create status document in S3
+        await s3.send(new S3.PutObjectCommand({
+          Bucket: bucket,
+          Key: `${id}.json`,
+          Body: JSON.stringify({ status: 'Pending' }),
+          ContentType: 'application/json; charset=utf-8'
+        }));
+
+        await sqs.send(new SQS.SendMessageCommand({
+          QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
+          MessageBody: JSON.stringify({
+            type: 'ImageErrors',
+            documentId: id,
+            filters: input.filters,
+            format: 'csv'
+          })
+        }));
+
+        return {
+          documentId: id
+        };
+
       } catch (err) {
         // if error is uncontrolled, throw new ApolloError
         if (err instanceof ApolloError) throw err;

@@ -1,4 +1,5 @@
-import { Export } from './export.js';
+import ImageExport from './images.js';
+import ImageErrorExport from './image-errors.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { ApolloError } from 'apollo-server-lambda';
@@ -11,17 +12,26 @@ async function handler(event) {
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
     const params = JSON.parse(record.body);
-    const dataExport = new Export(params, config);
+
+    let dataExport;
+
+    if (params.type === 'ImageErrors') {
+      dataExport = new ImageErrorExport(params, config);
+    } else {
+      dataExport = new ImageExport(params, config);
+    }
+
     await dataExport.init();
 
     try {
-      if (params.format === 'csv') {
+      if (!params.format || params.format === 'csv') {
         await dataExport.toCSV();
       } else if (params.format === 'coco') {
         await dataExport.toCOCO();
       } else {
         throw new ApolloError(`unsupported export format (${params.format})`);
       }
+
       await dataExport.success();
     } catch (err) {
       console.log('error exporting data: ', err);
@@ -34,6 +44,4 @@ async function handler(event) {
   return true;
 }
 
-export {
-  handler
-};
+export { handler };
