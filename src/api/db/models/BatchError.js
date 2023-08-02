@@ -4,7 +4,19 @@ import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 
+/**
+ * BatchErrors are errors that are generated when an uploaded Zip fails
+ * before it can be processed into it's individual images
+ * @class
+ */
 export class BatchErrorModel {
+  /**
+   * Create a new Batch Error
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   * @param {String} input.error
+   */
   static async createError(input) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -33,6 +45,12 @@ export class BatchErrorModel {
     }
   }
 
+  /**
+   * Create all errors associated with a given batch
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   */
   static async clearErrors(input) {
     const operation = async (input) => {
       return await retry(async () => {

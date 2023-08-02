@@ -8,7 +8,18 @@ import { hasRole } from './utils.js';
 import SQS from '@aws-sdk/client-sqs';
 import S3 from '@aws-sdk/client-s3';
 
+/**
+ * ImageErrors are errors that are generated when a single image upload
+ * fails. They can either be associated with a batch or be a single image upload
+ * @class
+ */
 export class ImageErrorModel {
+  /**
+   * Count all errors associated with a given batch
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   */
   static async countImageErrors(input) {
     const res = await ImageError.aggregate([
       { '$match': { 'batch': input.batch } },
@@ -17,9 +28,22 @@ export class ImageErrorModel {
     return res[0] ? res[0].count : 0;
   }
 
+  /**
+   * Query Image Errors by Filter, returning a paged list of errors
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   * @param {String} input.limit
+   * @param {String} input.paginatedField
+   * @param {String} input.sortAscending
+   * @param {String} input.next
+   * @param {String} input.previous
+   * @param {Object} input.filters
+   * @param {String} input.filters.batch
+   */
   static async queryByFilter(input) {
     try {
-      const result = await MongoPaging.aggregate(ImageError.collection, {
+      return await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [
           { '$match': { 'batch': input.filters.batch } }
         ],
@@ -29,8 +53,6 @@ export class ImageErrorModel {
         next: input.next,
         previous: input.previous
       });
-      console.log('res: ', JSON.stringify(result));
-      return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -38,6 +60,14 @@ export class ImageErrorModel {
     }
   }
 
+  /**
+   * Create a new ImageError
+   *
+   * @param {Object} input
+   * @param {String} input.image
+   * @param {String} input.batch
+   * @param {String} input.error
+   */
   static async createError(input) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -68,6 +98,12 @@ export class ImageErrorModel {
     }
   }
 
+  /**
+   * Clear Image Errors associated with a given batch
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   */
   static async clearErrors(input) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -88,6 +124,13 @@ export class ImageErrorModel {
     }
   }
 
+  /**
+   * Create a new Export of ImageErrors
+   *
+   * @param {Object} input
+   * @param {Object} input.filters
+   * @param {Object} context
+   */
   static async export(input, context) {
     const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
