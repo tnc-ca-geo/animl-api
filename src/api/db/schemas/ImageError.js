@@ -8,6 +8,7 @@ const ImageErrorSchema = new Schema({
   image: { type: String },
   batch: { type: String },
   created: { type: Date, default: Date.now, required: true },
+  path: { type: String },
   error: { type: String, required: true }
 });
 

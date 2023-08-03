@@ -14,6 +14,7 @@ const ImageMetadataSchema = new Schema({
   bucket: { type: String },
   batchId: { type: String },
   fileTypeExtension: { type: String },
+  path: { type: String },
   dateAdded: { type: Date },
   dateTimeOriginal: { type: Date },
   timezone: { type: String },

@@ -3,6 +3,7 @@ export default `
     _id: String!
     batch: String
     image: String
+    path: String
     error: String!
     created: String!
   }

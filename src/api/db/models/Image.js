@@ -111,7 +111,7 @@ const generateImageModel = ({ user } = {}) => ({
         try {
           // NOTE: to create the record, we need go generate the image's _id,
           // which means we need to know what project it belongs to
-          console.log('Creating ImageAttempt record');
+          console.log(`Creating ImageAttempt record with md: ${md}`);
 
           if (md.batchId) {
             // if it's from a batch, find the batch record, and use its projectId
@@ -217,7 +217,12 @@ const generateImageModel = ({ user } = {}) => ({
         if (errors.length) {
           for (let i = 0; i < errors.length; i++) {
             console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
-            errors[i] = new ImageError({ image: md.imageId, batch: md.batchId, error: errors[i].message });
+            errors[i] = new ImageError({
+              image: md.imageId,
+              batch: md.batchId,
+              path: md.path || md.fileName,
+              error: errors[i].message
+            });
             await errors[i].save();
           }
         }
@@ -231,7 +236,12 @@ const generateImageModel = ({ user } = {}) => ({
         console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
 
         const msg = err.message.toLowerCase();
-        const imageError = new ImageError({ image: md.imageId, batch: md.batchId, error: msg });
+        const imageError = new ImageError({
+          image: md.imageId,
+          batch: md.batchId,
+          path: md.path || md.fileName,
+          error: msg
+        });
         await imageError.save();
 
         if (err instanceof ApolloError) {

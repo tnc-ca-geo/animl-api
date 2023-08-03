@@ -18,6 +18,7 @@ const ImageSchema = new Schema({
   bucket: { type: String, required: true },
   batchId: { type: String },
   fileTypeExtension: { type: String, required: true },
+  path: { type: String },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
   timezone: { type: String, required: true },
