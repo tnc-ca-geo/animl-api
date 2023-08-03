@@ -164,7 +164,7 @@ export class ImageModel {
         if (!errors.length) {
           if (md.batchId) {
             // create camera config if there isn't one yet
-            await ProjectModel.createCameraConfig(projectId, cameraId);
+            await ProjectModel.createCameraConfig({ projectId, cameraId }, context);
           } else if (!existingCam) {
             await context.models.Camera.createWirelessCamera({
               projectId,

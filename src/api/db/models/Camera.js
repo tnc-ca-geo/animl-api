@@ -23,7 +23,7 @@ export class CameraModelView {
     }
   }
 
-  static async createWirelessCamera(input) {
+  static async createWirelessCamera(input, context) {
     const successfulOps = [];
     const projectId = input.projectId || 'default_project';
 
@@ -46,7 +46,10 @@ export class CameraModelView {
       const camera = await saveWirelessCamera({ ...input, projectId });
       successfulOps.push({ op: 'cam-saved', info: { cameraId: camera._id } });
       // and CameraConfig record to the Project
-      const project = await ProjectModel.createCameraConfig( projectId, camera._id);
+      const project = await ProjectModel.createCameraConfig({
+        projectId,
+        cameraId: camera._id
+      }, context);
       return { camera, project };
 
     } catch (err) {
@@ -77,7 +80,7 @@ export class CameraModelView {
           projectId,
           cameraId: input.cameraId,
           make: input.make
-        });
+        }, context);
         const wirelessCameras = await this.getWirelessCameras();
         return { wirelessCameras, project };
       }
@@ -99,10 +102,10 @@ export class CameraModelView {
         await cam.save();
         successfulOps.push({ op: 'cam-registered', info: { cameraId: input.cameraId } });
         const wirelessCameras = await this.getWirelessCameras();
-        const project = await ProjectModel.createCameraConfig(
+        const project = await ProjectModel.createCameraConfig({
           projectId,
-          cam._id
-        );
+          cameraId: cam._id
+        }, context);
 
         return { wirelessCameras, project };
 
@@ -181,7 +184,10 @@ export class CameraModelView {
         idMatch(cc._id, input.cameraId)
       ));
       if (!camConfig) {
-        defaultProj = await ProjectModel.createCameraConfig('default_project', input.cameraId);
+        defaultProj = await ProjectModel.createCameraConfig({
+          projectId: 'default_project',
+          cameraId: input.cameraId
+        }, context);
         addedNewCamConfig = true;
       }
 
