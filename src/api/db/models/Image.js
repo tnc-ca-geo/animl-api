@@ -111,7 +111,7 @@ const generateImageModel = ({ user } = {}) => ({
         try {
           // NOTE: to create the record, we need go generate the image's _id,
           // which means we need to know what project it belongs to
-          console.log('Creating ImageAttempt record');
+          console.log(`Creating ImageAttempt record with md: ${md}`);
 
           if (md.batchId) {
             // if it's from a batch, find the batch record, and use its projectId
