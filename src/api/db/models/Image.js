@@ -244,7 +244,7 @@ export class ImageModel {
     }
   }
 
-  static async createObject(input) {
+  static async createObject(input, context) {
     const operation = async ({ imageId, object }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
@@ -252,7 +252,7 @@ export class ImageModel {
         }
 
         // find image, add object, and save
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         image.objects.unshift(object);
         await image.save();
         return image;
@@ -269,14 +269,14 @@ export class ImageModel {
     }
   }
 
-  static async updateObject(input) {
+  static async updateObject(input, context) {
     const operation = async ({ imageId, objectId, diffs }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
           console.log(`Retrying updateObject operation! Try #: ${attempt}`);
         }
         // find image, apply object updates, and save
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         const object = image.objects.find((obj) => idMatch(obj._id, objectId));
         if (!object) {
           const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
@@ -300,12 +300,12 @@ export class ImageModel {
     }
   }
 
-  static async deleteObject(input) {
+  static async deleteObject(input, context) {
     const operation = async ({ imageId, objectId }) => {
       return await retry(async () => {
 
         // find image, filter out object, and save
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         const newObjects = image.objects.filter((obj) => (
           !idMatch(obj._id, objectId)
         ));
@@ -332,7 +332,7 @@ export class ImageModel {
       return await retry(async () => {
 
         // find image, create label record
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
         const authorId = label.mlModel || label.userId;
         const labelRecord = createLabelRecord(label, authorId);
@@ -389,13 +389,13 @@ export class ImageModel {
     }
   }
 
-  static async updateLabel(input) {
+  static async updateLabel(input, context) {
     const operation = async (input) => {
       const { imageId, objectId, labelId, diffs } = input;
       return await retry(async () => {
 
         // find label, apply updates, and save image
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         const object = image.objects.find((obj) => idMatch(obj._id, objectId));
         const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
         for (const [key, newVal] of Object.entries(diffs)) {
@@ -416,11 +416,11 @@ export class ImageModel {
     }
   }
 
-  static async deleteLabel(input) {
+  static async deleteLabel(input, context) {
     const operation = async ({ imageId, objectId, labelId }) => {
       return await retry(async () => {
         // find object, filter out label, and save image
-        const image = await ImageModel.queryById(imageId);
+        const image = await ImageModel.queryById(imageId, context);
         const object = image.objects.find((obj) => idMatch(obj._id, objectId));
         const newLabels = object.labels.filter((lbl) => !idMatch(lbl._id, labelId));
         object.labels = newLabels;
