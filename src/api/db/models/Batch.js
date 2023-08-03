@@ -97,7 +97,7 @@ export class BatchModel {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) console.log(`Retrying stopBatch operation! Try #: ${attempt}`);
 
-        return await this.queryById(input._id);
+        return await BatchModel.queryById(input._id);
       }, { retries: 2 });
     };
 
@@ -130,7 +130,7 @@ export class BatchModel {
         if (attempt > 1) console.log(`Retrying redriveBatch operation! Try #: ${attempt}`);
 
         // Ensure the batch actually exists
-        const batch = await this.queryById(input.batch);
+        const batch = await BatchModel.queryById(input.batch);
         if (batch.processingEnd) throw new Error('Stack has already terminated');
 
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
@@ -163,7 +163,7 @@ export class BatchModel {
         if (attempt > 1) console.log(`Retrying updateBatch operation! Try #: ${attempt}`);
 
         // find image, apply object updates, and save
-        const batch = await this.queryById(input._id);
+        const batch = await BatchModel.queryById(input._id);
 
         Object.assign(batch, input);
 

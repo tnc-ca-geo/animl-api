@@ -53,7 +53,7 @@ export class ProjectModel {
   static async createCameraConfig(input, context) {
     const operation = async (projectId, cameraId) => {
       return await retry(async () => {
-        const [project] = await this.getProjects([projectId], context);
+        const [project] = await ProjectModel.getProjects([projectId], context);
 
         // make sure project doesn't already have a config for this cam
         const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
@@ -88,7 +88,7 @@ export class ProjectModel {
     const operation = async (input) => {
       return await retry(async () => {
         // find project, add new view, and save
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const newView = {
           name: input.name,
           filters: input.filters,
@@ -115,7 +115,7 @@ export class ProjectModel {
     const operation = async (input) => {
       return await retry(async (bail) => {
         // find view
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -145,7 +145,7 @@ export class ProjectModel {
       return await retry(async (bail) => {
 
         // find view
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -171,7 +171,7 @@ export class ProjectModel {
     const operation = async ({ automationRules }) => {
       return await retry(async () => {
         console.log('attempting to update automation rules with: ', automationRules);
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         project.automationRules = automationRules;
         await project.save();
         return project.automationRules;
@@ -249,7 +249,7 @@ export class ProjectModel {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -266,7 +266,7 @@ export class ProjectModel {
     try {
       const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await this.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -280,7 +280,7 @@ export class ProjectModel {
       return await retry(async (bail) => {
 
         // find deployment
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -306,7 +306,7 @@ export class ProjectModel {
       const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       if (Object.keys(input.diffs).includes('startDate')) {
-        await this.reMapImagesToDeps({ projId: project._id, camConfig });
+        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       }
       return camConfig;
     } catch (err) {
@@ -321,7 +321,7 @@ export class ProjectModel {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await this.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -340,7 +340,7 @@ export class ProjectModel {
     try {
       const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await this.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError

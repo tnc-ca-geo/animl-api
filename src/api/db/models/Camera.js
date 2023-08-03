@@ -6,7 +6,7 @@ import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
 import { hasRole, idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 
-export class CameraModelView {
+export class CameraModel {
   static async getWirelessCameras(_ids, context) {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
@@ -76,12 +76,12 @@ export class CameraModelView {
 
       // if no camera found, create new Wireless Camera record & cameraConfig
       if (!cam) {
-        const { project } = await this.createWirelessCamera({
+        const { project } = await CameraModel.createWirelessCamera({
           projectId,
           cameraId: input.cameraId,
           make: input.make
         }, context);
-        const wirelessCameras = await this.getWirelessCameras();
+        const wirelessCameras = await CameraModel.getWirelessCameras();
         return { wirelessCameras, project };
       }
 
@@ -101,7 +101,7 @@ export class CameraModelView {
 
         await cam.save();
         successfulOps.push({ op: 'cam-registered', info: { cameraId: input.cameraId } });
-        const wirelessCameras = await this.getWirelessCameras();
+        const wirelessCameras = await CameraModel.getWirelessCameras();
         const project = await ProjectModel.createCameraConfig({
           projectId,
           cameraId: cam._id
@@ -123,7 +123,7 @@ export class CameraModelView {
       // reverse successful operations
       for (const op of successfulOps) {
         if (op.op === 'cam-registered') {
-          await this.unregisterCamera(
+          await CameraModel.unregisterCamera(
             { cameraId: op.info.cameraId }, context
           );
         }
@@ -197,7 +197,7 @@ export class CameraModelView {
       // reverse successful operations
       for (const op of successfulOps) {
         if (op.op === 'cam-unregistered') {
-          await this.registerCamera({ cameraId: op.info.cameraId }, context);
+          await CameraModel.registerCamera({ cameraId: op.info.cameraId }, context);
         }
       }
       // if error is uncontrolled, throw new ApolloError
@@ -209,21 +209,21 @@ export class CameraModelView {
 
 const generateCameraModel = ({ user } = {}) => ({
   get getWirelessCameras() {
-    return CameraModelView.getWirelessCameras;
+    return CameraModel.getWirelessCameras;
   },
 
   get createWirelessCamera() {
-    return CameraModelView.createWirelesscamera;
+    return CameraModel.createWirelesscamera;
   },
 
   get registerCamera() {
     if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-    return CameraModelView.registerCamera;
+    return CameraModel.registerCamera;
   },
 
   get unregisterCamera() {
     if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-    return CameraModelView.unregisterCamera;
+    return CameraModel.unregisterCamera;
   }
 });
 
