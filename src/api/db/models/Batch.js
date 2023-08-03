@@ -228,7 +228,7 @@ export class BatchModel {
 
 const generateBatchModel = ({ user } = {}) => ({
   queryByFilter: BatchModel.queryByFilter,
-  queryById: BatchModel.QueryById,
+  queryById: BatchModel.queryById,
 
   get stopBatch() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
