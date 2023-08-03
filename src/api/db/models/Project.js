@@ -51,7 +51,7 @@ export class ProjectModel {
   }
 
   static async createCameraConfig(input, context) {
-    const operation = async (projectId, cameraId) => {
+    const operation = async ({ projectId, cameraId }, context) => {
       return await retry(async () => {
         const [project] = await ProjectModel.getProjects([projectId], context);
 
