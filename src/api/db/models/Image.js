@@ -176,7 +176,7 @@ export class ImageModel {
           }
 
           // map image to deployment
-          const [project] = await context.models.Project.getProjects([projectId]);
+          const [project] = await context.models.Project.getProjects([projectId], context);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
@@ -203,7 +203,7 @@ export class ImageModel {
             // delete newly created wireless camera record
             await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
-            const [proj] = await context.models.Project.getProjects([projectId]);
+            const [proj] = await context.models.Project.getProjects([projectId], context);
             proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
             proj.save();
           }

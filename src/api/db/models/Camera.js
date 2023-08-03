@@ -177,7 +177,7 @@ export class CameraModelView {
 
       // make sure there's a Project.cameraConfig record for this camera
       // in the default_project and create one if not
-      let [defaultProj] = await ProjectModel.getProjects(['default_project']);
+      let [defaultProj] = await ProjectModel.getProjects(['default_project'], context);
 
       let addedNewCamConfig = false;
       const camConfig = defaultProj.cameraConfigs.find((cc) => (
