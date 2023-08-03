@@ -183,7 +183,7 @@ export class BatchModel {
     }
   }
 
-  static async createUpload(input, user) {
+  static async createUpload(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
         const newBatch = new Batch(input);
@@ -196,8 +196,8 @@ export class BatchModel {
       const id = `batch-${randomUUID()}`;
       const batch = await operation({
         _id: id,
-        projectId: user['curr_project'],
-        user: user.sub,
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
         originalFile: input.originalFile,
         uploadedFile: `${id}.zip`
       });
@@ -215,7 +215,7 @@ export class BatchModel {
 
       return {
         batch: batch._id,
-        user: user.sub,
+        user: context.user.sub,
         url: signedUrl
       };
     } catch (err) {
@@ -247,9 +247,7 @@ const generateBatchModel = ({ user } = {}) => ({
 
   get createUpload() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return await BatchModel.createUpload(input, user);
-    };
+    return BatchModel.createUpload;
   }
 });
 

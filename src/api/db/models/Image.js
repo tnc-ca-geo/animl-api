@@ -19,16 +19,16 @@ import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
 
 export class ImageModel {
-  static async countImages(input, user) {
-    const pipeline = buildPipeline(input.filters, user['curr_project']);
+  static async countImages(input, context) {
+    const pipeline = buildPipeline(input.filters, context.user['curr_project']);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async queryById(_id, user) {
-    const query = !user['is_superuser']
-      ? { _id, projectId: user['curr_project'] }
+  static async queryById(_id, context) {
+    const query = !context.user['is_superuser']
+      ? { _id, projectId: context.user['curr_project'] }
       : { _id };
     try {
       const image = await Image.findOne(query);
@@ -45,10 +45,10 @@ export class ImageModel {
     }
   }
 
-  static async queryByFilter(input, user) {
+  static async queryByFilter(input, context) {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
-        aggregation: buildPipeline(input.filters, user['curr_project']),
+        aggregation: buildPipeline(input.filters, context.user['curr_project']),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
@@ -439,7 +439,7 @@ export class ImageModel {
     }
   }
 
-  static async getStats(input, user) {
+  static async getStats(input, context) {
     let imageCount = 0;
     let reviewed = 0;
     let notReviewed = 0;
@@ -450,7 +450,7 @@ export class ImageModel {
     let multiReviewerCount = 0;
 
     try {
-      const pipeline = buildPipeline(input.filters, user['curr_project']);
+      const pipeline = buildPipeline(input.filters, context.user['curr_project']);
       const images = await Image.aggregate(pipeline);
       imageCount = images.length;
       for (const img of images) {
@@ -510,7 +510,7 @@ export class ImageModel {
     }
   }
 
-  static async export(input, context, user) {
+  static async export(input, context) {
     const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
     const id = crypto.randomBytes(16).toString('hex');
@@ -529,7 +529,7 @@ export class ImageModel {
       await sqs.send(new SQS.SendMessageCommand({
         QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
         MessageBody: JSON.stringify({
-          projectId: user['curr_project'],
+          projectId: context.user['curr_project'],
           documentId: id,
           filters: input.filters,
           format: input.format
@@ -569,21 +569,15 @@ export class ImageModel {
 
 const generateImageModel = ({ user } = {}) => ({
   get countImages() {
-    return async (input) => {
-      return await ImageModel.countImages(input, user);
-    };
+    return ImageModel.countImages;
   },
 
   get queryById() {
-    return async (input) => {
-      return await ImageModel.queryById(input, user);
-    };
+    return ImageModel.queryById;
   },
 
   get queryByFilter() {
-    return async (input) => {
-      return await ImageModel.queryByFilter(input, user);
-    };
+    return ImageModel.queryByFilter;
   },
 
   getLabels: ImageModel.getLabels,
@@ -626,16 +620,12 @@ const generateImageModel = ({ user } = {}) => ({
   },
 
   get getStats() {
-    return async (input) => {
-      return await ImageModel.getStats(input, user);
-    };
+    return ImageModel.getStats;
   },
 
   get export() {
     if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return async (input, context) => {
-      return await ImageModel.export(input, context, user);
-    };
+    return ImageModel.export;
   },
 
   get getExportStatus() {

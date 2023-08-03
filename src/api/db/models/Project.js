@@ -11,13 +11,13 @@ import {
 } from '../../auth/roles.js';
 
 export class ProjectModel {
-  static async getProjects(_ids, user) {
+  static async getProjects(_ids, context) {
     let query = {};
-    if (user['is_superuser']) {
+    if (context.user['is_superuser']) {
       query = _ids ? { _id: { $in: _ids } } : {};
     }
     else {
-      const availIds = Object.keys(user['projects']);
+      const availIds = Object.keys(context.user['projects']);
       const filteredIds = _ids && _ids.filter((_id) => availIds.includes(_id));
       query = { _id: { $in: (filteredIds || availIds) } };
     }
@@ -84,11 +84,11 @@ export class ProjectModel {
     }
   }
 
-  static async createView(input, user) {
+  static async createView(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
         // find project, add new view, and save
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const newView = {
           name: input.name,
           filters: input.filters,
@@ -111,11 +111,11 @@ export class ProjectModel {
     }
   }
 
-  static async updateView(input, user) {
+  static async updateView(input, context) {
     const operation = async (input) => {
       return await retry(async (bail) => {
         // find view
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -140,12 +140,12 @@ export class ProjectModel {
     }
   }
 
-  static async deleteView(input, user) {
+  static async deleteView(input, context) {
     const operation = async (input) => {
       return await retry(async (bail) => {
 
         // find view
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -167,11 +167,11 @@ export class ProjectModel {
     }
   }
 
-  static async updateAutomationRules(input, user) {
+  static async updateAutomationRules(input, context) {
     const operation = async ({ automationRules }) => {
       return await retry(async () => {
         console.log('attempting to update automation rules with: ', automationRules);
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         project.automationRules = automationRules;
         await project.save();
         return project.automationRules;
@@ -244,12 +244,12 @@ export class ProjectModel {
     }
   }
 
-  static async createDeployment(input, user) {
+  static async createDeployment(input, context) {
     const operation = async ({ cameraId, deployment }) => {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -275,12 +275,12 @@ export class ProjectModel {
     }
   }
 
-  static async updateDeployment(input, user) {
+  static async updateDeployment(input, context) {
     const operation = async ({ cameraId, deploymentId, diffs }) => {
       return await retry(async (bail) => {
 
         // find deployment
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -316,12 +316,12 @@ export class ProjectModel {
     }
   }
 
-  static async deleteDeployment(input, user) {
+  static async deleteDeployment(input, context) {
     const operation = async ({ cameraId, deploymentId }) => {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await this.getProjects([user['curr_project']]);
+        const [project] = await this.getProjects([context.user['curr_project']]);
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -352,60 +352,44 @@ export class ProjectModel {
 
 const generateProjectModel = ({ user } = {}) => ({
   get getProjects() {
-    return async (input) => {
-      return await ProjectModel.getProjects(input, user);
-    };
+    return ProjectModel.getProjects;
   },
 
   createProject: ProjectModel.createProject,
 
   get createView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.createView(input, user);
-    };
+    return ProjectModel.createView;
   },
 
   get updateView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.updateView(input, user);
-    };
+    return ProjectModel.updateView;
   },
 
   get deleteView() {
     if (!hasRole(user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.deleteView(input, user);
-    };
+    return ProjectModel.deleteView;
   },
 
   get updateAutomationRules() {
     if (!hasRole(user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.updateAutomationRules(input, user);
-    };
+    return ProjectModel.updateAutomationRules;
   },
 
   get createDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.createDeployment(input, user);
-    };
+    return ProjectModel.createDeployment;
   },
 
   get updateDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.updateDeployment(input, user);
-    };
+    return ProjectModel.updateDeployment;
   },
 
   get deleteDeployment() {
     if (!hasRole(user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
-    return async (input) => {
-      return ProjectModel.deleteDeployment(input, user);
-    };
+    return ProjectModel.deleteDeployment;
   }
 
 });

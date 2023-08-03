@@ -7,11 +7,11 @@ import { hasRole, idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 
 export class CameraModelView {
-  static async getWirelessCameras(_ids, user) {
+  static async getWirelessCameras(_ids, context) {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
     // have at one point been assoicted with curr_project
-    const projectId = user['curr_project'];
+    const projectId = context.user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
       const wirelessCameras = await WirelessCamera.find(query);
@@ -64,9 +64,9 @@ export class CameraModelView {
     }
   }
 
-  static async registerCamera(input, user) {
+  static async registerCamera(input, context) {
     const successfulOps = [];
-    const projectId = user['curr_project'];
+    const projectId = context.user['curr_project'];
 
     try {
       const cam = await WirelessCamera.findOne({ _id: input.cameraId });
@@ -121,7 +121,7 @@ export class CameraModelView {
       for (const op of successfulOps) {
         if (op.op === 'cam-registered') {
           await this.unregisterCamera(
-            { cameraId: op.info.cameraId }, user
+            { cameraId: op.info.cameraId }, context
           );
         }
       }
@@ -132,9 +132,9 @@ export class CameraModelView {
     }
   }
 
-  static async unregisterCamera(input, user) {
+  static async unregisterCamera(input, context) {
     const successfulOps = [];
-    const projectId = user['curr_project'];
+    const projectId = context.user['curr_project'];
 
     try {
 
@@ -191,7 +191,7 @@ export class CameraModelView {
       // reverse successful operations
       for (const op of successfulOps) {
         if (op.op === 'cam-unregistered') {
-          await this.registerCamera({ cameraId: op.info.cameraId }, user);
+          await this.registerCamera({ cameraId: op.info.cameraId }, context);
         }
       }
       // if error is uncontrolled, throw new ApolloError
@@ -203,28 +203,22 @@ export class CameraModelView {
 
 const generateCameraModel = ({ user } = {}) => ({
   get getWirelessCameras() {
-    return async (input) => {
-      return await CameraModelView.getWirelessCameras(input, user);
-    };
+    return CameraModelView.getWirelessCameras;
   },
-  createWirelessCamera: CameraModelView.createWirelesscamera,
+
+  get createWirelessCamera() {
+    return CameraModelView.createWirelesscamera;
+  },
 
   get registerCamera() {
     if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
-      return await CameraModelView.registerCamera(input, user);
-    };
+    return CameraModelView.registerCamera;
   },
 
   get unregisterCamera() {
     if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
-      return await CameraModelView.unregisterCamera(input, user);
-    };
+    return CameraModelView.unregisterCamera;
   }
-
 });
 
 export default generateCameraModel;
