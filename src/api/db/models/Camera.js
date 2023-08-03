@@ -4,7 +4,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
 import { hasRole, idMatch } from './utils.js';
-import { ProjectModel } from './project.js';
+import { ProjectModel } from './Project.js';
 
 export class CameraModelView {
   static async getWirelessCameras(_ids, user) {
