@@ -19,6 +19,7 @@ const localConfig = {
     'created',
     'image',
     'batch',
+    'path',
     'error'
   ],
   CSV_EXPORT_COLUMNS: [
