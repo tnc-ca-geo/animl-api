@@ -13,10 +13,13 @@ import { hasRole } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
 
 export class BatchModel {
-  static async queryByFilter(input) {
+  static async queryByFilter(input, context) {
     try {
       const pipeline = [];
-      if (input.user) pipeline.push({ '$match': { 'user': input.user } });
+      if (input.user) pipeline.push(
+        { '$match': { 'user': input.user } }, // TODO: do we need to pass user sub in as input? can this be accessed from context.user.sub?
+        { '$match': { 'projectId': context.user['curr_project'] } }
+      );
 
       const result = await MongoPaging.aggregate(Batch.collection, {
         aggregation: pipeline,

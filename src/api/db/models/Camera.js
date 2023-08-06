@@ -10,7 +10,7 @@ export class CameraModel {
   static async getWirelessCameras(_ids, context) {
     const query = _ids ? { _id: { $in: _ids } } : {};
     // if user has curr_project, limit returned cameras to those that
-    // have at one point been assoicted with curr_project
+    // have at one point been associated with curr_project
     const projectId = context.user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
