@@ -2,7 +2,6 @@ export default `
   type Batch {
     _id: String!
     projectId: String!
-    eTag: String
     errors: [BatchError]
     imageErrors: Int
     processingStart: String

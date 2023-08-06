@@ -1,7 +1,6 @@
 export default `
   input UpdateBatchInput {
     _id: String!
-    eTag: String
     total: Int
     overrideSerial: String
     processingEnd: String

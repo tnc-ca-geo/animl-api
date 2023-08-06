@@ -16,7 +16,6 @@ export class BatchModel {
   static async queryByFilter(input) {
     try {
       const pipeline = [];
-      if (input.eTag) pipeline.push({ '$match': { 'eTag': input.eTag } });
       if (input.user) pipeline.push({ '$match': { 'user': input.user } });
 
       const result = await MongoPaging.aggregate(Batch.collection, {
