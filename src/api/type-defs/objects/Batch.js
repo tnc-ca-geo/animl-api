@@ -8,7 +8,7 @@ export default `
     processingEnd: String
     overrideSerial: String
     originalFile: String
-    uploadedfile: String
+    uploadedFile: String
     remaining: Int
     dead: Int
     total: Int
