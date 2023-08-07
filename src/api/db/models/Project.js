@@ -57,6 +57,7 @@ export class ProjectModel {
 
         // make sure project doesn't already have a config for this cam
         const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+        console.log('found current camera config: ', currCamConfig);
         if (!currCamConfig) {
           console.log('couldnt find cameraConfig, so creating one...');
           project.cameraConfigs.push({
@@ -76,6 +77,7 @@ export class ProjectModel {
     };
 
     try {
+      console.log('createCameraConfig firing with input: ', input);
       return await operation(input, context);
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
