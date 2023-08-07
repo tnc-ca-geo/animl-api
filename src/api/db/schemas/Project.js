@@ -76,4 +76,6 @@ const ProjectSchema = new Schema({
   automationRules: { type: [AutomationRuleSchema] }
 });
 
+ProjectSchema.index({ 'cameraConfigs._id' : 1 }, { unique: true } );
+
 export default mongoose.model('Project', ProjectSchema);
