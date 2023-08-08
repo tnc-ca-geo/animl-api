@@ -10,6 +10,8 @@ const BatchSchema = new Schema({
   overrideSerial: { type: String },
   uploadedFile: { type: String },
   originalFile: { type: String },
+  uploadComplete: { type: Date },
+  ingestionComplete: { type: Date },
   processingStart: { type: Date },
   processingEnd: { type: Date },
   total: { type: Number }

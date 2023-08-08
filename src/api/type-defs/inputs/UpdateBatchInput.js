@@ -3,6 +3,8 @@ export default `
     _id: String!
     total: Int
     overrideSerial: String
+    uploadComplete: String
+    ingestionComplete: String
     processingEnd: String
     processingStart: String
     originalFile: String

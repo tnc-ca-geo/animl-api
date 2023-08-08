@@ -4,6 +4,8 @@ export default `
     projectId: String!
     errors: [BatchError]
     imageErrors: Int
+    uploadComplete: String
+    ingestionComplete: String
     processingStart: String
     processingEnd: String
     overrideSerial: String

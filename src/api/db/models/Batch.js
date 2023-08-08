@@ -51,8 +51,11 @@ export class BatchModel {
 
       if (params.remaining && batch.processingEnd) {
         batch.remaining = 0;
-        batch.dead = 0;
+        batch.dead = 0; // Why are we assuming dead = 0 here?
       } else if (params.remaining) {
+        // TODO: if querying sqs is expensive, it's worth noting that we currently do it for
+        // all batches returned from getBatches, even if they're not currently running
+        // (b/c all requests include params.remaining). Figure out how to make more efficient?
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
         try {
