@@ -8,18 +8,42 @@ import { hasRole } from './utils.js';
 import SQS from '@aws-sdk/client-sqs';
 import S3 from '@aws-sdk/client-s3';
 
-const generateImageErrorModel = ({ user } = {}) => ({
-  countImageErrors: async (input) => {
+/**
+ * ImageErrors are errors that are generated when a single image upload
+ * fails. They can either be associated with a batch or be a single image upload
+ * @class
+ */
+export class ImageErrorModel {
+  /**
+   * Count all errors associated with a given batch
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   */
+  static async countImageErrors(input) {
     const res = await ImageError.aggregate([
       { '$match': { 'batch': input.batch } },
       { $count: 'count' }
     ]);
     return res[0] ? res[0].count : 0;
-  },
+  }
 
-  queryByFilter: async (input) => {
+  /**
+   * Query Image Errors by Filter, returning a paged list of errors
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   * @param {String} input.limit
+   * @param {String} input.paginatedField
+   * @param {String} input.sortAscending
+   * @param {String} input.next
+   * @param {String} input.previous
+   * @param {Object} input.filters
+   * @param {String} input.filters.batch
+   */
+  static async queryByFilter(input) {
     try {
-      const result = await MongoPaging.aggregate(ImageError.collection, {
+      return await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [
           { '$match': { 'batch': input.filters.batch } }
         ],
@@ -29,111 +53,140 @@ const generateImageErrorModel = ({ user } = {}) => ({
         next: input.next,
         previous: input.previous
       });
-      console.log('res: ', JSON.stringify(result));
-      return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
+
+  /**
+   * Create a new ImageError
+   *
+   * @param {Object} input
+   * @param {String} input.image
+   * @param {String} input.batch
+   * @param {String} input.error
+   */
+  static async createError(input) {
+    const operation = async (input) => {
+      return await retry(async () => {
+        const newImageError = new ImageError(input);
+        await newImageError.save();
+        return newImageError;
+      }, { retries: 2 });
+    };
+
+    try {
+      const imageerr = await operation({
+        image: input.image,
+        batch: input.batch,
+        error: input.error
+      });
+
+      return {
+        _id: imageerr._id,
+        image: imageerr.image,
+        batch: imageerr.batch,
+        error: imageerr.error,
+        created: imageerr.created
+      };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  /**
+   * Clear Image Errors associated with a given batch
+   *
+   * @param {Object} input
+   * @param {String} input.batch
+   */
+  static async clearErrors(input) {
+    const operation = async (input) => {
+      return await retry(async () => {
+        return await ImageError.deleteMany(input);
+      }, { retries: 2 });
+    };
+
+    try {
+      await operation({
+        batch: input.batch
+      });
+
+      return { message: 'Cleared' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  /**
+   * Create a new Export of ImageErrors
+   *
+   * @param {Object} input
+   * @param {Object} input.filters
+   * @param {Object} context
+   */
+  static async export(input, context) {
+    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+    const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
+    const id = crypto.randomBytes(16).toString('hex');
+    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
+
+    try {
+      // create status document in S3
+      await s3.send(new S3.PutObjectCommand({
+        Bucket: bucket,
+        Key: `${id}.json`,
+        Body: JSON.stringify({ status: 'Pending' }),
+        ContentType: 'application/json; charset=utf-8'
+      }));
+
+      await sqs.send(new SQS.SendMessageCommand({
+        QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
+        MessageBody: JSON.stringify({
+          type: 'ImageErrors',
+          documentId: id,
+          filters: input.filters,
+          format: 'csv'
+        })
+      }));
+
+      return {
+        documentId: id
+      };
+
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+}
+
+const generateImageErrorModel = ({ user } = {}) => ({
+  countImageErrors: ImageErrorModel.countImageErrors,
+  queryByFilter: ImageErrorModel.queryByFilter,
 
   get createError() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
-      const operation = async (input) => {
-        return await retry(async () => {
-          const newImageError = new ImageError(input);
-          await newImageError.save();
-          return newImageError;
-        }, { retries: 2 });
-      };
-
-      try {
-        const imageerr = await operation({
-          image: input.image,
-          batch: input.batch,
-          error: input.error
-        });
-
-        return {
-          _id: imageerr._id,
-          image: imageerr.image,
-          batch: imageerr.batch,
-          error: imageerr.error,
-          created: imageerr.created
-        };
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
+    return ImageErrorModel.createError;
   },
 
   get clearErrors() {
     if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-
-    return async (input) => {
-      const operation = async (input) => {
-        return await retry(async () => {
-          return await ImageError.deleteMany(input);
-        }, { retries: 2 });
-      };
-
-      try {
-        await operation({
-          batch: input.batch
-        });
-
-        return { message: 'Cleared' };
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
+    return ImageErrorModel.clearErrors;
   },
 
   get export() {
     if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return async (input, context) => {
-      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-      const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
-      const id = crypto.randomBytes(16).toString('hex');
-      const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-      try {
-        // create status document in S3
-        await s3.send(new S3.PutObjectCommand({
-          Bucket: bucket,
-          Key: `${id}.json`,
-          Body: JSON.stringify({ status: 'Pending' }),
-          ContentType: 'application/json; charset=utf-8'
-        }));
-
-        await sqs.send(new SQS.SendMessageCommand({
-          QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
-          MessageBody: JSON.stringify({
-            type: 'ImageErrors',
-            documentId: id,
-            filters: input.filters,
-            format: 'csv'
-          })
-        }));
-
-        return {
-          documentId: id
-        };
-
-      } catch (err) {
-        // if error is uncontrolled, throw new ApolloError
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
-      }
-    };
+    return ImageErrorModel.export;
   }
 });
+
 
 export default generateImageErrorModel;

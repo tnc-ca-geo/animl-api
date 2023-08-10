@@ -6,6 +6,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ApolloError } from 'apollo-server-lambda';
 import { stringify } from 'csv-stringify';
 import { ImageError } from '../api/db/schemas/ImageError.js';
+import { ImageErrorModel } from '../api/db/models/ImageError.js';
 
 export default class ImageExport {
   constructor({ documentId, filters, format }, config) {
@@ -17,6 +18,7 @@ export default class ImageExport {
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     this.errorCount = 0;
     this.imageCountThreshold = 18000;  // TODO: Move to config?
+    this.filters = filters;
     this.pipeline = [
       { $match: { 'batch':  filters.batch } }
     ];
@@ -28,9 +30,8 @@ export default class ImageExport {
   async init() {
     console.log('initializing Export');
     try {
-      this.errorCount = await this.getCount(this.pipeline);
+      this.errorCount = await ImageErrorModel.countImageErrors(this.filters);
       console.log('errorCount: ', this.errorCount);
-
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error initializing the export class');

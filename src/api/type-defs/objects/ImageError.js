@@ -5,6 +5,6 @@ export default `
     image: String
     path: String
     error: String!
-    created: String!
+    created: Date!
   }
 `;

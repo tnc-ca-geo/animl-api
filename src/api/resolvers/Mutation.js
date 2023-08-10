@@ -55,38 +55,38 @@ const Mutation = {
   },
 
   createView: async (_, { input }, context) => {
-    const view = await context.models.Project.createView(input);
+    const view = await context.models.Project.createView(input, context);
     return { view };
   },
 
   updateView: async (_, { input }, context) => {
-    const view = await context.models.Project.updateView(input);
+    const view = await context.models.Project.updateView(input, context);
     return { view };
   },
 
   deleteView: async (_, { input }, context) => {
-    const project = await context.models.Project.deleteView(input);
+    const project = await context.models.Project.deleteView(input, context);
     return { project };
   },
 
   updateAutomationRules: async (_, { input }, context) => {
-    const automationRules = await context.models.Project.updateAutomationRules(input);
+    const automationRules = await context.models.Project.updateAutomationRules(input, context);
     console.log('updated automation rules: ', automationRules);
     return { automationRules };
   },
 
   createDeployment: async (_, { input }, context) => {
-    const cameraConfig = await context.models.Project.createDeployment(input);
+    const cameraConfig = await context.models.Project.createDeployment(input, context);
     return { cameraConfig };
   },
 
   updateDeployment: async (_, { input }, context) => {
-    const cameraConfig = await context.models.Project.updateDeployment(input);
+    const cameraConfig = await context.models.Project.updateDeployment(input, context);
     return { cameraConfig };
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const cameraConfig = context.models.Project.deleteDeployment(input);
+    const cameraConfig = context.models.Project.deleteDeployment(input, context);
     return { cameraConfig };
   },
 
@@ -96,17 +96,17 @@ const Mutation = {
   // },
 
   createObject: async (_, { input }, context) => {
-    const image = await context.models.Image.createObject(input);
+    const image = await context.models.Image.createObject(input, context);
     return { image };
   },
 
   updateObject: async (_, { input }, context) => {
-    const image = await context.models.Image.updateObject(input);
+    const image = await context.models.Image.updateObject(input, context);
     return { image };
   },
 
   deleteObject: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteObject(input);
+    const image = await context.models.Image.deleteObject(input, context);
     return { image };
   },
 
@@ -116,12 +116,12 @@ const Mutation = {
   },
 
   updateLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.updateLabel(input);
+    const image = await context.models.Image.updateLabel(input, context);
     return { image };
   },
 
   deleteLabel: async (_, { input }, context) => {
-    const image = context.models.Image.deleteLabel(input);
+    const image = context.models.Image.deleteLabel(input, context);
     return { image };
   }
 

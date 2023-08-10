@@ -1,10 +1,10 @@
 const Query = {
   projects: async (_, { _ids }, context) => {
-    return await context.models.Project.getProjects(_ids);
+    return await context.models.Project.getProjects(_ids, context);
   },
 
   batches: async (_, { input }, context) => {
-    const response = await context.models.Batch.queryByFilter(input);
+    const response = await context.models.Batch.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {  // reurn ImagesConnection
       pageInfo: {
@@ -24,8 +24,8 @@ const Query = {
   },
 
   images: async (_, { input }, context) => {
-    const count = await context.models.Image.countImages(input);
-    const response = await context.models.Image.queryByFilter(input);
+    const count = await context.models.Image.countImages(input, context);
+    const response = await context.models.Image.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {  // reurn ImagesConnection
       pageInfo: {
@@ -40,8 +40,8 @@ const Query = {
   },
 
   imageErrors: async (_, { input }, context) => {
-    const count = await context.models.ImageError.countImageErrors(input);
-    const response = await context.models.ImageError.queryByFilter(input);
+    const count = await context.models.ImageError.countImageErrors(input, context);
+    const response = await context.models.ImageError.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {  // reurn ImagesConnection
       pageInfo: {
@@ -67,15 +67,15 @@ const Query = {
   // },
 
   wirelessCameras: async (_, { _ids }, context) => {
-    return await context.models.Camera.getWirelessCameras(_ids);
+    return await context.models.Camera.getWirelessCameras(_ids, context);
   },
 
   mlModels: async (_, { _ids }, context) => {
-    return await context.models.MLModel.getMLModels(_ids);
+    return await context.models.MLModel.getMLModels(_ids, context);
   },
 
   stats: async (_, { input }, context) => {
-    return await context.models.Image.getStats(input);
+    return await context.models.Image.getStats(input, context);
   },
 
   exportErrors: async (_, { input }, context) => {

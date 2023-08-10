@@ -9,7 +9,10 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-const idMatch = (idA, idB) => idA.toString() === idB.toString();
+const idMatch = (idA, idB) => {
+  console.log(`evaluating match between id A: ${idA}, and idB: ${idB}. Match: ${idA.toString() === idB.toString()}`);
+  return idA.toString() === idB.toString();
+};
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config['/IMAGES/URL'];
@@ -513,7 +516,6 @@ const findActiveProjReg = (camera) => {
     err.code = 'NoRegistration';
     throw err;
   }
-
   return activeProjReg.projectId;
 };
 
