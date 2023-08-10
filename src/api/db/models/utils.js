@@ -9,7 +9,10 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-const idMatch = (idA, idB) => idA.toString() === idB.toString();
+const idMatch = (idA, idB) => {
+  console.log(`evaluating match between id A: ${idA}, and idB: ${idB}. Match: ${idA.toString() === idB.toString()}`);
+  return idA.toString() === idB.toString();
+};
 
 const buildImgUrl = (image, config, size = 'original') => {
   const url = config['/IMAGES/URL'];
@@ -218,6 +221,7 @@ const createImageAttemptRecord = (md) => {
       dateAdded: DateTime.now(),
       cameraId: md.serialNumber,
       ...(md.fileTypeExtension && { fileTypeExtension: md.fileTypeExtension }),
+      ...(md.path && { path: md.path }),
       ...(md.dateTimeOriginal && { dateTimeOriginal: md.dateTimeOriginal }),
       ...(md.timezone && { timezone: md.timezone }),
       ...(md.make && { make: md.make }),
@@ -349,6 +353,7 @@ const createImageRecord = (md) => {
     projectId: md.projectId,
     ...(md.model &&       { model: md.model }),
     ...(md.fileName &&    { originalFileName: md.fileName }),
+    ...(md.path &&        { path: md.path }),
     ...(md.imageWidth &&  { imageWidth: md.imageWidth }),
     ...(md.imageHeight && { imageHeight: md.imageHeight }),
     ...(md.imageBytes &&  { imageBytes: md.imageBytes }),
@@ -511,7 +516,6 @@ const findActiveProjReg = (camera) => {
     err.code = 'NoRegistration';
     throw err;
   }
-
   return activeProjReg.projectId;
 };
 

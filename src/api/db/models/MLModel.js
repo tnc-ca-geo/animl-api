@@ -2,8 +2,8 @@ import { ApolloError } from 'apollo-server-errors';
 import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
-const generateMLModelModel = () => ({
-  getMLModels: async (_ids) => {
+export class MLModelModel {
+  static async getMLModels(_ids) {
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
       const mlModels = await MLModel.find(query);
@@ -13,10 +13,9 @@ const generateMLModelModel = () => ({
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
-  },
+  }
 
-  createMLModel: async (modelConfig) => {
-
+  static async createMLModel(modelConfig) {
     const operation = async (modelConfig) => {
       return await retry(async () => {
 
@@ -36,7 +35,11 @@ const generateMLModelModel = () => ({
       throw new ApolloError(err);
     }
   }
+}
 
+const generateMLModelModel = () => ({
+  getMLModels: MLModelModel.getMLModels,
+  createMLModel: MLModelModel.createMLModel
 });
 
 export default generateMLModelModel;

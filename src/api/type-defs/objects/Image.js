@@ -5,6 +5,7 @@ export default `
     errors: [ImageError]
     bucket: String!
     fileTypeExtension: String!
+    path: String
     dateAdded: Date!
     dateTimeOriginal: Date!
     timezone: String!

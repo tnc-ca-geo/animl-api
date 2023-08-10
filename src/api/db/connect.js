@@ -17,7 +17,7 @@ async function connectToDatabase(config) {
     cachedConnectionPromise = await mongoose.connect(uri, {
       bufferCommands: false,
       // TODO: double check auto indexing is off in prod environment
-      ...((process.env.STAGE === 'prod') && { autoIndex: false })
+      autoIndex: process.env.STAGE !== 'prod'
     });
   }
 
