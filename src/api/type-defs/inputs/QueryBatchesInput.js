@@ -5,5 +5,4 @@ export default `
     limit: Int
     next: String
     previous: String
-    user: String
   }`;
