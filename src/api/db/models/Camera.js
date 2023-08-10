@@ -180,9 +180,7 @@ export class CameraModel {
       let [defaultProj] = await ProjectModel.getProjects(['default_project'], context);
 
       let addedNewCamConfig = false;
-      const camConfig = defaultProj.cameraConfigs.find((cc) => (
-        idMatch(cc._id, input.cameraId)
-      ));
+      const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));
       if (!camConfig) {
         defaultProj = await ProjectModel.createCameraConfig({
           projectId: 'default_project',

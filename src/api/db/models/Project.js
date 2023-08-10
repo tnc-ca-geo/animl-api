@@ -67,8 +67,10 @@ export class ProjectModel {
           }]
         };
 
-        console.log('attempting to create new camera config: ', newCamConfig);
-
+        // NOTE: using findOneAndUpdate() with an aggregation pipeline to update
+        // Projects to preserve atomicity of the operation and avoid race conditions
+        // during bulk upload image ingestion.
+        // https://github.com/tnc-ca-geo/animl-api/issues/112
         const updatedProject = await Project.findOneAndUpdate(
           { _id: projectId },
           [
@@ -97,7 +99,6 @@ export class ProjectModel {
     };
 
     try {
-      console.log('createCameraConfig firing with input: ', input);
       return await operation(input, context);
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError

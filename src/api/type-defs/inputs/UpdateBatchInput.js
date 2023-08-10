@@ -3,10 +3,10 @@ export default `
     _id: String!
     total: Int
     overrideSerial: String
-    uploadComplete: String
-    ingestionComplete: String
-    processingEnd: String
-    processingStart: String
+    uploadComplete: Date
+    ingestionComplete: Date
+    processingEnd: Date
+    processingStart: Date
     originalFile: String
     uploadedFile: String
 }`;

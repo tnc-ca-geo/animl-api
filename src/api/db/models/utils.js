@@ -516,7 +516,6 @@ const findActiveProjReg = (camera) => {
     err.code = 'NoRegistration';
     throw err;
   }
-
   return activeProjReg.projectId;
 };
 

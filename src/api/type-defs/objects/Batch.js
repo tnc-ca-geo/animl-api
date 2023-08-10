@@ -4,10 +4,10 @@ export default `
     projectId: String!
     errors: [BatchError]
     imageErrors: Int
-    uploadComplete: String
-    ingestionComplete: String
-    processingStart: String
-    processingEnd: String
+    uploadComplete: Date
+    ingestionComplete: Date
+    processingStart: Date
+    processingEnd: Date
     overrideSerial: String
     originalFile: String
     uploadedFile: String
