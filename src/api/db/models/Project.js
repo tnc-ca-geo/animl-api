@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
@@ -55,24 +56,43 @@ export class ProjectModel {
       return await retry(async () => {
         const [project] = await ProjectModel.getProjects([projectId], context);
 
-        // make sure project doesn't already have a config for this cam
-        const currCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-        console.log('found current camera config: ', currCamConfig);
-        if (!currCamConfig) {
-          console.log('couldnt find cameraConfig, so creating one...');
-          project.cameraConfigs.push({
-            _id: cameraId,
-            deployments: [{
-              name: 'default',
-              timezone: project.timezone,
-              description: 'This is the default deployment. It is not editable',
-              editable: false
-            }]
-          });
-          await project.save();
-        }
-        return project;
+        const newCamConfig = {
+          _id: cameraId,
+          deployments: [{
+            _id: new mongoose.Types.ObjectId(),
+            name: 'default',
+            timezone: project.timezone,
+            description: 'This is the default deployment. It is not editable',
+            editable: false
+          }]
+        };
 
+        console.log('attempting to create new camera config: ', newCamConfig);
+
+        const updatedProject = await Project.findOneAndUpdate(
+          { _id: projectId },
+          [
+            { $addFields: { camIds : '$cameraConfigs._id' } },
+            {
+              $set: {
+                cameraConfigs: {
+                  $cond: {
+                    if: { $in: [cameraId, '$camIds'] },
+                    then: '$cameraConfigs',
+                    else: { $concatArrays: ['$cameraConfigs', [newCamConfig]] }
+                  }
+                }
+              }
+            }
+          ],
+          { returnDocument: 'after' }
+        );
+
+        if (updatedProject.cameraConfigs.length > project.cameraConfigs.length) {
+          console.log('Couldn\'t find a camera config with that _id, so added one to project: ', updatedProject);
+        }
+
+        return updatedProject;
       }, { retries: 2 });
     };
 
