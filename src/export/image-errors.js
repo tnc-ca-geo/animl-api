@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import stream from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -65,6 +66,8 @@ export default class ImageExport {
 
       // stream in images from MongoDB, write to transformation stream
       for await (const imgErr of ImageError.aggregate(this.pipeline)) {
+        imgErr.created = DateTime.fromISO(imgErr.created)
+            .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
         createRow.write(imgErr);
       }
 
