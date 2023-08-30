@@ -66,7 +66,7 @@ export default class ImageExport {
 
       // stream in images from MongoDB, write to transformation stream
       for await (const imgErr of ImageError.aggregate(this.pipeline)) {
-        imgErr.created = DateTime.fromISO(imgErr.created)
+        imgErr.created = DateTime.fromJSDate(imgErr.created)
             .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
         createRow.write(imgErr);
       }
