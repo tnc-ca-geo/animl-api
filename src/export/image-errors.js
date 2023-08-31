@@ -3,7 +3,7 @@ import stream from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
 import { Upload } from '@aws-sdk/lib-storage';
 import S3 from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Signer from './signer.js';
 import { ApolloError } from 'apollo-server-lambda';
 import { stringify } from 'csv-stringify';
 import { ImageError } from '../api/db/schemas/ImageError.js';
@@ -34,7 +34,7 @@ export default class ImageExport {
       this.errorCount = await ImageErrorModel.countImageErrors(this.filters);
       console.log('errorCount: ', this.errorCount);
     } catch (err) {
-      await this.error(err);
+      await this.error(err.message);
       throw new ApolloError('error initializing the export class');
     }
   }
@@ -50,7 +50,7 @@ export default class ImageExport {
       console.log('res: ', res);
       count = res[0] ? res[0].count : 0;
     } catch (err) {
-      await this.error(err);
+      await this.error(err.message);
       throw new ApolloError('error counting ImageError');
     }
     return count;
@@ -83,7 +83,8 @@ export default class ImageExport {
       await promise;
       console.log('upload complete');
     } catch (err) {
-      await this.error(err);
+      console.error(err);
+      await this.error(err.message);
       throw new ApolloError('error exporting to CSV');
     }
 
@@ -131,7 +132,7 @@ export default class ImageExport {
   async getPresignedURL() {
     console.log('getting presigned url');
     const command = new S3.GetObjectCommand({ Bucket: this.bucket, Key: this.filename });
-    return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    return await Signer.getSignedUrl(this.s3, command, { expiresIn: 3600 });
   }
 
   streamToS3(filename) {
