@@ -10,22 +10,56 @@ const Schema = mongoose.Schema;
  */
 
 const ImageMetadataSchema = new Schema({
-  _id: { type: String, required: true },
-  bucket: { type: String },
-  batchId: { type: String },
-  fileTypeExtension: { type: String },
-  path: { type: String },
-  dateAdded: { type: Date },
-  dateTimeOriginal: { type: Date },
-  timezone: { type: String },
-  make: { type: String },
-  cameraId: { type: String },
-  originalFileName: { type: String },
-  imageWidth: { type: Number },
-  imageHeight: { type: Number },
-  imageBytes: { type: Number },
-  mimeType: { type: String },
-  model: { type: String }
+  _id: {
+    type: String,
+    required: true,
+    index: true
+  },
+  bucket: {
+    type: String
+  },
+  batchId: {
+    type: String,
+  },
+  fileTypeExtension: {
+    type: String
+  },
+  path: {
+    type: String
+  },
+  dateAdded: {
+    type: Date
+  },
+  dateTimeOriginal: {
+    type: Date
+  },
+  timezone: {
+    type: String
+  },
+  make: {
+    type: String
+  },
+  cameraId: {
+    type: String
+  },
+  originalFileName: {
+    type: String
+  },
+  imageWidth: {
+    type: Number
+  },
+  imageHeight: {
+    type: Number
+  },
+  imageBytes: {
+    type: Number
+  },
+  mimeType: {
+    type: String
+  },
+  model: {
+    type: String
+  }
 });
 
 /*
@@ -34,14 +68,31 @@ const ImageMetadataSchema = new Schema({
  */
 
 const ImageAttemptSchema = new Schema({
-  _id: { type: String, required: true, default: randomUUID },
-  projectId: { type: String, required: true, ref: 'Project' },
-  batch: { type: String },
-  created: { type: Date, default: Date.now, required: true },
-  metadata: { type: ImageMetadataSchema }
+  _id: {
+    type: String,
+    required: true,
+    default: randomUUID,
+    index: true
+  },
+  projectId: {
+    type: String,
+    required: true,
+    ref: 'Project',
+    index: true
+  },
+  batch: {
+    type: String,
+    index: true
+  },
+  created: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  metadata: {
+    type: ImageMetadataSchema
+  }
 });
-
-ImageAttemptSchema.index({ batch: 1 });
 
 ImageAttemptSchema.on('index', (e) => {
   console.log('ImageAttempt Indexing Error', e);
