@@ -11,6 +11,7 @@ import { ImageError } from '../schemas/ImageError.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
+import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
@@ -126,7 +127,7 @@ export class ImageModel {
           }
         } else {
           // else find wireless camera record and associated project Id
-          [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
+          [existingCam] = await CameraModel.getWirelessCameras([cameraId], context);
           if (existingCam) {
             projectId = findActiveProjReg(existingCam);
           }
@@ -170,7 +171,7 @@ export class ImageModel {
             // create camera config if there isn't one yet
             await ProjectModel.createCameraConfig({ projectId, cameraId }, context);
           } else if (!existingCam) {
-            await context.models.Camera.createWirelessCamera({
+            await CameraModel.createWirelessCamera({
               projectId,
               cameraId,
               make: md.make,
@@ -180,7 +181,7 @@ export class ImageModel {
           }
 
           // map image to deployment
-          const [project] = await context.models.Project.getProjects([projectId], context);
+          const [project] = await ProjectModel.getProjects([projectId], context);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
@@ -207,7 +208,7 @@ export class ImageModel {
             // delete newly created wireless camera record
             await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
-            const [proj] = await context.models.Project.getProjects([projectId], context);
+            const [proj] = await ProjectModel.getProjects([projectId], context);
             proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
             proj.save();
           }
