@@ -95,7 +95,13 @@ export class ImageModel {
 
   static async createImage(input, context) {
     const successfulOps = [];
-    const errors = [];
+
+    const errors = (input.errors || []).filter((err) => {
+      return typeof err === 'string';
+    }).map((err) => {
+      return new Error(err);
+    });
+
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
