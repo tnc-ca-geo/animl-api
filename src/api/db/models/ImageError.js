@@ -23,7 +23,7 @@ export class ImageErrorModel {
   static async countImageErrors(input) {
     const res = await ImageError.aggregate([
       { '$match': { 'batch': input.batch } },
-      { $count: 'count' }
+      { '$count': 'count' }
     ]);
     return res[0] ? res[0].count : 0;
   }
