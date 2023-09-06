@@ -28,7 +28,7 @@ tape('Export: Image-Errors - Basic Event', async (t) => {
   const mocks = [];
 
   try {
-    MockConfig();
+    MockConfig(t);
 
     let s3count = 0;
     Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
