@@ -17,12 +17,6 @@ const Query = {
     };
   },
 
-  batch: async (_, { _id }, context) => {
-    return await context.models.Batch.queryById(_id, {
-      remaining: true
-    });
-  },
-
   images: async (_, { input }, context) => {
     const count = await context.models.Image.countImages(input, context);
     const response = await context.models.Image.queryByFilter(input, context);
