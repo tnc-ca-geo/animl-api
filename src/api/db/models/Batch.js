@@ -29,7 +29,7 @@ export class BatchModel {
         previous: input.previous
       });
 
-      result.results = await Promise.all(result.results.map((batch) => this.augmentBatch(batch)));
+      result.results = await Promise.all(result.results.map((batch) => BatchModel.augmentBatch(batch)));
 
       return result;
     } catch (err) {
@@ -44,7 +44,7 @@ export class BatchModel {
     try {
       const batch = await Batch.findOne(query);
 
-      this.augmentBatch(batch);
+      BatchModel.augmentBatch(batch);
 
       return batch;
     } catch (err) {
