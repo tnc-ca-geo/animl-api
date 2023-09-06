@@ -28,7 +28,9 @@ export class BatchModel {
         next: input.next,
         previous: input.previous
       });
-      // console.log('res: ', JSON.stringify(result));
+
+      result.batches = await Promise.all(result.batches.map((batch) => this.augmentBatch(batch)));
+
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -42,19 +44,24 @@ export class BatchModel {
     try {
       const batch = await Batch.findOne(query);
 
-      const epipeline = [];
-      epipeline.push({ '$match': { 'batch': batch._id } });
-      batch.errors = await BatchError.aggregate(epipeline);
+      this.augmentBatch(batch);
 
+      return batch;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async augmentBatch(batch) {
+      batch.errors = await BatchError.aggregate([{ '$match': { 'batch': batch._id } }]);
       batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
 
-      if (params.remaining && batch.processingEnd) {
+      if (batch.processingEnd) {
         batch.remaining = 0;
         batch.dead = 0; // Why are we assuming dead = 0 here?
-      } else if (params.remaining) {
-        // TODO: if querying sqs is expensive, it's worth noting that we currently do it for
-        // all batches returned from getBatches, even if they're not currently running
-        // (b/c all requests include params.remaining). Figure out how to make more efficient?
+      } else {
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
         try {
@@ -89,12 +96,8 @@ export class BatchModel {
       }
 
       return batch;
-    } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
-    }
   }
+
 
   static async stopBatch(input) {
     const operation = async (input) => {
