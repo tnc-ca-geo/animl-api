@@ -55,7 +55,7 @@ tape('Export: Image-Errors - Basic Event', async (t) => {
 
           t.ok(body.length, 2);
           t.deepEquals(body[0].split(','), ['_id', 'created', 'image', 'batch', 'path', 'error']);
-          t.deepEquals(body[1], '123,"Dec 31, 2021, 5:00:00 PM",image-123,batch-123,input.jpg,This is an Error');
+          t.deepEquals(body[1], '123,"Jan 1, 2022, 12:00:00 AM",image-123,batch-123,input.jpg,This is an Error');
         }
       } else {
         t.fail();
