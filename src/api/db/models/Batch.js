@@ -39,7 +39,7 @@ export class BatchModel {
     }
   }
 
-  static async queryById(_id, params = {}) {
+  static async queryById(_id) {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
@@ -55,47 +55,47 @@ export class BatchModel {
   }
 
   static async augmentBatch(batch) {
-      batch.errors = await BatchError.aggregate([{ '$match': { 'batch': batch._id } }]);
-      batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
+    batch.errors = await BatchError.aggregate([{ '$match': { 'batch': batch._id } }]);
+    batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
 
-      if (batch.processingEnd) {
-        batch.remaining = 0;
-        batch.dead = 0; // Why are we assuming dead = 0 here?
-      } else {
-        const sqs = new SQS.SQSClient({ region: process.env.REGION });
+    if (batch.processingEnd) {
+      batch.remaining = 0;
+      batch.dead = 0; // Why are we assuming dead = 0 here?
+    } else {
+      const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
-        try {
-          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
-            AttributeNames: [
-              'ApproximateNumberOfMessages',
-              'ApproximateNumberOfMessagesNotVisible'
-            ]
-          }));
+      try {
+        const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+          QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
+          AttributeNames: [
+            'ApproximateNumberOfMessages',
+            'ApproximateNumberOfMessagesNotVisible'
+          ]
+        }));
 
-          batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
-        } catch (err) {
-          console.error(err);
-          batch.remaining = null;
-        }
-
-        try {
-          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
-            AttributeNames: [
-              'ApproximateNumberOfMessages',
-              'ApproximateNumberOfMessagesNotVisible'
-            ]
-          }));
-
-          batch.dead = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
-        } catch (err) {
-          console.error(err);
-          batch.dead = null;
-        }
+        batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+      } catch (err) {
+        console.error(err);
+        batch.remaining = null;
       }
 
-      return batch;
+      try {
+        const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+          QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
+          AttributeNames: [
+            'ApproximateNumberOfMessages',
+            'ApproximateNumberOfMessagesNotVisible'
+          ]
+        }));
+
+        batch.dead = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+      } catch (err) {
+        console.error(err);
+        batch.dead = null;
+      }
+    }
+
+    return batch;
   }
 
 
