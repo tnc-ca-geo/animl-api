@@ -11,51 +11,49 @@ process.env.AWS_REGION = process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';
 
 tape('Batch#queryByFilter - SQS Response', async (t) => {
-  const mocks = [];
-
   try {
     MockConfig(t);
 
     Sinon.stub(SQS.SQSClient.prototype, 'send').callsFake((command) => {
-        if (command instanceof SQS.GetQueueAttributesCommand) {
-            return {
-                Attributes: {
-                    ApproximateNumberOfMessages: 1,
-                    ApproximateNumberOfMessagesNotVisible: 2
-                }
-            }
-        } else {
-            t.fail();
-        }
+      if (command instanceof SQS.GetQueueAttributesCommand) {
+        return {
+          Attributes: {
+            ApproximateNumberOfMessages: 1,
+            ApproximateNumberOfMessagesNotVisible: 2
+          }
+        };
+      } else {
+        t.fail();
+      }
     });
 
     Sinon.stub(BatchError, 'aggregate').callsFake((command) => {
-        t.deepEquals(command, [
-            { $match: { batch: 'batch-123' } }
-        ]);
+      t.deepEquals(command, [
+        { $match: { batch: 'batch-123' } }
+      ]);
 
-        return [];
+      return [];
     });
 
     Sinon.stub(ImageError, 'aggregate').callsFake((command) => {
-        t.deepEquals(command, [
-            { $match: { batch: 'batch-123' } },
-            { $count: 'count' }
-        ]);
+      t.deepEquals(command, [
+        { $match: { batch: 'batch-123' } },
+        { $count: 'count' }
+      ]);
 
-        return [{
-            count: 321
-        }];
+      return [{
+        count: 321
+      }];
     });
 
     Sinon.stub(MongoPaging, 'aggregate').callsFake((input) => {
-        t.deepEquals(input.modelName, 'Batch');
+      t.deepEquals(input.modelName, 'Batch');
 
-        return {
-            batches: [{
-                _id: 'batch-123'
-            }]
-        }
+      return {
+        batches: [{
+          _id: 'batch-123'
+        }]
+      };
     });
   } catch (err) {
     t.error(err);
@@ -63,18 +61,18 @@ tape('Batch#queryByFilter - SQS Response', async (t) => {
 
   const batches = await BatchModel.queryByFilter({}, {
     user: {
-        sub: '123',
-        curr_project: 'default-project'
+      sub: '123',
+      curr_project: 'default-project'
     }
   });
 
   t.deepEquals(batches, {
     batches: [{
-        _id: 'batch-123',
-        errors: [],
-        imageErrors: 321,
-        remaining: 3,
-        dead: 3
+      _id: 'batch-123',
+      errors: [],
+      imageErrors: 321,
+      remaining: 3,
+      dead: 3
     }]
   });
 
