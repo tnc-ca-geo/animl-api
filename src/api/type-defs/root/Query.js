@@ -8,7 +8,6 @@ export default `
     wirelessCameras(_ids: [String!]): [WirelessCamera]
     mlModels(_ids: [String!]): [MLModel]
     batches(input: QueryBatchesInput!): BatchesConnection
-    batch(_id: String!): Batch
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
     exportErrors(input: ExportErrorsInput!): ExportPayload
