@@ -21,9 +21,9 @@ export class BatchModel {
         { '$match': { 'projectId': context.user['curr_project'] } }
       ];
 
-      if (input.status) {
+      if (input.filter) {
         pipeline.push({ '$match': {
-          processingEnd: { $exists: (input.status === 'COMPLETED') }
+          processingEnd: { $exists: (input.filter === 'COMPLETED') }
         } });
       }
 

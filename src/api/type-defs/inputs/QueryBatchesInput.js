@@ -1,11 +1,11 @@
 export default `
-  enum statusEnum {
+  enum filterEnum {
     CURRENT
     COMPLETED
   }
 
   input QueryBatchesInput {
-    status: statusEnum
+    filter: filterEnum
     paginatedField: String
     sortAscending: Boolean
     limit: Int
