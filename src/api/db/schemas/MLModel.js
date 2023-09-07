@@ -37,9 +37,4 @@ const MLModelSchema = new Schema({
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
 
-MLModelSchema.index(
-  { _id: 1, version: 1 },
-  { unique: true, sparse: true }
-);
-
 export default mongoose.model('MLModel', MLModelSchema);

@@ -12,15 +12,4 @@ const ImageErrorSchema = new Schema({
   error: { type: String, required: true }
 });
 
-ImageErrorSchema.index({ batch: 1 });
-
-ImageErrorSchema.on('index', (e) => {
-  console.log('ImageError Indexing Error', e);
-});
-
-const ImageError = mongoose.model('ImageError', ImageErrorSchema);
-
-export {
-  ImageErrorSchema,
-  ImageError
-};
+export default mongoose.model('ImageError', ImageErrorSchema);

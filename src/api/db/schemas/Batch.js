@@ -17,10 +17,6 @@ const BatchSchema = new Schema({
   total: { type: Number }
 });
 
-BatchSchema.on('index', (e) => {
-  console.log('Batch Indexing Error', e);
-});
-
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 
 export default mongoose.model('Batch', BatchSchema);
