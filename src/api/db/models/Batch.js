@@ -14,11 +14,18 @@ import { ImageErrorModel } from './ImageError.js';
 
 export class BatchModel {
   static async queryByFilter(input, context) {
+
     try {
       const pipeline = [
         { '$match': { 'user': context.user.sub } },
         { '$match': { 'projectId': context.user['curr_project'] } }
       ];
+
+      if (input.status) {
+        pipeline.push({ '$match': {
+          processingEnd: { $exists: (input.status === 'COMPLETED') }
+        } });
+      }
 
       const result = await MongoPaging.aggregate(Batch.collection, {
         aggregation: pipeline,
