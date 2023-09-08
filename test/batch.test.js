@@ -50,7 +50,7 @@ tape('Batch#queryByFilter - SQS Response', async (t) => {
       t.deepEquals(input.modelName, 'Batch');
 
       return {
-        batches: [{
+        results: [{
           _id: 'batch-123'
         }]
       };
@@ -67,7 +67,7 @@ tape('Batch#queryByFilter - SQS Response', async (t) => {
   });
 
   t.deepEquals(batches, {
-    batches: [{
+    results: [{
       _id: 'batch-123',
       errors: [],
       imageErrors: 321,
