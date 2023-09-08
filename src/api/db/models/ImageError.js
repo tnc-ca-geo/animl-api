@@ -168,25 +168,31 @@ export class ImageErrorModel {
   }
 }
 
-const generateImageErrorModel = ({ user } = {}) => ({
-  countImageErrors: ImageErrorModel.countImageErrors,
-  queryByFilter: ImageErrorModel.queryByFilter,
-
-  get createError() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return ImageErrorModel.createError;
-  },
-
-  get clearErrors() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return ImageErrorModel.clearErrors;
-  },
-
-  get export() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return ImageErrorModel.export;
+export default class AuthedImageErrorModel {
+  constructor(user) {
+    this.user = user;
   }
-});
 
+  async countImageErrors(input) {
+    return await ImageErrorModel.countImageErrors(input);
+  }
 
-export default generateImageErrorModel;
+  async queryByFilter(input) {
+    return await ImageErrorModel.queryByFilter(input);
+  }
+
+  async createError(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageErrorModel.createError(input);
+  }
+
+  async clearErrors(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageErrorModel.clearErrors(input);
+  }
+
+  async export(input, context) {
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return await ImageErrorModel.export(input, context);
+  }
+}

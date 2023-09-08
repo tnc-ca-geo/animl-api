@@ -37,9 +37,16 @@ export class MLModelModel {
   }
 }
 
-const generateMLModelModel = () => ({
-  getMLModels: MLModelModel.getMLModels,
-  createMLModel: MLModelModel.createMLModel
-});
+export default class AuthMLModelModel {
+  constructor(user) {
+    this.user = user;
+  }
 
-export default generateMLModelModel;
+  async getMLModels(_ids) {
+    return await MLModelModel.getMLModels(_ids);
+  }
+
+  async createMLModel(modelConfig) {
+    return await MLModelModel.createMLModel(modelConfig);
+  }
+}

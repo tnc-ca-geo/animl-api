@@ -583,72 +583,76 @@ export class ImageModel {
   }
 }
 
-const generateImageModel = ({ user } = {}) => ({
-  get countImages() {
-    return ImageModel.countImages;
-  },
+export default class AuthedImageModel {
+  constructor(user) {
+    this.user = user;
+  }
 
-  get queryById() {
-    return ImageModel.queryById;
-  },
+  async countImages(input, context) {
+    return await ImageModel.countImages(input, context);
+  }
 
-  get queryByFilter() {
-    return ImageModel.queryByFilter;
-  },
+  async queryById(_id, context) {
+    return await ImageModel.queryById(_id, context);
+  }
 
-  getLabels: ImageModel.getLabels,
+  async queryByFilter(input, context) {
+    return await ImageModel.queryByFilter(input, context);
+  }
 
-  get createImage() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return ImageModel.createImage;
-  },
+  async getLabels(projId) {
+    return await ImageModel.getLabels(projId);
+  }
 
-  get createObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.createObject;
-  },
+  async createImage(input, context) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createImage(input, context);
+  }
 
-  get updateObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.updateObject;
-  },
+  async createObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createObject(input, context);
+  }
 
-  get deleteObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.deleteObject;
-  },
+  async updateObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateObject(input, context);
+  }
+
+  async deleteObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteObject(input, context);
+  }
 
   // TODO: make this only accept a single label at a time
   // to make dealing with errors simpler
-  get createLabels() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.createLabels;
-  },
-
-  get updateLabel() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.updateLabel;
-  },
-
-  get deleteLabel() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.deleteLabel;
-  },
-
-  get getStats() {
-    return ImageModel.getStats;
-  },
-
-  get export() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return ImageModel.export;
-  },
-
-  get getExportStatus() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return ImageModel.getExportStatus;
+  async createLabels(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createLabels(input, context);
   }
 
-});
+  async updateLabel(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateLabel(input, context);
+  }
 
-export default generateImageModel;
+  async deleteLabel(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteLabel(input, context);
+  }
+
+  async getStats(input, context) {
+    return await ImageModel.getStats(input, context);
+  }
+
+  async export(input, context) {
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return await ImageModel.export(input, context);
+  }
+
+  async getExportStatus(input, context) {
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return await ImageModel.getExportStatus(input, context);
+  }
+
+}

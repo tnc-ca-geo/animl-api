@@ -240,30 +240,36 @@ export class BatchModel {
   }
 }
 
-const generateBatchModel = ({ user } = {}) => ({
-  queryByFilter: BatchModel.queryByFilter,
-  queryById: BatchModel.queryById,
-
-  get stopBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.stopBatch;
-  },
-
-  get redriveBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.redriveBatch;
-  },
-
-  get updateBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.updateBatch;
-  },
-
-  get createUpload() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.createUpload;
+export default class AuthedBatchModel {
+  constructor(user) {
+    this.user = user;
   }
-});
 
+  async queryByFilter(input, context) {
+    return await BatchModel.queryByFilter(input, context);
+  }
 
-export default generateBatchModel;
+  async queryById(input) {
+    return await BatchModel.queryById(input);
+  }
+
+  async stopBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.stopBatch(input);
+  }
+
+  async redriveBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.redriveBatch(input);
+  }
+
+  async updateBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.updateBatch(input);
+  }
+
+  async createUpload(input, context) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchModel.createUpload(input, context);
+  }
+}
