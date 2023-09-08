@@ -205,24 +205,27 @@ export class CameraModel {
   }
 }
 
-const generateCameraModel = ({ user } = {}) => ({
-  get getWirelessCameras() {
-    return CameraModel.getWirelessCameras;
-  },
-
-  get createWirelessCamera() {
-    return CameraModel.createWirelesscamera;
-  },
-
-  get registerCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-    return CameraModel.registerCamera;
-  },
-
-  get unregisterCamera() {
-    if (!hasRole(user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
-    return CameraModel.unregisterCamera;
+export default class AuthedCameraModel {
+  constructor(user) {
+    this.user = user;
   }
-});
 
-export default generateCameraModel;
+  async getWirelessCameras(_ids, context) {
+    return await CameraModel.getWirelessCameras(_ids, context);
+  }
+
+  async createWirelessCamera(input, context) {
+    return await CameraModel.createWirelesscamera(input, context);
+  }
+
+  async registerCamera(input, context) {
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+
+    return await CameraModel.registerCamera(input, context);
+  }
+
+  async unregisterCamera(input, context) {
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    return await CameraModel.unregisterCamera(input, context);
+  }
+}

@@ -41,10 +41,4 @@ const ImageAttemptSchema = new Schema({
   metadata: { type: ImageMetadataSchema }
 });
 
-ImageAttemptSchema.index({ batch: 1 });
-
-ImageAttemptSchema.on('index', (e) => {
-  console.log('ImageAttempt Indexing Error', e);
-});
-
 export default mongoose.model('ImageAttempt', ImageAttemptSchema);

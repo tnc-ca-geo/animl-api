@@ -21,7 +21,7 @@
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
         "test": "tape test/**.test.js",
-        "lint": "eslint src/ test/**.js"
+        "lint": "eslint src/ test/"
     },
     "author": "Nathaniel Rindlaub",
     "license": "ISC",

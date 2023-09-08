@@ -2,7 +2,7 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import S3 from '@aws-sdk/client-s3';
-import { ImageError } from '../src/api/db/schemas/ImageError.js';
+import ImageError from '../src/api/db/schemas/ImageError.js';
 import Signer from '../src/export/signer.js';
 
 process.env.AWS_REGION = process.env.REGION = 'us-east-2';
@@ -28,7 +28,7 @@ tape('Export: Image-Errors - Basic Event', async (t) => {
   const mocks = [];
 
   try {
-    MockConfig();
+    MockConfig(t);
 
     let s3count = 0;
     Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
@@ -55,7 +55,7 @@ tape('Export: Image-Errors - Basic Event', async (t) => {
 
           t.ok(body.length, 2);
           t.deepEquals(body[0].split(','), ['_id', 'created', 'image', 'batch', 'path', 'error']);
-          t.deepEquals(body[1], '123,"Dec 31, 2021, 5:00:00 PM",image-123,batch-123,input.jpg,This is an Error');
+          t.deepEquals(body[1], '123,"Jan 1, 2022, 12:00:00 AM",image-123,batch-123,input.jpg,This is an Error');
         }
       } else {
         t.fail();

@@ -7,10 +7,11 @@ import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../er
 import crypto from 'node:crypto';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
-import { ImageError } from '../schemas/ImageError.js';
+import ImageError from '../schemas/ImageError.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
+import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
 import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
@@ -95,13 +96,7 @@ export class ImageModel {
 
   static async createImage(input, context) {
     const successfulOps = [];
-
-    const errors = (input.errors || []).filter((err) => {
-      return typeof err === 'string';
-    }).map((err) => {
-      return new Error(err);
-    });
-
+    const errors = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
@@ -126,7 +121,7 @@ export class ImageModel {
           }
         } else {
           // else find wireless camera record and associated project Id
-          [existingCam] = await context.models.Camera.getWirelessCameras([cameraId]);
+          [existingCam] = await CameraModel.getWirelessCameras([cameraId], context);
           if (existingCam) {
             projectId = findActiveProjReg(existingCam);
           }
@@ -135,7 +130,6 @@ export class ImageModel {
         // create an imageID
         md.projectId = projectId;
         md.imageId = projectId + ':' + md.hash;
-        console.log(`imageId: ${md.imageId}`);
 
         // create an ImageAttempt record (if one doesn't already exist)
         imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
@@ -150,6 +144,14 @@ export class ImageModel {
 
       // 2. validate metadata and create Image record
       try {
+
+        // check for errors passed in from animl-ingest (e.g. corrupted image file)
+        if (input.md.errors) {
+          input.md.errors
+            .filter((err) => typeof err === 'string')
+            .forEach((err) => errors.push(new Error(err)));
+        }
+
         // test serial number
         if (!cameraId || cameraId === 'unknown') {
           errors.push(new Error('Unknown Serial Number'));
@@ -170,7 +172,7 @@ export class ImageModel {
             // create camera config if there isn't one yet
             await ProjectModel.createCameraConfig({ projectId, cameraId }, context);
           } else if (!existingCam) {
-            await context.models.Camera.createWirelessCamera({
+            await CameraModel.createWirelessCamera({
               projectId,
               cameraId,
               make: md.make,
@@ -180,7 +182,7 @@ export class ImageModel {
           }
 
           // map image to deployment
-          const [project] = await context.models.Project.getProjects([projectId], context);
+          const [project] = await ProjectModel.getProjects([projectId], context);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
@@ -207,7 +209,7 @@ export class ImageModel {
             // delete newly created wireless camera record
             await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
-            const [proj] = await context.models.Project.getProjects([projectId], context);
+            const [proj] = await ProjectModel.getProjects([projectId], context);
             proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
             proj.save();
           }
@@ -581,72 +583,76 @@ export class ImageModel {
   }
 }
 
-const generateImageModel = ({ user } = {}) => ({
-  get countImages() {
-    return ImageModel.countImages;
-  },
+export default class AuthedImageModel {
+  constructor(user) {
+    this.user = user;
+  }
 
-  get queryById() {
-    return ImageModel.queryById;
-  },
+  async countImages(input, context) {
+    return await ImageModel.countImages(input, context);
+  }
 
-  get queryByFilter() {
-    return ImageModel.queryByFilter;
-  },
+  async queryById(_id, context) {
+    return await ImageModel.queryById(_id, context);
+  }
 
-  getLabels: ImageModel.getLabels,
+  async queryByFilter(input, context) {
+    return await ImageModel.queryByFilter(input, context);
+  }
 
-  get createImage() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return ImageModel.createImage;
-  },
+  async getLabels(projId) {
+    return await ImageModel.getLabels(projId);
+  }
 
-  get createObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.createObject;
-  },
+  async createImage(input, context) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createImage(input, context);
+  }
 
-  get updateObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.updateObject;
-  },
+  async createObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createObject(input, context);
+  }
 
-  get deleteObject() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.deleteObject;
-  },
+  async updateObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateObject(input, context);
+  }
+
+  async deleteObject(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteObject(input, context);
+  }
 
   // TODO: make this only accept a single label at a time
   // to make dealing with errors simpler
-  get createLabels() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.createLabels;
-  },
-
-  get updateLabel() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.updateLabel;
-  },
-
-  get deleteLabel() {
-    if (!hasRole(user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return ImageModel.deleteLabel;
-  },
-
-  get getStats() {
-    return ImageModel.getStats;
-  },
-
-  get export() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return ImageModel.export;
-  },
-
-  get getExportStatus() {
-    if (!hasRole(user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
-    return ImageModel.getExportStatus;
+  async createLabels(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createLabels(input, context);
   }
 
-});
+  async updateLabel(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateLabel(input, context);
+  }
 
-export default generateImageModel;
+  async deleteLabel(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteLabel(input, context);
+  }
+
+  async getStats(input, context) {
+    return await ImageModel.getStats(input, context);
+  }
+
+  async export(input, context) {
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return await ImageModel.export(input, context);
+  }
+
+  async getExportStatus(input, context) {
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    return await ImageModel.getExportStatus(input, context);
+  }
+
+}

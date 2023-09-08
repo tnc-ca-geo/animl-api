@@ -14,11 +14,18 @@ import { ImageErrorModel } from './ImageError.js';
 
 export class BatchModel {
   static async queryByFilter(input, context) {
+
     try {
       const pipeline = [
         { '$match': { 'user': context.user.sub } },
         { '$match': { 'projectId': context.user['curr_project'] } }
       ];
+
+      if (input.filter) {
+        pipeline.push({ '$match': {
+          processingEnd: { $exists: (input.filter === 'COMPLETED') }
+        } });
+      }
 
       const result = await MongoPaging.aggregate(Batch.collection, {
         aggregation: pipeline,
@@ -28,7 +35,9 @@ export class BatchModel {
         next: input.next,
         previous: input.previous
       });
-      // console.log('res: ', JSON.stringify(result));
+
+      result.results = await Promise.all(result.results.map((batch) => BatchModel.augmentBatch(batch)));
+
       return result;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -37,56 +46,12 @@ export class BatchModel {
     }
   }
 
-  static async queryById(_id, params = {}) {
+  static async queryById(_id) {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
 
-      const epipeline = [];
-      epipeline.push({ '$match': { 'batch': batch._id } });
-      batch.errors = await BatchError.aggregate(epipeline);
-
-      batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
-
-      if (params.remaining && batch.processingEnd) {
-        batch.remaining = 0;
-        batch.dead = 0; // Why are we assuming dead = 0 here?
-      } else if (params.remaining) {
-        // TODO: if querying sqs is expensive, it's worth noting that we currently do it for
-        // all batches returned from getBatches, even if they're not currently running
-        // (b/c all requests include params.remaining). Figure out how to make more efficient?
-        const sqs = new SQS.SQSClient({ region: process.env.REGION });
-
-        try {
-          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
-            AttributeNames: [
-              'ApproximateNumberOfMessages',
-              'ApproximateNumberOfMessagesNotVisible'
-            ]
-          }));
-
-          batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
-        } catch (err) {
-          console.error(err);
-          batch.remaining = null;
-        }
-
-        try {
-          const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
-            QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
-            AttributeNames: [
-              'ApproximateNumberOfMessages',
-              'ApproximateNumberOfMessagesNotVisible'
-            ]
-          }));
-
-          batch.dead = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
-        } catch (err) {
-          console.error(err);
-          batch.dead = null;
-        }
-      }
+      BatchModel.augmentBatch(batch);
 
       return batch;
     } catch (err) {
@@ -95,6 +60,51 @@ export class BatchModel {
       throw new ApolloError(err);
     }
   }
+
+  static async augmentBatch(batch) {
+    batch.errors = await BatchError.aggregate([{ '$match': { 'batch': batch._id } }]);
+    batch.imageErrors = await ImageErrorModel.countImageErrors({ batch: batch._id });
+
+    if (batch.processingEnd) {
+      batch.remaining = 0;
+      batch.dead = 0; // Why are we assuming dead = 0 here?
+    } else {
+      const sqs = new SQS.SQSClient({ region: process.env.REGION });
+
+      try {
+        const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+          QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}`,
+          AttributeNames: [
+            'ApproximateNumberOfMessages',
+            'ApproximateNumberOfMessagesNotVisible'
+          ]
+        }));
+
+        batch.remaining = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+      } catch (err) {
+        console.error(err);
+        batch.remaining = null;
+      }
+
+      try {
+        const queue = await sqs.send(new SQS.GetQueueAttributesCommand({
+          QueueUrl: `https://sqs.${process.env.REGION}.amazonaws.com/${process.env.ACCOUNT}/animl-ingest-${process.env.STAGE}-${batch._id}-dlq`,
+          AttributeNames: [
+            'ApproximateNumberOfMessages',
+            'ApproximateNumberOfMessagesNotVisible'
+          ]
+        }));
+
+        batch.dead = parseInt(queue.Attributes.ApproximateNumberOfMessages) + parseInt(queue.Attributes.ApproximateNumberOfMessagesNotVisible);
+      } catch (err) {
+        console.error(err);
+        batch.dead = null;
+      }
+    }
+
+    return batch;
+  }
+
 
   static async stopBatch(input) {
     const operation = async (input) => {
@@ -230,30 +240,36 @@ export class BatchModel {
   }
 }
 
-const generateBatchModel = ({ user } = {}) => ({
-  queryByFilter: BatchModel.queryByFilter,
-  queryById: BatchModel.queryById,
-
-  get stopBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.stopBatch;
-  },
-
-  get redriveBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.redriveBatch;
-  },
-
-  get updateBatch() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.updateBatch;
-  },
-
-  get createUpload() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchModel.createUpload;
+export default class AuthedBatchModel {
+  constructor(user) {
+    this.user = user;
   }
-});
 
+  async queryByFilter(input, context) {
+    return await BatchModel.queryByFilter(input, context);
+  }
 
-export default generateBatchModel;
+  async queryById(input) {
+    return await BatchModel.queryById(input);
+  }
+
+  async stopBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.stopBatch(input);
+  }
+
+  async redriveBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.redriveBatch(input);
+  }
+
+  async updateBatch(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchModel.updateBatch(input);
+  }
+
+  async createUpload(input, context) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchModel.createUpload(input, context);
+  }
+}

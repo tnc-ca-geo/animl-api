@@ -72,17 +72,18 @@ export class BatchErrorModel {
   }
 }
 
-const generateBatchErrorModel = ({ user } = {}) => ({
-  get createError() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchErrorModel.createError;
-  },
-
-  get clearErrors() {
-    if (!hasRole(user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
-    return BatchErrorModel.clearErrors;
+export default class AuthedBatchErrorModel {
+  constructor(user) {
+    this.user = user;
   }
-});
 
+  async createError(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchErrorModel.createError(input);
+  }
 
-export default generateBatchErrorModel;
+  async clearErrors(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await BatchErrorModel.clearErrors(input);
+  }
+}

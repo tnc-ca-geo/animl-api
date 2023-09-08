@@ -6,7 +6,7 @@ const Query = {
   batches: async (_, { input }, context) => {
     const response = await context.models.Batch.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
-    return {  // reurn ImagesConnection
+    return {
       pageInfo: {
         previous,
         hasPrevious,
@@ -17,17 +17,11 @@ const Query = {
     };
   },
 
-  batch: async (_, { _id }, context) => {
-    return await context.models.Batch.queryById(_id, {
-      remaining: true
-    });
-  },
-
   images: async (_, { input }, context) => {
     const count = await context.models.Image.countImages(input, context);
     const response = await context.models.Image.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
-    return {  // reurn ImagesConnection
+    return {
       pageInfo: {
         previous,
         hasPrevious,
@@ -43,7 +37,7 @@ const Query = {
     const count = await context.models.ImageError.countImageErrors(input, context);
     const response = await context.models.ImageError.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
-    return {  // reurn ImagesConnection
+    return {
       pageInfo: {
         previous,
         hasPrevious,
