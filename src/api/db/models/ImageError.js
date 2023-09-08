@@ -2,7 +2,7 @@ import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';
-import { ImageError } from '../schemas/ImageError.js';
+import ImageError from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 import SQS from '@aws-sdk/client-sqs';
