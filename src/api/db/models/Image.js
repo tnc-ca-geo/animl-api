@@ -7,7 +7,7 @@ import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../er
 import crypto from 'node:crypto';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
-import { ImageError } from '../schemas/ImageError.js';
+import ImageError from '../schemas/ImageError.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';

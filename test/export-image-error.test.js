@@ -2,7 +2,7 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import S3 from '@aws-sdk/client-s3';
-import { ImageError } from '../src/api/db/schemas/ImageError.js';
+import ImageError from '../src/api/db/schemas/ImageError.js';
 import Signer from '../src/export/signer.js';
 
 process.env.AWS_REGION = process.env.REGION = 'us-east-2';

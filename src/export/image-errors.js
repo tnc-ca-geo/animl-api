@@ -6,7 +6,7 @@ import S3 from '@aws-sdk/client-s3';
 import Signer from './signer.js';
 import { ApolloError } from 'apollo-server-lambda';
 import { stringify } from 'csv-stringify';
-import { ImageError } from '../api/db/schemas/ImageError.js';
+import ImageError from '../api/db/schemas/ImageError.js';
 import { ImageErrorModel } from '../api/db/models/ImageError.js';
 
 export default class ImageExport {
