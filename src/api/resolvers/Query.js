@@ -64,9 +64,8 @@ const Query = {
     return await context.models.Camera.getWirelessCameras(_ids, context);
   },
 
-  mlModels: async (_, { _ids }, context) => {
-    console.log('Query.mlModels - _ids: ', _ids);
-    return await context.models.MLModel.getMLModels(_ids, context);
+  mlModels: async (_, { input }, context) => {
+    return await context.models.MLModel.getMLModels(input, context);
   },
 
   stats: async (_, { input }, context) => {

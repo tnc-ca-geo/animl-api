@@ -3,11 +3,9 @@ import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
 export class MLModelModel {
-  static async getMLModels(_ids) {
-    console.log('MLModelModel.getMLModels - _ids: ', _ids);
-    const query = _ids ? { _id: { $in: _ids } } : {};
+  static async getMLModels(input) {
+    const query = input?._ids ? { _id: { $in: input._ids } } : {};
     try {
-      console.log('MLModelModel.getMLModels - query: ', query);
       const mlModels = await MLModel.find(query);
       return mlModels;
     } catch (err) {

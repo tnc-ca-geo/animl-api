@@ -6,7 +6,7 @@ export default `
     imageErrors(input: QueryImageErrorsInput!): ImageErrorsConnection
     labels: LabelList
     wirelessCameras(_ids: [String!]): [WirelessCamera]
-    mlModels(_ids: [String!]): [MLModel]
+    mlModels(input: QueryMLModelsInput): [MLModel]
     batches(input: QueryBatchesInput!): BatchesConnection
     stats(input: QueryStatsInput!): ImagesStats
     export(input: ExportInput!): ExportPayload
