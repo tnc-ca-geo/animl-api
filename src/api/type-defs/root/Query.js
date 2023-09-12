@@ -1,6 +1,6 @@
 export default `
   type Query {
-    projects(_ids: [String!]): [Project]
+    projects(input: QueryProjectsInput): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
     imageErrors(input: QueryImageErrorsInput!): ImageErrorsConnection

@@ -4,8 +4,10 @@ import retry from 'async-retry';
 
 export class MLModelModel {
   static async getMLModels(_ids) {
+    console.log('MLModelModel.getMLModels - _ids: ', _ids);
     const query = _ids ? { _id: { $in: _ids } } : {};
     try {
+      console.log('MLModelModel.getMLModels - query: ', query);
       const mlModels = await MLModel.find(query);
       return mlModels;
     } catch (err) {

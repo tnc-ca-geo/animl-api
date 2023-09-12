@@ -8,8 +8,8 @@ import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
 import { idMatch }  from '../api/db/models/utils.js';
-import generateImageModel from '../api/db/models/Image.js';
-import generateProjectModel from '../api/db/models/Project.js';
+import { ImageModel } from '../api/db/models/Image.js';
+import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
@@ -18,8 +18,8 @@ export default class ImageExport {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.user = { 'is_superuser': true };
-    this.projectModel = generateProjectModel({ user: this.user });
-    this.imageModel = generateImageModel({ user: this.user });
+    this.projectModel = ProjectModel;
+    this.imageModel = ImageModel;
     this.projectId = projectId;
     this.documentId = documentId;
     this.filters = filters;
@@ -419,13 +419,15 @@ export default class ImageExport {
   }
 
   createCOCOImg(img) {
-    const fileNameNoExt = img.originalFileName.split('.')[0];
-    const archivePath = `${img.cameraId}/${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
     const deployment = this.getDeployment(img, this.project);
+    const deploymentNormalized = deployment.name.toLowerCase().replace("'", '').replace(' ', '_');
+    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id}.${img.fileTypeExtension}`;
+    const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
     return {
       id: img._id,
-      file_name: img.originalFileName,
-      original_relative_path: archivePath,
+      file_name: destPath,
+      original_file_name: img.originalFileName,
+      serving_bucket_key: servingPath,
       datetime: img.dateTimeOriginal,
       location: deployment.name,
       ...(img.imageWidth &&  { width: img.imageWidth }),

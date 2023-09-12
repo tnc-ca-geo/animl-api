@@ -12,14 +12,14 @@ import {
 } from '../../auth/roles.js';
 
 export class ProjectModel {
-  static async getProjects(_ids, context) {
+  static async getProjects(input, context) {
     let query = {};
     if (context.user['is_superuser']) {
-      query = _ids ? { _id: { $in: _ids } } : {};
+      query = input?._ids ? { _id: { $in: input._ids } } : {};
     }
     else {
       const availIds = Object.keys(context.user['projects']);
-      const filteredIds = _ids && _ids.filter((_id) => availIds.includes(_id));
+      const filteredIds = input?._ids && input._ids.filter((_id) => availIds.includes(_id));
       query = { _id: { $in: (filteredIds || availIds) } };
     }
 

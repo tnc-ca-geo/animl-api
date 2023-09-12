@@ -1,6 +1,6 @@
 const Query = {
-  projects: async (_, { _ids }, context) => {
-    return await context.models.Project.getProjects(_ids, context);
+  projects: async (_, { input }, context) => {
+    return await context.models.Project.getProjects(input, context);
   },
 
   batches: async (_, { input }, context) => {
@@ -65,6 +65,7 @@ const Query = {
   },
 
   mlModels: async (_, { _ids }, context) => {
+    console.log('Query.mlModels - _ids: ', _ids);
     return await context.models.MLModel.getMLModels(_ids, context);
   },
 
