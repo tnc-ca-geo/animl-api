@@ -218,8 +218,8 @@ export class ImageModel {
 
       // 3. if there were errors in the array, create ImageErrors for them
       if (errors.length) {
+        console.log(`creating ImageErrors for: ${JSON.stringify(errors)}`);
         for (let i = 0; i < errors.length; i++) {
-          console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
           errors[i] = new ImageError({
             image: md.imageId,
             batch: md.batchId,

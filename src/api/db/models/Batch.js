@@ -6,6 +6,7 @@ import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
 import Lambda from '@aws-sdk/client-lambda';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { DateTime } from 'luxon';
 import Batch from '../schemas/Batch.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
@@ -118,6 +119,10 @@ export class BatchModel {
     try {
       const batch = await operation({ _id: input.batch });
       if (batch.processingEnd) throw new Error('Stack has already terminated');
+      if (batch.stoppingInitiated) throw new Error('Stack is already scheduled for deletion');
+
+      batch.stoppingInitiated = DateTime.now();
+      await batch.save();
 
       const lambda = new Lambda.LambdaClient({ region: process.env.REGION });
 

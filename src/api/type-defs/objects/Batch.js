@@ -8,6 +8,7 @@ export default `
     ingestionComplete: Date
     processingStart: Date
     processingEnd: Date
+    stoppingInitiated: Date
     overrideSerial: String
     originalFile: String
     uploadedFile: String

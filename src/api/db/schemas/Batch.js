@@ -14,6 +14,7 @@ const BatchSchema = new Schema({
   ingestionComplete: { type: Date },
   processingStart: { type: Date },
   processingEnd: { type: Date },
+  stoppingInitiated: { type: Date },
   total: { type: Number }
 });
 
