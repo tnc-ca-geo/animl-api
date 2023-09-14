@@ -42,8 +42,8 @@ export default class AuthMLModelModel {
     this.user = user;
   }
 
-  async getMLModels(_ids) {
-    return await MLModelModel.getMLModels(_ids);
+  async getMLModels(input) {
+    return await MLModelModel.getMLModels(input);
   }
 
   async createMLModel(modelConfig) {

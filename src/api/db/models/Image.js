@@ -99,7 +99,7 @@ export class ImageModel {
     const errors = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
-    let cameraId = md.serialNumber; // this will be 'unknown' if there's no SN
+    let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
     let existingCam;
     let imageAttempt;
 
@@ -168,6 +168,7 @@ export class ImageModel {
         }
 
         if (!errors.length) {
+          console.log('validation passed, creating image record...');
           if (md.batchId) {
             // create camera config if there isn't one yet
             await ProjectModel.createCameraConfig({ projectId, cameraId }, context);
@@ -182,8 +183,10 @@ export class ImageModel {
           }
 
           // map image to deployment
-          const [project] = await ProjectModel.getProjects([projectId], context);
+          const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
+          console.log('project associated with image: ', project);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          console.log('camConfig associated with image: ', camConfig);
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
           md.deploymentId = deployment._id;
@@ -209,7 +212,7 @@ export class ImageModel {
             // delete newly created wireless camera record
             await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
-            const [proj] = await ProjectModel.getProjects([projectId], context);
+            const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
             proj.save();
           }
@@ -218,7 +221,6 @@ export class ImageModel {
 
       // 3. if there were errors in the array, create ImageErrors for them
       if (errors.length) {
-        console.log(`creating ImageErrors for: ${JSON.stringify(errors)}`);
         for (let i = 0; i < errors.length; i++) {
           errors[i] = new ImageError({
             image: md.imageId,
@@ -226,6 +228,7 @@ export class ImageModel {
             path: md.path || md.fileName,
             error: errors[i].message
           });
+          console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
           await errors[i].save();
         }
       }

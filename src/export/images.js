@@ -57,7 +57,10 @@ export default class ImageExport {
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
 
-      const [project] = await this.projectModel.getProjects([this.projectId], { user: this.user });
+      const [project] = await this.projectModel.getProjects(
+        { _ids: [this.projectId] },
+        { user: this.user }
+      );
       const { categories } = await this.imageModel.getLabels(this.projectId);
       this.project = project;
       this.categories = categories;

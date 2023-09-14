@@ -24,6 +24,7 @@ export class CameraModel {
   }
 
   static async createWirelessCamera(input, context) {
+    console.log('CameraModel.createWirelessCamera - input: ', input);
     const successfulOps = [];
     const projectId = input.projectId || 'default_project';
 
@@ -70,15 +71,16 @@ export class CameraModel {
   static async registerCamera(input, context) {
     const successfulOps = [];
     const projectId = context.user['curr_project'];
+    const cameraId = input.cameraId.toString();
 
     try {
-      const cam = await WirelessCamera.findOne({ _id: input.cameraId });
+      const cam = await WirelessCamera.findOne({ _id: cameraId });
 
       // if no camera found, create new Wireless Camera record & cameraConfig
       if (!cam) {
         const { project } = await CameraModel.createWirelessCamera({
           projectId,
-          cameraId: input.cameraId,
+          cameraId: cameraId,
           make: input.make
         }, context);
         const wirelessCameras = await CameraModel.getWirelessCameras();
@@ -177,7 +179,7 @@ export class CameraModel {
 
       // make sure there's a Project.cameraConfig record for this camera
       // in the default_project and create one if not
-      let [defaultProj] = await ProjectModel.getProjects(['default_project'], context);
+      let [defaultProj] = await ProjectModel.getProjects({ _ids: ['default_project'] }, context);
 
       let addedNewCamConfig = false;
       const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));

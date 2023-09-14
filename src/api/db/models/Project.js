@@ -13,6 +13,7 @@ import {
 
 export class ProjectModel {
   static async getProjects(input, context) {
+    console.log('Project.getProjects - input: ', input);
     let query = {};
     if (context.user['is_superuser']) {
       query = input?._ids ? { _id: { $in: input._ids } } : {};
@@ -52,9 +53,11 @@ export class ProjectModel {
   }
 
   static async createCameraConfig(input, context) {
+    console.log('Project.createCameraConfig - input: ', input);
     const operation = async ({ projectId, cameraId }, context) => {
       return await retry(async () => {
-        const [project] = await ProjectModel.getProjects([projectId], context);
+        const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
+        console.log('originalProject: ', project);
 
         const newCamConfig = {
           _id: cameraId,
@@ -90,6 +93,8 @@ export class ProjectModel {
           { returnDocument: 'after' }
         );
 
+        console.log('updatedProject: ', updatedProject);
+
         if (updatedProject.cameraConfigs.length > project.cameraConfigs.length) {
           console.log('Couldn\'t find a camera config with that _id, so added one to project: ', updatedProject);
         }
@@ -111,7 +116,10 @@ export class ProjectModel {
     const operation = async (input) => {
       return await retry(async () => {
         // find project, add new view, and save
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const newView = {
           name: input.name,
           filters: input.filters,
@@ -138,7 +146,10 @@ export class ProjectModel {
     const operation = async (input) => {
       return await retry(async (bail) => {
         // find view
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -168,7 +179,10 @@ export class ProjectModel {
       return await retry(async (bail) => {
 
         // find view
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const view = project.views.find((v) => idMatch(v._id, input.viewId));
         if (!view.editable) {
           bail(new ForbiddenError(`View ${view.name} is not editable`));
@@ -194,7 +208,10 @@ export class ProjectModel {
     const operation = async ({ automationRules }) => {
       return await retry(async () => {
         console.log('attempting to update automation rules with: ', automationRules);
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         project.automationRules = automationRules;
         await project.save();
         return project.automationRules;
@@ -272,7 +289,10 @@ export class ProjectModel {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -303,7 +323,10 @@ export class ProjectModel {
       return await retry(async (bail) => {
 
         // find deployment
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -344,7 +367,10 @@ export class ProjectModel {
       return await retry(async () => {
 
         // find camera config
-        const [project] = await ProjectModel.getProjects([context.user['curr_project']], context);
+        const [project] = await ProjectModel.getProjects(
+          { _ids: [context.user['curr_project']] },
+          context
+        );
         const camConfig = project.cameraConfigs.find((cc) => (
           idMatch(cc._id, cameraId)
         ));
@@ -378,8 +404,8 @@ export default class AuthedProjectModel {
     this.user = user;
   }
 
-  async getProjects(_ids, context) {
-    return await ProjectModel.getProjects(_ids, context);
+  async getProjects(input, context) {
+    return await ProjectModel.getProjects(input, context);
   }
 
   async createProject(input) {

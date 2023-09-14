@@ -15,7 +15,7 @@ const makeEmail = async (rule, image, context) => {
 
   try {
     const projId = image.projectId;
-    const [project] = await context.models.Project.getProjects([projId], context);
+    const [project] = await context.models.Project.getProjects({ _ids: [projId] }, context);
     const frontendUrl = await buildFrontendUrl(image, project, context.config);
     const imageUrl = buildImgUrl(image, context.config, 'medium');
 
