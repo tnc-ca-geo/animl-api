@@ -50,7 +50,7 @@ const Query = {
   },
 
   image: async (_, { input }, context) => {
-    return await context.models.Image.queryById(input.imageId);
+    return await context.models.Image.queryById(input.imageId, context);
   },
 
   // TODO: Now fetching labels as a field level resolver for Project, but we
