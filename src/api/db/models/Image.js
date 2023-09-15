@@ -86,6 +86,8 @@ export class ImageModel {
       });
       if (objectLessImage) categories.push('none');
 
+      categories.sort();
+
       return { categories };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
