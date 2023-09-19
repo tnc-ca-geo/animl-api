@@ -30,11 +30,12 @@ const authMiddleware = async (resolve, parent, args, context, info) => {
 };
 
 const context = async ({ event, context }) => {
+  console.log('event: ', event.body);
   context.callbackWaitsForEmptyEventLoop = false;
   const config = await getConfig();
   await connectToDatabase(config);
+  console.log('connected to db');
   const user = await getUserInfo(event, config);
-  console.log('event: ', event.body);
   console.log('user: ', user);
 
   return {
