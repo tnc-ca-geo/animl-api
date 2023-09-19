@@ -71,7 +71,6 @@ const Mutation = {
 
   updateAutomationRules: async (_, { input }, context) => {
     const automationRules = await context.models.Project.updateAutomationRules(input, context);
-    console.log('updated automation rules: ', automationRules);
     return { automationRules };
   },
 

@@ -7,15 +7,15 @@ import { hasRole, idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 
 export class CameraModel {
-  static async getWirelessCameras(_ids, context) {
-    const query = _ids ? { _id: { $in: _ids } } : {};
+  static async getWirelessCameras(input, context) {
+    const query = input?._ids ? { _id: { $in: input._ids } } : {};
     // if user has curr_project, limit returned cameras to those that
     // have at one point been associated with curr_project
     const projectId = context.user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
       const wirelessCameras = await WirelessCamera.find(query);
-      console.log('getWirelessCameras - found wirelessCameras: ', wirelessCameras);
+      console.log('getWirelessCameras - found wirelessCameras: ', JSON.stringify(wirelessCameras));
       return wirelessCameras;
     } catch (err) {
       if (err instanceof ApolloError) throw err;
@@ -69,6 +69,8 @@ export class CameraModel {
   }
 
   static async registerCamera(input, context) {
+    console.log('CameraModel.registerCamera - context: ', context);
+
     const successfulOps = [];
     const projectId = context.user['curr_project'];
     const cameraId = input.cameraId.toString();
@@ -83,7 +85,7 @@ export class CameraModel {
           cameraId: cameraId,
           make: input.make
         }, context);
-        const wirelessCameras = await CameraModel.getWirelessCameras();
+        const wirelessCameras = await CameraModel.getWirelessCameras({}, context);
         return { wirelessCameras, project };
       }
 
@@ -103,7 +105,7 @@ export class CameraModel {
 
         await cam.save();
         successfulOps.push({ op: 'cam-registered', info: { cameraId: input.cameraId } });
-        const wirelessCameras = await CameraModel.getWirelessCameras();
+        const wirelessCameras = await CameraModel.getWirelessCameras({}, context);
         const project = await ProjectModel.createCameraConfig({
           projectId,
           cameraId: cam._id
@@ -212,8 +214,8 @@ export default class AuthedCameraModel {
     this.user = user;
   }
 
-  async getWirelessCameras(_ids, context) {
-    return await CameraModel.getWirelessCameras(_ids, context);
+  async getWirelessCameras(input, context) {
+    return await CameraModel.getWirelessCameras(input, context);
   }
 
   async createWirelessCamera(input, context) {

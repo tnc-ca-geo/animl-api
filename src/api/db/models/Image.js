@@ -123,7 +123,7 @@ export class ImageModel {
           }
         } else {
           // else find wireless camera record and associated project Id
-          [existingCam] = await CameraModel.getWirelessCameras([cameraId], context);
+          [existingCam] = await CameraModel.getWirelessCameras({ _ids: [cameraId] }, context);
           if (existingCam) {
             projectId = findActiveProjReg(existingCam);
           }
