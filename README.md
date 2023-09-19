@@ -4,11 +4,14 @@ trap data stored in MongoDB.
 
 ## `Related repos`
 
+- Animl API               http://github.com/tnc-ca-geo/animl-api
 - Animl frontend          http://github.com/tnc-ca-geo/animl-frontend
 - Animl base program      http://github.com/tnc-ca-geo/animl-base
 - Animl ingest function   http://github.com/tnc-ca-geo/animl-ingest
+- Exif service            https://github.com/tnc-ca-geo/exif-api
+- Animl email extraction  https://github.com/tnc-ca-geo/animl-email-relay
 - Animl ML resources      http://github.com/tnc-ca-geo/animl-ml
-- Animl desktop app       https://github.com/tnc-ca-geo/animl-desktop
+- Animl analytics         http://github.com/tnc-ca-geo/animl-analytics
 
 ## `Overview`
 
