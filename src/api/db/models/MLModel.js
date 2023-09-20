@@ -1,4 +1,5 @@
-import { ApolloError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import  { ApolloError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 
 // TODO: consider using multiple connections (one per model)
 // to reduce risk of slow trains

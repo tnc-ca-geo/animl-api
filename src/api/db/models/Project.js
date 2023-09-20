@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import Image from '../schemas/Image.js';

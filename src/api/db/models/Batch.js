@@ -1,4 +1,5 @@
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import { randomUUID } from 'node:crypto';

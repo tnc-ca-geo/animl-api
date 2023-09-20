@@ -1,4 +1,5 @@
-import { ApolloServer } from 'apollo-server-lambda';
+import { ApolloServer } from '@apollo/server';
+import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import { AuthenticationError } from 'apollo-server-errors';
 import { formatError } from './errors.js';
 import AuthedProjectModel from './db/models/Project.js';
@@ -69,6 +70,7 @@ const srv = new ApolloServer({
 
 const server = srv.createHandler();
 
-export {
-  server
-};
+export const graphqlHandler = startServerAndCreateLambdaHandler(
+    server,
+    handlers.createAPIGatewayProxyEventV2RequestHandler(),
+);

@@ -1,4 +1,5 @@
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import { CameraRegistrationError } from '../../errors.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
