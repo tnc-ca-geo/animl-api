@@ -5,6 +5,7 @@ import SQS from '@aws-sdk/client-sqs';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
 import crypto from 'node:crypto';
+import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
 import ImageError from '../schemas/ImageError.js';
@@ -18,6 +19,9 @@ import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, cre
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
+
+const ObjectId = mongoose.Types.ObjectId;
+
 
 export class ImageModel {
   static async countImages(input, context) {
@@ -291,32 +295,38 @@ export class ImageModel {
   }
 
   static async updateObjects(input, context) {
-    console.log('ImageModel.updateObjects - input: ', input);
-    const operation = async ({ imageId, objectId, diffs }) => {
+    console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
+    const operation = async ({ updates }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
           console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
         }
-        // find image, apply object updates, and save
-        const image = await ImageModel.queryById(imageId, context);
-        console.log('ImageModel.updateObjects - updating image: ', image._id);
-        const object = image.objects.find((obj) => idMatch(obj._id, objectId));
-        if (!object) {
-          const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
-          bail(new ApolloError(msg));
+
+        const operations = [];
+        for (const update of updates) {
+          const { imageId, objectId, diffs } = update;
+          const overrides = {};
+          for (const [key, newVal] of Object.entries(diffs)) {
+            overrides[`objects.$[obj].${key}`] = newVal;
+          }
+          operations.push({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $set: overrides },
+              arrayFilters: [{ 'obj._id': new ObjectId(objectId) }]
+            }
+          });
         }
-        for (const [key, newVal] of Object.entries(diffs)) {
-          object[key] = newVal;
-        }
-        await image.save();
-        return image;
+        console.log('ImageModel.updateObjects - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
 
       }, { retries: 2 });
     };
 
     try {
-      // TODO: use Image.bulkWrite() instead
-      return await Promise.all(input.updates.map((u) => operation(u)));
+      const res = await operation(input);
+      console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -414,27 +424,38 @@ export class ImageModel {
   }
 
   static async updateLabels(input, context) {
-    console.log('ImageModel.updateLabels - input: ', input);
-    const operation = async ({ imageId, objectId, labelId, diffs }) => {
+    console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
+    const operation = async ({ updates }) => {
       return await retry(async () => {
 
-        // find label, apply updates, and save image
-        const image = await ImageModel.queryById(imageId, context);
-        console.log('ImageModel.updateLabels - updating image: ', image._id);
-        const object = image.objects.find((obj) => idMatch(obj._id, objectId));
-        const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
-        for (const [key, newVal] of Object.entries(diffs)) {
-          label[key] = newVal;
+        const operations = [];
+        for (const update of updates) {
+          const { imageId, objectId, labelId, diffs } = update;
+          const overrides = {};
+          for (const [key, newVal] of Object.entries(diffs)) {
+            overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
+          }
+          operations.push({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $set: overrides },
+              arrayFilters: [
+                { 'obj._id': new ObjectId(objectId) },
+                { 'lbl._id': new ObjectId(labelId) }
+              ]
+            }
+          });
         }
-        await image.save();
-        return image;
+        console.log('ImageModel.updateLabels - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
 
       }, { retries: 2 });
     };
 
     try {
-      // TODO: use Image.bulkWrite() instead
-      return await Promise.all(input.updates.map((u) => operation(u)));
+      const res = await operation(input);
+      console.log('ImageModel.updateLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;

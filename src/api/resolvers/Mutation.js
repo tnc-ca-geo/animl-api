@@ -95,8 +95,8 @@ const Mutation = {
   },
 
   updateObjects: async (_, { input }, context) => {
-    const images = await context.models.Image.updateObjects(input, context);
-    return { images };
+    const res = await context.models.Image.updateObjects(input, context);
+    return { isOk: res.ok };
   },
 
   deleteObject: async (_, { input }, context) => {
@@ -110,8 +110,8 @@ const Mutation = {
   },
 
   updateLabels: async (_, { input }, context) => {
-    const images = await context.models.Image.updateLabels(input, context);
-    return { images };
+    const res = await context.models.Image.updateLabels(input, context);
+    return { isOk: res.ok };
   },
 
   deleteLabel: async (_, { input }, context) => {
