@@ -410,13 +410,15 @@ export class ImageModel {
     }
   }
 
-  static async updateLabel(input, context) {
-    const operation = async (input) => {
-      const { imageId, objectId, labelId, diffs } = input;
+  static async updateLabels(input, context) {
+    console.log('ImageModel.updateLabels - input: ', input);
+    const operation = async (update) => {
+      const { imageId, objectId, labelId, diffs } = update;
       return await retry(async () => {
 
         // find label, apply updates, and save image
         const image = await ImageModel.queryById(imageId, context);
+        console.log('ImageModel.updateLabels - updating image: ', image._id);
         const object = image.objects.find((obj) => idMatch(obj._id, objectId));
         const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
         for (const [key, newVal] of Object.entries(diffs)) {
@@ -429,7 +431,8 @@ export class ImageModel {
     };
 
     try {
-      return await operation(input);
+      // TODO: use Image.bulkWrite() instead
+      return await Promise.all(input.updates.map((u) => operation(u)));
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -636,9 +639,9 @@ export default class AuthedImageModel {
     return await ImageModel.createLabels(input, context);
   }
 
-  async updateLabel(input, context) {
+  async updateLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.updateLabel(input, context);
+    return await ImageModel.updateLabels(input, context);
   }
 
   async deleteLabel(input, context) {

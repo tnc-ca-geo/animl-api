@@ -114,9 +114,9 @@ const Mutation = {
     return { image };
   },
 
-  updateLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.updateLabel(input, context);
-    return { image };
+  updateLabels: async (_, { input }, context) => {
+    const images = await context.models.Image.updateLabels(input, context);
+    return { images };
   },
 
   deleteLabel: async (_, { input }, context) => {

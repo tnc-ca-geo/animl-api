@@ -26,7 +26,7 @@ export default `
     deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
-    updateLabel(input: UpdateLabelInput!): UpdateLabelPayload
+    updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
     deleteLabel(input: DeleteLabelInput!): DeleteLabelPayload
 
     createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
