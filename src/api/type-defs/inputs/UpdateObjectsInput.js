@@ -1,12 +1,15 @@
 export default `
-  input Objects {
-    _id: ID!
-    bbox: [Float!]!,
-    locked:  Boolean!,
-    labels: [LabelInput],
+  input ObjectDiffsInput {
+    locked: Boolean
+    bbox: [Float!]
+  }
+
+  input ObjectUpdate {
+    imageId: ID!
+    objectId: ID!
+    diffs: ObjectDiffsInput!
   }
 
   input UpdateObjectsInput {
-    imageId: ID!
-    objects:[Objects]
+    updates: [ObjectUpdate]!
 }`;

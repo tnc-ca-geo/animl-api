@@ -290,14 +290,16 @@ export class ImageModel {
     }
   }
 
-  static async updateObject(input, context) {
+  static async updateObjects(input, context) {
+    console.log('ImageModel.updateObjects - input: ', input);
     const operation = async ({ imageId, objectId, diffs }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
-          console.log(`Retrying updateObject operation! Try #: ${attempt}`);
+          console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
         }
         // find image, apply object updates, and save
         const image = await ImageModel.queryById(imageId, context);
+        console.log('ImageModel.updateObjects - updating image: ', image._id);
         const object = image.objects.find((obj) => idMatch(obj._id, objectId));
         if (!object) {
           const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
@@ -313,7 +315,8 @@ export class ImageModel {
     };
 
     try {
-      return await operation(input);
+      // TODO: use Image.bulkWrite() instead
+      return await Promise.all(input.updates.map((u) => operation(u)));
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -412,8 +415,7 @@ export class ImageModel {
 
   static async updateLabels(input, context) {
     console.log('ImageModel.updateLabels - input: ', input);
-    const operation = async (update) => {
-      const { imageId, objectId, labelId, diffs } = update;
+    const operation = async ({ imageId, objectId, labelId, diffs }) => {
       return await retry(async () => {
 
         // find label, apply updates, and save image
@@ -622,9 +624,9 @@ export default class AuthedImageModel {
     return await ImageModel.createObject(input, context);
   }
 
-  async updateObject(input, context) {
+  async updateObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.updateObject(input, context);
+    return await ImageModel.updateObjects(input, context);
   }
 
   async deleteObject(input, context) {

@@ -89,19 +89,14 @@ const Mutation = {
     return { cameraConfig };
   },
 
-  // updateObjects: async (_, { input }, context) => {
-  //   const image = await context.models.Image.updateObjects(input);
-  //   return { image: image };
-  // },
-
   createObject: async (_, { input }, context) => {
     const image = await context.models.Image.createObject(input, context);
     return { image };
   },
 
-  updateObject: async (_, { input }, context) => {
-    const image = await context.models.Image.updateObject(input, context);
-    return { image };
+  updateObjects: async (_, { input }, context) => {
+    const images = await context.models.Image.updateObjects(input, context);
+    return { images };
   },
 
   deleteObject: async (_, { input }, context) => {

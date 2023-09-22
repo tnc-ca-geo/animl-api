@@ -22,7 +22,7 @@ export default `
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
 
     createObject(input: CreateObjectInput!): CreateObjectPayload
-    updateObject(input: UpdateObjectInput!): UpdateObjectPayload
+    updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
     deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
