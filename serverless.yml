@@ -89,6 +89,14 @@ provider:
               - - 'arn:aws:s3:::'
                 - Ref: S3BucketAnimlexporteddata
                 - '/*'
+        - Effect: 'Allow'
+          Action:
+            - 's3:DeleteObject'
+          Resource:
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - 'animl-images-serving-${self:provider.stage}'
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
