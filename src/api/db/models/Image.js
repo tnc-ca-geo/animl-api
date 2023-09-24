@@ -104,7 +104,7 @@ export class ImageModel {
       await ImageModel.queryById(input.imageId, context);
 
       await Promise.all(['medium', 'original', 'small'].map((size) => {
-        return s3.send(S3.DeleteObjectCommand({
+        return s3.send(new S3.DeleteObjectCommand({
           Bucket: `animl-ingest-${process.env.STAGE}`,
           Key: `${size}/${input.imageId}.jpg`
         }));
