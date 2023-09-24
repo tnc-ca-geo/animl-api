@@ -2,13 +2,16 @@ export default `
   type Batch {
     _id: String!
     projectId: String!
-    eTag: String
     errors: [BatchError]
-    processingStart: String
-    processingEnd: String
+    imageErrors: Int
+    uploadComplete: Date
+    ingestionComplete: Date
+    processingStart: Date
+    processingEnd: Date
+    stoppingInitiated: Date
     overrideSerial: String
     originalFile: String
-    uploadedfile: String
+    uploadedFile: String
     remaining: Int
     dead: Int
     total: Int

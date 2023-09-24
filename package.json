@@ -1,7 +1,7 @@
 {
     "name": "animl-serverless",
     "type": "module",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Lambda-based graphQL API for camera trap data managment platform",
     "main": "src/handler.js",
     "scripts": {
@@ -21,7 +21,7 @@
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
         "test": "tape test/**.test.js",
-        "lint": "eslint src/ test/**.js"
+        "lint": "eslint src/ test/"
     },
     "author": "Nathaniel Rindlaub",
     "license": "ISC",
@@ -56,7 +56,6 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
-        "@mapbox/mock-aws-sdk-js": "^1.0.0",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",

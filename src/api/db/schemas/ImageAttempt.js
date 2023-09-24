@@ -14,6 +14,7 @@ const ImageMetadataSchema = new Schema({
   bucket: { type: String },
   batchId: { type: String },
   fileTypeExtension: { type: String },
+  path: { type: String },
   dateAdded: { type: Date },
   dateTimeOriginal: { type: Date },
   timezone: { type: String },
@@ -38,12 +39,6 @@ const ImageAttemptSchema = new Schema({
   batch: { type: String },
   created: { type: Date, default: Date.now, required: true },
   metadata: { type: ImageMetadataSchema }
-});
-
-ImageAttemptSchema.index({ batch: 1 });
-
-ImageAttemptSchema.on('index', (e) => {
-  console.log('ImageAttempt Indexing Error', e);
 });
 
 export default mongoose.model('ImageAttempt', ImageAttemptSchema);

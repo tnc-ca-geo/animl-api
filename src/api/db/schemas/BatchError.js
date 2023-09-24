@@ -10,10 +10,4 @@ const BatchErrorSchema = new Schema({
   error: { type: String, required: true }
 });
 
-BatchErrorSchema.index({ batch: 1 });
-
-BatchErrorSchema.on('index', (e) => {
-  console.log('BatchError Indexing Error', e);
-});
-
 export default mongoose.model('BatchError', BatchErrorSchema);

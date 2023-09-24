@@ -54,7 +54,7 @@ const ruleApplies = (rule, event, label) => {
 
 const buildCallstack = async (payload, context) => {
   const { event, image, label } = payload;
-  const [project] = await context.models.Project.getProjects([image.projectId]);
+  const [project] = await context.models.Project.getProjects({ _ids: [image.projectId] }, context);
 
   // let callstack = [];
   // for (const view of project.views) {

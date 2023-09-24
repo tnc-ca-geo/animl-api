@@ -1,25 +1,25 @@
 import stream from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
 import { Upload } from '@aws-sdk/lib-storage';
-import { S3Client, CreateMultipartUploadCommand, UploadPartCopyCommand, CompleteMultipartUploadCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import S3 from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ApolloError } from 'apollo-server-lambda';
 import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
 import { idMatch }  from '../api/db/models/utils.js';
-import generateImageModel from '../api/db/models/Image.js';
-import generateProjectModel from '../api/db/models/Project.js';
+import { ImageModel } from '../api/db/models/Image.js';
+import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
-class Export {
+export default class ImageExport {
   constructor({ projectId, documentId, filters, format }, config) {
     this.config = config;
-    this.s3 = new S3Client({ region: process.env.AWS_DEFAULT_REGION });
+    this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.user = { 'is_superuser': true };
-    this.projectModel = generateProjectModel({ user: this.user });
-    this.imageModel = generateImageModel({ user: this.user });
+    this.projectModel = ProjectModel;
+    this.imageModel = ImageModel;
     this.projectId = projectId;
     this.documentId = documentId;
     this.filters = filters;
@@ -57,7 +57,10 @@ class Export {
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
 
-      const [project] = await this.projectModel.getProjects([this.projectId]);
+      const [project] = await this.projectModel.getProjects(
+        { _ids: [this.projectId] },
+        { user: this.user }
+      );
       const { categories } = await this.imageModel.getLabels(this.projectId);
       this.project = project;
       this.categories = categories;
@@ -175,17 +178,19 @@ class Export {
     console.log(`updating ${this.documentId}.json status document`);
     // TODO: make sure the status document exists first
     try {
-      const res = await this.s3.send(new PutObjectCommand({
+      const res = await this.s3.send(new S3.PutObjectCommand({
         Bucket: this.bucket,
         Key: `${this.documentId}.json`,
         Body: JSON.stringify({
           status: this.status,
           error: this.errs,
           url: this.presignedURL,
-          imageCount: this.imageCount,
-          reviewedCount: {
-            reviewed: this.reviewedCount,
-            notReviewed: this.notReviewedCount
+          count: this.imageCount,
+          meta: {
+            reviewedCount: {
+              reviewed: this.reviewedCount,
+              notReviewed: this.notReviewedCount
+            }
           }
         }),
         ContentType: 'application/json; charset=utf-8'
@@ -245,7 +250,7 @@ class Export {
     console.log('finished uploading all the parts: ', res);
 
     // concatonate images and annotations .json files via multipart upload copy part
-    const initResponse = await this.s3.send(new CreateMultipartUploadCommand({
+    const initResponse = await this.s3.send(new S3.CreateMultipartUploadCommand({
       Key: this.filename,
       Bucket: this.bucket
     }));
@@ -261,14 +266,14 @@ class Export {
         UploadId: mpUploadId
       }
     }));
-    const imagesPartRes = await this.s3.send(new UploadPartCopyCommand(parts[0].params));
-    const annoPartRes = await this.s3.send(new UploadPartCopyCommand(parts[1].params));
+    const imagesPartRes = await this.s3.send(new S3.UploadPartCopyCommand(parts[0].params));
+    const annoPartRes = await this.s3.send(new S3.UploadPartCopyCommand(parts[1].params));
     const completedParts = [imagesPartRes, annoPartRes].map((m, i) => ({
       ETag: m.CopyPartResult.ETag, PartNumber: i + 1
     }));
     console.log('completed parts: ', completedParts);
 
-    const result = await this.s3.send(new CompleteMultipartUploadCommand({
+    const result = await this.s3.send(new S3.CompleteMultipartUploadCommand({
       Key: this.filename,
       Bucket: this.bucket,
       UploadId: mpUploadId,
@@ -308,7 +313,7 @@ class Export {
 
     // upload to S3 via putObject
     console.log('uploading data to s3');
-    const res = await this.s3.send(new PutObjectCommand({
+    const res = await this.s3.send(new S3.PutObjectCommand({
       Bucket: this.bucket,
       Key: this.filename,
       Body: data,
@@ -384,7 +389,7 @@ class Export {
 
   async getPresignedURL() {
     console.log('getting presigned url');
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: this.filename });
+    const command = new S3.GetObjectCommand({ Bucket: this.bucket, Key: this.filename });
     return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
   }
 
@@ -417,13 +422,15 @@ class Export {
   }
 
   createCOCOImg(img) {
-    const fileNameNoExt = img.originalFileName.split('.')[0];
-    const archivePath = `${img.cameraId}/${fileNameNoExt}_${img._id}.${img.fileTypeExtension}`;
     const deployment = this.getDeployment(img, this.project);
+    const deploymentNormalized = deployment.name.toLowerCase().replace("'", '').replace(' ', '_');
+    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id}.${img.fileTypeExtension}`;
+    const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
     return {
       id: img._id,
-      file_name: img.originalFileName,
-      original_relative_path: archivePath,
+      file_name: destPath,
+      original_file_name: img.originalFileName,
+      serving_bucket_key: servingPath,
       datetime: img.dateTimeOriginal,
       location: deployment.name,
       ...(img.imageWidth &&  { width: img.imageWidth }),
@@ -458,7 +465,3 @@ class Export {
   }
 
 }
-
-export {
-  Export
-};

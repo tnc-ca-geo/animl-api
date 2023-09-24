@@ -1,9 +1,6 @@
 import { ApolloError } from 'apollo-server-errors';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import { SSMClient, GetParametersCommand } from '@aws-sdk/client-ssm';
-
-const ssm = new SSMClient({ region: process.env.REGION });
-const secrets = new SecretsManagerClient({ region: process.env.REGION });
+import SM  from '@aws-sdk/client-secrets-manager';
+import SSM from '@aws-sdk/client-ssm';
 
 /*
  *  Local config values
@@ -14,6 +11,14 @@ const localConfig = {
     EXIF: 'yyyy:LL:dd HH:mm:ss'
   },
   EMAIL_ALERT_SENDER: 'tnc.iot.bot@gmail.com',
+  CSV_EXPORT_ERROR_COLUMNS: [
+    '_id',
+    'created',
+    'image',
+    'batch',
+    'path',
+    'error'
+  ],
   CSV_EXPORT_COLUMNS: [
     '_id',
     'originalFileName',
@@ -67,9 +72,11 @@ function formatSSMParams(ssmParams) {
 }
 
 async function getConfig() {
+  const ssm = new SSM.SSMClient({ region: process.env.REGION });
+
   if (!cachedSSMParams) {
     do {
-      const res = await ssm.send(new GetParametersCommand({
+      const res = await ssm.send(new SSM.GetParametersCommand({
         Names: ssmNames.splice(0, 10),
         WithDecryption: true
       }));
@@ -83,9 +90,11 @@ async function getConfig() {
     } while (ssmNames.length);
   }
 
+  const secrets = new SM.SecretsManagerClient({ region: process.env.REGION });
+
   try {
     const ssmParams = await cachedSSMParams;
-    const secretsResponse = await secrets.send(new GetSecretValueCommand({
+    const secretsResponse = await secrets.send(new SM.GetSecretValueCommand({
       SecretId: `api-key-${process.env.STAGE}`
     }));
 

@@ -1,14 +1,13 @@
 export default `
-  enum filterEnum {
-    CURRENT
-    COMPLETED
+  input ImageErrorsFilterInput {
+    batch: String!
   }
 
-  input QueryBatchesInput {
-    filter: filterEnum
+  input QueryImageErrorsInput {
     paginatedField: String
     sortAscending: Boolean
     limit: Int
     next: String
     previous: String
+    filters: ImageErrorsFilterInput!
   }`;

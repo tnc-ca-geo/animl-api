@@ -12,7 +12,7 @@ const executeRule = {
   'run-inference': async (rule, payload, context) => {
     try {
       const mlModel = rule.action.mlModel;
-      const modelSources = await context.models.MLModel.getMLModels([mlModel]);
+      const modelSources = await context.models.MLModel.getMLModels({ _ids: [mlModel] });
       const modelSource = modelSources[0];
       const catConfig = buildCatConfig(modelSource, rule);
 

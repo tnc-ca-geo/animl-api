@@ -4,11 +4,14 @@ trap data stored in MongoDB.
 
 ## `Related repos`
 
+- Animl API               http://github.com/tnc-ca-geo/animl-api
 - Animl frontend          http://github.com/tnc-ca-geo/animl-frontend
 - Animl base program      http://github.com/tnc-ca-geo/animl-base
 - Animl ingest function   http://github.com/tnc-ca-geo/animl-ingest
+- Exif service            https://github.com/tnc-ca-geo/exif-api
+- Animl email extraction  https://github.com/tnc-ca-geo/animl-email-relay
 - Animl ML resources      http://github.com/tnc-ca-geo/animl-ml
-- Animl desktop app       https://github.com/tnc-ca-geo/animl-desktop
+- Animl analytics         http://github.com/tnc-ca-geo/animl-analytics
 
 ## `Overview`
 
@@ -89,7 +92,7 @@ npm run seed-db-dev
 npm run seed-db-prod
 ```
 
-### Local testing and deployment
+### Local testing and dev deployment
 - To test the Lambda locally with serverless-offline, run: 
 ```
 npm run start
@@ -99,11 +102,6 @@ npm run start
 ```
 npm run deploy-dev
 ``` 
-
-- To deploy the Cloudformation production stack, run: 
-```
-npm run deploy-prod
-```
 
 ## `Data managment`
 There are a handful of scripts in the `src/scripts/` directory to assist with 
@@ -127,3 +125,18 @@ the following:
 npm run update-docs-dev   // update dev db
 npm run update-docs-prod  // update prod db
 ```
+
+## Prod deployment
+Use caution when deploying to production, as the application involves multiple stacks (animl-ingest, animl-api, animl-frontend), and often the deployments need to be synchronized. For major deployments to prod in which there are breaking changes that affect the other components of the stack, follow these steps:
+
+1. Set the frontend `IN_MAINTENANCE_MODE` to `true` (in `animl-frontend/src/config.js`), deploy to prod, then invalidate its cloudfront cache. This will temporarily prevent users from interacting with the frontend (editing labels, bulk uploading images, etc.) while the rest of the updates are being deployed.
+
+2. Set ingest-image's `IN_MAINTENANCE_MODE` to `true` (in `animl-ingest/ingest-image/task.js`) and deploy to prod. This will temporarily route any images from wireless cameras that happen to get send to the ingestion bucket to the `animl-images-parkinglot-prod` bucket so that Animl isn't trying to process new images while the updates are being deployed.
+
+3. Backup prod DB by running `npm run export-db-prod` from the `animl-api` project root.
+
+4. Deploy animl-api to prod. 
+
+5. Turn off `IN_MAINTENANCE_MODE` in animl-frontend and animl-ingest, and deploy both to prod, and clear cloudfront cache.
+
+6. Copy any images that happened to land in `animl-images-parkinglot-prod` while the stacks were being deployed to `animl-images-ingestion-prod`, and then delete them from the parking lot bucket.

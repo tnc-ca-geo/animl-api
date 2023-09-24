@@ -1,7 +1,7 @@
 import { ApolloError } from 'apollo-server-errors';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
-import generateProjectModel from '../api/db/models/Project.js';
+import { ProjectModel } from '../api/db/models/Project.js';
 
 const defaultViewsConfig = [{
   name: 'All images',
@@ -13,23 +13,23 @@ const defaultViewsConfig = [{
 // Edit config for new project below:
 const newProjectConfig = [
   {
-    _id: 'robinson_crusoe',
-    name: 'Robinson Crusoe',
-    description: 'Robinson Crusoe camera traps',
-    timezone: 'America/Santiago',
+    _id: 'demo_project',
+    name: 'Demo',
+    description: 'Demonstration project',
+    timezone: 'America/Los_Angeles',
     views: defaultViewsConfig,
-    availableMLModels: ['megadetector']
+    availableMLModels: ['megadetector_v5a', 'megadetector_v5b', 'mirav2']
   }
 ];
 
-if (newProjectConfig._id === 'robinson_crusoe') throw new Error('Edit New Project before running');
+if (newProjectConfig._id === 'demo_project') throw new Error('Edit New Project before running');
 
 // TODO: use client-cognito-identity-provider to automatically create cognito groups
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-cognito-identity-provider/index.html
 async function createNewProject(params) {
-  const { dbModels, newProjectConfig } = params;
+  const { dbModels, newProjectConfig, context } = params;
 
-  const existingProjects = await dbModels.Project.getProjects();
+  const existingProjects = await dbModels.Project.getProjects({}, context);
   const existingProjIds = existingProjects.map((proj) => proj._id);
   console.log('Found existing projects: ', existingProjIds);
 
@@ -52,21 +52,22 @@ async function createNewProject(params) {
 }
 
 async function createProject() {
+  const context = { user: { 'is_superuser': true } };
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
-  const user = { 'is_superuser': true };
   console.log('Creating new Project with config: ', config);
 
   try {
 
     const dbModels = {
-      Project: generateProjectModel({ user })
+      Project: ProjectModel
     };
 
     // create new project records
     await createNewProject({
       newProjectConfig,
-      dbModels
+      dbModels,
+      context
     });
 
     dbClient.connection.close();
