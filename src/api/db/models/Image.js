@@ -112,6 +112,7 @@ export class ImageModel {
 
       await Image.deleteOne({ _id: input.imageId });
       await ImageAttempt.deleteOne({ _id: input.imageId });
+      await ImageError.deleteMany({ image: input.imageId });
 
       return { message: 'Image Deleted' };
     } catch (err) {

@@ -48,6 +48,12 @@ tape('Image: DeleteImage', async (t) => {
       return [];
     });
 
+    Sinon.stub(ImageErrorSchema, 'deleteMany').callsFake((command) => {
+      t.deepEquals(command, { image: 'project:123' });
+      mocks.push('ImageError::DeleteMany');
+      return [];
+    });
+
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
     const res = await imageModel.deleteImage({
@@ -72,7 +78,8 @@ tape('Image: DeleteImage', async (t) => {
     'S3::DeleteObjectCommand::animl-ingest-dev/original/project:123.jpg',
     'S3::DeleteObjectCommand::animl-ingest-dev/small/project:123.jpg',
     'Image::DeleteOne',
-    'ImageAttempt::DeleteOne'
+    'ImageAttempt::DeleteOne',
+    'ImageError::DeleteMany'
   ]);
 
   Sinon.restore();
