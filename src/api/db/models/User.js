@@ -1,6 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
+import { hasRole } from './utils.js';
 
 /**
  * Users are managed in AWS Cognito but as the APIs are designed to be similiar
@@ -36,7 +37,7 @@ export class UserModel {
         return acc;
       }, []).map((user) => {
           const meta = user.Attributes.reduce((acc, cur) => {
-              acc[cur.Name] = acc[cur.Value];
+              acc[cur.Name] = cur.Value;
               return acc;
         }, {});
 
@@ -50,7 +51,9 @@ export class UserModel {
         }
       });
 
-      return users;
+      return {
+        users
+      };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
