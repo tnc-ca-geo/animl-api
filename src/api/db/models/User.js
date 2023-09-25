@@ -24,10 +24,13 @@ export class UserModel {
         const list = [];
         let res = {};
         do {
-          res = cognito.send(new Cognito.ListUsersInGroupCommand({
+          res = await cognito.send(new Cognito.ListUsersInGroupCommand({
             UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
             GroupName: `animl/${context.user['curr_project']}/project_${role}`
           }));
+
+            console.error('RES', context.config['/APPLICATION/COGNITO/USERPOOLID'], `animl/${context.user['curr_project']}/project_${role}`, res);
+
           list.push(...(res.Users || []));
         } while (res.NextToken);
 
