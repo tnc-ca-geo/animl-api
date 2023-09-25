@@ -106,7 +106,7 @@ export class ImageModel {
       await Promise.all(['medium', 'original', 'small'].map((size) => {
         return s3.send(new S3.DeleteObjectCommand({
           Bucket: `animl-images-serving-${process.env.STAGE}`,
-          Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension}`
+          Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension || 'jpg'}`
         }));
       }));
 

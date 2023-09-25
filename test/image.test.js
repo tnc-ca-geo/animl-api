@@ -74,9 +74,9 @@ tape('Image: DeleteImage', async (t) => {
   t.deepEquals(mocks, [
     'Image::FindOne',
     'ImageError::Aggregate',
-    'S3::DeleteObjectCommand::animl-images-serving-dev/medium/project:123.jpg',
-    'S3::DeleteObjectCommand::animl-images-serving-dev/original/project:123.jpg',
-    'S3::DeleteObjectCommand::animl-images-serving-dev/small/project:123.jpg',
+    'S3::DeleteObjectCommand::animl-images-serving-dev/medium/project:123-medium.jpg',
+    'S3::DeleteObjectCommand::animl-images-serving-dev/original/project:123-original.jpg',
+    'S3::DeleteObjectCommand::animl-images-serving-dev/small/project:123-small.jpg',
     'Image::DeleteOne',
     'ImageAttempt::DeleteOne',
     'ImageError::DeleteMany'
