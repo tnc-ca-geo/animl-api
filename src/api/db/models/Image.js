@@ -1,4 +1,5 @@
 import { text } from 'node:stream/consumers';
+import path from 'node:path';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -101,12 +102,12 @@ export class ImageModel {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
       // Ensure Image is part of a project that the user has access to
-      await ImageModel.queryById(input.imageId, context);
+      const image = await ImageModel.queryById(input.imageId, context);
 
       await Promise.all(['medium', 'original', 'small'].map((size) => {
         return s3.send(new S3.DeleteObjectCommand({
           Bucket: `animl-images-serving-${process.env.STAGE}`,
-          Key: `${size}/${input.imageId}.jpg`
+          Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension}`
         }));
       }));
 
