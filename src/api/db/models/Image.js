@@ -96,6 +96,32 @@ export class ImageModel {
     }
   }
 
+  static async deleteImage(input, context) {
+    try {
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+
+      // Ensure Image is part of a project that the user has access to
+      await ImageModel.queryById(input.imageId, context);
+
+      await Promise.all(['medium', 'original', 'small'].map((size) => {
+        return s3.send(new S3.DeleteObjectCommand({
+          Bucket: `animl-images-serving-${process.env.STAGE}`,
+          Key: `${size}/${input.imageId}.jpg`
+        }));
+      }));
+
+      await Image.deleteOne({ _id: input.imageId });
+      await ImageAttempt.deleteOne({ _id: input.imageId });
+      await ImageError.deleteMany({ image: input.imageId });
+
+      return { message: 'Image Deleted' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createImage(input, context) {
     const successfulOps = [];
     const errors = [];
@@ -607,6 +633,11 @@ export default class AuthedImageModel {
 
   async getLabels(projId) {
     return await ImageModel.getLabels(projId);
+  }
+
+  async deleteImage(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteImage(input, context);
   }
 
   async createImage(input, context) {
