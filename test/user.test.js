@@ -23,6 +23,13 @@ tape('User: List', async (t) => {
           Enabled: true,
           Attributes: [{ Name: 'email', Value: 'manager@example.com' }],
           UserStatus: 'CONFIRMED'
+        },{
+          Username: 'nick',
+          UserCreateDate: '2022',
+          UserLastModifiedDate: '2023',
+          Enabled: true,
+          Attributes: [{ Name: 'email', Value: 'nick@example.com' }],
+          UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('observer')) return { Users: [{
           Username: 'observer',
@@ -33,11 +40,11 @@ tape('User: List', async (t) => {
           UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('member')) return { Users: [{
-          Username: 'member',
+          Username: 'nick',
           UserCreateDate: '2022',
           UserLastModifiedDate: '2023',
           Enabled: true,
-          Attributes: [{ Name: 'email', Value: 'member@example.com' }],
+          Attributes: [{ Name: 'email', Value: 'nick@example.com' }],
           UserStatus: 'CONFIRMED'
         }] };
       } else {
@@ -66,7 +73,15 @@ tape('User: List', async (t) => {
         updated: '2023',
         enabled: true,
         status: 'CONFIRMED',
-        role: 'manager'
+        roles: ['manager']
+      },{
+        username: 'nick',
+        email: 'nick@example.com',
+        created: '2022',
+        updated: '2023',
+        enabled: true,
+        status: 'CONFIRMED',
+        roles: [ 'manager', 'member' ]
       },{
         username: 'observer',
         email: 'observer@example.com',
@@ -74,15 +89,7 @@ tape('User: List', async (t) => {
         updated: '2023',
         enabled: true,
         status: 'CONFIRMED',
-        role: 'observer'
-      },{
-        username: 'member',
-        email: 'member@example.com',
-        created: '2022',
-        updated: '2023',
-        enabled: true,
-        status: 'CONFIRMED',
-        role: 'member'
+        roles: ['observer']
       }]
     });
   } catch (err) {

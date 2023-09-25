@@ -60,8 +60,19 @@ export class UserModel {
         return passes;
       });
 
+      const roles = new Map();
+      for (const user of users) {
+        if (roles.has(user.username)) {
+            roles.get(user.username).roles.push(user.role)
+        } else {
+            user.roles = [user.role]
+            delete user.role;
+            roles.set(user.username, user);
+        }
+      }
+
       return {
-        users
+        users: Array.from(roles.values())
       };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
