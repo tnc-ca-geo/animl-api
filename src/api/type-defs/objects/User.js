@@ -1,5 +1,6 @@
 export default `
   type User {
+    role: String!
     username: String!
     email: String!
     created: String!

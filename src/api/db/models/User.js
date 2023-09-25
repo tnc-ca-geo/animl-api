@@ -29,8 +29,6 @@ export class UserModel {
             GroupName: `animl/${context.user['curr_project']}/project_${role}`
           }));
 
-            console.error('RES', context.config['/APPLICATION/COGNITO/USERPOOLID'], `animl/${context.user['curr_project']}/project_${role}`, res);
-
           list.push(...(res.Users || []));
         } while (res.NextToken);
 
@@ -48,7 +46,8 @@ export class UserModel {
         }, {});
 
         return {
-          username: user.username,
+          role: user.role,
+          username: user.Username,
           email: meta.email,
           created: user.UserCreateDate,
           updated: user.UserLastModifiedDate,

@@ -17,7 +17,7 @@ tape('User: List', async (t) => {
       if (command instanceof Cognito.ListUsersInGroupCommand) {
         mocks.push(`Cognito::ListUsersInGroup::${command.input.GroupName}`);
         if (command.input.GroupName.includes('manager')) return { Users: [{
-          username: 'manager',
+          Username: 'manager',
           UserCreateDate: '2022',
           UserLastModifiedDate: '2023',
           Enabled: true,
@@ -25,7 +25,7 @@ tape('User: List', async (t) => {
           UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('observer')) return { Users: [{
-          username: 'observer',
+          Username: 'observer',
           UserCreateDate: '2022',
           UserLastModifiedDate: '2023',
           Enabled: true,
@@ -33,7 +33,7 @@ tape('User: List', async (t) => {
           UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('member')) return { Users: [{
-          username: 'member',
+          Username: 'member',
           UserCreateDate: '2022',
           UserLastModifiedDate: '2023',
           Enabled: true,
@@ -65,21 +65,24 @@ tape('User: List', async (t) => {
         created: '2022',
         updated: '2023',
         enabled: true,
-        status: 'CONFIRMED'
+        status: 'CONFIRMED',
+        role: 'manager'
       },{
         username: 'observer',
         email: 'observer@example.com',
         created: '2022',
         updated: '2023',
         enabled: true,
-        status: 'CONFIRMED'
+        status: 'CONFIRMED',
+        role: 'observer'
       },{
         username: 'member',
         email: 'member@example.com',
         created: '2022',
         updated: '2023',
         enabled: true,
-        status: 'CONFIRMED'
+        status: 'CONFIRMED',
+        role: 'member'
       }]
     });
   } catch (err) {
