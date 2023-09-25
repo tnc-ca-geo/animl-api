@@ -28,7 +28,7 @@ export class UserModel {
             UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
             GroupName: `animl/${context.user['curr_project']}/project_${role}`
           }));
-          list.push(...res.Users);
+          list.push(...(res.Users || []));
         } while (res.NextToken);
 
         return list.map((user) => {
