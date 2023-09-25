@@ -63,11 +63,11 @@ export class UserModel {
       const roles = new Map();
       for (const user of users) {
         if (roles.has(user.username)) {
-            roles.get(user.username).roles.push(user.role)
+          roles.get(user.username).roles.push(user.role);
         } else {
-            user.roles = [user.role]
-            delete user.role;
-            roles.set(user.username, user);
+          user.roles = [user.role];
+          delete user.role;
+          roles.set(user.username, user);
         }
       }
 

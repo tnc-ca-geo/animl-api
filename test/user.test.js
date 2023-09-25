@@ -81,7 +81,7 @@ tape('User: List', async (t) => {
         updated: '2023',
         enabled: true,
         status: 'CONFIRMED',
-        roles: [ 'manager', 'member' ]
+        roles: ['manager', 'member']
       },{
         username: 'observer',
         email: 'observer@example.com',
