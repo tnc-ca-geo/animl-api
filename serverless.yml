@@ -97,6 +97,10 @@ provider:
               - ''
               - - 'arn:aws:s3:::'
                 - 'animl-images-serving-${self:provider.stage}'
+            - Fn::Join:
+              - ''
+              - - 'arn:aws:s3:::'
+                - 'animl-images-serving-${self:provider.stage}/*'
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
