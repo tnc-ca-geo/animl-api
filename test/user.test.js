@@ -17,28 +17,28 @@ tape('User: List', async (t) => {
       if (command instanceof Cognito.ListUsersInGroupCommand) {
         mocks.push(`Cognito::ListUsersInGroup::${command.input.GroupName}`);
         if (command.input.GroupName.includes('manager')) return { Users: [{
-            username: 'manager',
-            UserCreateDate: '2022',
-            UserLastModifiedDate: '2023',
-            Enabled: true,
-            Attributes: [{ Name: 'email', Value: 'manager@example.com' }],
-            UserStatus: 'CONFIRMED'
+          username: 'manager',
+          UserCreateDate: '2022',
+          UserLastModifiedDate: '2023',
+          Enabled: true,
+          Attributes: [{ Name: 'email', Value: 'manager@example.com' }],
+          UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('observer')) return { Users: [{
-            username: 'observer',
-            UserCreateDate: '2022',
-            UserLastModifiedDate: '2023',
-            Enabled: true,
-            Attributes: [{ Name: 'email', Value: 'observer@example.com' }],
-            UserStatus: 'CONFIRMED'
+          username: 'observer',
+          UserCreateDate: '2022',
+          UserLastModifiedDate: '2023',
+          Enabled: true,
+          Attributes: [{ Name: 'email', Value: 'observer@example.com' }],
+          UserStatus: 'CONFIRMED'
         }] };
         if (command.input.GroupName.includes('member')) return { Users: [{
-            username: 'member',
-            UserCreateDate: '2022',
-            UserLastModifiedDate: '2023',
-            Enabled: true,
-            Attributes: [{ Name: 'email', Value: 'member@example.com' }],
-            UserStatus: 'CONFIRMED'
+          username: 'member',
+          UserCreateDate: '2022',
+          UserLastModifiedDate: '2023',
+          Enabled: true,
+          Attributes: [{ Name: 'email', Value: 'member@example.com' }],
+          UserStatus: 'CONFIRMED'
         }] };
       } else {
         t.fail();
@@ -54,7 +54,7 @@ tape('User: List', async (t) => {
         curr_project: 'project'
       },
       config: {
-       '/APPLICATION/COGNITO/USERPOOLID': 'example-pool'
+        '/APPLICATION/COGNITO/USERPOOLID': 'example-pool'
       }
     });
 
@@ -89,7 +89,7 @@ tape('User: List', async (t) => {
   t.deepEquals(mocks, [
     'Cognito::ListUsersInGroup::animl/project/project_manager',
     'Cognito::ListUsersInGroup::animl/project/project_observer',
-    'Cognito::ListUsersInGroup::animl/project/project_member',
+    'Cognito::ListUsersInGroup::animl/project/project_member'
   ]);
 
   Sinon.restore();
