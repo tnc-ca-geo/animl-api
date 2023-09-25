@@ -2,6 +2,7 @@ import { ApolloServer } from 'apollo-server-lambda';
 import { AuthenticationError } from 'apollo-server-errors';
 import { formatError } from './errors.js';
 import AuthedProjectModel from './db/models/Project.js';
+import AuthedUserModel from './db/models/User.js';
 import AuthedImageModel from './db/models/Image.js';
 import AuthedCameraModel from './db/models/Camera.js';
 import AuthedMLModelModel from './db/models/MLModel.js';
@@ -44,6 +45,7 @@ const context = async ({ event, context }) => {
     user,
     config,
     models: {
+      User: new AuthedUserModel(user),
       Project: new AuthedProjectModel(user),
       Image: new AuthedImageModel(user),
       ImageError: new AuthedImageErrorModel(user),
