@@ -50,6 +50,10 @@ export class UserModel {
             enabled: user.Enabled,
             status: user.UserStatus,
         }
+      }).filter((user) => {
+        let passes = true;
+        if (input.filter && !user.username.includes(input.filter)) passes = false;
+        return passes;
       });
 
       return {
