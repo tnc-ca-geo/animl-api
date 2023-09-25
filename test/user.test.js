@@ -52,6 +52,9 @@ tape('User: List', async (t) => {
     }, {
       user: {
         curr_project: 'project'
+      },
+      config: {
+       '/APPLICATION/COGNITO/USERPOOLID': 'example-pool'
       }
     });
 

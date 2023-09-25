@@ -23,6 +23,7 @@ export class UserModel {
         let res = {};
         do {
             res = cognito.send(new Cognito.ListUsersInGroupCommand({
+              UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
               GroupName: `animl/${context.user['curr_project']}/project_${role}`
             }));
             list.push(...res.Users);
