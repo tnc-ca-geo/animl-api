@@ -9,4 +9,9 @@ export default `
   input CreateObjectInput {
     imageId: ID!
     object: ObjectInput!
-}`;
+  }
+
+  input CreateObjectsInput {
+    objects: [CreateObjectInput]!
+  }
+`;

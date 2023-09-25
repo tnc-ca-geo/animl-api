@@ -269,24 +269,28 @@ export class ImageModel {
     }
   }
 
-  static async createObject(input, context) {
-    const operation = async ({ imageId, object }) => {
+  static async createObjects(input, context) {
+    const operation = async ({ objects }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
-          console.log(`Retrying createObject operation! Try #: ${attempt}`);
+          console.log(`Retrying createObjects operation! Try #: ${attempt}`);
         }
-
-        // find image, add object, and save
-        const image = await ImageModel.queryById(imageId, context);
-        image.objects.unshift(object);
-        await image.save();
-        return image;
-
+        // find images, add objects, and bulk write
+        const operations = objects.map(({ imageId, object }) => ({
+          updateOne: {
+            filter: { _id: imageId },
+            update: { $push: { objects: object } }
+          }
+        }));
+        console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -640,9 +644,9 @@ export default class AuthedImageModel {
     return await ImageModel.createImage(input, context);
   }
 
-  async createObject(input, context) {
+  async createObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.createObject(input, context);
+    return await ImageModel.createObjects(input, context);
   }
 
   async updateObjects(input, context) {

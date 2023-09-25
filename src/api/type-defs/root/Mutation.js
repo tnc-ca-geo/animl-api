@@ -21,7 +21,7 @@ export default `
 
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
 
-    createObject(input: CreateObjectInput!): CreateObjectPayload
+    createObjects(input: CreateObjectsInput!): CreateObjectsPayload
     updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
     deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
 

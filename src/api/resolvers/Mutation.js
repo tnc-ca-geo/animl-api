@@ -89,9 +89,9 @@ const Mutation = {
     return { cameraConfig };
   },
 
-  createObject: async (_, { input }, context) => {
-    const image = await context.models.Image.createObject(input, context);
-    return { image };
+  createObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.createObjects(input, context);
+    return { isOk: res.ok };
   },
 
   updateObjects: async (_, { input }, context) => {
