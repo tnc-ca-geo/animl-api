@@ -1,5 +1,4 @@
 import { text } from 'node:stream/consumers';
-import path from 'node:path';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
