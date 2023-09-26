@@ -85,3 +85,52 @@ tape('Image: DeleteImage', async (t) => {
   Sinon.restore();
   t.end();
 });
+
+tape('Image: DeleteImage - Failure', async (t) => {
+  const mocks = [];
+
+  try {
+    MockConfig(t);
+
+    Sinon.stub(ImageSchema, 'findOne').callsFake((command) => {
+      t.deepEquals(command, { _id: 'project:123', projectId: 'project' });
+      mocks.push('Image::FindOne');
+      return { _id: 'project:123' };
+    });
+    Sinon.stub(ImageErrorSchema, 'aggregate').callsFake((command) => {
+      t.deepEquals(command, [{ $match: { image: 'project:123' } }]);
+      mocks.push('ImageError::Aggregate');
+      return [];
+    });
+
+    Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
+      if (command instanceof S3.DeleteObjectCommand) {
+       return Promise.reject(new Error('Network Error'));
+      } else {
+        t.fail();
+      }
+    });
+
+    const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
+
+    const res = await imageModel.deleteImage({
+      imageId: 'project:123'
+    }, {
+      user: {
+        curr_project: 'project'
+      }
+    });
+
+    t.fail()
+  } catch (err) {
+    t.equals(err.message, 'Error: Network Error');
+  }
+
+  t.deepEquals(mocks, [
+    'Image::FindOne',
+    'ImageError::Aggregate',
+  ]);
+
+  Sinon.restore();
+  t.end();
+});
