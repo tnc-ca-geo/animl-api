@@ -96,6 +96,20 @@ export class ImageModel {
     }
   }
 
+  static async deleteImages(input, context) {
+    try {
+      Promise.allSettled(input.imageIds.map((imageId) => {
+        return this.deleteImage({ imageId }, context);
+      }));
+
+      return { message: 'Images Deleted' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async deleteImage(input, context) {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
@@ -638,6 +652,11 @@ export default class AuthedImageModel {
   async deleteImage(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.deleteImage(input, context);
+  }
+
+  async deleteImages(input, context) {
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteImages(input, context);
   }
 
   async createImage(input, context) {

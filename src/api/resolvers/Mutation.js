@@ -49,6 +49,11 @@ const Mutation = {
     return { ... res };
   },
 
+  deleteImages: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteImages(input, context);
+    return { ... res };
+  },
+
   registerCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.registerCamera(input, context);
     return { ...res };
