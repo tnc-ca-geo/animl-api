@@ -4,6 +4,8 @@ export default `
     deleteImage(input: DeleteImageInput!): StandardPayload
     deleteImages(input: DeleteImagesInput!): StandardErrorPayload
 
+    updateUser(input: UpdateUserInput!): StandardPayload
+
     createUpload(input: CreateUploadInput!): CreateUploadPayload
     updateBatch(input: UpdateBatchInput!): BatchPayload
     stopBatch(input: StopBatchInput!): StandardPayload
