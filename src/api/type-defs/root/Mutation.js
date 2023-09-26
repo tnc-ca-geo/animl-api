@@ -23,11 +23,11 @@ export default `
 
     createObjects(input: CreateObjectsInput!): CreateObjectsPayload
     updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
-    deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
+    deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
     updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
-    deleteLabel(input: DeleteLabelInput!): DeleteLabelPayload
+    deleteLabels(input: DeleteLabelsInput!): DeleteLabelsPayload
 
     createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
     updateDeployment(input: UpdateDeploymentInput!): UpdateDeploymentPayload

@@ -99,14 +99,14 @@ const Mutation = {
     return { isOk: res.ok };
   },
 
-  deleteObject: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteObject(input, context);
-    return { image };
+  deleteObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteObjects(input, context);
+    return { isOk: res.ok };
   },
 
   createLabels: async (_, { input }, context) => {
-    const image = await context.models.Image.createLabels(input, context);
-    return { image };
+    const res = await context.models.Image.createLabels(input, context);
+    return { isOk: res.ok };
   },
 
   updateLabels: async (_, { input }, context) => {
@@ -114,8 +114,8 @@ const Mutation = {
     return { isOk: res.ok };
   },
 
-  deleteLabel: async (_, { input }, context) => {
-    const image = context.models.Image.deleteLabel(input, context);
+  deleteLabels: async (_, { input }, context) => {
+    const image = context.models.Image.deleteLabels(input, context);
     return { image };
   }
 

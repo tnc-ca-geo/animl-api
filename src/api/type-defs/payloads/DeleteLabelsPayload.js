@@ -1,4 +1,5 @@
 export default `
-  type CreateLabelsPayload {
+  type DeleteLabelsPayload {
     isOk: Boolean!
-  }`;
+  }
+`;

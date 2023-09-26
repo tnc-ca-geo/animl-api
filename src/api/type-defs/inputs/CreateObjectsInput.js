@@ -3,7 +3,7 @@ export default `
     _id: ID!
     bbox: [Float!]
     locked: Boolean!
-    labels: [LabelInput]
+    labels: [CreateLabelInput]
   }
 
   input CreateObjectInput {
