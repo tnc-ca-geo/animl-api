@@ -8,6 +8,27 @@ import { hasRole } from './utils.js';
  * to those of DB objects, the model is defined here
  */
 export class UserModel {
+  /**
+   * Update a User role(s) within a given project
+   * @param {object} input
+   * @param {string} input.username Username to update
+   * @param {string[]} input.roles List of roles the user should have within the project
+   * @param {object} context
+   */
+  static async update(input, context) {
+    const cognito = new Cognito.CognitoIdentityProviderClient();
+
+    try {
+
+
+      return { message: 'User Updated' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
 
   /**
    * List Users part of a given group
@@ -90,5 +111,11 @@ export default class AuthedUserModel {
   async listUsers(input, context) {
     if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
     return await UserModel.list(input, context);
+  }
+
+  async updateUser(input, context) {
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+
+    return await UserModel.update(input, context);
   }
 }

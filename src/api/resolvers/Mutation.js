@@ -24,6 +24,11 @@ const Mutation = {
     return { ...res };
   },
 
+  updateUser: async (_, { input }, context) => {
+    const res = await context.models.User.updateUer(input, context);
+    return { ...res };
+  },
+
   updateBatch: async (_, { input }, context) => {
     const batch = await context.models.Batch.updateBatch(input, context);
     return { batch };
