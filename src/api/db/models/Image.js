@@ -103,8 +103,8 @@ export class ImageModel {
       }));
 
       const errors = res
-        .filter((r) => { return r.status === 'rejected' })
-        .map((r) => { return r.reason }); // Will always be an ApolloError
+        .filter((r) => { return r.status === 'rejected'; })
+        .map((r) => { return r.reason; }); // Will always be an ApolloError
 
       return {
         message: 'Images Deleted',
