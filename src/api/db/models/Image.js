@@ -98,11 +98,18 @@ export class ImageModel {
 
   static async deleteImages(input, context) {
     try {
-      Promise.allSettled(input.imageIds.map((imageId) => {
+      const res = await Promise.allSettled(input.imageIds.map((imageId) => {
         return this.deleteImage({ imageId }, context);
       }));
 
-      return { message: 'Images Deleted' };
+      const errors = res
+        .filter((r) => { return r.status === 'rejected' })
+        .map((r) => { return r.reason }); // Will always be an ApolloError
+
+      return {
+        message: 'Images Deleted',
+        errors
+      };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;

@@ -105,7 +105,7 @@ tape('Image: DeleteImage - Failure', async (t) => {
 
     Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
       if (command instanceof S3.DeleteObjectCommand) {
-       return Promise.reject(new Error('Network Error'));
+        return Promise.reject(new Error('Network Error'));
       } else {
         t.fail();
       }
@@ -113,7 +113,7 @@ tape('Image: DeleteImage - Failure', async (t) => {
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    const res = await imageModel.deleteImage({
+    await imageModel.deleteImage({
       imageId: 'project:123'
     }, {
       user: {
@@ -121,14 +121,14 @@ tape('Image: DeleteImage - Failure', async (t) => {
       }
     });
 
-    t.fail()
+    t.fail();
   } catch (err) {
     t.equals(err.message, 'Error: Network Error');
   }
 
   t.deepEquals(mocks, [
     'Image::FindOne',
-    'ImageError::Aggregate',
+    'ImageError::Aggregate'
   ]);
 
   Sinon.restore();
