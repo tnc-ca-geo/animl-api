@@ -85,43 +85,38 @@ const Mutation = {
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const cameraConfig = context.models.Project.deleteDeployment(input, context);
+    const cameraConfig = await context.models.Project.deleteDeployment(input, context);
     return { cameraConfig };
   },
 
-  // updateObjects: async (_, { input }, context) => {
-  //   const image = await context.models.Image.updateObjects(input);
-  //   return { image: image };
-  // },
-
-  createObject: async (_, { input }, context) => {
-    const image = await context.models.Image.createObject(input, context);
-    return { image };
+  createObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.createObjects(input, context);
+    return { isOk: res.ok };
   },
 
-  updateObject: async (_, { input }, context) => {
-    const image = await context.models.Image.updateObject(input, context);
-    return { image };
+  updateObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.updateObjects(input, context);
+    return { isOk: res.ok };
   },
 
-  deleteObject: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteObject(input, context);
-    return { image };
+  deleteObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteObjects(input, context);
+    return { isOk: res.ok };
   },
 
   createLabels: async (_, { input }, context) => {
-    const image = await context.models.Image.createLabels(input, context);
-    return { image };
+    const res = await context.models.Image.createLabels(input, context);
+    return { isOk: res.ok };
   },
 
-  updateLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.updateLabel(input, context);
-    return { image };
+  updateLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.updateLabels(input, context);
+    return { isOk: res.ok };
   },
 
-  deleteLabel: async (_, { input }, context) => {
-    const image = context.models.Image.deleteLabel(input, context);
-    return { image };
+  deleteLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteLabels(input, context);
+    return { isOk: res.ok };
   }
 
 };

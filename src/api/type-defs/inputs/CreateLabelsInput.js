@@ -5,7 +5,7 @@ export default `
     userId: ID!,
   }
 
-  input LabelInput {
+  input CreateLabelInput {
     _id: ID
     type: String!
     category: String!
@@ -16,10 +16,11 @@ export default `
     mlModel: String
     mlModelVersion: String
     userId: ID
+    imageId: ID
+    objectId: ID
   }
 
   input CreateLabelsInput {
-    imageId: ID!
-    objectId: ID
-    labels: [LabelInput!]
-}`;
+    labels: [CreateLabelInput]!
+  }
+`;

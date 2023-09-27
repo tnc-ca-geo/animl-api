@@ -1,4 +1,4 @@
 export default `
   type UpdateObjectsPayload {
-    image: Image
+    isOk: Boolean!
   }`;

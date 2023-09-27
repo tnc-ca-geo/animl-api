@@ -7,17 +7,7 @@ async function requestCreateLabels(input, config) {
   const mutation = gql`
     mutation CreateLabels($input: CreateLabelsInput!) {
       createLabels(input: $input) {
-        image {
-          objects {
-            bbox
-            labels {
-              type
-              category
-              conf
-              bbox
-            }
-          }
-        }
+        isOk
       }
     }
   `;
@@ -51,8 +41,7 @@ async function singleInference(config, record) {
     if (detections.length) {
       try {
         await requestCreateLabels({
-          imageId: image._id,
-          labels: detections
+          labels: detections.map((det) => ({ ...det, imageId: image._id }))
         }, config);
       } catch (err) {
         console.log(`requestCreateLabels() ERROR on image ${image._id}: ${err}`);

@@ -5,6 +5,7 @@ import SQS from '@aws-sdk/client-sqs';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
 import crypto from 'node:crypto';
+import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
 import ImageError from '../schemas/ImageError.js';
@@ -18,6 +19,9 @@ import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, cre
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
+
+const ObjectId = mongoose.Types.ObjectId;
+
 
 export class ImageModel {
   static async countImages(input, context) {
@@ -265,24 +269,28 @@ export class ImageModel {
     }
   }
 
-  static async createObject(input, context) {
-    const operation = async ({ imageId, object }) => {
+  static async createObjects(input) {
+    const operation = async ({ objects }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
-          console.log(`Retrying createObject operation! Try #: ${attempt}`);
+          console.log(`Retrying createObjects operation! Try #: ${attempt}`);
         }
-
-        // find image, add object, and save
-        const image = await ImageModel.queryById(imageId, context);
-        image.objects.unshift(object);
-        await image.save();
-        return image;
-
+        // find images, add objects, and bulk write
+        const operations = objects.map(({ imageId, object }) => ({
+          updateOne: {
+            filter: { _id: imageId },
+            update: { $push: { objects: object } }
+          }
+        }));
+        console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -290,30 +298,39 @@ export class ImageModel {
     }
   }
 
-  static async updateObject(input, context) {
-    const operation = async ({ imageId, objectId, diffs }) => {
+  static async updateObjects(input) {
+    console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
+    const operation = async ({ updates }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
-          console.log(`Retrying updateObject operation! Try #: ${attempt}`);
+          console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
         }
-        // find image, apply object updates, and save
-        const image = await ImageModel.queryById(imageId, context);
-        const object = image.objects.find((obj) => idMatch(obj._id, objectId));
-        if (!object) {
-          const msg = `Couldn't find object "${objectId}" on img "${imageId}"`;
-          bail(new ApolloError(msg));
+
+        const operations = [];
+        for (const update of updates) {
+          const { imageId, objectId, diffs } = update;
+          const overrides = {};
+          for (const [key, newVal] of Object.entries(diffs)) {
+            overrides[`objects.$[obj].${key}`] = newVal;
+          }
+          operations.push({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $set: overrides },
+              arrayFilters: [{ 'obj._id': new ObjectId(objectId) }]
+            }
+          });
         }
-        for (const [key, newVal] of Object.entries(diffs)) {
-          object[key] = newVal;
-        }
-        await image.save();
-        return image;
+        console.log('ImageModel.updateObjects - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
 
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -321,24 +338,25 @@ export class ImageModel {
     }
   }
 
-  static async deleteObject(input, context) {
-    const operation = async ({ imageId, objectId }) => {
+  static async deleteObjects(input) {
+    const operation = async ({ objects }) => {
       return await retry(async () => {
-
-        // find image, filter out object, and save
-        const image = await ImageModel.queryById(imageId, context);
-        const newObjects = image.objects.filter((obj) => (
-          !idMatch(obj._id, objectId)
-        ));
-        image.objects = newObjects;
-        await image.save();
-        return image;
-
+        // find images, remove objects, and bulk write
+        const operations = objects.map(({ imageId, objectId }) => ({
+          updateOne: {
+            filter: { _id: imageId },
+            update: { $pull: { objects: { _id: objectId } } }
+          }
+        }));
+        console.log('ImageModel.deleteObjects - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.deleteObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -346,23 +364,23 @@ export class ImageModel {
     }
   }
 
-  // TODO: make this only accept a single label at a time
-  // to make dealing with errors simpler
   static async createLabels(input, context) {
-    const operation = async ({ imageId, objectId, label }) => {
+    console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
+    const operation = async ({ label }) => {
       return await retry(async () => {
+        console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
 
         // find image, create label record
-        const image = await ImageModel.queryById(imageId, context);
+        const image = await ImageModel.queryById(label.imageId, context);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
         const authorId = label.mlModel || label.userId;
         const labelRecord = createLabelRecord(label, authorId);
 
-        // if objectId was specified, find object and save label to it
+        // if label.objectId was specified, find object and save label to it
         // else try to match to existing object bbox and merge label into that
         // else add new object
-        if (objectId) {
-          const object = image.objects.find((obj) => idMatch(obj._id, objectId));
+        if (label.objectId) {
+          const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
           object.labels.unshift(labelRecord);
         }
         else {
@@ -389,47 +407,59 @@ export class ImageModel {
     };
 
     try {
-      let image;
       for (const label of input.labels) {
-        const res = await operation({ ...input, label });
-        image = res.image;
+        const res = await operation({ label });
+        console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent({
             event: 'label-added',
             label: res.newLabel,
-            image
+            image: res.image
           }, context);
         }
       }
-      return image;
+      return { ok: true };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
-      console.log(`Image.createLabel() ERROR on image ${input.imageId}: ${err}`);
+      console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
       if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   }
 
-  static async updateLabel(input, context) {
-    const operation = async (input) => {
-      const { imageId, objectId, labelId, diffs } = input;
+  static async updateLabels(input) {
+    console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
+    const operation = async ({ updates }) => {
       return await retry(async () => {
 
-        // find label, apply updates, and save image
-        const image = await ImageModel.queryById(imageId, context);
-        const object = image.objects.find((obj) => idMatch(obj._id, objectId));
-        const label = object.labels.find((lbl) => idMatch(lbl._id, labelId));
-        for (const [key, newVal] of Object.entries(diffs)) {
-          label[key] = newVal;
+        const operations = [];
+        for (const update of updates) {
+          const { imageId, objectId, labelId, diffs } = update;
+          const overrides = {};
+          for (const [key, newVal] of Object.entries(diffs)) {
+            overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
+          }
+          operations.push({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $set: overrides },
+              arrayFilters: [
+                { 'obj._id': new ObjectId(objectId) },
+                { 'lbl._id': new ObjectId(labelId) }
+              ]
+            }
+          });
         }
-        await image.save();
-        return image;
+        console.log('ImageModel.updateLabels - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
 
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.updateLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -437,22 +467,26 @@ export class ImageModel {
     }
   }
 
-  static async deleteLabel(input, context) {
-    const operation = async ({ imageId, objectId, labelId }) => {
+  static async deleteLabels(input) {
+    console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
+    const operation = async ({ labels }) => {
       return await retry(async () => {
-        // find object, filter out label, and save image
-        const image = await ImageModel.queryById(imageId, context);
-        const object = image.objects.find((obj) => idMatch(obj._id, objectId));
-        const newLabels = object.labels.filter((lbl) => !idMatch(lbl._id, labelId));
-        object.labels = newLabels;
-        await image.save();
-        return image;
-
+        const operations = labels.map(({ imageId, objectId, labelId }) => ({
+          updateOne: {
+            filter: { _id: imageId },
+            update: { $pull: { 'objects.$[obj].labels': { _id: new ObjectId(labelId) } } },
+            arrayFilters: [{ 'obj._id': new ObjectId(objectId) }]
+          }
+        }));
+        console.log('ImageModel.deleteLabels - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
       }, { retries: 2 });
     };
 
     try {
-      return await operation(input);
+      const res = await operation(input);
+      console.log('ImageModel.deleteLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -614,36 +648,34 @@ export default class AuthedImageModel {
     return await ImageModel.createImage(input, context);
   }
 
-  async createObject(input, context) {
+  async createObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.createObject(input, context);
+    return await ImageModel.createObjects(input, context);
   }
 
-  async updateObject(input, context) {
+  async updateObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.updateObject(input, context);
+    return await ImageModel.updateObjects(input, context);
   }
 
-  async deleteObject(input, context) {
+  async deleteObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.deleteObject(input, context);
+    return await ImageModel.deleteObjects(input, context);
   }
 
-  // TODO: make this only accept a single label at a time
-  // to make dealing with errors simpler
   async createLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.createLabels(input, context);
   }
 
-  async updateLabel(input, context) {
+  async updateLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.updateLabel(input, context);
+    return await ImageModel.updateLabels(input, context);
   }
 
-  async deleteLabel(input, context) {
+  async deleteLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.deleteLabel(input, context);
+    return await ImageModel.deleteLabels(input, context);
   }
 
   async getStats(input, context) {
