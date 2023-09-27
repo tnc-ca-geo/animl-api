@@ -19,7 +19,36 @@ export class UserModel {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
+      const roles = (await cognito.send(new Cognito.AdminListGroupsForUserCommand({
+        Username: input.username,
+        UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
+      }))).Groups.filter((group) => {
+        const parsed = group.GroupName.split('/');
+        return context.user['curr_project'] === parsed.slice(1, parsed.length - 1).join('/');
+      }).map((group) => {
+        return group.GroupName.split('/').pop().split('_')[1];
+      });
 
+      for (const role of ['manager', 'observer', 'member']) {
+        if (input.roles.includes(role) && roles.includes(role)) {
+          // If the Role is already present, ignore it and continue
+          continue;
+        } else if (input.roles.includes(role) && !roles.includes(role)) {
+          // Role is desired but not currently present, add user to new group
+          await cognito.send(new Cognito.AdminAddUserToGroupCommand({
+            Username: input.username,
+            UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
+            GroupName: `animl/${context.user['curr_project']}/project_${role}`
+          }));
+        } else if (!input.roles.includes(role) && roles.includes(role)) {
+          // Role present but not desired, remove user from group
+          await cognito.send(new Cognito.AdminRemoveUserFromGroupCommand({
+            Username: input.username,
+            UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
+            GroupName: `animl/${context.user['curr_project']}/project_${role}`
+          }));
+        }
+      }
 
       return { message: 'User Updated' };
     } catch (err) {

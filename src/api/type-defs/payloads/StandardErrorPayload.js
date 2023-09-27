@@ -1,5 +1,5 @@
 export default `
-  type StandardPayload {
+  type StandardErrorPayload {
     message: String
     errors: [String]
   }`;
