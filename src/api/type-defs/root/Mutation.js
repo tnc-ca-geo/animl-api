@@ -25,13 +25,13 @@ export default `
 
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
 
-    createObject(input: CreateObjectInput!): CreateObjectPayload
-    updateObject(input: UpdateObjectInput!): UpdateObjectPayload
-    deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
+    createObjects(input: CreateObjectsInput!): CreateObjectsPayload
+    updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
+    deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
-    updateLabel(input: UpdateLabelInput!): UpdateLabelPayload
-    deleteLabel(input: DeleteLabelInput!): DeleteLabelPayload
+    updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
+    deleteLabels(input: DeleteLabelsInput!): DeleteLabelsPayload
 
     createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
     updateDeployment(input: UpdateDeploymentInput!): UpdateDeploymentPayload
