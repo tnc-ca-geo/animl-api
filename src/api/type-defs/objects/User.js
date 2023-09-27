@@ -1,6 +1,12 @@
 export default `
+  enum UserRole {
+    manager
+    member
+    observer
+  }
+
   type User {
-    roles: [String!]
+    roles: [UserRole]!
     username: String!
     email: String!
     created: String!
