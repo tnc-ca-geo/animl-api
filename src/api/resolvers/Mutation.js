@@ -85,7 +85,7 @@ const Mutation = {
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const cameraConfig = context.models.Project.deleteDeployment(input, context);
+    const cameraConfig = await context.models.Project.deleteDeployment(input, context);
     return { cameraConfig };
   },
 
@@ -115,8 +115,8 @@ const Mutation = {
   },
 
   deleteLabels: async (_, { input }, context) => {
-    const image = context.models.Image.deleteLabels(input, context);
-    return { image };
+    const res = await context.models.Image.deleteLabels(input, context);
+    return { isOk: res.ok };
   }
 
 };

@@ -471,7 +471,6 @@ export class ImageModel {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
     const operation = async ({ labels }) => {
       return await retry(async () => {
-        // TODO: this update doesn't work. Still needs more investigating
         const operations = labels.map(({ imageId, objectId, labelId }) => ({
           updateOne: {
             filter: { _id: imageId },
