@@ -269,7 +269,7 @@ export class ImageModel {
     }
   }
 
-  static async createObjects(input, context) {
+  static async createObjects(input) {
     const operation = async ({ objects }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
@@ -298,7 +298,7 @@ export class ImageModel {
     }
   }
 
-  static async updateObjects(input, context) {
+  static async updateObjects(input) {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
     const operation = async ({ updates }) => {
       return await retry(async (bail, attempt) => {
@@ -338,7 +338,7 @@ export class ImageModel {
     }
   }
 
-  static async deleteObjects(input, context) {
+  static async deleteObjects(input) {
     const operation = async ({ objects }) => {
       return await retry(async () => {
         // find images, remove objects, and bulk write
@@ -427,7 +427,7 @@ export class ImageModel {
     }
   }
 
-  static async updateLabels(input, context) {
+  static async updateLabels(input) {
     console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
     const operation = async ({ updates }) => {
       return await retry(async () => {
@@ -467,7 +467,7 @@ export class ImageModel {
     }
   }
 
-  static async deleteLabels(input, context) {
+  static async deleteLabels(input) {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
     const operation = async ({ labels }) => {
       return await retry(async () => {
