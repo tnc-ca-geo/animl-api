@@ -26,6 +26,11 @@ tape('User: Update', async (t) => {
             GroupName: 'animl/project/with/slash/project_observer'
           }]
         };
+      } else if (command instanceof Cognito.AdminRemoveUserFromGroupCommand) {
+        mocks.push(`Cognito::AdminRemoveUserFromGroupCommand::${command.input.Username}::${command.input.GroupName}`);
+
+      } else if (command instanceof Cognito.AdminAddUserToGroupCommand) {
+        mocks.push(`Cognito::AdminAddUserToGroupCommand::${command.input.Username}::${command.input.GroupName}`);
       } else {
         t.fail();
       }
@@ -53,7 +58,10 @@ tape('User: Update', async (t) => {
   }
 
   t.deepEquals(mocks, [
-    'Cognito::AdminListGroupsForUser::test@example.com'
+    'Cognito::AdminListGroupsForUser::test@example.com',
+    'Cognito::AdminAddUserToGroupCommand::test@example.com::animl/project/project_manager',
+    'Cognito::AdminRemoveUserFromGroupCommand::test@example.com::animl/project/project_observer',
+    'Cognito::AdminAddUserToGroupCommand::test@example.com::animl/project/project_member'
   ]);
 
   Sinon.restore();
