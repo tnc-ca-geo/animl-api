@@ -14,7 +14,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
-import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES, DELETE_OBJECTS_ROLES } from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
