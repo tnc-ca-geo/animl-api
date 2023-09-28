@@ -22,13 +22,20 @@ export class UserModel {
       await cognito.send(new Cognito.AdminCreateUserCommand({
         Username: input.username,
         DesiredDeliberyMediums: ['EMAIL'],
-        UserStatus: 'FORCE_CHANGE_PASSWORD',
+        UserStatus: 'CONFIRMED',
         UserAttributes: [{
           Name: 'email',
           Value: input.username
         }],
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
+
+      /*
+      await cognito.send(new Cognito.AdminConfirmSignUpCommand({
+        Username: input.username,
+        UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
+      }));
+      */
 
       await this.update({
         username: input.username,
