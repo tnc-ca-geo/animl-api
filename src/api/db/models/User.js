@@ -9,6 +9,25 @@ import { hasRole } from './utils.js';
  */
 export class UserModel {
   /**
+   * Create a new User in the cognito pool and assign it initial roles
+   * @param {object} input
+   * @param {string} input.email Email/Username to create
+   * @param {string[]} input.roles List of roles the user should have within the project
+   * @param {object} context
+   */
+  static async create(input, context) {
+    const cognito = new Cognito.CognitoIdentityProviderClient();
+
+    try {
+      return { message: 'User Created' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  /**
    * Update a User role(s) within a given project
    * @param {object} input
    * @param {string} input.username Username to update
@@ -135,6 +154,11 @@ export class UserModel {
 export default class AuthedUserModel {
   constructor(user) {
     this.user = user;
+  }
+
+  async createUser(input, context) {
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    return await UserModel.create(input, context);
   }
 
   async listUsers(input, context) {
