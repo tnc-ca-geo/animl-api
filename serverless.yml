@@ -83,6 +83,7 @@ provider:
             - 'cognito-idp:AdminListGroupsForUser'
             - 'cognito-idp:AdminRemoveUserFromGroup'
             - 'cognito-idp:AdminAddUserToGroup'
+            - 'cognito-idp:AdminCreateUserCommand'
           Resource:
             - !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
 
