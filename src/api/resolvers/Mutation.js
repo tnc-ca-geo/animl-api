@@ -49,11 +49,6 @@ const Mutation = {
     return { imageAttempt };
   },
 
-  deleteImage: async (_, { input }, context) => {
-    const res = await context.models.Image.deleteImage(input, context);
-    return { ... res };
-  },
-
   deleteImages: async (_, { input }, context) => {
     const res = await context.models.Image.deleteImages(input, context);
     return { ... res };

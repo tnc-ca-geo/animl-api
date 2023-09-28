@@ -1,7 +1,6 @@
 export default `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
-    deleteImage(input: DeleteImageInput!): StandardPayload
     deleteImages(input: DeleteImagesInput!): StandardErrorPayload
 
     updateUser(input: UpdateUserInput!): StandardPayload
