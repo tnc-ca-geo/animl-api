@@ -691,12 +691,12 @@ export default class AuthedImageModel {
   }
 
   async deleteImage(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_OBJECTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.deleteImage(input, context);
   }
 
   async deleteImages(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_OBJECTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.deleteImages(input, context);
   }
 
