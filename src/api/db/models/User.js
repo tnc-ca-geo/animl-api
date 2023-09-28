@@ -11,7 +11,7 @@ export class UserModel {
   /**
    * Create a new User in the cognito pool and assign it initial roles
    * @param {object} input
-   * @param {string} input.email Email/Username to create
+   * @param {string} input.username Email/Username to create
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
@@ -19,6 +19,22 @@ export class UserModel {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
+      await cognito.send(new Cognito.AdminCreateUserCommand({
+        Username: input.username,
+        DesiredDeliberyMediums: ['EMAIL'],
+        UserStatus: 'FORCE_CHANGE_PASSWORD',
+        UserAttributes: [{
+          Name: 'email',
+          Value: input.username
+        }],
+        UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
+      }));
+
+      await this.update({
+        username: input.username,
+        roles: input.roles
+      }, context);
+
       return { message: 'User Created' };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
