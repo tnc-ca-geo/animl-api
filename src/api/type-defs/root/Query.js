@@ -1,6 +1,6 @@
 export default `
   type Query {
-    users(input: QueryUsersInput): UsersConnection
+    users(input: QueryUsersInput): UsersPayload
     projects(input: QueryProjectsInput): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection

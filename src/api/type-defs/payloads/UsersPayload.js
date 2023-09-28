@@ -1,5 +1,5 @@
 export default `
-  type UsersConnection {
+  type UsersPayload {
     users: [User]!
   }
 `;
