@@ -51,7 +51,7 @@ export class ProjectModel {
     }
 
     try {
-      const _id = input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z]/gi, '');
+      const _id = input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z_]/gi, '');
       const project = await operation({
         ...input,
         _id,
@@ -71,6 +71,7 @@ export class ProjectModel {
         roles: ['manager']
       }, context);
 
+      console.error(project);
       return project;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
