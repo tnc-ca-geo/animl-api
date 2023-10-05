@@ -56,9 +56,8 @@ export class ProjectModel {
         availableMLModels: ['megadetector_v5a', 'megadetector_v5b', 'mirav2']
       });
 
-      await UserModel.createGroups({
+      await UserModel.createGroups({ name: input.name }, context);
 
-      }, context);
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
