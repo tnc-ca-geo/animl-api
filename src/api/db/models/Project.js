@@ -71,7 +71,6 @@ export class ProjectModel {
         roles: ['manager']
       }, context);
 
-      console.error(project);
       return project;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
