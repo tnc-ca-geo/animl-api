@@ -51,9 +51,10 @@ export class ProjectModel {
     }
 
     try {
+      const _id = input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z]/gi, '');
       const project = await operation({
         ...input,
-        _id: input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z]/gi, ''),
+        _id,
         views: [{
           name: 'All images',
           filters: {},
@@ -63,7 +64,7 @@ export class ProjectModel {
         availableMLModels: ['megadetector_v5a', 'megadetector_v5b', 'mirav2']
       });
 
-      await UserModel.createGroups({ name: input.name }, context);
+      await UserModel.createGroups({ name: _id }, context);
 
       await UserModel.update({
         username: context.user['cognito:username'],
