@@ -66,6 +66,8 @@ export class ProjectModel {
 
       await UserModel.createGroups({ name: _id }, context);
 
+      context.user['curr_project'] = _id;
+
       await UserModel.update({
         username: context.user['cognito:username'],
         roles: ['manager']
