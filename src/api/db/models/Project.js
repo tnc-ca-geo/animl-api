@@ -53,6 +53,7 @@ export class ProjectModel {
     try {
       await operation({
         ...input,
+        _id: input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z]/gi, ''),
         views: [{
           name: 'All images',
           filters: {},
