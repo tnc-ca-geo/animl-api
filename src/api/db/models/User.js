@@ -30,12 +30,10 @@ export class UserModel {
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
 
-      /*
       await cognito.send(new Cognito.AdminConfirmSignUpCommand({
         Username: input.username,
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
-      */
 
       await this.update({
         username: input.username,
