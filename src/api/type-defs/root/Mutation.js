@@ -11,7 +11,7 @@ export default `
     stopBatch(input: StopBatchInput!): StandardPayload
     redriveBatch(input: RedriveBatchInput!): StandardPayload
 
-    createProject(input: CreateProjectInput!): StandardPayload
+    createProject(input: CreateProjectInput!): Project
 
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError

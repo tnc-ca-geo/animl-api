@@ -51,7 +51,7 @@ export class ProjectModel {
     }
 
     try {
-      await operation({
+      const project = await operation({
         ...input,
         _id: input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z]/gi, ''),
         views: [{
@@ -69,6 +69,8 @@ export class ProjectModel {
         username: context.user['cognito:username'],
         roles: ['manager']
       }, context);
+
+      return project;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
