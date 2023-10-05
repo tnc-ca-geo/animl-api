@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
+import { UserModel } from './User.js';
 import Image from '../schemas/Image.js';
 import { sortDeps, hasRole, idMatch } from './utils.js';
 import retry from 'async-retry';
@@ -34,7 +35,7 @@ export class ProjectModel {
     }
   }
 
-  static async createProject(input) {
+  static async createProject(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
         const newProject = new Project(input);
@@ -44,7 +45,20 @@ export class ProjectModel {
     };
 
     try {
-      return await operation(input);
+      await operation({
+        ...input,
+        views: [{
+          name: 'All images',
+          filters: {},
+          description: 'Default view of all images. This view is not editable.',
+          editable: false
+        }],
+        availableMLModels: ['megadetector_v5a', 'megadetector_v5b', 'mirav2']
+      });
+
+      await UserModel.createGroups({
+
+      }, context);
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -408,8 +422,8 @@ export default class AuthedProjectModel {
     return await ProjectModel.getProjects(input, context);
   }
 
-  async createProject(input) {
-    return await ProjectModel.createProject(input);
+  async createProject(input, context) {
+    return await ProjectModel.createProject(input, context);
   }
 
   async createView(input, context) {

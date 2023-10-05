@@ -69,6 +69,11 @@ const Mutation = {
     return { ...res };
   },
 
+  createProject: async (_, { input }, context) => {
+    const res = await context.models.Project.createProject(input, context);
+    return { ...res };
+  },
+
   createView: async (_, { input }, context) => {
     const view = await context.models.Project.createView(input, context);
     return { view };

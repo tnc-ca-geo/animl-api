@@ -9,6 +9,32 @@ import { hasRole } from './utils.js';
  */
 export class UserModel {
   /**
+   * Create Cognito groups, used when creating a new project
+   * @param {object} input
+   * @param {string} input.name Project Name
+   * @param {object} context
+   */
+  static async createGroups(input, context) {
+    const cognito = new Cognito.CognitoIdentityProviderClient();
+
+    try {
+
+      for (const role of ['manager', 'observer', 'member']) {
+        await cognito.send(new Cognito.CreateGroupCommand({
+          GroupName: `animl/${input.name}/project_${role}`,
+          UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
+        }));
+      }
+
+      return { message: 'Groups Created' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  /**
    * Create a new User in the cognito pool and assign it initial roles
    * @param {object} input
    * @param {string} input.username Email/Username to create
