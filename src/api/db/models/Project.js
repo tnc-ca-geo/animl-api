@@ -5,6 +5,7 @@ import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
 import Image from '../schemas/Image.js';
 import { sortDeps, hasRole, idMatch } from './utils.js';
+import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
   WRITE_DEPLOYMENTS_ROLES,
@@ -50,6 +51,15 @@ export class ProjectModel {
       throw new Error('Projects must be created by an authenticated user');
     }
 
+    if (!input.availableMLModels.length) throw new Error('At least 1 MLModel must be enabled for a project');
+    const models = (await MLModelModel.getMLModels({
+        _ids: input.availableMLModels
+    })).map((model) => { return model._id });
+
+    for (const m of input.availableMLModels) {
+        if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
+    }
+
     try {
       const _id = input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z_]/gi, '');
       const project = await operation({
@@ -61,7 +71,6 @@ export class ProjectModel {
           description: 'Default view of all images. This view is not editable.',
           editable: false
         }],
-        availableMLModels: ['megadetector_v5a', 'megadetector_v5b', 'mirav2']
       });
 
       await UserModel.createGroups({ name: _id }, context);
