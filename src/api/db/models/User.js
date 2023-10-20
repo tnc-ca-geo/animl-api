@@ -154,6 +154,7 @@ export class UserModel {
         let res = {};
         do {
           res = await cognito.send(new Cognito.ListUsersInGroupCommand({
+            Limit: 60,
             UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
             GroupName: `animl/${context.user['curr_project']}/project_${role}`
           }));
