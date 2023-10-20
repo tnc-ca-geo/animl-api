@@ -53,11 +53,11 @@ export class ProjectModel {
 
     if (!input.availableMLModels.length) throw new Error('At least 1 MLModel must be enabled for a project');
     const models = (await MLModelModel.getMLModels({
-        _ids: input.availableMLModels
-    })).map((model) => { return model._id });
+      _ids: input.availableMLModels
+    })).map((model) => { return model._id; });
 
     for (const m of input.availableMLModels) {
-        if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
+      if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
     }
 
     try {
@@ -70,7 +70,7 @@ export class ProjectModel {
           filters: {},
           description: 'Default view of all images. This view is not editable.',
           editable: false
-        }],
+        }]
       });
 
       await UserModel.createGroups({ name: _id }, context);
