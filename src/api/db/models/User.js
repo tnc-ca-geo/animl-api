@@ -45,7 +45,7 @@ export class UserModel {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
-      await cognito.send(new Cognito.AdminGetUser({
+      await cognito.send(new Cognito.AdminGetUserCommand({
         Username: input.username,
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
