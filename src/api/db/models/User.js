@@ -45,14 +45,8 @@ export class UserModel {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
-      await cognito.send(new Cognito.AdminCreateUserCommand({
+      await cognito.send(new Cognito.AdminGetUser({
         Username: input.username,
-        DesiredDeliberyMediums: ['EMAIL'],
-        UserStatus: 'CONFIRMED',
-        UserAttributes: [{
-          Name: 'email',
-          Value: input.username
-        }],
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
 
@@ -60,12 +54,36 @@ export class UserModel {
         username: input.username,
         roles: input.roles
       }, context);
-
-      return { message: 'User Created' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof Cognito.UserNotFoundException) {
+        try {
+          await cognito.send(new Cognito.AdminCreateUserCommand({
+            Username: input.username,
+            DesiredDeliberyMediums: ['EMAIL'],
+            UserStatus: 'CONFIRMED',
+            UserAttributes: [{
+              Name: 'email',
+              Value: input.username
+            }],
+            UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
+          }));
+
+          await this.update({
+            username: input.username,
+            roles: input.roles
+          }, context);
+
+          return { message: 'User Created' };
+
+        } catch (err) {
+          // if error is uncontrolled, throw new ApolloError
+          if (err instanceof ApolloError) throw err;
+          throw new ApolloError(err);
+        }
+      } else {
+        if (err instanceof ApolloError) throw err;
+        throw new ApolloError(err);
+      }
     }
   }
 

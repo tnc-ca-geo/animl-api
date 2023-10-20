@@ -78,7 +78,7 @@ provider:
         - Effect: 'Allow'
           Action:
             - 'cognito-idp:ListGroups'
-            - 'cognito-idp:GetUser'
+            - 'cognito-idp:AdminGetUserCommand'
             - 'cognito-idp:ListUsers'
             - 'cognito-idp:ListUsersInGroup'
             - 'cognito-idp:AdminListGroupsForUser'
