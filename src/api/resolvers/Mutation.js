@@ -24,6 +24,16 @@ const Mutation = {
     return { ...res };
   },
 
+  createUser: async (_, { input }, context) => {
+    const res = await context.models.User.createUser(input, context);
+    return { ...res };
+  },
+
+  updateUser: async (_, { input }, context) => {
+    const res = await context.models.User.updateUser(input, context);
+    return { ...res };
+  },
+
   updateBatch: async (_, { input }, context) => {
     const batch = await context.models.Batch.updateBatch(input, context);
     return { batch };
@@ -44,6 +54,11 @@ const Mutation = {
     return { imageAttempt };
   },
 
+  deleteImages: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteImages(input, context);
+    return { ... res };
+  },
+
   registerCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.registerCamera(input, context);
     return { ...res };
@@ -52,6 +67,11 @@ const Mutation = {
   unregisterCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.unregisterCamera(input, context);
     return { ...res };
+  },
+
+  createProject: async (_, { input }, context) => {
+    const project = await context.models.Project.createProject(input, context);
+    return { project };
   },
 
   createView: async (_, { input }, context) => {

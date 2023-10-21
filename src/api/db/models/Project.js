@@ -2,8 +2,10 @@ import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
+import { UserModel } from './User.js';
 import Image from '../schemas/Image.js';
 import { sortDeps, hasRole, idMatch } from './utils.js';
+import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
   WRITE_DEPLOYMENTS_ROLES,
@@ -34,7 +36,7 @@ export class ProjectModel {
     }
   }
 
-  static async createProject(input) {
+  static async createProject(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
         const newProject = new Project(input);
@@ -43,8 +45,44 @@ export class ProjectModel {
       }, { retries: 2 });
     };
 
+    if (!context.user['cognito:username']) {
+      // If projects are created by a "machine" user they will end up orphaned
+      // in that no users will have permission to see the project
+      throw new Error('Projects must be created by an authenticated user');
+    }
+
+    if (!input.availableMLModels.length) throw new Error('At least 1 MLModel must be enabled for a project');
+    const models = (await MLModelModel.getMLModels({
+      _ids: input.availableMLModels
+    })).map((model) => { return model._id; });
+
+    for (const m of input.availableMLModels) {
+      if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
+    }
+
     try {
-      return await operation(input);
+      const _id = input.name.toLowerCase().replace(/\s/g, '_').replace(/[^0-9a-z_]/gi, '');
+      const project = await operation({
+        ...input,
+        _id,
+        views: [{
+          name: 'All images',
+          filters: {},
+          description: 'Default view of all images. This view is not editable.',
+          editable: false
+        }]
+      });
+
+      await UserModel.createGroups({ name: _id }, context);
+
+      context.user['curr_project'] = _id;
+
+      await UserModel.update({
+        username: context.user['cognito:username'],
+        roles: ['manager']
+      }, context);
+
+      return project;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -408,8 +446,8 @@ export default class AuthedProjectModel {
     return await ProjectModel.getProjects(input, context);
   }
 
-  async createProject(input) {
-    return await ProjectModel.createProject(input);
+  async createProject(input, context) {
+    return await ProjectModel.createProject(input, context);
   }
 
   async createView(input, context) {

@@ -14,7 +14,7 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
-import { WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import { DELETE_IMAGES_ROLES, WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -93,6 +93,53 @@ export class ImageModel {
       categories.sort();
 
       return { categories };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteImages(input, context) {
+    try {
+      const res = await Promise.allSettled(input.imageIds.map((imageId) => {
+        return this.deleteImage({ imageId }, context);
+      }));
+
+      const errors = res
+        .filter((r) => { return r.status === 'rejected'; })
+        .map((r) => { return r.reason; }); // Will always be an ApolloError
+
+      return {
+        message: 'Images Deleted',
+        errors
+      };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteImage(input, context) {
+    try {
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+
+      // Ensure Image is part of a project that the user has access to
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      await Promise.all(['medium', 'original', 'small'].map((size) => {
+        return s3.send(new S3.DeleteObjectCommand({
+          Bucket: `animl-images-serving-${process.env.STAGE}`,
+          Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension || 'jpg'}`
+        }));
+      }));
+
+      await Image.deleteOne({ _id: input.imageId });
+      await ImageAttempt.deleteOne({ _id: input.imageId });
+      await ImageError.deleteMany({ image: input.imageId });
+
+      return { message: 'Image Deleted' };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -641,6 +688,16 @@ export default class AuthedImageModel {
 
   async getLabels(projId) {
     return await ImageModel.getLabels(projId);
+  }
+
+  async deleteImage(input, context) {
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteImage(input, context);
+  }
+
+  async deleteImages(input, context) {
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteImages(input, context);
   }
 
   async createImage(input, context) {
