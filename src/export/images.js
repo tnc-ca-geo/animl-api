@@ -424,7 +424,8 @@ export default class ImageExport {
   createCOCOImg(img) {
     const deployment = this.getDeployment(img, this.project);
     const deploymentNormalized = deployment.name.toLowerCase().replaceAll("'", '').replaceAll(' ', '_');
-    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id}.${img.fileTypeExtension}`;
+    // Note - replacing ":" in imageIds with "-" because colons are reserved characters in windows filesystems
+    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id.replace(':', '-')}.${img.fileTypeExtension}`;
     const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
     return {
       id: img._id,
