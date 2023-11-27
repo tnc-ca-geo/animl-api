@@ -49,6 +49,11 @@ const Mutation = {
     return { ...res };
   },
 
+  createImageComment: async (_, { input }, context) => {
+    const comment = await context.models.Image.createImageComment(input, context);
+    return { comment };
+  },
+
   createImage: async (_, { input }, context) => {
     const imageAttempt = await context.models.Image.createImage(input, context);
     return { imageAttempt };

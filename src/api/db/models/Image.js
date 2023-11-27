@@ -324,8 +324,10 @@ export class ImageModel {
         // find images, add comment, and bulk write
         return await Image.bulkWrite([{
           updateOne: {
-            filter: { _id: imageId },
-            update: { $push: { comments: input } }
+            filter: { _id: input.imageId },
+            update: { $push: { comments: {
+                comment: input.comment
+            }}}
           }
         }]);
       }, { retries: 2 });
