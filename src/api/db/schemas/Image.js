@@ -4,6 +4,7 @@ import {
   LocationSchema,
   ObjectSchema
 } from './shared/index.js';
+import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
@@ -12,6 +13,13 @@ const Schema = mongoose.Schema;
  *    _id - "<project_id>:<image_hash>"
  *    userSetData  - user configured EXIF data
  */
+
+const ImageCommentSchema = new Schema({
+  _id: { type: String, required: true, default: randomUUID },
+  author: { type: String, required: true },
+  created: { type: Date, default: Date.now, required: true },
+  comment: { type: String, required: true },
+});
 
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
@@ -35,7 +43,8 @@ const ImageSchema = new Schema({
   model: { type: String },
   location: { type: LocationSchema },
   triggerSource: { type: String },
-  objects: { type: [ObjectSchema] }
+  objects: { type: [ObjectSchema] },
+  comments: { type: [ImageCommentSchema] }
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
