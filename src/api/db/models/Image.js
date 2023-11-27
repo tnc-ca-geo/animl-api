@@ -316,6 +316,32 @@ export class ImageModel {
     }
   }
 
+  static async createComment(input) {
+    const operation = async ({ input }) => {
+      return await retry(async (bail, attempt) => {
+        if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
+
+        // find images, add comment, and bulk write
+        return await Image.bulkWrite([{
+          updateOne: {
+            filter: { _id: imageId },
+            update: { $push: { comments: input } }
+          }
+        }]);
+      }, { retries: 2 });
+    };
+
+    try {
+      const res = await operation(input);
+      console.log('ImageComment:', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createObjects(input) {
     const operation = async ({ objects }) => {
       return await retry(async (bail, attempt) => {
