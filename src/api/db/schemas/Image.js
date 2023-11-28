@@ -18,7 +18,7 @@ const ImageCommentSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   author: { type: String, required: true },
   created: { type: Date, default: Date.now, required: true },
-  comment: { type: String, required: true },
+  comment: { type: String, required: true }
 });
 
 const ImageSchema = new Schema({
