@@ -50,7 +50,7 @@ const Mutation = {
   },
 
   createImageComment: async (_, { input }, context) => {
-    const comment = await context.models.Image.createImageComment(input, context);
+    const comment = await context.models.Image.createComment(input, context);
     return { comment };
   },
 
