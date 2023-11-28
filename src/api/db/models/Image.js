@@ -360,7 +360,7 @@ export class ImageModel {
 
       await image.save();
 
-      return { message: 'Images Deleted' };
+      return comment;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
