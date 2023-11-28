@@ -322,6 +322,29 @@ export class ImageModel {
     }
   }
 
+  static async deleteComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+     const comment = (image.comments || []).filter((c) => { return c._id === input.id })[0];
+     if (!comment) throw new Error('Comment not found on image');
+
+     if (comment.author !== context.user['cognito:username'] && !user['is_superuser']) {
+        throw new Error('Can only edit your own comments');
+     }
+
+     image.comments = image.comments.filter((c) => { return c._id !== input.id });
+
+     await image.save();
+
+     return { message: 'Images Deleted' }
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createComment(input, context) {
     const operation = async (input) => {
       return await retry(async (bail, attempt) => {
@@ -344,7 +367,6 @@ export class ImageModel {
       await operation(input);
       const image = await ImageModel.queryById(input.imageId, context);
 
-      console.error('IMAGECOMMENT', image);
       return image.comments.pop();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
@@ -730,6 +752,11 @@ export default class AuthedImageModel {
   async createComment(input, context) {
     if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.createComment(input, context);
+  }
+
+  async deleteComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteComment(input, context);
   }
 
   async deleteImage(input, context) {

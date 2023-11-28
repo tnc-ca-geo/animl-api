@@ -5,6 +5,7 @@ export default `
 
     createImageComment(input: CreateImageCommentInput!): ImageCommentPayload
     updateImageComment(input: UpdateImageCommentInput!): ImageCommentPayload
+    deleteImageComment(input: DeleteImageCommentInput!): StandardPayload
 
     createUser(input: CreateUserInput!): StandardPayload
     updateUser(input: UpdateUserInput!): StandardPayload
