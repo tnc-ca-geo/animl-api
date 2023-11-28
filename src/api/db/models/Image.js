@@ -322,7 +322,7 @@ export class ImageModel {
     }
   }
 
-  static async createComment(input) {
+  static async createComment(input, context) {
     const operation = async (input) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
@@ -332,6 +332,7 @@ export class ImageModel {
           updateOne: {
             filter: { _id: input.imageId },
             update: { $push: { comments: {
+                author: context.user['cognito:username'],
                 comment: input.comment
             }}}
           }
@@ -340,9 +341,11 @@ export class ImageModel {
     };
 
     try {
-      const res = await operation(input);
-      console.log('ImageComment:', JSON.stringify(res.getRawResponse()));
-      return res.getRawResponse();
+      await operation(input);
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      console.error('IMAGECOMMENT', image);
+      return image.comments.pop();
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -726,7 +729,7 @@ export default class AuthedImageModel {
 
   async createComment(input, context) {
     if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.createComment(input);
+    return await ImageModel.createComment(input, context);
   }
 
   async deleteImage(input, context) {
