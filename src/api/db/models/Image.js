@@ -323,7 +323,7 @@ export class ImageModel {
   }
 
   static async createComment(input) {
-    const operation = async ({ input }) => {
+    const operation = async (input) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
 
@@ -726,7 +726,7 @@ export default class AuthedImageModel {
 
   async createComment(input, context) {
     if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
-    return await ImageModel.createComment(input, context);
+    return await ImageModel.createComment(input);
   }
 
   async deleteImage(input, context) {
