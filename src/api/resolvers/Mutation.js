@@ -49,6 +49,21 @@ const Mutation = {
     return { ...res };
   },
 
+  deleteImageComment: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteComment(input, context);
+    return { ...res };
+  },
+
+  updateImageComment: async (_, { input }, context) => {
+    const comment = await context.models.Image.updateComment(input, context);
+    return { comment };
+  },
+
+  createImageComment: async (_, { input }, context) => {
+    const comment = await context.models.Image.createComment(input, context);
+    return { comment };
+  },
+
   createImage: async (_, { input }, context) => {
     const imageAttempt = await context.models.Image.createImage(input, context);
     return { imageAttempt };
@@ -56,7 +71,7 @@ const Mutation = {
 
   deleteImages: async (_, { input }, context) => {
     const res = await context.models.Image.deleteImages(input, context);
-    return { ... res };
+    return { ...res };
   },
 
   registerCamera: async (_, { input }, context) => {

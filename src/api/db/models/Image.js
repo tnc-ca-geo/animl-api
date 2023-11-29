@@ -14,7 +14,13 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
-import { DELETE_IMAGES_ROLES, WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import {
+  DELETE_IMAGES_ROLES,
+  WRITE_OBJECTS_ROLES,
+  WRITE_IMAGES_ROLES,
+  WRITE_COMMENTS_ROLES,
+  EXPORT_DATA_ROLES
+} from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -312,6 +318,82 @@ export class ImageModel {
       else if (msg.includes('validation')) {
         throw new DBValidationError(err);
       }
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      if (!comment) throw new Error('Comment not found on image');
+
+      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+        throw new Error('Can only edit your own comments');
+      }
+
+      image.comments = image.comments.filter((c) => { return c._id !== input.id; });
+
+      await image.save();
+
+      return { message: 'Images Deleted' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      if (!comment) throw new Error('Comment not found on image');
+
+      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+        throw new Error('Can only edit your own comments');
+      }
+
+      comment.comment = input.comment;
+
+      await image.save();
+
+      return comment;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async createComment(input, context) {
+    const operation = async (input) => {
+      return await retry(async (bail, attempt) => {
+        if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
+
+        // find images, add comment, and bulk write
+        return await Image.bulkWrite([{
+          updateOne: {
+            filter: { _id: input.imageId },
+            update: { $push: { comments: {
+              author: context.user['cognito:username'],
+              comment: input.comment
+            } } }
+          }
+        }]);
+      }, { retries: 2 });
+    };
+
+    try {
+      await operation(input);
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      return image.comments.pop();
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   }
@@ -688,6 +770,21 @@ export default class AuthedImageModel {
 
   async getLabels(projId) {
     return await ImageModel.getLabels(projId);
+  }
+
+  async createComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createComment(input, context);
+  }
+
+  async updateComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateComment(input, context);
+  }
+
+  async deleteComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteComment(input, context);
   }
 
   async deleteImage(input, context) {

@@ -14,6 +14,14 @@ export default `
     deployments: [Deployment!]!
   }
 
+  type TagSchema {
+    _id: String!
+    name: String!
+    default: Boolean!
+    color: String!
+    permission: String!
+  }
+
   type Project {
     _id: String!
     name: String!
@@ -24,5 +32,6 @@ export default `
     cameraConfigs: [CameraConfig]
     labels: LabelList
     availableMLModels: [String]
+    tags: [TagSchema]
   }
 `;
