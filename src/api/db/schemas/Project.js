@@ -60,6 +60,12 @@ const DeploymentSchema = new Schema({
   editable: { type: Boolean }
 });
 
+const ProjectLabelSchema = new Schema({
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    color: { type: String, required: true }
+});
+
 const CameraConfigSchema = new Schema({
   _id: { type: String, required: true },  /* _id is serial number */
   deployments: { type: [DeploymentSchema] }
@@ -73,7 +79,8 @@ const ProjectSchema = new Schema({
   views: { type: [ViewSchema], required: true },
   cameraConfigs: { type: [CameraConfigSchema] },
   availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
-  automationRules: { type: [AutomationRuleSchema] }
+  automationRules: { type: [AutomationRuleSchema] },
+  labels: { type: [ProjectLabelSchema] }
 });
 
 export default mongoose.model('Project', ProjectSchema);
