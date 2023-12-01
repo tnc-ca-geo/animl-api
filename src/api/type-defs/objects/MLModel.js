@@ -2,6 +2,7 @@ export default `
   type Categories {
     _id: String!
     name: String!
+    color: String!
   }
 
   type MLModel {
