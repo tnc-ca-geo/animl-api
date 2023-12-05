@@ -35,6 +35,7 @@ const ValidationSchema = new Schema({
 const LabelSchema = new Schema({
   type: { type: String, enum: ['manual', 'ml'], requried: true },
   category: { type: String, default: 'none', required: true },
+  labelId: { type: String },
   conf: { type: Number },
   bbox: { type: [Number] },
   labeledDate: { type: Date, default: Date.now, required: true },

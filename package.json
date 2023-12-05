@@ -64,6 +64,6 @@
         "serverless-offline": "^13.0.0",
         "sinon": "^17.0.0",
         "tape": "^5.5.3",
-        "undici": "^5.22.0"
+        "undici": "^6.0.0"
     }
 }

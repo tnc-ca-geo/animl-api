@@ -14,6 +14,13 @@ export default `
     deployments: [Deployment!]!
   }
 
+  type ProjectLabel {
+    _id: String!
+    name: String!
+    color: String!
+    source: String!
+  }
+
   type Project {
     _id: String!
     name: String!
@@ -22,7 +29,7 @@ export default `
     views: [View!]!
     automationRules: [AutomationRule]
     cameraConfigs: [CameraConfig]
-    labels: LabelList
+    labels: [ProjectLabel]
     availableMLModels: [String]
   }
 `;

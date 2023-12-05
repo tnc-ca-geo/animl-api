@@ -61,9 +61,10 @@ const DeploymentSchema = new Schema({
 });
 
 const ProjectLabelSchema = new Schema({
-    id: { type: String, required: true },
-    name: { type: String, required: true },
-    color: { type: String, required: true }
+  _id: { type: String, required: true },
+  name: { type: String, required: true },
+  color: { type: String, required: true },
+  source: { type: String, required: true, default: 'reviewer' }
 });
 
 const CameraConfigSchema = new Schema({
@@ -80,7 +81,7 @@ const ProjectSchema = new Schema({
   cameraConfigs: { type: [CameraConfigSchema] },
   availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
   automationRules: { type: [AutomationRuleSchema] },
-  labels: { type: [ProjectLabelSchema] }
+  labels: { type: [ProjectLabelSchema], default: [], required: true }
 });
 
 export default mongoose.model('Project', ProjectSchema);
