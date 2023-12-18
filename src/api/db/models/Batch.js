@@ -231,24 +231,24 @@ export class BatchModel {
 
       const res = {
         batch: batch._id,
-        user: context.user.sub,
+        user: context.user.sub
       };
 
       if (input.multipart) {
         const upload = await s3.send(new S3.CreateMultipartUploadCommand(params));
         res.multipart = upload.UploadId;
 
-        const promises = []
+        const promises = [];
         for (let index = 0; index < input.multipart; index++) {
-            promises.push(getSignedUrl(s3, new UploadPartCommand({
-                Bucket: `animl-images-ingestion-${process.env.STAGE}`,
-                Key: `${id}.zip`,
-                UploadId: upload.UploadId,
-                PartNumber: index + 1,
-            })));
+          promises.push(getSignedUrl(s3, new S3.UploadPartCommand({
+            Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+            Key: `${id}.zip`,
+            UploadId: upload.UploadId,
+            PartNumber: index + 1
+          })));
         }
 
-        res.urls = await Promise.all(promises)
+        res.urls = await Promise.all(promises);
       } else {
         res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params));
       }
