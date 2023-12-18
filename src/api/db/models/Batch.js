@@ -205,12 +205,12 @@ export class BatchModel {
   static async closeUpload(input) {
     try {
       const s3 = new S3.S3Client();
-        await s3.send(new S3.CompleteMultipartUploadCommand({
-            Bucket: `animl-images-ingestion-${process.env.STAGE}`,
-            Key: `${input.id}.zip`,
-            UploadId: input.multipart,
-            MultipartUpload: { Parts: input.parts },
-        }));
+      await s3.send(new S3.CompleteMultipartUploadCommand({
+        Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+        Key: `${input.id}.zip`,
+        UploadId: input.multipart,
+        MultipartUpload: { Parts: input.parts }
+      }));
 
       return { message: 'Upload Closed' };
     } catch (err) {
@@ -313,7 +313,7 @@ export default class AuthedBatchModel {
     return BatchModel.createUpload(input, context);
   }
 
-  async closeUpload(input, context) {
+  async closeUpload(input) {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return BatchModel.closeUpload(input);
   }

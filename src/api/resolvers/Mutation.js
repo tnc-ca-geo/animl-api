@@ -25,7 +25,7 @@ const Mutation = {
   },
 
   closeUpload: async (_, { input }, context) => {
-    const res = await context.models.Batch.closeUpload(input, context);
+    const res = await context.models.Batch.closeUpload(input);
     return { ...res };
   },
 
