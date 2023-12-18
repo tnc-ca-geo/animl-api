@@ -24,6 +24,11 @@ const Mutation = {
     return { ...res };
   },
 
+  closeUpload: async (_, { input }, context) => {
+    const res = await context.models.Batch.closeUpload(input, context);
+    return { ...res };
+  },
+
   createUser: async (_, { input }, context) => {
     const res = await context.models.User.createUser(input, context);
     return { ...res };

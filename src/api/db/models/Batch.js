@@ -202,6 +202,24 @@ export class BatchModel {
     }
   }
 
+  static async closeUpload(input) {
+    try {
+      const s3 = new S3.S3Client();
+        await s3.send(new S3.CompleteMultipartUploadCommand({
+            Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+            Key: `${input.id}.zip`,
+            UploadId: input.multipart,
+            MultipartUpload: { Parts: input.parts },
+        }));
+
+      return { message: 'Upload Closed' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createUpload(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -293,5 +311,10 @@ export default class AuthedBatchModel {
   async createUpload(input, context) {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return BatchModel.createUpload(input, context);
+  }
+
+  async closeUpload(input, context) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchModel.closeUpload(input);
   }
 }

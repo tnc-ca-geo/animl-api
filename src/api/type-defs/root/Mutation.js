@@ -11,6 +11,8 @@ export default `
     updateUser(input: UpdateUserInput!): StandardPayload
 
     createUpload(input: CreateUploadInput!): CreateUploadPayload
+    closeUpload(input: CreateCloseInput!): StandardPayload
+
     updateBatch(input: UpdateBatchInput!): BatchPayload
     stopBatch(input: StopBatchInput!): StandardPayload
     redriveBatch(input: RedriveBatchInput!): StandardPayload
