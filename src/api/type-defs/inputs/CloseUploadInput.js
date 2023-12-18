@@ -1,10 +1,10 @@
 export default `
-  type CloseUploadPart {
+  input CloseUploadPart {
     ETag: String!
     PartNumber: Int!
   }
 
-  type CloseUploadPayload {
+  input CloseUploadInput {
     id: String!
     multipart: String!
     parts: [CloseUploadPart]!
