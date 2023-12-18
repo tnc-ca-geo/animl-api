@@ -228,15 +228,32 @@ export class BatchModel {
       };
 
       const s3 = new S3.S3Client();
-      const put = new S3.PutObjectCommand(params);
 
-      const signedUrl = await getSignedUrl(s3, put);
-
-      return {
+      const res = {
         batch: batch._id,
         user: context.user.sub,
-        url: signedUrl
       };
+
+      if (input.multipart) {
+        const upload = await s3.send(new S3.CreateMultipartUploadCommand(params));
+        res.multipart = upload.UploadId;
+
+        const promises = []
+        for (let index = 0; index < input.multipart; index++) {
+            promises.push(getSignedUrl(s3, new UploadPartCommand({
+                Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+                Key: `${id}.zip`,
+                UploadId: upload.UploadId,
+                PartNumber: index + 1,
+            })));
+        }
+
+        res.urls = await Promise.all(promises)
+      } else {
+        res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params));
+      }
+
+      return res;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
