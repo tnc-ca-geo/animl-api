@@ -3,9 +3,9 @@ export default `
     createImage(input: CreateImageInput!): CreateImagePayload
     deleteImages(input: DeleteImagesInput!): StandardErrorPayload
 
-    createImageComment(input: CreateImageCommentInput!): ImageCommentPayload
-    updateImageComment(input: UpdateImageCommentInput!): ImageCommentPayload
-    deleteImageComment(input: DeleteImageCommentInput!): StandardPayload
+    createImageComment(input: CreateImageCommentInput!): ImageCommentsPayload
+    updateImageComment(input: UpdateImageCommentInput!): ImageCommentsPayload
+    deleteImageComment(input: DeleteImageCommentInput!): ImageCommentsPayload
 
     createUser(input: CreateUserInput!): StandardPayload
     updateUser(input: UpdateUserInput!): StandardPayload

@@ -337,7 +337,7 @@ export class ImageModel {
 
       await image.save();
 
-      return { message: 'Images Deleted' };
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -360,7 +360,7 @@ export class ImageModel {
 
       await image.save();
 
-      return comment;
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -390,7 +390,7 @@ export class ImageModel {
       await operation(input);
       const image = await ImageModel.queryById(input.imageId, context);
 
-      return image.comments.pop();
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
