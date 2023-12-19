@@ -207,8 +207,8 @@ export class BatchModel {
       const s3 = new S3.S3Client();
       await s3.send(new S3.CompleteMultipartUploadCommand({
         Bucket: `animl-images-ingestion-${process.env.STAGE}`,
-        Key: `${input.id}.zip`,
-        UploadId: input.multipart,
+        Key: `${input.batchId}.zip`,
+        UploadId: input.multipartUploadId,
         MultipartUpload: { Parts: input.parts }
       }));
 

@@ -5,7 +5,7 @@ export default `
   }
 
   input CloseUploadInput {
-    id: String!
-    multipart: String!
+    batchId: String!
+    multipartUploadId: String!
     parts: [CloseUploadPart]!
   }`;
