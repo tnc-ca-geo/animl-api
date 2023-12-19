@@ -326,7 +326,7 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -349,7 +349,7 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
