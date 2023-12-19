@@ -333,7 +333,7 @@ export class ImageModel {
         throw new Error('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => { return c._id !== input.id; });
+      image.comments = image.comments.filter((c) => { return c._id.toString() !== input.id.toString(); });
 
       await image.save();
 
