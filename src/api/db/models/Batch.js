@@ -252,12 +252,12 @@ export class BatchModel {
         user: context.user.sub
       };
 
-      if (input.multipart) {
+      if (input.partCount) {
         const upload = await s3.send(new S3.CreateMultipartUploadCommand(params));
-        res.multipart = upload.UploadId;
+        res.multipartUploadId = upload.UploadId;
 
         const promises = [];
-        for (let index = 0; index < input.multipart; index++) {
+        for (let index = 0; index < input.partCount; index++) {
           promises.push(getSignedUrl(s3, new S3.UploadPartCommand({
             Bucket: `animl-images-ingestion-${process.env.STAGE}`,
             Key: `${id}.zip`,
