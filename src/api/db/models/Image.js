@@ -326,18 +326,18 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
         throw new Error('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => { return c._id !== input.id; });
+      image.comments = image.comments.filter((c) => { return c._id.toString() !== input.id.toString(); });
 
       await image.save();
 
-      return { message: 'Images Deleted' };
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -349,7 +349,7 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id === input.id; })[0];
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -360,7 +360,7 @@ export class ImageModel {
 
       await image.save();
 
-      return comment;
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -369,28 +369,17 @@ export class ImageModel {
   }
 
   static async createComment(input, context) {
-    const operation = async (input) => {
-      return await retry(async (bail, attempt) => {
-        if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
-
-        // find images, add comment, and bulk write
-        return await Image.bulkWrite([{
-          updateOne: {
-            filter: { _id: input.imageId },
-            update: { $push: { comments: {
-              author: context.user['cognito:username'],
-              comment: input.comment
-            } } }
-          }
-        }]);
-      }, { retries: 2 });
-    };
-
     try {
-      await operation(input);
       const image = await ImageModel.queryById(input.imageId, context);
 
-      return image.comments.pop();
+      if (!image.comments) image.comments = [];
+      image.comments.push({
+        author: context.user['cognito:username'],
+        comment: input.comment
+      });
+      await image.save();
+
+      return { comments: image.comments };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;

@@ -4,7 +4,6 @@ import {
   LocationSchema,
   ObjectSchema
 } from './shared/index.js';
-import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
@@ -15,7 +14,6 @@ const Schema = mongoose.Schema;
  */
 
 const ImageCommentSchema = new Schema({
-  _id: { type: String, required: true, default: randomUUID },
   author: { type: String, required: true },
   created: { type: Date, default: Date.now, required: true },
   comment: { type: String, required: true }
