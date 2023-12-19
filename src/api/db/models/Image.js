@@ -14,7 +14,13 @@ import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
 import { handleEvent } from '../../../automation/index.js';
-import { DELETE_IMAGES_ROLES, WRITE_OBJECTS_ROLES, WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
+import {
+  DELETE_IMAGES_ROLES,
+  WRITE_OBJECTS_ROLES,
+  WRITE_IMAGES_ROLES,
+  WRITE_COMMENTS_ROLES,
+  EXPORT_DATA_ROLES
+} from '../../auth/roles.js';
 import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -312,6 +318,71 @@ export class ImageModel {
       else if (msg.includes('validation')) {
         throw new DBValidationError(err);
       }
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
+      if (!comment) throw new Error('Comment not found on image');
+
+      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+        throw new Error('Can only edit your own comments');
+      }
+
+      image.comments = image.comments.filter((c) => { return c._id.toString() !== input.id.toString(); });
+
+      await image.save();
+
+      return { comments: image.comments };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
+      if (!comment) throw new Error('Comment not found on image');
+
+      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+        throw new Error('Can only edit your own comments');
+      }
+
+      comment.comment = input.comment;
+
+      await image.save();
+
+      return { comments: image.comments };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async createComment(input, context) {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      if (!image.comments) image.comments = [];
+      image.comments.push({
+        author: context.user['cognito:username'],
+        comment: input.comment
+      });
+      await image.save();
+
+      return { comments: image.comments };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
       throw new ApolloError(err);
     }
   }
@@ -688,6 +759,21 @@ export default class AuthedImageModel {
 
   async getLabels(projId) {
     return await ImageModel.getLabels(projId);
+  }
+
+  async createComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.createComment(input, context);
+  }
+
+  async updateComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.updateComment(input, context);
+  }
+
+  async deleteComment(input, context) {
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    return await ImageModel.deleteComment(input, context);
   }
 
   async deleteImage(input, context) {

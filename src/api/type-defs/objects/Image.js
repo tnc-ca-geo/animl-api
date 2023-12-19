@@ -19,7 +19,8 @@ export default `
     imageBytes: Int
     mimeType: String
     userSetData: JSONObject
-    model: String,
+    model: String
     location: Location
     objects: [Object]
+    comments: [ImageComment]
   }`;

@@ -5,6 +5,7 @@ const MEMBER = 'project_member';
 const EXPORT_DATA_ROLES =                [MANAGER, MEMBER];
 const WRITE_OBJECTS_ROLES =              [MANAGER, MEMBER];
 const WRITE_VIEWS_ROLES =                [MANAGER, MEMBER];
+const WRITE_COMMENTS_ROLES =             [MANAGER, MEMBER];
 const WRITE_IMAGES_ROLES =               [MANAGER];
 const DELETE_IMAGES_ROLES =              [MANAGER];
 const MANAGE_USERS_ROLES =               [MANAGER];
@@ -13,6 +14,7 @@ const WRITE_AUTOMATION_RULES_ROLES =     [MANAGER];
 const WRITE_CAMERA_REGISTRATION_ROLES =  [MANAGER];
 
 export {
+  WRITE_COMMENTS_ROLES,
   DELETE_IMAGES_ROLES,
   EXPORT_DATA_ROLES,
   MANAGE_USERS_ROLES,
