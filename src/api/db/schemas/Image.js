@@ -14,7 +14,6 @@ const Schema = mongoose.Schema;
  */
 
 const ImageCommentSchema = new Schema({
-  _id: { type: String, required: true, default: Schema.Types.ObjectId },
   author: { type: String, required: true },
   created: { type: Date, default: Date.now, required: true },
   comment: { type: String, required: true }
