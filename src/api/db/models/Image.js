@@ -369,26 +369,15 @@ export class ImageModel {
   }
 
   static async createComment(input, context) {
-    const operation = async (input) => {
-      return await retry(async (bail, attempt) => {
-        if (attempt > 1) console.log(`Retrying createComment operation! Try #: ${attempt}`);
-
-        // find images, add comment, and bulk write
-        return await Image.bulkWrite([{
-          updateOne: {
-            filter: { _id: input.imageId },
-            update: { $push: { comments: {
-              author: context.user['cognito:username'],
-              comment: input.comment
-            } } }
-          }
-        }]);
-      }, { retries: 2 });
-    };
-
     try {
-      await operation(input);
       const image = await ImageModel.queryById(input.imageId, context);
+
+      if (!image.comments) image.comments = [];
+      image.comments.push({
+        author: context.user['cognito:username'],
+        comment: input.comment
+      });
+      await image.save();
 
       return { comments: image.comments };
     } catch (err) {
