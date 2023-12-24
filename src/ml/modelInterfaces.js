@@ -1,5 +1,6 @@
 import { buildImgUrl } from '../api/db/models/utils.js';
 import SM from '@aws-sdk/client-sagemaker-runtime';
+import sharp from 'sharp';
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
@@ -7,7 +8,14 @@ const _getImage = async (image, config) => {
   try {
     const res = await fetch(url);
     const body = await res.arrayBuffer();
-    return Buffer.from(body, 'binary');
+    let imgBuffer = Buffer.from(body, 'binary');
+
+    // resize image if it's over 2.8 MB
+    if (image.imageBytes > 2800000) {
+      imgBuffer = await sharp(imgBuffer).resize({ width: 3500 }).toBuffer();
+    }
+
+    return imgBuffer;
   } catch (err) {
     throw new Error(err);
   }

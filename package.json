@@ -53,6 +53,7 @@
         "mongodb-query-parser": "^4.0.0",
         "mongoose": "^8.0.0",
         "prompt": "^1.2.0",
+        "sharp": "^0.33.1",
         "stream-transform": "^3.2.0",
         "superagent": "^6.1.0"
     },
