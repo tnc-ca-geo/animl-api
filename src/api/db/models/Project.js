@@ -8,6 +8,7 @@ import { sortDeps, hasRole, idMatch } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
+  WRITE_PROJECT_ROLES,
   WRITE_DEPLOYMENTS_ROLES,
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES
@@ -81,6 +82,22 @@ export class ProjectModel {
         username: context.user['cognito:username'],
         roles: ['manager']
       }, context);
+
+      return project;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateProject(input, context) {
+    try {
+      const project = await Project.findOne({ _id: context.user['curr_project'] });
+
+      Object.assign(project, input);
+
+      await project.save();
 
       return project;
     } catch (err) {
@@ -448,6 +465,11 @@ export default class AuthedProjectModel {
 
   async createProject(input, context) {
     return await ProjectModel.createProject(input, context);
+  }
+
+  async updateProject(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.updateProject(input, context);
   }
 
   async createView(input, context) {
