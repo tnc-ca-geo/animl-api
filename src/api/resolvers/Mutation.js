@@ -24,6 +24,11 @@ const Mutation = {
     return { ...res };
   },
 
+  closeUpload: async (_, { input }, context) => {
+    const res = await context.models.Batch.closeUpload(input);
+    return { ...res };
+  },
+
   createUser: async (_, { input }, context) => {
     const res = await context.models.User.createUser(input, context);
     return { ...res };
@@ -55,13 +60,13 @@ const Mutation = {
   },
 
   updateImageComment: async (_, { input }, context) => {
-    const comment = await context.models.Image.updateComment(input, context);
-    return { comment };
+    const res = await context.models.Image.updateComment(input, context);
+    return { ...res };
   },
 
   createImageComment: async (_, { input }, context) => {
-    const comment = await context.models.Image.createComment(input, context);
-    return { comment };
+    const res = await context.models.Image.createComment(input, context);
+    return { ...res };
   },
 
   createImage: async (_, { input }, context) => {

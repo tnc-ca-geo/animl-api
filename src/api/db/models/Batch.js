@@ -202,6 +202,24 @@ export class BatchModel {
     }
   }
 
+  static async closeUpload(input) {
+    try {
+      const s3 = new S3.S3Client();
+      await s3.send(new S3.CompleteMultipartUploadCommand({
+        Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+        Key: `${input.batchId}.zip`,
+        UploadId: input.multipartUploadId,
+        MultipartUpload: { Parts: input.parts }
+      }));
+
+      return { message: 'Upload Closed' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createUpload(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -228,15 +246,32 @@ export class BatchModel {
       };
 
       const s3 = new S3.S3Client();
-      const put = new S3.PutObjectCommand(params);
 
-      const signedUrl = await getSignedUrl(s3, put);
-
-      return {
+      const res = {
         batch: batch._id,
-        user: context.user.sub,
-        url: signedUrl
+        user: context.user.sub
       };
+
+      if (input.partCount) {
+        const upload = await s3.send(new S3.CreateMultipartUploadCommand(params));
+        res.multipartUploadId = upload.UploadId;
+
+        const promises = [];
+        for (let index = 0; index < input.partCount; index++) {
+          promises.push(getSignedUrl(s3, new S3.UploadPartCommand({
+            Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+            Key: `${id}.zip`,
+            UploadId: upload.UploadId,
+            PartNumber: index + 1
+          })));
+        }
+
+        res.urls = await Promise.all(promises);
+      } else {
+        res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params));
+      }
+
+      return res;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -276,5 +311,10 @@ export default class AuthedBatchModel {
   async createUpload(input, context) {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return BatchModel.createUpload(input, context);
+  }
+
+  async closeUpload(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchModel.closeUpload(input);
   }
 }
