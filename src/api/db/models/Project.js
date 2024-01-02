@@ -479,6 +479,25 @@ export class ProjectModel {
       throw new ApolloError(err);
     }
   }
+
+  static async updateLabel(input, context) {
+    try {
+      const project = await Project.findOne({ _id: context.user['curr_project'] });
+
+      const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
+      if (!label) throw new Error('Label not found on project');
+
+      Object.assign(label, input);
+
+      await project.save();
+
+      return label;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
 }
 
 export default class AuthedProjectModel {
