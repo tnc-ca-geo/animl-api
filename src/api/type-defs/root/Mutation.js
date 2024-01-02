@@ -20,6 +20,10 @@ export default `
     createProject(input: CreateProjectInput!): ProjectPayload
     updateProject(input: UpdateProjectInput!): ProjectPayload
 
+    createProjectLabel(input: CreateProjectLabelInput!): ProjectLabelPayload
+    updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
+    deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
+
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
     clearImageErrors(input: ClearImageErrorsInput!): StandardPayload

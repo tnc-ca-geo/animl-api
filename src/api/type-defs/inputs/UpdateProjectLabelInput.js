@@ -1,7 +1,7 @@
 export default `
-  input UpdateProjectInput {
+  input UpdateProjectLabelInput {
     _id: ID!
     name: String!
-    description: String!
+    color: String!
   }
 `;
