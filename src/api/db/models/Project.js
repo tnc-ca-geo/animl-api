@@ -452,6 +452,33 @@ export class ProjectModel {
       throw new ApolloError(err);
     }
   }
+
+  static async createLabel(input, context) {
+    try {
+      const project = await Project.findOne({ _id: context.user['curr_project'] });
+
+      if (project.labels.filter((label) => {
+        return label.name === input.name;
+      }).length) throw new Error('A label with that name already exists, avoid creating labels with duplicate names');
+
+      project.labels.push({
+        name: input.comment,
+        source: 'reviewer',
+        name: input.name,
+        color: input.color
+      });
+
+      console.error('LABEL', JSON.stringify(project));
+
+      await project.save();
+
+      return project.labels.pop();
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
 }
 
 export default class AuthedProjectModel {
