@@ -61,7 +61,6 @@ const DeploymentSchema = new Schema({
 });
 
 const ProjectLabelSchema = new Schema({
-  _id: { type: String, required: true },
   name: { type: String, required: true },
   color: { type: String, required: true },
   source: { type: String, required: true, default: 'reviewer' }

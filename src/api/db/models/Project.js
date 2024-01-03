@@ -521,7 +521,7 @@ export default class AuthedProjectModel {
 
   async updateLabel(input, context) {
     if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
-    return await ProjectModel.createLabel(input, context);
+    return await ProjectModel.updateLabel(input, context);
   }
 
   async updateProject(input, context) {
