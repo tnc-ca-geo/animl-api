@@ -463,13 +463,10 @@ export class ProjectModel {
       }).length) throw new Error('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
-        name: input.comment,
         source: 'reviewer',
         name: input.name,
         color: input.color
       });
-
-      console.error('LABEL', JSON.stringify(project));
 
       await project.save();
 
