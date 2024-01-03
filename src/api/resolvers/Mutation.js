@@ -100,7 +100,12 @@ const Mutation = {
   },
 
   createProjectLabel: async (_, { input }, context) => {
-    const label = await context.models.Project.createProjectLabel(input, context);
+    const label = await context.models.Project.createLabel(input, context);
+    return { label };
+  },
+
+  updateProjectLabel: async (_, { input }, context) => {
+    const label = await context.models.Project.updateLabel(input, context);
     return { label };
   },
 
