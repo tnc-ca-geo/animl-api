@@ -94,6 +94,7 @@ export class ProjectModel {
   static async updateProject(input, context) {
     try {
       const project = await Project.findOne({ _id: context.user['curr_project'] });
+      if (!project) throw new Error('Project not found');
 
       Object.assign(project, input);
 
