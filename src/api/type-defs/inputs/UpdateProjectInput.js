@@ -1,7 +1,7 @@
 export default `
   input UpdateProjectInput {
     _id: ID!
-    name: String!
-    description: String!
+    name: String
+    description: String
   }
 `;
