@@ -10,7 +10,7 @@ export default `
     imageId: ID
   }
 
-  input CreateLabelsInput {
+  input CreateInternalLabelsInput {
     labels: [CreateInternalLabelInput]!
   }
 `;

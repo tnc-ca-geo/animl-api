@@ -42,7 +42,7 @@ export default `
     updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
     deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
 
-    createInternalLabels(input: CreateInternalLabelsInput!): CreateInternalLabelsPayload
+    createInternalLabels(input: CreateInternalLabelsInput!): CreateLabelsPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
     updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
