@@ -1,4 +1,5 @@
 import { text } from 'node:stream/consumers';
+import randomColor from 'random-hex-color';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -13,6 +14,7 @@ import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
+import { MLModelModel } from './MLModel.js';
 import { handleEvent } from '../../../automation/index.js';
 import {
   DELETE_IMAGES_ROLES,
@@ -78,37 +80,6 @@ export class ImageModel {
       });
       // console.log('res: ', JSON.stringify(result));
       return result;
-    } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
-    }
-  }
-
-  // TODO: this should be called getAllCategories or something like that
-  static async getLabels(projId) {
-    try {
-      const [categoriesAggregate] = await Image.aggregate([
-        { $match: { 'projectId': projId } },
-        { $unwind: '$objects' },
-        { $unwind: '$objects.labels' },
-        { $match: { 'objects.labels.validation.validated': { $not: { $eq: false } } } },
-        { $group: { _id: null, uniqueCategories: { $addToSet: '$objects.labels.category' } } }
-      ]);
-
-      const categories = categoriesAggregate
-        ? categoriesAggregate.uniqueCategories
-        : [];
-
-      const objectLessImage = await Image.findOne({
-        projectId: projId,
-        objects: { $size: 0 }
-      });
-      if (objectLessImage) categories.push('none');
-
-      categories.sort();
-
-      return { categories };
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -507,8 +478,24 @@ export class ImageModel {
 
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
+        const project = await ProjectModel.queryById(projectId);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
+
         const labelRecord = createLabelRecord(label, label.mlModel);
+
+        // Check if Label Exists on Project and if not, add it
+        if (!project.labels.some((l) => { return l === labelRecord.labelId })) {
+            const model = await MLModelModel.queryById(labelRecord.mlModel);
+            const cats = model.categories.filter((cat) => { return cat._id === labelRecord.labelId })
+            project.labels.push({
+                source: labelRecord.mlModel,
+                name: labelRecord.labelId,
+                // This should always be cats[0].color unless the category wasn't defined in the DB
+                // In that case assign a random color to avoid failing and losing the inference
+                color: cats.length ? cats[0].color : randomColor()
+            });
+            await project.save();
+        }
 
         let objExists = false;
         for (const object of image.objects) {
@@ -825,10 +812,6 @@ export default class AuthedImageModel {
 
   async queryByFilter(input, context) {
     return await ImageModel.queryByFilter(input, context);
-  }
-
-  async getLabels(projId) {
-    return await ImageModel.getLabels(projId);
   }
 
   async createComment(input, context) {

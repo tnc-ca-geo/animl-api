@@ -8,7 +8,6 @@ import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
 import { idMatch }  from '../api/db/models/utils.js';
-import { ImageModel } from '../api/db/models/Image.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
@@ -18,8 +17,6 @@ export default class ImageExport {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.user = { 'is_superuser': true };
-    this.projectModel = ProjectModel;
-    this.imageModel = ImageModel;
     this.projectId = projectId;
     this.documentId = documentId;
     this.filters = filters;
@@ -57,13 +54,12 @@ export default class ImageExport {
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
 
-      const [project] = await this.projectModel.getProjects(
+      const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
         { user: this.user }
       );
-      const { categories } = await this.imageModel.getLabels(this.projectId);
       this.project = project;
-      this.categories = categories;
+      this.categories = project.labels.map((l) => { return l.name; });
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error initializing the export class');

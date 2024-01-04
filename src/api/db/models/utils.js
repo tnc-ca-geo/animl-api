@@ -395,11 +395,11 @@ const isLabelDupe = (image, newLabel) => {
 
 // TODO: accommodate users as label authors as well as models
 const createLabelRecord = (input, authorId) => {
-  const { _id, type, category, conf, bbox, mlModelVersion, validation } = input;
+  const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   const label = {
     ...(_id && { _id }),
     type,
-    category,
+    labelId,
     conf,
     bbox,
     labeledDate: DateTime.now(),

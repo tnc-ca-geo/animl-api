@@ -57,13 +57,6 @@ const Query = {
     return await context.models.Image.queryById(input.imageId, context);
   },
 
-  // TODO: Now fetching labels as a field level resolver for Project, but we
-  // should reimplement this & call it when users create new label categories
-
-  // labels: async (_, __, context) => {
-  //   return await context.models.Image.getLabels();
-  // },
-
   wirelessCameras: async (_, { input }, context) => {
     return await context.models.Camera.getWirelessCameras(input, context);
   },
