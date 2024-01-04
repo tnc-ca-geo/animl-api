@@ -2,11 +2,11 @@ import { GraphQLClient, gql } from 'graphql-request';
 import { modelInterfaces } from './modelInterfaces.js';
 import { getConfig } from '../config/config.js';
 
-async function requestCreateLabels(input, config) {
+async function requestCreateInternalLabels(input, config) {
   const variables = { input: input };
   const mutation = gql`
-    mutation CreateLabels($input: CreateLabelsInput!) {
-      createLabels(input: $input) {
+    mutation CreateInternalLabels($input: CreateInternalLabelsInput!) {
+      createInternalLabels(input: $input) {
         isOk
       }
     }
@@ -40,11 +40,11 @@ async function singleInference(config, record) {
     // if successful, make create label request
     if (detections.length) {
       try {
-        await requestCreateLabels({
+        await requestCreateInternalLabels({
           labels: detections.map((det) => ({ ...det, imageId: image._id }))
         }, config);
       } catch (err) {
-        console.log(`requestCreateLabels() ERROR on image ${image._id}: ${err}`);
+        console.log(`requestCreateInternalLabels() ERROR on image ${image._id}: ${err}`);
         // don't fail messages that produce duplicate label errors
         // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
         // https://github.com/jasonkuhrt/graphql-request/issues/201

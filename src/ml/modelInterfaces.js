@@ -43,7 +43,7 @@ async function megadetector(params) {
       type: 'ml',
       bbox: [det.y1, det.x1, det.y2, det.x2],
       conf: det.confidence,
-      category: catConfig.find((cat) => (
+      labelId: catConfig.find((cat) => (
         parseInt(cat._id) === parseInt(det.class)
       )).name
     }));
@@ -51,7 +51,7 @@ async function megadetector(params) {
     // filter out disabled detections & detections below confThreshold
     const filteredDets = formatedDets.filter((det) => {
       const { disabled, confThreshold } = catConfig.find((cat) => (
-        cat.name === det.category
+        cat.name === det.labelId
       ));
       return !disabled && det.conf >= confThreshold;
     });
@@ -63,7 +63,7 @@ async function megadetector(params) {
         mlModelVersion: modelSource.version,
         type: 'ml',
         bbox: [0, 0, 1, 1],
-        category: 'empty'
+        labelId: 'empty'
       });
     }
 
@@ -98,11 +98,11 @@ async function mirav2(params) {
     console.log(`mirav2 predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
-    Object.keys(predictions).forEach((category) => {
+    Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
-      const conf = predictions[category];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === category);
+      const conf = predictions[labelId];
+      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
@@ -110,7 +110,7 @@ async function mirav2(params) {
           type: 'ml',
           bbox,
           conf,
-          category
+          labelId
         });
       }
     });
@@ -146,11 +146,11 @@ async function nzdoc(params) {
     console.log(`nzdoc predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
-    Object.keys(predictions).forEach((category) => {
+    Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
-      const conf = predictions[category];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === category);
+      const conf = predictions[labelId];
+      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
@@ -158,7 +158,7 @@ async function nzdoc(params) {
           type: 'ml',
           bbox,
           conf,
-          category
+          labelId
         });
       }
     });

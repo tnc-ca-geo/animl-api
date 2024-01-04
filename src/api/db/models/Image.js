@@ -21,13 +21,23 @@ import {
   WRITE_COMMENTS_ROLES,
   EXPORT_DATA_ROLES
 } from '../../auth/roles.js';
-import { hasRole, buildPipeline, mapImgToDep, sanitizeMetadata, isLabelDupe, createImageAttemptRecord, createImageRecord, createLabelRecord, isImageReviewed, findActiveProjReg } from './utils.js';
+import {
+  hasRole,
+  buildPipeline,
+  mapImgToDep,
+  sanitizeMetadata,
+  isLabelDupe,
+  createImageAttemptRecord,
+  createImageRecord,
+  createLabelRecord,
+  isImageReviewed,
+  findActiveProjReg
+} from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
 
 const ObjectId = mongoose.Types.ObjectId;
-
 
 export class ImageModel {
   static async countImages(input, context) {
@@ -482,6 +492,66 @@ export class ImageModel {
     }
   }
 
+  /**
+   * This endpoint is used only by the ML Handler and allows labels to be Upserted
+   * onto the Project label list when necessary. Users cannot use this endpoint
+   *
+   * @param {object} input
+   * @param {object} context
+   */
+  static async createInternalLabels(input, context) {
+    console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
+    const operation = async ({ label }) => {
+      return await retry(async () => {
+        console.log('ImageModel.createInternalLabels - creating label: ', JSON.stringify(label));
+
+        // find image, create label record
+        const image = await ImageModel.queryById(label.imageId, context);
+        if (isLabelDupe(image, label)) throw new DuplicateLabelError();
+        const labelRecord = createLabelRecord(label, label.mlModel);
+
+        let objExists = false;
+        for (const object of image.objects) {
+          if (_.isEqual(object.bbox, label.bbox)) {
+            object.labels.unshift(labelRecord);
+            objExists = true;
+            break;
+          }
+        }
+        if (!objExists) {
+          image.objects.unshift({
+            bbox: labelRecord.bbox,
+            locked: false,
+            labels: [labelRecord]
+          });
+        }
+
+        await image.save();
+        return { image, newLabel: labelRecord };
+      }, { retries: 2 });
+    };
+
+    try {
+      for (const label of input.labels) {
+        const res = await operation({ label });
+        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
+        if (label.mlModel) {
+          await handleEvent({
+            event: 'label-added',
+            label: res.newLabel,
+            image: res.image
+          }, context);
+        }
+      }
+      return { ok: true };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createLabels(input, context) {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
     const operation = async ({ label }) => {
@@ -804,6 +874,11 @@ export default class AuthedImageModel {
   async deleteObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
     return await ImageModel.deleteObjects(input, context);
+  }
+
+  async createInternalLabels(input, context) {
+    if (!this.user.is_superuser) throw new ForbiddenError;
+    return await ImageModel.createInternalLabels(input, context);
   }
 
   async createLabels(input, context) {

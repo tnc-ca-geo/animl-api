@@ -362,7 +362,6 @@ const createImageRecord = (md) => {
 };
 
 const isLabelDupe = (image, newLabel) => {
-
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -376,7 +375,7 @@ const isLabelDupe = (image, newLabel) => {
     const mlModelVerMatch = newLabel.mlModelVersion && label.mlModelVersion &&
             newLabel.mlModelVersion.toString() === label.mlModelVersion.toString();
 
-    const labelMatch = newLabel.category === label.category;
+    const labelMatch = newLabel.labelId === label.labelId;
     const confMatch  = newLabel.conf === label.conf;
     const bboxMatch  = _.isEqual(newLabel.bbox, label.bbox);
 

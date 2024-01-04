@@ -42,6 +42,8 @@ export default `
     updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
     deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
 
+    createInternalLabels(input: CreateInternalLabelsInput!): CreateInternalLabelsPayload
+
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
     updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
     deleteLabels(input: DeleteLabelsInput!): DeleteLabelsPayload

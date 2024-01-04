@@ -15,6 +15,20 @@ import {
 } from '../../auth/roles.js';
 
 export class ProjectModel {
+  static async queryById(_id) {
+    const query = { _id };
+    try {
+      const project = await Project.findOne(query);
+      if (!project) throw new Error('Project not found');
+
+      return project;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async getProjects(input, context) {
     console.log('Project.getProjects - input: ', input);
     let query = {};
@@ -93,8 +107,7 @@ export class ProjectModel {
 
   static async updateProject(input, context) {
     try {
-      const project = await Project.findOne({ _id: context.user['curr_project'] });
-      if (!project) throw new Error('Project not found');
+      const project = await this.queryById(context.user['curr_project']);
 
       Object.assign(project, input);
 
@@ -456,7 +469,7 @@ export class ProjectModel {
 
   static async createLabel(input, context) {
     try {
-      const project = await Project.findOne({ _id: context.user['curr_project'] });
+      const project = await this.queryById(context.user['curr_project']);
 
       if (project.labels.filter((label) => {
         return label.name === input.name;
@@ -480,7 +493,7 @@ export class ProjectModel {
 
   static async updateLabel(input, context) {
     try {
-      const project = await Project.findOne({ _id: context.user['curr_project'] });
+      const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
       if (!label) throw new Error('Label not found on project');

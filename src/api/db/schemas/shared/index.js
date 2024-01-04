@@ -27,14 +27,12 @@ const ValidationSchema = new Schema({
 
 /*
  * LabelSchema
- *    category - the actual label (e.g. "skunk")
  *    conf - confidence of prediction
  *    bbox - [ymin, xmin, ymax, xmax], normalized (not absolute)
  */
 
 const LabelSchema = new Schema({
   type: { type: String, enum: ['manual', 'ml'], requried: true },
-  category: { type: String, default: 'none', required: true },
   labelId: { type: String },
   conf: { type: Number },
   bbox: { type: [Number] },

@@ -159,6 +159,11 @@ const Mutation = {
     return { isOk: res.ok };
   },
 
+  createInternalLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.createInternalLabels(input, context);
+    return { isOk: res.ok };
+  },
+
   createLabels: async (_, { input }, context) => {
     const res = await context.models.Image.createLabels(input, context);
     return { isOk: res.ok };
