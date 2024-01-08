@@ -263,12 +263,12 @@ export class BatchModel {
             Key: `${id}.zip`,
             UploadId: upload.UploadId,
             PartNumber: index + 1
-          })));
+          }), { expiresIn: 3600 }));
         }
 
         res.urls = await Promise.all(promises);
       } else {
-        res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params));
+        res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params), { expiresIn: 3600 });
       }
 
       return res;
