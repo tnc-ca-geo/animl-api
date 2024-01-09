@@ -478,7 +478,7 @@ export class ImageModel {
 
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
-        const project = await ProjectModel.queryById(projectId);
+        const project = await ProjectModel.queryById(image.projectId);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
         const labelRecord = createLabelRecord(label, label.mlModel);
