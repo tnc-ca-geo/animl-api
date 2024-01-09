@@ -1,5 +1,7 @@
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
+import fs from 'fs';
+import { parse } from 'csv-parse';
 
 /*
  * Script for importing label data from Wildlife Insights' exported CSVs.
@@ -9,18 +11,42 @@ import { connectToDatabase } from '../api/db/connect.js';
  *
  * This script iterates over the WI CSV and creates labels in Animl for each
  * detected object using the common_names found from WI. It treats those labels
- * as unvalidated so that users can go through and confirm that the labels match
+ * as un-validated so that users can go through and confirm that the labels match
  * each object.
  */
 
+const WI_CSV = '/Users/nathaniel.rindlaub/Downloads/wi_test_data.csv';
+
+function readCSV(csvPath) {
+  return new Promise((resolve, reject) => {
+    const data = [];
+    fs.createReadStream(csvPath)
+      .pipe(parse({ delimiter: ',', columns: true }))
+      .on('data', (row) => {
+        data.push(row);
+      })
+      .on('end', () => {
+        console.log('finished');
+        resolve(data);
+      })
+      .on('error', (error) => {
+        console.log(error.message);
+        reject();
+      });
+  });
+}
+
 async function importWILabels() {
   const config = await getConfig();
-  const dbClient = await connectToDatabase(config);
   console.log('Importing WI labels with config: ', config);
+
+  const dbClient = await connectToDatabase(config);
+  console.log('Successfully connected to db: ', config);
 
   try {
 
-    // TODO: read in Wildlife Insights CSV
+    // read in Wildlife Insights CSV
+    const data = await readCSV(WI_CSV);
 
     // TODO: find corresponding Image in Animl for each image in the CSV
 
