@@ -548,8 +548,7 @@ export class ImageModel {
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
-        const authorId = label.mlModel || label.userId;
-        const labelRecord = createLabelRecord(label, authorId);
+        const labelRecord = createLabelRecord(label, label.userId);
 
         // if label.objectId was specified, find object and save label to it
         // else try to match to existing object bbox and merge label into that
