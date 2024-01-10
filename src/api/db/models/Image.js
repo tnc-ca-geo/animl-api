@@ -478,23 +478,23 @@ export class ImageModel {
 
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
-        const project = await ProjectModel.queryById(image.projectId);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
+        const project = await ProjectModel.queryById(image.projectId);
         const labelRecord = createLabelRecord(label, label.mlModel);
 
         // Check if Label Exists on Project and if not, add it
-        if (!project.labels.some((l) => { return l === labelRecord.labelId })) {
-            const model = await MLModelModel.queryById(labelRecord.mlModel);
-            const cats = model.categories.filter((cat) => { return cat._id === labelRecord.labelId })
-            project.labels.push({
-                source: labelRecord.mlModel,
-                name: labelRecord.labelId,
-                // This should always be cats[0].color unless the category wasn't defined in the DB
-                // In that case assign a random color to avoid failing and losing the inference
-                color: cats.length ? cats[0].color : randomColor()
-            });
-            await project.save();
+        if (!project.labels.some((l) => { return l === labelRecord.labelId; })) {
+          const model = await MLModelModel.queryById(labelRecord.mlModel);
+          const cats = model.categories.filter((cat) => { return cat._id === labelRecord.labelId; });
+          project.labels.push({
+            source: labelRecord.mlModel,
+            name: labelRecord.labelId,
+            // This should always be cats[0].color unless the category wasn't defined in the DB
+            // In that case assign a random color to avoid failing and losing the inference
+            color: cats.length ? cats[0].color : randomColor()
+          });
+          await project.save();
         }
 
         let objExists = false;
@@ -547,6 +547,13 @@ export class ImageModel {
 
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
+        const project = await ProjectModel.queryById(image.projectId);
+
+        // Check if Label Exists on Project and if not throw an error
+        if (!project.labels.some((l) => { return l === labelRecord.labelId; })) {
+          throw new Error('A label with that ID does not exist in this project');
+        }
+
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
         const labelRecord = createLabelRecord(label, label.userId);
 
@@ -556,8 +563,7 @@ export class ImageModel {
         if (label.objectId) {
           const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
           object.labels.unshift(labelRecord);
-        }
-        else {
+        } else {
           let objExists = false;
           for (const object of image.objects) {
             if (_.isEqual(object.bbox, label.bbox)) {
