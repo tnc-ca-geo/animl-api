@@ -476,6 +476,8 @@ export class ImageModel {
       return await retry(async () => {
         console.log('ImageModel.createInternalLabels - creating label: ', JSON.stringify(label));
 
+        label.type = 'ml';
+
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
@@ -544,6 +546,8 @@ export class ImageModel {
     const operation = async ({ label }) => {
       return await retry(async () => {
         console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
+
+        label.type = 'manual';
 
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
