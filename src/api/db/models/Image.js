@@ -553,6 +553,7 @@ export class ImageModel {
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
         const project = await ProjectModel.queryById(image.projectId);
+        const labelRecord = createLabelRecord(label, label.userId);
 
         // Check if Label Exists on Project and if not throw an error
         if (!project.labels.some((l) => { return l === labelRecord.labelId; })) {
@@ -560,7 +561,6 @@ export class ImageModel {
         }
 
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
-        const labelRecord = createLabelRecord(label, label.userId);
 
         // if label.objectId was specified, find object and save label to it
         // else try to match to existing object bbox and merge label into that
