@@ -46,14 +46,19 @@ async function importWILabels() {
   const dbClient = await connectToDatabase(config);
   console.log('Successfully connected to db: ', config);
 
+  let imagesInCSVCount = null;
+  let imagesNotFound = [];
+  let imagesUpdatedCount = 0;
+  let imagesNoObjsCount = 0;
+  let objectHasLabelCount = 0;
+  let emptyObjectCount = 0;
+
   try {
 
     // read in Wildlife Insights CSV
     const data = await readCSV(WI_CSV);
-    console.log(`Found ${data.length} image records in the CSV. Creating labels`);
-
-    let noImgsUpdated = 0;
-    let noImgsNoObjs = 0;
+    imagesInCSVCount = data.length;
+    console.log(`Found ${data.length} image records in the CSV. Creating labels...`);
 
     for (const row of data) {
       const commonName = row.common_name;
@@ -62,17 +67,28 @@ async function importWILabels() {
       const ofn = `${row.image_id}.jpg`;
       const image = await Image.findOne({ originalFileName: ofn });
 
+      if (!image) {
+        imagesNotFound.push(ofn);
+        continue;
+      }
+
       if (!image.objects) {
-        noImgsNoObjs++;
+        imagesNoObjsCount++;
+        continue;
       }
 
       // for each object in each image, create un-validated labels
       const newLabels = image.objects.reduce((lbls, obj) => {
 
         // skip objects that already have a label with this common name
-        const skipObj = obj.labels.find((lbl) => lbl.category === commonName);
+        const hasThisLabel = obj.labels.find((lbl) => lbl.category === commonName);
+        if (hasThisLabel) objectHasLabelCount++;
 
-        if (!skipObj) {
+        // skip "empty" objects
+        const isEmpty = obj.labels.find((lbl) => lbl.category === 'empty');
+        if (isEmpty) emptyObjectCount++;
+
+        if (!hasThisLabel && !isEmpty) {
           lbls.push({
             imageId: image._id,
             type: 'manual',
@@ -89,24 +105,31 @@ async function importWILabels() {
       }, []);
 
       if (newLabels.length > 0) {
-
         const input = { labels: newLabels };
         const context =  { user: { 'is_superuser': true } };
         await ImageModel.createLabels(input, context);
 
-        noImgsUpdated++;
+        imagesUpdatedCount++;
       }
     }
 
-    console.log(`Successfully updated ${noImgsUpdated} images in Animl with new labels out of the ${data.length} found in CSV`);
-    console.log(`${noImgsNoObjs} images had no detected objects in Animl, so were skipped`);
-
-    dbClient.connection.close();
-    process.exit(0);
   } catch (err) {
+
     console.log('An error occurred adding the Wildlife Insights data to the database: ', err);
     dbClient.connection.close();
     process.exit(1);
+
+  } finally {
+
+    console.log(`${imagesUpdatedCount} images in Animl were successfully updated with new labels out of the ${imagesInCSVCount} found in CSV`);
+    console.log(`${imagesNoObjsCount} images had empty object arrays in Animl, so were skipped`);
+    console.log(`${objectHasLabelCount} objects already had the WI label, so were skipped`);
+    console.log(`${emptyObjectCount} objects we're "empty" objects, so were skipped`);
+    console.log('The following images could not be found in Animl: ', imagesNotFound);
+
+    dbClient.connection.close();
+    process.exit(0);
+
   }
 }
 
