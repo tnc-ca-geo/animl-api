@@ -486,10 +486,11 @@ export class ImageModel {
         const labelRecord = createLabelRecord(label, label.mlModel);
 
         // Check if Label Exists on Project and if not, add it
-        if (!project.labels.some((l) => { return l === labelRecord.labelId; })) {
+        if (!project.labels.some((l) => { return l._id === labelRecord.labelId; })) {
           const model = await MLModelModel.queryById(labelRecord.mlModel);
           const cats = model.categories.filter((cat) => { return cat._id === labelRecord.labelId; });
           project.labels.push({
+            _id: labelRecord.labelId,
             source: labelRecord.mlModel,
             name: labelRecord.labelId,
             // This should always be cats[0].color unless the category wasn't defined in the DB

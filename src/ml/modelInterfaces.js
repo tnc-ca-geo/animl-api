@@ -40,7 +40,6 @@ async function megadetector(params) {
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,
       mlModelVersion: modelSource.version,
-      type: 'ml',
       bbox: [det.y1, det.x1, det.y2, det.x2],
       conf: det.confidence,
       labelId: catConfig.find((cat) => (
@@ -61,7 +60,6 @@ async function megadetector(params) {
       filteredDets.push({
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
-        type: 'ml',
         bbox: [0, 0, 1, 1],
         labelId: 'empty'
       });
