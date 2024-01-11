@@ -2,6 +2,8 @@ import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import fs from 'fs';
 import { parse } from 'csv-parse';
+import Image from '../api/db/schemas/Image.js';
+import { ImageModel } from '../api/db/models/Image.js';
 
 /*
  * Script for importing label data from Wildlife Insights' exported CSVs.
@@ -15,7 +17,8 @@ import { parse } from 'csv-parse';
  * each object.
  */
 
-const WI_CSV = '/Users/nathaniel.rindlaub/Downloads/wi_test_data.csv';
+const WI_CSV = '/Users/nathaniel.rindlaub/Downloads/wi-images-just-one-image-test.csv';
+const USER_ID = 'zilz@ucsb.edu';
 
 function readCSV(csvPath) {
   return new Promise((resolve, reject) => {
@@ -47,10 +50,56 @@ async function importWILabels() {
 
     // read in Wildlife Insights CSV
     const data = await readCSV(WI_CSV);
+    console.log(`Found ${data.length} image records in the CSV. Creating labels`);
 
-    // TODO: find corresponding Image in Animl for each image in the CSV
+    let noImgsUpdated = 0;
+    let noImgsNoObjs = 0;
 
-    // TODO: create un-validated labels for each of the objects in those images
+    for (const row of data) {
+      const commonName = row.common_name;
+
+      // find corresponding Image in Animl for each image in the CSV
+      const ofn = `${row.image_id}.jpg`;
+      const image = await Image.findOne({ originalFileName: ofn });
+
+      if (!image.objects) {
+        noImgsNoObjs++;
+      }
+
+      // for each object in each image, create un-validated labels
+      const newLabels = image.objects.reduce((lbls, obj) => {
+
+        // skip objects that already have a label with this common name
+        const skipObj = obj.labels.find((lbl) => lbl.category === commonName);
+
+        if (!skipObj) {
+          lbls.push({
+            imageId: image._id,
+            type: 'manual',
+            userId: USER_ID,
+            validation: null,
+            bbox: obj.bbox,
+            conf: 0.9,
+            category: commonName
+          });
+        }
+
+        return lbls;
+
+      }, []);
+
+      if (newLabels.length > 0) {
+
+        const input = { labels: newLabels };
+        const context =  { user: { 'is_superuser': true } };
+        await ImageModel.createLabels(input, context);
+
+        noImgsUpdated++;
+      }
+    }
+
+    console.log(`Successfully updated ${noImgsUpdated} images in Animl with new labels out of the ${data.length} found in CSV`);
+    console.log(`${noImgsNoObjs} images had no detected objects in Animl, so were skipped`);
 
     dbClient.connection.close();
     process.exit(0);
