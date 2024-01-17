@@ -17,7 +17,7 @@ import { ImageModel } from '../api/db/models/Image.js';
  * each object.
  */
 
-const WI_CSV = '/Users/nathaniel.rindlaub/Downloads/wi-images-just-one-image-test.csv';
+const WI_CSV = '/Users/nathaniel.rindlaub/Downloads/wildlife_insights_images.csv';
 const USER_ID = 'zilz@ucsb.edu';
 
 function readCSV(csvPath) {
@@ -61,7 +61,7 @@ async function importWILabels() {
     console.log(`Found ${data.length} image records in the CSV. Creating labels...`);
 
     for (const row of data) {
-      const commonName = row.common_name;
+      const category = row.common_name || row.species || row.genus;
 
       // find corresponding Image in Animl for each image in the CSV
       const ofn = `${row.image_id}.jpg`;
@@ -81,7 +81,7 @@ async function importWILabels() {
       const newLabels = image.objects.reduce((lbls, obj) => {
 
         // skip objects that already have a label with this common name
-        const hasThisLabel = obj.labels.find((lbl) => lbl.category === commonName);
+        const hasThisLabel = obj.labels.find((lbl) => lbl.category === category);
         if (hasThisLabel) objectHasLabelCount++;
 
         // skip "empty" objects
@@ -96,7 +96,7 @@ async function importWILabels() {
             validation: null,
             bbox: obj.bbox,
             conf: 0.9,
-            category: commonName
+            category: category.toLowerCase()
           });
         }
 
@@ -117,7 +117,6 @@ async function importWILabels() {
 
     console.log('An error occurred adding the Wildlife Insights data to the database: ', err);
     dbClient.connection.close();
-    process.exit(1);
 
   } finally {
 
