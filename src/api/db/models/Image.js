@@ -548,8 +548,6 @@ export class ImageModel {
       return await retry(async () => {
         console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
 
-        label.type = 'manual';
-
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
         const project = await ProjectModel.queryById(image.projectId);
