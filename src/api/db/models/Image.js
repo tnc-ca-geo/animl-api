@@ -70,6 +70,8 @@ export class ImageModel {
 
   static async queryByFilter(input, context) {
     try {
+      console.error('AGG', JSON.stringify(buildPipeline(input.filters, context.user['curr_project'])));
+
       const result = await MongoPaging.aggregate(Image.collection, {
         aggregation: buildPipeline(input.filters, context.user['curr_project']),
         limit: input.limit,
@@ -723,7 +725,7 @@ export class ImageModel {
               label.validation && label.validation.validated
             ));
             if (firstValidLabel) {
-              const cat = firstValidLabel.category;
+              const cat = firstValidLabel.labelId;
               labelList[cat] = Object.prototype.hasOwnProperty.call(labelList, cat)
                 ? labelList[cat] + 1
                 : 1;

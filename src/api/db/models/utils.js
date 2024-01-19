@@ -135,7 +135,9 @@ const buildPipeline = ({
         // and its first validated label is included in labels filter
         { objects: { $elemMatch: {
           locked: true,
-          'firstValidLabel.0.0.labelId': { $in: labels }
+          firstValidLabel: {
+            '$elemMatch': { '0.labelId': { $in: labels } }
+          }
         } } },
 
         // has an object is not locked, but it has label that is
