@@ -259,7 +259,7 @@ export class ImageModel {
           }, { retries: 2 });
           console.log(`image successfully created: ${JSON.stringify(image)}`);
           await handleEvent({ event: 'image-added', image }, context);
-          console.log(`automation successfully run`);
+          console.log('automation successfully run');
         }
       } catch (err) {
         console.error('Image Creation Error', err);
