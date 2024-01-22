@@ -113,16 +113,22 @@ const buildPipeline = ({
   if (labels) {
     // map over objects & labels and filter for first validated label
     pipeline.push({ '$set': {
-      'objects.firstValidLabel': {
+      objects: {
         $map: {
           input: '$objects',
           as: 'obj',
           in: {
-            '$filter': {
-              input: '$$obj.labels',
-              as: 'label',
-              cond: { $eq: ['$$label.validation.validated', true] },
-              limit: 1
+            $setField: {
+              field: 'firstValidLabel',
+              input: '$$obj',
+              value: {
+                $filter: {
+                  input: '$$obj.labels',
+                  as: 'label',
+                  cond: { $eq: ['$$label.validation.validated', true] },
+                  limit: 1
+                }
+              }
             }
           }
         }
@@ -135,14 +141,12 @@ const buildPipeline = ({
         // and its first validated label is included in labels filter
         { objects: { $elemMatch: {
           locked: true,
-          firstValidLabel: {
-            '$elemMatch': { '0.labelId': { $in: labels } }
-          }
+          'firstValidLabel.labelId': { $in: labels }
         } } },
 
         // has an object is not locked, but it has label that is
         // not-invalidated and included in filters
-        { 'objects': { $elemMatch: {
+        { objects: { $elemMatch: {
           locked: false,
           labels: { $elemMatch: {
             'validation.validated': { $not: { $eq: false } },
