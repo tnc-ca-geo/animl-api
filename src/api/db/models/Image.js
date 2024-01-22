@@ -556,7 +556,7 @@ export class ImageModel {
         const labelRecord = createLabelRecord(label, label.userId);
 
         // Check if Label Exists on Project and if not throw an error
-        if (!project.labels.some((l) => { return l === labelRecord.labelId; })) {
+        if (!project.labels.some((l) => { return l._id === labelRecord.labelId; })) {
           throw new Error('A label with that ID does not exist in this project');
         }
 
