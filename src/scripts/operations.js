@@ -6,6 +6,37 @@ const ObjectId = Mongoose.Types.ObjectId;
 
 const operations = {
 
+  'convert-categories-to-lowercase': {
+    getIds: async () => {
+      const project = 'COPY_PROJECT_ID';
+      const category = 'COPY_LABEL_CATEGORY';
+      return await Image.find({ projectId: project, 'objects.labels.category': category }).select('_id');
+    },
+    update: async () => {
+      const project = 'COPY_PROJECT_ID';
+      const category = 'COPY_LABEL_CATEGORY';
+      console.log(`Converting ${category} category to lowercase`);
+      const imgs = await Image.find({ projectId: project, 'objects.labels.category': category });
+      try {
+        const res = { nModified: 0 };
+        for (const img of imgs) {
+          for (const obj of img.objects) {
+            for (const lbl of obj.labels) {
+              if (lbl.category === category) {
+                lbl.category = lbl.category.toLowerCase();
+              }
+            }
+          }
+          await img.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  },
+
   'add-timezone-field': {
     getIds: async () => (
       await Image.find({}).select('_id')
