@@ -259,8 +259,11 @@ export class ImageModel {
           }, { retries: 2 });
           console.log(`image successfully created: ${JSON.stringify(image)}`);
           await handleEvent({ event: 'image-added', image }, context);
+          console.log(`automation successfully run`);
         }
       } catch (err) {
+        console.error('Image Creation Error', err);
+
         // add any errors to the error array so that we can create ImageErrors for them
         errors.push(err);
 
@@ -280,6 +283,7 @@ export class ImageModel {
 
       // 3. if there were errors in the array, create ImageErrors for them
       if (errors.length) {
+        console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
           errors[i] = new ImageError({
             image: md.imageId,
