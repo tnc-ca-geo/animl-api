@@ -313,14 +313,14 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
+      const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
         throw new Error('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => { return c._id.toString() !== input.id.toString(); });
+      image.comments = image.comments.filter((c) => { return !idMatch(c._id, input.id); });
 
       await image.save();
 
@@ -336,7 +336,7 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return c._id.toString() === input.id.toString(); })[0];
+      const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
       if (!comment) throw new Error('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -492,9 +492,9 @@ export class ImageModel {
         const labelRecord = createLabelRecord(label, label.mlModel);
 
         // Check if Label Exists on Project and if not, add it
-        if (!project.labels.some((l) => { return l._id === labelRecord.labelId; })) {
+        if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
           const model = await MLModelModel.queryById(labelRecord.mlModel);
-          const cats = model.categories.filter((cat) => { return cat._id === labelRecord.labelId; });
+          const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
           project.labels.push({
             _id: labelRecord.labelId,
             source: labelRecord.mlModel,
@@ -560,7 +560,7 @@ export class ImageModel {
         const labelRecord = createLabelRecord(label, label.userId);
 
         // Check if Label Exists on Project and if not throw an error
-        if (!project.labels.some((l) => { return l._id === labelRecord.labelId; })) {
+        if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
           throw new Error('A label with that ID does not exist in this project');
         }
 
@@ -713,7 +713,7 @@ export class ImageModel {
         if (reviewers.length > 1) multiReviewerCount++;
 
         for (const userId of reviewers) {
-          const usr = reviewerList.find((reviewer) => reviewer.userId === userId);
+          const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId));
           !usr
             ? reviewerList.push({ userId: userId, reviewedCount: 1 })
             : usr.reviewedCount++;
