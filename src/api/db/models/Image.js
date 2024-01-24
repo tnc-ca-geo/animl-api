@@ -314,10 +314,10 @@ export class ImageModel {
       const image = await ImageModel.queryById(input.imageId, context);
 
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
-      if (!comment) throw new Error('Comment not found on image');
+      if (!comment) throw new ApolloError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new Error('Can only edit your own comments');
+        throw new ApolloError('Can only edit your own comments');
       }
 
       image.comments = image.comments.filter((c) => { return !idMatch(c._id, input.id); });
@@ -337,10 +337,10 @@ export class ImageModel {
       const image = await ImageModel.queryById(input.imageId, context);
 
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
-      if (!comment) throw new Error('Comment not found on image');
+      if (!comment) throw new ApolloError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new Error('Can only edit your own comments');
+        throw new ApolloError('Can only edit your own comments');
       }
 
       comment.comment = input.comment;
@@ -561,7 +561,7 @@ export class ImageModel {
 
         // Check if Label Exists on Project and if not throw an error
         if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-          throw new Error('A label with that ID does not exist in this project');
+          throw new ApolloError('A label with that ID does not exist in this project');
         }
 
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();
