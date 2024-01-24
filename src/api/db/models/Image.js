@@ -1,5 +1,5 @@
 import { text } from 'node:stream/consumers';
-import randomColor from './color.js';
+import randomColor from './colors.js';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
