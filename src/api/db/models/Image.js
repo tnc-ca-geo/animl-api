@@ -1,5 +1,5 @@
 import { text } from 'node:stream/consumers';
-import randomColor from 'random-hex-color';
+import randomColor from './color.js';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -501,7 +501,7 @@ export class ImageModel {
             name: labelRecord.labelId,
             // This should always be cats[0].color unless the category wasn't defined in the DB
             // In that case assign a random color to avoid failing and losing the inference
-            color: cats.length ? cats[0].color : randomColor()
+            color: cats.length ? cats[0].color : randomColor(project.labels)
           });
           await project.save();
         }
