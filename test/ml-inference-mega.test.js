@@ -78,10 +78,9 @@ tape('ML-Inference Megadetector', async (t) => {
     t.deepEquals(inference, [{
       mlModel: 'megadetector_v5a',
       mlModelVersion: 'v5.0a',
-      type: 'ml',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
-      category: 'animal'
+      labelId: 'animal'
     }]);
   } catch (err) {
     t.error(err);
@@ -158,10 +157,9 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
     t.deepEquals(inference, [{
       mlModel: 'megadetector_v5a',
       mlModelVersion: 'v5.0a',
-      type: 'ml',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
-      category: 'animal'
+      labelId: 'animal'
     }]);
   } catch (err) {
     t.error(err);
