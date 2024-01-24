@@ -472,7 +472,7 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       if (project.labels.filter((label) => {
-        return label.name === input.name;
+        return label.name.toLowerCase() === input.name.toLowerCase();
       }).length) throw new Error('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
