@@ -82,7 +82,17 @@ const ProjectSchema = new Schema({
   cameraConfigs: { type: [CameraConfigSchema] },
   availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
   automationRules: { type: [AutomationRuleSchema] },
-  labels: { type: [ProjectLabelSchema], default: [], required: true }
+  labels: { type: [ProjectLabelSchema], default: [{
+    _id: 'empty',
+    name: 'empty',
+    color: '#8D8D8D',
+    source: 'model'
+  },{
+    _id: 'unknown',
+    name: 'unknown',
+    color: '#E93D82',
+    source: 'model'
+  }], required: true }
 });
 
 export default mongoose.model('Project', ProjectSchema);
