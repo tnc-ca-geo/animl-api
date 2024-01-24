@@ -3,5 +3,6 @@ export default `
     _id: ID!
     name: String!
     color: String!
+    reviewerEnabled: Boolean
   }
 `;

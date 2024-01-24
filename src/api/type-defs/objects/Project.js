@@ -19,6 +19,7 @@ export default `
     name: String!
     color: String!
     source: String!
+    reviewerEnabled: Boolean!
   }
 
   type Project {

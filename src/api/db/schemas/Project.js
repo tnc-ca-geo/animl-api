@@ -65,7 +65,8 @@ const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   name: { type: String, required: true },
   color: { type: String, required: true },
-  source: { type: String, required: true, default: 'reviewer' }
+  source: { type: String, required: true, default: 'reviewer' },
+  reviewerEnabled: { type: Boolean, required: true, default: true }
 });
 
 const CameraConfigSchema = new Schema({
