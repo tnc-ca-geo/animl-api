@@ -524,6 +524,11 @@ export default class AuthedProjectModel {
     return await ProjectModel.createProject(input, context);
   }
 
+  async deleteLabel(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.deleteLabel(input, context);
+  }
+
   async createLabel(input, context) {
     if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
     return await ProjectModel.createLabel(input, context);
