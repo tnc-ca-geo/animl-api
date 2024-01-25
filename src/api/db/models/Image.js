@@ -71,8 +71,6 @@ export class ImageModel {
 
   static async queryByFilter(input, context) {
     try {
-      console.error('AGG', JSON.stringify(buildPipeline(input.filters, context.user['curr_project'])));
-
       const result = await MongoPaging.aggregate(Image.collection, {
         aggregation: buildPipeline(input.filters, context.user['curr_project']),
         limit: input.limit,
@@ -375,7 +373,7 @@ export class ImageModel {
     }
   }
 
-  static async createObjects(input) {
+  static async createObjects(input, context) {
     const operation = async ({ objects }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
@@ -394,6 +392,18 @@ export class ImageModel {
     };
 
     try {
+      // find image, create label record
+      const project = await ProjectModel.queryById(context.user['curr_project']);
+
+      for (let oid = 0; oid < input.objects.length; oid++) {
+        const image = await ImageModel.queryById(input.objects[oid].imageId, context);
+
+        for (let lid = 0; lid < (input.objects[oid].labels || []).length; lid++) {
+          input.objects[oid].labels[lid] = reviewerLabelRecord(project, image, input.objects[oid].labels[lid]);
+        }
+      }
+
+
       const res = await operation(input);
       console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
