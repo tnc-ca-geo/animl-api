@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
+import { ApolloError, DuplicateLabelError } from 'apollo-server-errors';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -399,8 +400,23 @@ const isLabelDupe = (image, newLabel) => {
   return false;
 };
 
+function reviewerLabelRecord(project, image, label) {
+  const labelRecord = createLabelRecord(label, label.userId);
+
+  // Check if Label Exists on Project and if not throw an error
+  if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
+    throw new ApolloError('A label with that ID does not exist in this project');
+  } else if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId) && l.reviewerEnabled; })) {
+    throw new ApolloError('This label is currently disabled');
+  }
+
+  if (isLabelDupe(image, labelRecord)) throw new DuplicateLabelError();
+
+  return labelRecord;
+}
+
 // TODO: accommodate users as label authors as well as models
-const createLabelRecord = (input, authorId) => {
+function createLabelRecord(input, authorId) {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   const label = {
     ...(_id && { _id }),
@@ -415,7 +431,7 @@ const createLabelRecord = (input, authorId) => {
     ...((authorId && type === 'manual') && { validation })
   };
   return label;
-};
+}
 
 // TODO: consider calling this isAuthorized() ?
 const hasRole = (user, targetRoles = []) => {
@@ -540,6 +556,7 @@ export {
   sanitizeMetadata,
   isLabelDupe,
   createImageAttemptRecord,
+  reviewerLabelRecord,
   createImageRecord,
   createLabelRecord,
   hasRole,

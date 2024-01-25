@@ -32,6 +32,7 @@ import {
   createImageAttemptRecord,
   createImageRecord,
   createLabelRecord,
+  reviewerLabelRecord,
   isImageReviewed,
   findActiveProjReg
 } from './utils.js';
@@ -557,16 +558,7 @@ export class ImageModel {
         // find image, create label record
         const image = await ImageModel.queryById(label.imageId, context);
         const project = await ProjectModel.queryById(image.projectId);
-        const labelRecord = createLabelRecord(label, label.userId);
-
-        // Check if Label Exists on Project and if not throw an error
-        if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-          throw new ApolloError('A label with that ID does not exist in this project');
-        } else if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId) && l.reviewerEnabled; })) {
-          throw new ApolloError('This label is currently disabled');
-        }
-
-        if (isLabelDupe(image, label)) throw new DuplicateLabelError();
+        const labelRecord = reviewerLabelRecord(project, image, label);
 
         // if label.objectId was specified, find object and save label to it
         // else try to match to existing object bbox and merge label into that
