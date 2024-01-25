@@ -562,6 +562,8 @@ export class ImageModel {
         // Check if Label Exists on Project and if not throw an error
         if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
           throw new ApolloError('A label with that ID does not exist in this project');
+        } else if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId) && l.reviewerEnabled; })) {
+          throw new ApolloError('This label is currently disabled');
         }
 
         if (isLabelDupe(image, label)) throw new DuplicateLabelError();

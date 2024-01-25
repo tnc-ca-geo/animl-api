@@ -118,8 +118,8 @@ export class BatchModel {
 
     try {
       const batch = await operation({ _id: input.batch });
-      if (batch.processingEnd) throw new Error('Stack has already terminated');
-      if (batch.stoppingInitiated) throw new Error('Stack is already scheduled for deletion');
+      if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
+      if (batch.stoppingInitiated) throw new ApolloError('Stack is already scheduled for deletion');
 
       batch.stoppingInitiated = DateTime.now();
       await batch.save();
@@ -150,7 +150,7 @@ export class BatchModel {
 
         // Ensure the batch actually exists
         const batch = await BatchModel.queryById(input.batch);
-        if (batch.processingEnd) throw new Error('Stack has already terminated');
+        if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
 
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 

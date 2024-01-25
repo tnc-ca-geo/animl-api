@@ -7,7 +7,7 @@ export class MLModelModel {
     const query = { _id };
     try {
       const model = await MLModel.findOne(query);
-      if (!model) throw new Error('Model not found');
+      if (!model) throw new ApolloError('Model not found');
 
       return model;
     } catch (err) {

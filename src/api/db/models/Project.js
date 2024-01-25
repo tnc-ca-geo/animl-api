@@ -19,7 +19,7 @@ export class ProjectModel {
     const query = { _id };
     try {
       const project = await Project.findOne(query);
-      if (!project) throw new Error('Project not found');
+      if (!project) throw new ApolloError('Project not found');
 
       return project;
     } catch (err) {
@@ -63,16 +63,16 @@ export class ProjectModel {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
-      throw new Error('Projects must be created by an authenticated user');
+      throw new ApolloError('Projects must be created by an authenticated user');
     }
 
-    if (!input.availableMLModels.length) throw new Error('At least 1 MLModel must be enabled for a project');
+    if (!input.availableMLModels.length) throw new ApolloError('At least 1 MLModel must be enabled for a project');
     const models = (await MLModelModel.getMLModels({
       _ids: input.availableMLModels
     })).map((model) => { return model._id; });
 
     for (const m of input.availableMLModels) {
-      if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
+      if (!models.includes(m)) throw new ApolloError(`${m} is not a valid model identifier`);
     }
 
     try {
@@ -473,7 +473,7 @@ export class ProjectModel {
 
       if (project.labels.filter((label) => {
         return label.name.toLowerCase() === input.name.toLowerCase();
-      }).length) throw new Error('A label with that name already exists, avoid creating labels with duplicate names');
+      }).length) throw new ApolloError('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
         source: 'reviewer',
@@ -496,7 +496,7 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
-      if (!label) throw new Error('Label not found on project');
+      if (!label) throw new ApolloError('Label not found on project');
 
       Object.assign(label, input);
 
