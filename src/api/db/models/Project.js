@@ -3,7 +3,7 @@ import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
-import Image from '../schemas/Image.js';
+import Image, { ImageModel } from '../schemas/Image.js';
 import { sortDeps, hasRole, idMatch } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
@@ -497,6 +497,16 @@ export class ProjectModel {
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
       if (!label) throw new ApolloError('Label not found on project');
+
+      const count = ImageModel.countImages({
+        filters: {
+            labels: [ input._id ]
+        }
+      }, context);
+
+      if (count > 100) throw new ApolloError('This label is already in extensive use (>100 images) and cannot be deleted');
+
+      //TODO ITERATE
 
       return label;
     } catch (err) {
