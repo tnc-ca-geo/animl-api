@@ -4,22 +4,25 @@ import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
-import { ApolloError, DuplicateLabelError } from 'apollo-server-errors';
+import { ApolloError } from 'apollo-server-errors';
+import { DuplicateLabelError } from '../../errors.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-const idMatch = (idA, idB) => idA.toString() === idB.toString();
+function idMatch(idA, idB) {
+  return idA.toString() === idB.toString();
+}
 
-const buildImgUrl = (image, config, size = 'original') => {
+function buildImgUrl(image, config, size = 'original') {
   const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
-};
+}
 
-const buildPipeline = ({
+function buildPipeline({
   cameras,
   deployments,
   createdStart,
@@ -30,7 +33,7 @@ const buildPipeline = ({
   reviewed,
   notReviewed,
   custom
-}, projectId) => {
+}, projectId) {
 
   const pipeline = [];
 
@@ -185,9 +188,9 @@ const buildPipeline = ({
 
   console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
   return pipeline;
-};
+}
 
-const sanitizeMetadata = (md) => {
+function sanitizeMetadata(md) {
   const sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -210,9 +213,9 @@ const sanitizeMetadata = (md) => {
   }
 
   return sanitized;
-};
+}
 
-const createImageAttemptRecord = (md) => {
+function createImageAttemptRecord(md) {
   console.log('creating ImageAttempt record with metadata: ', md);
   return new ImageAttempt({
     _id: md.imageId,
@@ -237,10 +240,10 @@ const createImageAttemptRecord = (md) => {
       ...(md.MIMEType && { mimeType: md.MIMEType })
     }
   });
-};
+}
 
 // Unpack user-set exif tags
-const getUserSetData = (input) => {
+function getUserSetData(input) {
   const userDataMap = {
     'BuckEyeCam': (input) => {
       if (!input.comment) {
@@ -279,11 +282,11 @@ const getUserSetData = (input) => {
   return (input.make && userDataMap[input.make])
     ? userDataMap[input.make](input)
     : null;
-};
+}
 
 // Parse trigger source (e.g. burst, timelapse, manual, PIR)
 // TODO: possibly combine with getUserSetData?
-const getTriggerSource = (input) => {
+function getTriggerSource(input) {
   const userDataMap = {
     'BuckEyeCam': (input) => {
       if (!input.comment) {
@@ -305,11 +308,11 @@ const getTriggerSource = (input) => {
   return (input.make && userDataMap[input.make])
     ? userDataMap[input.make](input)
     : null;
-};
+}
 
 // Parse string coordinates to decimal degrees
 // input e.g. - `34 deg 6' 25.59" N`
-const parseCoordinates = (md) => {
+function parseCoordinates(md) {
   function parse(stringCoord) {
     let deg, min, sec;
     // eslint-disable-next-line prefer-const
@@ -329,10 +332,10 @@ const parseCoordinates = (md) => {
     return [md.GPSLongitude, md.GPSLatitude];
   }
 
-};
+}
 
 // Map image metadata to image schema
-const createImageRecord = (md) => {
+function createImageRecord(md) {
   console.log('creating ImageRecord with metadata: ', md);
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
@@ -366,9 +369,9 @@ const createImageRecord = (md) => {
     ...(location &&       { location: location }),
     ...(triggerSource &&  { triggerSource: triggerSource })
   });
-};
+}
 
-const isLabelDupe = (image, newLabel) => {
+function isLabelDupe(image, newLabel) {
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -398,7 +401,7 @@ const isLabelDupe = (image, newLabel) => {
   }
 
   return false;
-};
+}
 
 function reviewerLabelRecord(project, image, label) {
   const labelRecord = createLabelRecord(label, label.userId);
