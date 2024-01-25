@@ -491,6 +491,21 @@ export class ProjectModel {
     }
   }
 
+  static async deleteLabel(input, context) {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
+      if (!label) throw new ApolloError('Label not found on project');
+
+      return label;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async updateLabel(input, context) {
     try {
       const project = await this.queryById(context.user['curr_project']);
