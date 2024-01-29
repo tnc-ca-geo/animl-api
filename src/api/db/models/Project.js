@@ -509,7 +509,7 @@ export class ProjectModel {
         filters: { labels: [input._id] }
       }, context);
 
-      await Promise.all(images.map((image) => {
+      await Promise.all(images.results.map((image) => {
         return ImageModel.deleteAnyLabel(image, input._id);
       }));
 
