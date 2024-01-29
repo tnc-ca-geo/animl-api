@@ -499,7 +499,7 @@ export class ProjectModel {
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
       if (!label) throw new ApolloError('Label not found on project');
 
-      const count = ImageModel.countImages({
+      const count = await ImageModel.countImages({
         filters: { labels: [input._id] }
       }, context);
 
@@ -509,9 +509,12 @@ export class ProjectModel {
         filters: { labels: [input._id] }
       }, context);
 
+      console.error('DeleteAnyLabelCount', count);
+      console.time('DeleteAnyLabel');
       await Promise.all(images.results.map((image) => {
         return ImageModel.deleteAnyLabel(image, input._id);
       }));
+      console.timeEnd('DeleteAnyLabel');
 
       // Save Updated Project.labels
 
