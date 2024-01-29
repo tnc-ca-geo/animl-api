@@ -664,6 +664,9 @@ export class ImageModel {
    * A slower but more thorough label deletion method than ImageModel.deleteLabels
    * This method iterates through all objects and deletes all instances of a given label
    * unlocking an object if the label is the current top level choice of a validated object
+   *
+   * @param {object} image
+   * @param {string} labelId
    */
   static async deleteAnyLabel(image, labelId) {
     for (let oid = 0; oid < (image.objects || []).length; oid++) {
