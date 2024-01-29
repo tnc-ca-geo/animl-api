@@ -679,7 +679,9 @@ export class ImageModel {
       }
     }
 
-    await image.save();
+    await Image.replaceOne({ _id: image._id }, image);
+
+    return image;
   }
 
   static async deleteLabels(input) {
