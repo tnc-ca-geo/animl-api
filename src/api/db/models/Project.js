@@ -503,7 +503,7 @@ export class ProjectModel {
         filters: { labels: [input._id] }
       }, context);
 
-      if (count > 100) throw new ApolloError('This label is already in extensive use (>100 images) and cannot be deleted');
+      if (count > 500) throw new ApolloError('This label is already in extensive use (>100 images) and cannot be deleted');
 
       const images = await ImageModel.queryByFilter({
         filters: { labels: [input._id] }
