@@ -660,6 +660,25 @@ export class ImageModel {
     }
   }
 
+  /**
+   * A slower but more thorough label deletion method than ImageModel.deleteLabels
+   * This method iterates through all objects and deletes all instances of a given label
+   * unlocking an object if the label is the current top level choice of a validated object
+   */
+  static async deleteAnyLabel(image, labelId) {
+    for (let oid = 0; oid < (image.objects || []).length; oid++) {
+      for (let lid = 0; lid < (image.objects[oid].labels || []).length; lid++) {
+        if (idMatch(image.objects[oid].labels[lid].labelId , labelId)) {
+          // If the Label was the first in an object, ensure it is now unlocked
+          if (lid === 0) image.objects[oid].locked = false;
+          image.objects[oid].labels.splice(lid, 1);
+        }
+      }
+    }
+
+    await image.save();
+  }
+
   static async deleteLabels(input) {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
     const operation = async ({ labels }) => {
