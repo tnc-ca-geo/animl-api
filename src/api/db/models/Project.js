@@ -15,6 +15,10 @@ import {
   WRITE_AUTOMATION_RULES_ROLES
 } from '../../auth/roles.js';
 
+// The max number of labeled images that can be deleted
+// when removin a label from a project
+const MAX_LABEL_DELETE = 500;
+
 export class ProjectModel {
   static async queryById(_id) {
     const query = { _id };
@@ -503,20 +507,18 @@ export class ProjectModel {
         filters: { labels: [input._id] }
       }, context);
 
-      if (count > 500) throw new ApolloError('This label is already in extensive use (>100 images) and cannot be deleted');
+      if (count > MAX_LABEL_DELETE) throw new ApolloError(`This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be deleted`);
 
       const images = await ImageModel.queryByFilter({
         filters: { labels: [input._id] }
       }, context);
 
-      console.error('DeleteAnyLabelCount', count);
-      console.time('DeleteAnyLabel');
       await Promise.all(images.results.map((image) => {
         return ImageModel.deleteAnyLabel(image, input._id);
       }));
-      console.timeEnd('DeleteAnyLabel');
 
-      // Save Updated Project.labels
+      project.labels.splice(project.labels.indexOf(label) );
+      await project.save();
 
       return { message: 'Label Removed' };
     } catch (err) {
