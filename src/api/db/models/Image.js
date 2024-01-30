@@ -665,6 +665,23 @@ export class ImageModel {
    * This method iterates through all objects and deletes all instances of a given label
    * unlocking an object if the label is the current top level choice of a validated object
    *
+   * @param {object} input
+   * @param {string} input.labelId - Label to remove
+   * @param {object} input.filters - Filters to appy to image iteration
+   * @param {object} context
+   */
+  static async deleteAnyLabels(input, context) {
+    const pipeline = buildPipeline(input.filters, context.user['curr_project']);
+    const images = await Image.aggregate(pipeline);
+
+    return await Promise.all(images.map((image) => {
+      return ImageModel.deleteAnyLabel(image, input.labelId);
+    }));
+  }
+
+  /**
+   * Apply a single label deletion operation - only to be called by deleteAnyLabels
+   *
    * @param {object} image
    * @param {string} labelId
    */
@@ -679,8 +696,7 @@ export class ImageModel {
       }
     }
 
-    await Image.replaceOne({ _id: image._id }, image);
-
+    await image.save();
     return image;
   }
 

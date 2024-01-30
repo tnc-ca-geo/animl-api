@@ -509,13 +509,10 @@ export class ProjectModel {
 
       if (count > MAX_LABEL_DELETE) throw new ApolloError(`This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be deleted`);
 
-      const images = await ImageModel.queryByFilter({
+      await ImageModel.deleteAnyLabels({
+        labelId: input._id,
         filters: { labels: [input._id] }
       }, context);
-
-      await Promise.all(images.results.map((image) => {
-        return ImageModel.deleteAnyLabel(image, input._id);
-      }));
 
       project.labels.splice(project.labels.indexOf(label) );
       await project.save();
