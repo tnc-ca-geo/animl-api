@@ -671,8 +671,10 @@ export class ImageModel {
    * @param {object} context
    */
   static async deleteAnyLabels(input, context) {
-    const pipeline = buildPipeline(input.filters, context.user['curr_project']);
-    const images = await Image.aggregate(pipeline);
+    const images = await Image.find({
+      'objects.labels.labelId': input.labelId,
+      'projectId': context.user['curr_project']
+    });
 
     return await Promise.all(images.map((image) => {
       return ImageModel.deleteAnyLabel(image, input.labelId);
