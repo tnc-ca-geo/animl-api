@@ -1,6 +1,7 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { NotFoundError } from '../../errors.js';
 import { randomUUID } from 'node:crypto';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -51,6 +52,7 @@ export class BatchModel {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
+      if (!batch) throw new NotFoundError('Batch not found');
 
       BatchModel.augmentBatch(batch);
 

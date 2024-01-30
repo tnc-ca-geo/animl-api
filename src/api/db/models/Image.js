@@ -4,7 +4,7 @@ import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
+import { DuplicateError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -56,6 +56,7 @@ export class ImageModel {
       : { _id };
     try {
       const image = await Image.findOne(query);
+      if (!image) throw NotFoundError('Image not found');
 
       const epipeline = [];
       epipeline.push({ '$match': { 'image': image._id } });
@@ -313,10 +314,10 @@ export class ImageModel {
       const image = await ImageModel.queryById(input.imageId, context);
 
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
-      if (!comment) throw new ApolloError('Comment not found on image');
+      if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ApolloError('Can only edit your own comments');
+        throw new ForbiddenError('Can only edit your own comments');
       }
 
       image.comments = image.comments.filter((c) => { return !idMatch(c._id, input.id); });
@@ -336,10 +337,10 @@ export class ImageModel {
       const image = await ImageModel.queryById(input.imageId, context);
 
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
-      if (!comment) throw new ApolloError('Comment not found on image');
+      if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ApolloError('Can only edit your own comments');
+        throw new ForbiddenError('Can only edit your own comments');
       }
 
       comment.comment = input.comment;

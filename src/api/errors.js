@@ -11,21 +11,28 @@ import { GraphQLError } from 'graphql/error/GraphQLError.js';
 // good blog post:
 // https://tomek.fojtuch.com/blog/error-handling-with-apollo-server/
 
-class DuplicateError extends ApolloError {
+export class NotFoundError extends ApolloError {
+  constructor(message) {
+    super(message, 'NOT_FOUND');
+    Object.defineProperty(this, 'name', { value: 'NotFoundError' });
+  }
+}
+
+export class DuplicateError extends ApolloError {
   constructor(message) {
     super(message, 'DUPLICATE_IMAGE');
     Object.defineProperty(this, 'name', { value: 'DuplicateError' });
   }
 }
 
-class DuplicateLabelError extends ApolloError {
+export class DuplicateLabelError extends ApolloError {
   constructor(message) {
     super(message, 'DUPLICATE_LABEL');
     Object.defineProperty(this, 'name', { value: 'DuplicateLabelError' });
   }
 }
 
-class DBValidationError extends ApolloError {
+export class DBValidationError extends ApolloError {
   constructor(message) {
     super(message, 'DB_VALIDATION_FAILED');
     Object.defineProperty(this, 'name', { value: 'DBValidationError' });
@@ -34,14 +41,14 @@ class DBValidationError extends ApolloError {
 
 // NOTE: use "properties" in constructor to return additional
 // custom error details in response
-class CameraRegistrationError extends ApolloError {
+export class CameraRegistrationError extends ApolloError {
   constructor(message, properties) {
     super(message, 'CAMERA_REGISTRATION_ERROR', properties);
     Object.defineProperty(this, 'name', { value: 'CameraRegistrationError' });
   }
 }
 
-function formatError (err) {
+export function formatError (err) {
 
   /*
    * NOTE: The goal here is to coerce all Errors into ApolloErrors
@@ -78,11 +85,3 @@ function formatError (err) {
 
   return error;
 }
-
-export {
-  DuplicateError,
-  DuplicateLabelError,
-  DBValidationError,
-  CameraRegistrationError,
-  formatError
-};

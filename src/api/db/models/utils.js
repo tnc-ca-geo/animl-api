@@ -4,8 +4,8 @@ import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
-import { ApolloError } from 'apollo-server-errors';
-import { DuplicateLabelError } from '../../errors.js';
+import { ForbiddenError } from 'apollo-server-errors';
+import { DuplicateLabelError, NotFoundError } from '../../errors.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -408,9 +408,9 @@ function reviewerLabelRecord(project, image, label) {
 
   // Check if Label Exists on Project and if not throw an error
   if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-    throw new ApolloError('A label with that ID does not exist in this project');
+    throw new NotFoundError('A label with that ID does not exist in this project');
   } else if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId) && l.reviewerEnabled; })) {
-    throw new ApolloError('This label is currently disabled');
+    throw new ForbiddenError('This label is currently disabled');
   }
 
   if (isLabelDupe(image, labelRecord)) throw new DuplicateLabelError();

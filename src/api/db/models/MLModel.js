@@ -1,4 +1,5 @@
 import { ApolloError } from 'apollo-server-errors';
+import { NotFoundError } from '../../errors.js';
 import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
@@ -7,7 +8,7 @@ export class MLModelModel {
     const query = { _id };
     try {
       const model = await MLModel.findOne(query);
-      if (!model) throw new ApolloError('Model not found');
+      if (!model) throw new NotFoundError('Model not found');
 
       return model;
     } catch (err) {

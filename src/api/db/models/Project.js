@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { NotFoundError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -24,7 +25,7 @@ export class ProjectModel {
     const query = { _id };
     try {
       const project = await Project.findOne(query);
-      if (!project) throw new ApolloError('Project not found');
+      if (!project) throw new NotFoundError('Project not found');
 
       return project;
     } catch (err) {
