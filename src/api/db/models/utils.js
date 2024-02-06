@@ -404,6 +404,7 @@ function isLabelDupe(image, newLabel) {
 }
 
 function reviewerLabelRecord(project, image, label) {
+  label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId);
 
   // Check if Label Exists on Project and if not throw an error
