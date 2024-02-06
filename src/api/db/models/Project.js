@@ -482,7 +482,7 @@ export class ProjectModel {
       }).length) throw new ApolloError('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
-        source: 'reviewer',
+        source: 'manual',
         name: input.name,
         color: input.color
       });
