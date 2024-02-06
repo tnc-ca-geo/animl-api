@@ -87,12 +87,12 @@ const ProjectSchema = new Schema({
     _id: 'empty',
     name: 'empty',
     color: '#8D8D8D',
-    source: 'model'
+    source: 'default'
   },{
     _id: 'unknown',
     name: 'unknown',
     color: '#E93D82',
-    source: 'model'
+    source: 'default'
   }], required: true }
 });
 
