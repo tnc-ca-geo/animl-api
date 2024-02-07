@@ -513,7 +513,7 @@ export class ProjectModel {
         filters: { labels: [input._id] }
       }, context);
 
-      project.labels.splice(project.labels.indexOf(label) );
+      project.labels.splice(project.labels.indexOf(label), 1);
       await project.save();
 
       return { message: 'Label Removed' };
