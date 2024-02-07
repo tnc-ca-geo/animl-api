@@ -105,7 +105,6 @@ async function mirav2(params) {
         filteredDets.push({
           mlModel: modelSource._id,
           mlModelVersion: modelSource.version,
-          type: 'ml',
           bbox,
           conf,
           labelId
@@ -153,7 +152,6 @@ async function nzdoc(params) {
         filteredDets.push({
           mlModel: modelSource._id,
           mlModelVersion: modelSource.version,
-          type: 'ml',
           bbox,
           conf,
           labelId
