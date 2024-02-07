@@ -40,11 +40,12 @@ const buildCatConfig = (modelSource, rule) => {
 //   return res.length > 0;
 // };
 
-const ruleApplies = (rule, event, label) => {
+const ruleApplies = (rule, event, label, project) => {
   if (rule.event.type === event) {
     // TODO: check whether this rule has already been run on this image
+    const projectLabel = project.labels.find((pl) => pl.name.toLowerCase() === rule.event.label.toLowerCase());
     if ((rule.event.type === 'label-added' &&
-        rule.event.label === label.category) ||
+        rule.event.label.toLowerCase() === projectLabel?.name.toLowerCase()) ||
         rule.event.type === 'image-added') {
       return true;
     }
@@ -74,7 +75,7 @@ const buildCallstack = async (payload, context) => {
   // project level: https://github.com/tnc-ca-geo/animl-api/issues/50
   // callstack = _.uniqWith(callstack, _.isEqual);
 
-  const callstack = project.automationRules.filter((rule) => ruleApplies(rule, event, label));
+  const callstack = project.automationRules.filter((rule) => ruleApplies(rule, event, label, project));
 
   return callstack;
 };
