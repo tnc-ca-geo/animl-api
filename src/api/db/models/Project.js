@@ -504,9 +504,7 @@ export class ProjectModel {
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
       if (!label) throw new ApolloError('Label not found on project');
 
-      const count = await ImageModel.countImages({
-        filters: { labels: [input._id] }
-      }, context);
+      const count = await ImageModel.countImagesByLabel([input._id], context);
 
       if (count > MAX_LABEL_DELETE) throw new ApolloError(`This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be deleted`);
 

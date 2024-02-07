@@ -26,6 +26,7 @@ import {
 import {
   hasRole,
   buildPipeline,
+  buildLabelPipeline,
   mapImgToDep,
   sanitizeMetadata,
   isLabelDupe,
@@ -46,6 +47,17 @@ export class ImageModel {
   static async countImages(input, context) {
     const pipeline = buildPipeline(input.filters, context.user['curr_project']);
     pipeline.push({ $count: 'count' });
+    const res = await Image.aggregate(pipeline);
+    return res[0] ? res[0].count : 0;
+  }
+
+  static countImagesByLabel(labels, context) {
+      const pipeline = [
+        { '$match': { 'projectId': context.user['curr_project'] } },
+        buildLabelPipeline(labels),
+        { $count: 'count' });
+      ]
+
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }

@@ -11,18 +11,89 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-function idMatch(idA, idB) {
+export function idMatch(idA, idB) {
   return idA.toString() === idB.toString();
 }
 
-function buildImgUrl(image, config, size = 'original') {
+export function buildImgUrl(image, config, size = 'original') {
   const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 }
 
-function buildPipeline({
+export function buildLabelPipeline(labels) {
+    const pipeline = []
+
+    // map over objects & labels and filter for first validated label
+    pipeline.push({ '$set': {
+      objects: {
+        $map: {
+          input: '$objects',
+          as: 'obj',
+          in: {
+            $setField: {
+              field: 'firstValidLabel',
+              input: '$$obj',
+              value: {
+                $filter: {
+                  input: '$$obj.labels',
+                  as: 'label',
+                  cond: { $eq: ['$$label.validation.validated', true] },
+                  limit: 1
+                }
+              }
+            }
+          }
+        }
+      }
+    } });
+
+    const labelsFilter = {
+      $or: [
+        // has an object that is locked,
+        // and its first validated label is included in labels filter
+        { objects: { $elemMatch: {
+          locked: true,
+          'firstValidLabel.labelId': { $in: labels }
+        } } },
+
+        // has an object is not locked, but it has label that is
+        // not-invalidated and included in filters
+        { objects: { $elemMatch: {
+          locked: false,
+          labels: { $elemMatch: {
+            'validation.validated': { $not: { $eq: false } },
+            labelId: { $in: labels }
+          } }
+        } } }
+      ]
+    };
+
+    // if labels includes "none", also return images with no objects
+    if (labels.includes('none')) {
+      const noObjectsFilter = { $or: [
+        // return images w/ no objects,
+        { objects: { $size: 0 } },
+        // or images in which all labels of all objects have been invalidated
+        { objects: { $not: {
+          $elemMatch: {
+            labels: { $elemMatch: { $or: [
+              { validation: null },
+              { 'validation.validated': true }
+            ] } }
+          }
+        } } }
+      ] };
+      labelsFilter.$or.push(noObjectsFilter);
+    }
+
+    pipeline.push({ '$match': labelsFilter });
+
+    return pipeline;
+}
+
+export function buildPipeline({
   cameras,
   deployments,
   createdStart,
@@ -115,70 +186,7 @@ function buildPipeline({
 
   // match labels filter
   if (labels) {
-    // map over objects & labels and filter for first validated label
-    pipeline.push({ '$set': {
-      objects: {
-        $map: {
-          input: '$objects',
-          as: 'obj',
-          in: {
-            $setField: {
-              field: 'firstValidLabel',
-              input: '$$obj',
-              value: {
-                $filter: {
-                  input: '$$obj.labels',
-                  as: 'label',
-                  cond: { $eq: ['$$label.validation.validated', true] },
-                  limit: 1
-                }
-              }
-            }
-          }
-        }
-      }
-    } });
-
-    const labelsFilter = {
-      $or: [
-        // has an object that is locked,
-        // and its first validated label is included in labels filter
-        { objects: { $elemMatch: {
-          locked: true,
-          'firstValidLabel.labelId': { $in: labels }
-        } } },
-
-        // has an object is not locked, but it has label that is
-        // not-invalidated and included in filters
-        { objects: { $elemMatch: {
-          locked: false,
-          labels: { $elemMatch: {
-            'validation.validated': { $not: { $eq: false } },
-            labelId: { $in: labels }
-          } }
-        } } }
-      ]
-    };
-
-    // if labels includes "none", also return images with no objects
-    if (labels.includes('none')) {
-      const noObjectsFilter = { $or: [
-        // return images w/ no objects,
-        { objects: { $size: 0 } },
-        // or images in which all labels of all objects have been invalidated
-        { objects: { $not: {
-          $elemMatch: {
-            labels: { $elemMatch: { $or: [
-              { validation: null },
-              { 'validation.validated': true }
-            ] } }
-          }
-        } } }
-      ] };
-      labelsFilter.$or.push(noObjectsFilter);
-    }
-
-    pipeline.push({ '$match': labelsFilter });
+    pipeline.push(...buildLabelPipeline(labels));
   }
 
   // match custom filter
@@ -190,7 +198,7 @@ function buildPipeline({
   return pipeline;
 }
 
-function sanitizeMetadata(md) {
+export function sanitizeMetadata(md) {
   const sanitized = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -215,7 +223,7 @@ function sanitizeMetadata(md) {
   return sanitized;
 }
 
-function createImageAttemptRecord(md) {
+export function createImageAttemptRecord(md) {
   console.log('creating ImageAttempt record with metadata: ', md);
   return new ImageAttempt({
     _id: md.imageId,
@@ -243,7 +251,7 @@ function createImageAttemptRecord(md) {
 }
 
 // Unpack user-set exif tags
-function getUserSetData(input) {
+export function getUserSetData(input) {
   const userDataMap = {
     'BuckEyeCam': (input) => {
       if (!input.comment) {
@@ -286,7 +294,7 @@ function getUserSetData(input) {
 
 // Parse trigger source (e.g. burst, timelapse, manual, PIR)
 // TODO: possibly combine with getUserSetData?
-function getTriggerSource(input) {
+export function getTriggerSource(input) {
   const userDataMap = {
     'BuckEyeCam': (input) => {
       if (!input.comment) {
@@ -312,7 +320,7 @@ function getTriggerSource(input) {
 
 // Parse string coordinates to decimal degrees
 // input e.g. - `34 deg 6' 25.59" N`
-function parseCoordinates(md) {
+export function parseCoordinates(md) {
   function parse(stringCoord) {
     let deg, min, sec;
     // eslint-disable-next-line prefer-const
@@ -335,7 +343,7 @@ function parseCoordinates(md) {
 }
 
 // Map image metadata to image schema
-function createImageRecord(md) {
+export function createImageRecord(md) {
   console.log('creating ImageRecord with metadata: ', md);
   const coords = parseCoordinates(md);
   const userSetData = getUserSetData(md);
@@ -371,7 +379,7 @@ function createImageRecord(md) {
   });
 }
 
-function isLabelDupe(image, newLabel) {
+export function isLabelDupe(image, newLabel) {
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -403,7 +411,7 @@ function isLabelDupe(image, newLabel) {
   return false;
 }
 
-function reviewerLabelRecord(project, image, label) {
+export function reviewerLabelRecord(project, image, label) {
   label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId);
 
@@ -420,7 +428,7 @@ function reviewerLabelRecord(project, image, label) {
 }
 
 // TODO: accommodate users as label authors as well as models
-function createLabelRecord(input, authorId) {
+export function createLabelRecord(input, authorId) {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   const label = {
     ...(_id && { _id }),
@@ -438,14 +446,14 @@ function createLabelRecord(input, authorId) {
 }
 
 // TODO: consider calling this isAuthorized() ?
-const hasRole = (user, targetRoles = []) => {
+export function hasRole(user, targetRoles = []) {
   const hasAuthorizedRole = user['curr_project_roles'] &&
     user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
   return user['is_superuser'] || hasAuthorizedRole;
 };
 
 // TODO: accommodate user-created deployments with no startDate?
-const findDeployment = (img, camConfig, projTimeZone) => {
+export function findDeployment(img, camConfig, projTimeZone) {
   console.log('finding deployment for img: ', img);
   // find the deployment that's start date is closest to (but preceeds)
   // the image's created date
@@ -500,7 +508,7 @@ const findDeployment = (img, camConfig, projTimeZone) => {
   return mostRecentDep || defaultDep;
 };
 
-const mapImgToDep = (img, camConfig, projTimeZone) => {
+export function mapImgToDep(img, camConfig, projTimeZone) {
   if (camConfig.deployments.length === 0) {
     const err = new Error('Camera config has no deployments');
     err.code = 'NoDeployments';
@@ -512,7 +520,7 @@ const mapImgToDep = (img, camConfig, projTimeZone) => {
     : findDeployment(img, camConfig, projTimeZone);
 };
 
-const sortDeps = (deps) => {
+export function sortDeps(deps) {
   console.log('sorting deployments');
   // remove default deployment (temporarily)
   const defaultDep = deps.find((dep) => dep.name === 'default');
@@ -531,7 +539,7 @@ const sortDeps = (deps) => {
   return chronDeps;
 };
 
-const findActiveProjReg = (camera) => {
+export function findActiveProjReg(camera) {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
     const err = new Error('Can\'t find active project registration on camera');
@@ -541,7 +549,7 @@ const findActiveProjReg = (camera) => {
   return activeProjReg.projectId;
 };
 
-const isImageReviewed = (image) => {
+export function isImageReviewed(image) {
   // images are considered reviewed if they:
   // have objects,
   // all objects are locked,
@@ -552,21 +560,4 @@ const isImageReviewed = (image) => {
     obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated)
   ));
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
-};
-
-export {
-  buildImgUrl,
-  buildPipeline,
-  sanitizeMetadata,
-  isLabelDupe,
-  createImageAttemptRecord,
-  reviewerLabelRecord,
-  createImageRecord,
-  createLabelRecord,
-  hasRole,
-  mapImgToDep,
-  sortDeps,
-  findActiveProjReg,
-  idMatch,
-  isImageReviewed
 };
