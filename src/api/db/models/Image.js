@@ -706,8 +706,8 @@ export class ImageModel {
     for (let oid = 0; oid < (image.objects || []).length; oid++) {
       for (let lid = 0; lid < (image.objects[oid].labels || []).length; lid++) {
         if (idMatch(image.objects[oid].labels[lid].labelId , labelId)) {
-          // If the Label was the first in an object, ensure it is now unlocked
-          if (lid === 0) image.objects[oid].locked = false;
+          // If the Label in an object, ensure it is now unlocked
+          image.objects[oid].locked = false;
           image.objects[oid].labels.splice(lid, 1);
         }
       }
