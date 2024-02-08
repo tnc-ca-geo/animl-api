@@ -527,7 +527,7 @@ export class ImageModel {
             name: labelRecord.labelId,
             // This should always be cats[0].color unless the category wasn't defined in the DB
             // In that case assign a random color to avoid failing and losing the inference
-            color: cats.length ? cats[0].toJSON().color : randomColor(project.labels)
+            color: cats.length ? cats[0].color : randomColor(project.labels)
           });
           await project.save();
         }
