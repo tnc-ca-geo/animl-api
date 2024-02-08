@@ -30,7 +30,8 @@ const MLModelSchema = new Schema({
   categories: {
     type: [new Schema({
       _id: { type: String, required: true },
-      name: { type: String, required: true }
+      name: { type: String, required: true },
+      color: { type: String, required: true }
     })],
     required: true
   }

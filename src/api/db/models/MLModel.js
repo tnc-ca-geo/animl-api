@@ -4,12 +4,10 @@ import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
 export class MLModelModel {
-  static async queryById(_id, opts = {
-    lean: false
-  }) {
+  static async queryById(_id) {
     const query = { _id };
     try {
-      const model = opts.lean ? await MLModel.findOne(query).lean() : await MLModel.findOne(query);
+      const model = await MLModel.findOne(query);
       if (!model) throw new NotFoundError('Model not found');
 
       return model;

@@ -68,7 +68,7 @@ export class ImageModel {
       : { _id };
     try {
       const image = await Image.findOne(query);
-      if (!image) throw NotFoundError('Image not found');
+      if (!image) throw new NotFoundError('Image not found');
 
       const epipeline = [];
       epipeline.push({ '$match': { 'image': image._id } });
@@ -517,7 +517,7 @@ export class ImageModel {
 
         // Check if Label Exists on Project and if not, add it
         if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-          const model = await MLModelModel.queryById(labelRecord.mlModel, { lean: true });
+          const model = await MLModelModel.queryById(labelRecord.mlModel);
 
           const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
 
