@@ -517,7 +517,7 @@ export class ImageModel {
 
         // Check if Label Exists on Project and if not, add it
         if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-          const model = await MLModelModel.queryById(labelRecord.mlModel);
+          const model = await MLModelModel.queryById(labelRecord.mlModel, { lean: true });
 
           const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
 
