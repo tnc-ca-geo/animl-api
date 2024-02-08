@@ -52,11 +52,11 @@ export class ImageModel {
   }
 
   static async countImagesByLabel(labels, context) {
-      const pipeline = [
-        { '$match': { 'projectId': context.user['curr_project'] } },
-        ...buildLabelPipeline(labels),
-        { $count: 'count' }
-      ]
+    const pipeline = [
+      { '$match': { 'projectId': context.user['curr_project'] } },
+      ...buildLabelPipeline(labels),
+      { $count: 'count' }
+    ];
 
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
@@ -518,14 +518,16 @@ export class ImageModel {
         // Check if Label Exists on Project and if not, add it
         if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
           const model = await MLModelModel.queryById(labelRecord.mlModel);
+
           const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
+
           project.labels.push({
             _id: labelRecord.labelId,
             source: labelRecord.mlModel,
             name: labelRecord.labelId,
             // This should always be cats[0].color unless the category wasn't defined in the DB
             // In that case assign a random color to avoid failing and losing the inference
-            color: cats.length ? cats[0].color : randomColor(project.labels)
+            color: cats.length ? cats[0].toJSON().color : randomColor(project.labels)
           });
           await project.save();
         }

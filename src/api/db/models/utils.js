@@ -23,74 +23,74 @@ export function buildImgUrl(image, config, size = 'original') {
 }
 
 export function buildLabelPipeline(labels) {
-    const pipeline = []
+  const pipeline = [];
 
-    // map over objects & labels and filter for first validated label
-    pipeline.push({ '$set': {
-      objects: {
-        $map: {
-          input: '$objects',
-          as: 'obj',
-          in: {
-            $setField: {
-              field: 'firstValidLabel',
-              input: '$$obj',
-              value: {
-                $filter: {
-                  input: '$$obj.labels',
-                  as: 'label',
-                  cond: { $eq: ['$$label.validation.validated', true] },
-                  limit: 1
-                }
+  // map over objects & labels and filter for first validated label
+  pipeline.push({ '$set': {
+    objects: {
+      $map: {
+        input: '$objects',
+        as: 'obj',
+        in: {
+          $setField: {
+            field: 'firstValidLabel',
+            input: '$$obj',
+            value: {
+              $filter: {
+                input: '$$obj.labels',
+                as: 'label',
+                cond: { $eq: ['$$label.validation.validated', true] },
+                limit: 1
               }
             }
           }
         }
       }
-    } });
-
-    const labelsFilter = {
-      $or: [
-        // has an object that is locked,
-        // and its first validated label is included in labels filter
-        { objects: { $elemMatch: {
-          locked: true,
-          'firstValidLabel.labelId': { $in: labels }
-        } } },
-
-        // has an object is not locked, but it has label that is
-        // not-invalidated and included in filters
-        { objects: { $elemMatch: {
-          locked: false,
-          labels: { $elemMatch: {
-            'validation.validated': { $not: { $eq: false } },
-            labelId: { $in: labels }
-          } }
-        } } }
-      ]
-    };
-
-    // if labels includes "none", also return images with no objects
-    if (labels.includes('none')) {
-      const noObjectsFilter = { $or: [
-        // return images w/ no objects,
-        { objects: { $size: 0 } },
-        // or images in which all labels of all objects have been invalidated
-        { objects: { $not: {
-          $elemMatch: {
-            labels: { $elemMatch: { $or: [
-              { validation: null },
-              { 'validation.validated': true }
-            ] } }
-          }
-        } } }
-      ] };
-      labelsFilter.$or.push(noObjectsFilter);
     }
+  } });
 
-    pipeline.push({ '$match': labelsFilter });
+  const labelsFilter = {
+    $or: [
+      // has an object that is locked,
+      // and its first validated label is included in labels filter
+      { objects: { $elemMatch: {
+        locked: true,
+        'firstValidLabel.labelId': { $in: labels }
+      } } },
 
-    return pipeline;
+      // has an object is not locked, but it has label that is
+      // not-invalidated and included in filters
+      { objects: { $elemMatch: {
+        locked: false,
+        labels: { $elemMatch: {
+          'validation.validated': { $not: { $eq: false } },
+          labelId: { $in: labels }
+        } }
+      } } }
+    ]
+  };
+
+  // if labels includes "none", also return images with no objects
+  if (labels.includes('none')) {
+    const noObjectsFilter = { $or: [
+      // return images w/ no objects,
+      { objects: { $size: 0 } },
+      // or images in which all labels of all objects have been invalidated
+      { objects: { $not: {
+        $elemMatch: {
+          labels: { $elemMatch: { $or: [
+            { validation: null },
+            { 'validation.validated': true }
+          ] } }
+        }
+      } } }
+    ] };
+    labelsFilter.$or.push(noObjectsFilter);
+  }
+
+  pipeline.push({ '$match': labelsFilter });
+
+  return pipeline;
 }
 
 export function buildPipeline({
@@ -450,7 +450,7 @@ export function hasRole(user, targetRoles = []) {
   const hasAuthorizedRole = user['curr_project_roles'] &&
     user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
   return user['is_superuser'] || hasAuthorizedRole;
-};
+}
 
 // TODO: accommodate user-created deployments with no startDate?
 export function findDeployment(img, camConfig, projTimeZone) {
@@ -506,7 +506,7 @@ export function findDeployment(img, camConfig, projTimeZone) {
   }
 
   return mostRecentDep || defaultDep;
-};
+}
 
 export function mapImgToDep(img, camConfig, projTimeZone) {
   if (camConfig.deployments.length === 0) {
@@ -518,7 +518,7 @@ export function mapImgToDep(img, camConfig, projTimeZone) {
   return (camConfig.deployments.length === 1)
     ? camConfig.deployments[0]
     : findDeployment(img, camConfig, projTimeZone);
-};
+}
 
 export function sortDeps(deps) {
   console.log('sorting deployments');
@@ -537,7 +537,7 @@ export function sortDeps(deps) {
   // add default deployment back in
   chronDeps.unshift(defaultDep);
   return chronDeps;
-};
+}
 
 export function findActiveProjReg(camera) {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
@@ -547,7 +547,7 @@ export function findActiveProjReg(camera) {
     throw err;
   }
   return activeProjReg.projectId;
-};
+}
 
 export function isImageReviewed(image) {
   // images are considered reviewed if they:
@@ -560,4 +560,4 @@ export function isImageReviewed(image) {
     obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated)
   ));
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
-};
+}
