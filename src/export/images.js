@@ -61,7 +61,7 @@ export default class ImageExport {
       this.project = project;
       this.categories = project.labels.map((l) => { return l.name; });
       this.labelMap = new Map();
-      for (const l of this.categories) this.labelMap.set(l._id, l);
+      for (const l of project.labels) this.labelMap.set(l._id, l);
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error initializing the export class');
@@ -346,6 +346,7 @@ export default class ImageExport {
       for (const obj of img.objects) {
         const firstValidLabel = this.findFirstValidLabel(obj);
         if (firstValidLabel) {
+          console.error(firstValidLabel, this.labelMap);
           const cat = this.labelMap.get(firstValidLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
