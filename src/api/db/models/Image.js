@@ -755,6 +755,7 @@ export class ImageModel {
     let multiReviewerCount = 0;
 
     try {
+      const project = await ProjectModel.queryById(context.user['curr_project']);
       const pipeline = buildPipeline(input.filters, context.user['curr_project']);
       const images = await Image.aggregate(pipeline);
       imageCount = images.length;
@@ -790,10 +791,9 @@ export class ImageModel {
               label.validation && label.validation.validated
             ));
             if (firstValidLabel) {
-              const cat = firstValidLabel.labelId;
-              labelList[cat] = Object.prototype.hasOwnProperty.call(labelList, cat)
-                ? labelList[cat] + 1
-                : 1;
+              const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
+              const labelName = projLabel?.name || 'ERROR FINDING LABEL';
+              labelList[labelName] = Object.prototype.hasOwnProperty.call(labelList, labelName) ? labelList[labelName] + 1 : 1;
             }
           }
         }
