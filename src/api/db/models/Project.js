@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { NotFoundError } from '../../errors.js';
+import { NotFoundError, DeleteLabelError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -502,11 +502,15 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
-      if (!label) throw new ApolloError('Label not found on project');
+      if (!label) throw new DeleteLabelError('Label not found on project');
 
       const count = await ImageModel.countImagesByLabel([input._id], context);
 
-      if (count > MAX_LABEL_DELETE) throw new ApolloError(`This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be deleted`);
+      if (count > MAX_LABEL_DELETE) {
+        const msg = `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
+          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteLabelError(msg);
+      }
 
       await ImageModel.deleteAnyLabels({
         labelId: input._id,
