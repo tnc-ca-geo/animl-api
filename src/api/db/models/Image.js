@@ -679,10 +679,10 @@ export class ImageModel {
    * A slower but more thorough label deletion method than ImageModel.deleteLabels
    * This method iterates through all objects and deletes all instances of a given label
    * unlocking an object if the label is the current top level choice of a validated object
+   * or deleting the object if it only has a single label and it's the one we're removing
    *
    * @param {object} input
    * @param {string} input.labelId - Label to remove
-   * @param {object} input.filters - Filters to appy to image iteration
    * @param {object} context
    */
   static async deleteAnyLabels(input, context) {
@@ -703,14 +703,32 @@ export class ImageModel {
    * @param {string} labelId
    */
   static async deleteAnyLabel(image, labelId) {
-    for (let oid = 0; oid < (image.objects || []).length; oid++) {
-      for (let lid = 0; lid < (image.objects[oid].labels || []).length; lid++) {
-        if (idMatch(image.objects[oid].labels[lid].labelId , labelId)) {
-          // If the Label in an object, ensure it is now unlocked
-          image.objects[oid].locked = false;
-          image.objects[oid].labels.splice(lid, 1);
+
+    function removeLabels(obj) {
+      for (let lid = 0; lid < (obj.labels || []).length; lid++) {
+        if (idMatch(obj.labels[lid].labelId , labelId)) {
+          obj.labels.splice(lid, 1);
         }
       }
+    }
+
+    for (let oid = 0; oid < (image.objects || []).length; oid++) {
+      const object = image.objects[oid];
+      const firstValidLabel = object.labels?.find((lbl) => lbl.validation && lbl.validation.validated) || null;
+
+      if (object.labels.length === 1 && idMatch(object.labels[0].labelId, labelId)) {
+        // the object only has one label and it's the one we're removing, so delete object
+        image.objects = image.objects.filter((obj) => !idMatch(obj._id, image.objects[oid]._id));
+      } else if (object.locked && (firstValidLabel && idMatch(firstValidLabel.labelId, labelId))) {
+        // the object is locked and the first validated label is one of the labels we're removing,
+        // so delete label(s) and unlock the object
+        object.locked = false;
+        removeLabels(object);
+      } else {
+        // delete labels
+        removeLabels(object);
+      }
+
     }
 
     await image.save();

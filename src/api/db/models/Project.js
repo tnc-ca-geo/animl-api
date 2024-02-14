@@ -513,8 +513,7 @@ export class ProjectModel {
       }
 
       await ImageModel.deleteAnyLabels({
-        labelId: input._id,
-        filters: { labels: [input._id] }
+        labelId: input._id
       }, context);
 
       project.labels.splice(project.labels.indexOf(label), 1);
