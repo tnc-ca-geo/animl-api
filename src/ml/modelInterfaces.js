@@ -44,7 +44,7 @@ async function megadetector(params) {
       conf: det.confidence,
       labelId: catConfig.find((cat) => (
         parseInt(cat._id) === parseInt(det.class)
-      )).name
+      ))._id
     }));
 
     // filter out disabled detections & detections below confThreshold
