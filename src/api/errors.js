@@ -39,6 +39,13 @@ export class DBValidationError extends ApolloError {
   }
 }
 
+export class DeleteLabelError extends ApolloError {
+  constructor(message) {
+    super(message, 'DELETE_LABEL_FAILED');
+    Object.defineProperty(this, 'name', { value: 'DeleteLabelError' });
+  }
+}
+
 // NOTE: use "properties" in constructor to return additional
 // custom error details in response
 export class CameraRegistrationError extends ApolloError {
