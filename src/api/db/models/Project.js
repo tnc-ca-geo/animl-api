@@ -514,6 +514,16 @@ export class ProjectModel {
       }, context);
 
       project.labels.splice(project.labels.indexOf(label), 1);
+
+      project.view = project.views.map((view) => {
+        if (!view.filters || !view.filters.labels || !Array.isArray(view.filters.labels)) return view;
+        view.filters.labels = view.filters.labels
+          .filter((label) => { return project.labels.some((l) => { return l._id === label; }); });
+        return view;
+      });
+
+
+
       await project.save();
 
       return { message: 'Label Removed' };
