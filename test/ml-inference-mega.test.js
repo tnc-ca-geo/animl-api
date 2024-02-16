@@ -80,7 +80,7 @@ tape('ML-Inference Megadetector', async (t) => {
       mlModelVersion: 'v5.0a',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
-      labelId: 'animal'
+      labelId: 1
     }]);
   } catch (err) {
     t.error(err);
@@ -159,7 +159,7 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
       mlModelVersion: 'v5.0a',
       bbox: [0.28664860129356384, 0.45518332719802856, 0.5675788521766663, 0.6615734100341797],
       conf: 0.9314358830451965,
-      labelId: 'animal'
+      labelId: 1
     }]);
   } catch (err) {
     t.error(err);
