@@ -42,16 +42,12 @@ async function megadetector(params) {
       mlModelVersion: modelSource.version,
       bbox: [det.y1, det.x1, det.y2, det.x2],
       conf: det.confidence,
-      labelId: catConfig.find((cat) => (
-        parseInt(cat._id) === parseInt(det.class)
-      ))._id
+      labelId: catConfig.find((cat) => parseInt(cat._id) === parseInt(det.class))._id
     }));
 
     // filter out disabled detections & detections below confThreshold
     const filteredDets = formatedDets.filter((det) => {
-      const { disabled, confThreshold } = catConfig.find((cat) => (
-        cat.name === det.labelId
-      ));
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === det.labelId);
       return !disabled && det.conf >= confThreshold;
     });
 
@@ -100,7 +96,7 @@ async function mirav2(params) {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
       const conf = predictions[labelId];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === labelId);
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
@@ -147,7 +143,7 @@ async function nzdoc(params) {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
       const conf = predictions[labelId];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === labelId);
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
