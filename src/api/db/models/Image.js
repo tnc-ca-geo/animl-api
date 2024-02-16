@@ -1,5 +1,4 @@
 import { text } from 'node:stream/consumers';
-import randomColor from './colors.js';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -529,8 +528,8 @@ export class ImageModel {
           });
           await project.save();
         } else {
-            const [ label ] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase() });
-            labelRecord.labelId = label._id;
+          const [label] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); });
+          labelRecord.labelId = label._id;
         }
 
         let objExists = false;
