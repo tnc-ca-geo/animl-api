@@ -1,19 +1,40 @@
 import mongoose from 'mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import { NotFoundError, DeleteLabelError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
+import { ImageModel } from './Image.js';
 import Image from '../schemas/Image.js';
 import { sortDeps, hasRole, idMatch } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
+  WRITE_PROJECT_ROLES,
   WRITE_DEPLOYMENTS_ROLES,
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES
 } from '../../auth/roles.js';
 
+// The max number of labeled images that can be deleted
+// when removin a label from a project
+const MAX_LABEL_DELETE = 500;
+
 export class ProjectModel {
+  static async queryById(_id) {
+    const query = { _id };
+    try {
+      const project = await Project.findOne(query);
+      if (!project) throw new NotFoundError('Project not found');
+
+      return project;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async getProjects(input, context) {
     console.log('Project.getProjects - input: ', input);
     let query = {};
@@ -48,16 +69,16 @@ export class ProjectModel {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
-      throw new Error('Projects must be created by an authenticated user');
+      throw new ApolloError('Projects must be created by an authenticated user');
     }
 
-    if (!input.availableMLModels.length) throw new Error('At least 1 MLModel must be enabled for a project');
+    if (!input.availableMLModels.length) throw new ApolloError('At least 1 MLModel must be enabled for a project');
     const models = (await MLModelModel.getMLModels({
       _ids: input.availableMLModels
     })).map((model) => { return model._id; });
 
     for (const m of input.availableMLModels) {
-      if (!models.includes(m)) throw new Error(`${m} is not a valid model identifier`);
+      if (!models.includes(m)) throw new ApolloError(`${m} is not a valid model identifier`);
     }
 
     try {
@@ -81,6 +102,22 @@ export class ProjectModel {
         username: context.user['cognito:username'],
         roles: ['manager']
       }, context);
+
+      return project;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateProject(input, context) {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      Object.assign(project, input);
+
+      await project.save();
 
       return project;
     } catch (err) {
@@ -435,6 +472,88 @@ export class ProjectModel {
       throw new ApolloError(err);
     }
   }
+
+  static async createLabel(input, context) {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      if (project.labels.filter((label) => {
+        return label.name.toLowerCase() === input.name.toLowerCase();
+      }).length) throw new ApolloError('A label with that name already exists, avoid creating labels with duplicate names');
+
+      project.labels.push({
+        name: input.name,
+        color: input.color
+      });
+
+      await project.save();
+
+      return project.labels.pop();
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async deleteLabel(input, context) {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
+      if (!label) throw new DeleteLabelError('Label not found on project');
+
+      const count = await ImageModel.countImagesByLabel([input._id], context);
+
+      if (count > MAX_LABEL_DELETE) {
+        const msg = `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
+          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteLabelError(msg);
+      }
+
+      await ImageModel.deleteAnyLabels({
+        labelId: input._id
+      }, context);
+
+      project.labels.splice(project.labels.indexOf(label), 1);
+
+      project.view = project.views.map((view) => {
+        if (!view.filters || !view.filters.labels || !Array.isArray(view.filters.labels)) return view;
+        view.filters.labels = view.filters.labels
+          .filter((label) => { return project.labels.some((l) => { return l._id === label; }); });
+        return view;
+      });
+
+
+
+      await project.save();
+
+      return { message: 'Label Removed' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
+  static async updateLabel(input, context) {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
+      if (!label) throw new ApolloError('Label not found on project');
+
+      Object.assign(label, input);
+
+      await project.save();
+
+      return label;
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
 }
 
 export default class AuthedProjectModel {
@@ -448,6 +567,26 @@ export default class AuthedProjectModel {
 
   async createProject(input, context) {
     return await ProjectModel.createProject(input, context);
+  }
+
+  async deleteLabel(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.deleteLabel(input, context);
+  }
+
+  async createLabel(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.createLabel(input, context);
+  }
+
+  async updateLabel(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.updateLabel(input, context);
+  }
+
+  async updateProject(input, context) {
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    return await ProjectModel.updateProject(input, context);
   }
 
   async createView(input, context) {

@@ -11,7 +11,6 @@ import AuthedBatchErrorModel from './db/models/BatchError.js';
 import AuthedImageErrorModel from './db/models/ImageError.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
-import Fields from './resolvers/Fields.js';
 import Scalars from './resolvers/Scalars.js';
 import typeDefs from './type-defs/index.js';
 import { getConfig } from '../config/config.js';
@@ -21,7 +20,6 @@ import { getUserInfo } from './auth/authorization.js';
 const resolvers = {
   Query,
   Mutation,
-  ...Fields,
   ...Scalars
 };
 

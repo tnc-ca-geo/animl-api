@@ -23,6 +23,7 @@ provider:
     images:
       base:
         path: .
+        platform: linux/amd64
 
   iam:
     role:

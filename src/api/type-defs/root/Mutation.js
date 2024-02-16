@@ -17,7 +17,12 @@ export default `
     stopBatch(input: StopBatchInput!): StandardPayload
     redriveBatch(input: RedriveBatchInput!): StandardPayload
 
-    createProject(input: CreateProjectInput!): CreateProjectPayload
+    createProject(input: CreateProjectInput!): ProjectPayload
+    updateProject(input: UpdateProjectInput!): ProjectPayload
+
+    createProjectLabel(input: CreateProjectLabelInput!): ProjectLabelPayload
+    updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
+    deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
 
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
@@ -36,6 +41,8 @@ export default `
     createObjects(input: CreateObjectsInput!): CreateObjectsPayload
     updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
     deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
+
+    createInternalLabels(input: CreateInternalLabelsInput!): CreateLabelsPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
     updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload

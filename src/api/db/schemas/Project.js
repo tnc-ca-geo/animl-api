@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { LocationSchema } from './shared/index.js';
+import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
@@ -60,6 +61,13 @@ const DeploymentSchema = new Schema({
   editable: { type: Boolean }
 });
 
+const ProjectLabelSchema = new Schema({
+  _id: { type: String, required: true, default: randomUUID },
+  name: { type: String, required: true },
+  color: { type: String, required: true },
+  reviewerEnabled: { type: Boolean, required: true, default: true }
+});
+
 const CameraConfigSchema = new Schema({
   _id: { type: String, required: true },  /* _id is serial number */
   deployments: { type: [DeploymentSchema] }
@@ -73,7 +81,16 @@ const ProjectSchema = new Schema({
   views: { type: [ViewSchema], required: true },
   cameraConfigs: { type: [CameraConfigSchema] },
   availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
-  automationRules: { type: [AutomationRuleSchema] }
+  automationRules: { type: [AutomationRuleSchema] },
+  labels: { type: [ProjectLabelSchema], default: [{
+    _id: 'empty',
+    name: 'empty',
+    color: '#8D8D8D'
+  },{
+    _id: 'unknown',
+    name: 'unknown',
+    color: '#E93D82'
+  }], required: true }
 });
 
 export default mongoose.model('Project', ProjectSchema);

@@ -1,4 +1,4 @@
 export default `
-  type CreateProjectPayload {
+  type ProjectPayload {
     project: Project
   }`;

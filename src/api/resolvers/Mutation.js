@@ -94,6 +94,26 @@ const Mutation = {
     return { project };
   },
 
+  updateProject: async (_, { input }, context) => {
+    const project = await context.models.Project.updateProject(input, context);
+    return { project };
+  },
+
+  createProjectLabel: async (_, { input }, context) => {
+    const label = await context.models.Project.createLabel(input, context);
+    return { label };
+  },
+
+  updateProjectLabel: async (_, { input }, context) => {
+    const label = await context.models.Project.updateLabel(input, context);
+    return { label };
+  },
+
+  deleteProjectLabel: async (_, { input }, context) => {
+    const res = await context.models.Project.deleteLabel(input, context);
+    return { ...res };
+  },
+
   createView: async (_, { input }, context) => {
     const view = await context.models.Project.createView(input, context);
     return { view };
@@ -141,6 +161,11 @@ const Mutation = {
 
   deleteObjects: async (_, { input }, context) => {
     const res = await context.models.Image.deleteObjects(input, context);
+    return { isOk: res.ok };
+  },
+
+  createInternalLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.createInternalLabels(input, context);
     return { isOk: res.ok };
   },
 

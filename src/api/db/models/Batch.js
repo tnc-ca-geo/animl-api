@@ -1,6 +1,7 @@
 import { ApolloError, ForbiddenError } from 'apollo-server-errors';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { NotFoundError } from '../../errors.js';
 import { randomUUID } from 'node:crypto';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -51,6 +52,7 @@ export class BatchModel {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
+      if (!batch) throw new NotFoundError('Batch not found');
 
       BatchModel.augmentBatch(batch);
 
@@ -118,8 +120,8 @@ export class BatchModel {
 
     try {
       const batch = await operation({ _id: input.batch });
-      if (batch.processingEnd) throw new Error('Stack has already terminated');
-      if (batch.stoppingInitiated) throw new Error('Stack is already scheduled for deletion');
+      if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
+      if (batch.stoppingInitiated) throw new ApolloError('Stack is already scheduled for deletion');
 
       batch.stoppingInitiated = DateTime.now();
       await batch.save();
@@ -150,7 +152,7 @@ export class BatchModel {
 
         // Ensure the batch actually exists
         const batch = await BatchModel.queryById(input.batch);
-        if (batch.processingEnd) throw new Error('Stack has already terminated');
+        if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
 
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 

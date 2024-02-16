@@ -7,14 +7,11 @@ export default `
 
   input CreateLabelInput {
     _id: ID
-    type: String!
-    category: String!
+    labelId: String!
     conf: Float
     bbox: [Float!]!
     labeledDate: Date
     validation: ValidationInput
-    mlModel: String
-    mlModelVersion: String
     userId: ID
     imageId: ID
     objectId: ID

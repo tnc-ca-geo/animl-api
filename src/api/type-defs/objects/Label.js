@@ -8,7 +8,7 @@ export default `
   type Label {
     _id: ID!
     type: String!
-    category: String!
+    labelId: String!
     conf: Float
     bbox: [Float!]!
     labeledDate: Date!
