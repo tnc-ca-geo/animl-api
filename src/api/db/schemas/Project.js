@@ -65,7 +65,6 @@ const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   name: { type: String, required: true },
   color: { type: String, required: true },
-  source: { type: String, required: true, default: 'manual' },
   reviewerEnabled: { type: Boolean, required: true, default: true }
 });
 
@@ -86,13 +85,11 @@ const ProjectSchema = new Schema({
   labels: { type: [ProjectLabelSchema], default: [{
     _id: 'empty',
     name: 'empty',
-    color: '#8D8D8D',
-    source: 'default'
+    color: '#8D8D8D'
   },{
     _id: 'unknown',
     name: 'unknown',
-    color: '#E93D82',
-    source: 'default'
+    color: '#E93D82'
   }], required: true }
 });
 

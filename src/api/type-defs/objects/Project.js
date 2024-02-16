@@ -18,7 +18,6 @@ export default `
     _id: String!
     name: String!
     color: String!
-    source: String!
     reviewerEnabled: Boolean!
   }
 

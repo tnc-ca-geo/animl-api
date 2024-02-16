@@ -523,7 +523,6 @@ export class ImageModel {
 
           project.labels.push({
             _id: labelRecord.labelId,
-            source: labelRecord.mlModel,
             name: labelRecord.labelId,
             // This should always be cats[0].color unless the category wasn't defined in the DB
             // In that case assign a random color to avoid failing and losing the inference
