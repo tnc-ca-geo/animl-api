@@ -515,20 +515,22 @@ export class ImageModel {
         const project = await ProjectModel.queryById(image.projectId);
         const labelRecord = createLabelRecord(label, label.mlModel);
 
+        const model = await MLModelModel.queryById(labelRecord.mlModel);
+        const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
+        if (!cats.length === 1) throw new DBValidationError('Models should always produce labels tracked in MLModels.categories');
+        const modelLabel = cats[0];
+
         // Check if Label Exists on Project and if not, add it
-        if (!project.labels.some((l) => { return idMatch(l._id, labelRecord.labelId); })) {
-          const model = await MLModelModel.queryById(labelRecord.mlModel);
-
-          const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
-
+        if (!project.labels.some((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); })) {
           project.labels.push({
             _id: labelRecord.labelId,
             name: labelRecord.labelId,
-            // This should always be cats[0].color unless the category wasn't defined in the DB
-            // In that case assign a random color to avoid failing and losing the inference
-            color: cats.length ? cats[0].color : randomColor(project.labels)
+            color: modelLabel.color
           });
           await project.save();
+        } else {
+            const [ label ] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase() });
+            labelRecord.labelId = label._id;
         }
 
         let objExists = false;
