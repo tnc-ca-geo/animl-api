@@ -57,7 +57,7 @@ async function megadetector(params) {
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
         bbox: [0, 0, 1, 1],
-        labelId: 'empty'
+        labelId: '0'
       });
     }
 
