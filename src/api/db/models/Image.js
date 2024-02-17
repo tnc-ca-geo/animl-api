@@ -516,7 +516,8 @@ export class ImageModel {
 
         const model = await MLModelModel.queryById(labelRecord.mlModel);
         const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
-        if (!cats.length === 1) throw new DBValidationError('Models should always produce labels tracked in MLModels.categories');
+
+        if (cats.length !== 1) throw new DBValidationError('Models should always produce labels tracked in MLModels.categories');
         const modelLabel = cats[0];
 
         // Check if Label Exists on Project and if not, add it
