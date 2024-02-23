@@ -524,7 +524,7 @@ export class ImageModel {
         if (!project.labels.some((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); })) {
           project.labels.push({
             _id: labelRecord.labelId,
-            name: labelRecord.labelId,
+            name: modelLabel.name,
             color: modelLabel.color
           });
           await project.save();
