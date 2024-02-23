@@ -1,5 +1,4 @@
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
+import GraphQLError, { InternalServerError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
@@ -40,9 +39,8 @@ export class BatchErrorModel {
         created: batcherr.created
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -66,9 +64,8 @@ export class BatchErrorModel {
 
       return { message: 'Cleared' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }

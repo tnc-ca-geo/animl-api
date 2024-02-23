@@ -1,6 +1,4 @@
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
-import { CameraRegistrationError } from '../../errors.js';
+import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
@@ -19,8 +17,8 @@ export class CameraModel {
       console.log('getWirelessCameras - found wirelessCameras: ', JSON.stringify(wirelessCameras));
       return wirelessCameras;
     } catch (err) {
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err); /* error is uncontrolled, so throw new ApolloError */
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -63,9 +61,8 @@ export class CameraModel {
         }
       }
 
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -134,9 +131,8 @@ export class CameraModel {
         }
       }
 
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -203,9 +199,9 @@ export class CameraModel {
           await CameraModel.registerCamera({ cameraId: op.info.cameraId }, context);
         }
       }
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }

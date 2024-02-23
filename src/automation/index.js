@@ -1,4 +1,4 @@
-import { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../api/errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import {
   buildCatConfig,
@@ -31,7 +31,7 @@ const executeRule = {
         }));
       }
     } catch (err) {
-      throw new ApolloError(err);
+      throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }
   },
 
@@ -39,7 +39,7 @@ const executeRule = {
     try {
       return await sendEmail(rule, payload.image, context);
     } catch (err) {
-      throw new ApolloError(err);
+      throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }
   }
 };
@@ -55,7 +55,7 @@ const handleEvent = async (payload, context) => {
     )));
 
   } catch (err) {
-    throw new ApolloError(err);
+      throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 };
 

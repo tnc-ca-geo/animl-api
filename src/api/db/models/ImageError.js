@@ -1,5 +1,4 @@
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
+import GraphQLError, { InternalServerError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';
@@ -55,9 +54,8 @@ export class ImageErrorModel {
         previous: input.previous
       });
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -93,9 +91,8 @@ export class ImageErrorModel {
         created: imageerr.created
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -119,9 +116,8 @@ export class ImageErrorModel {
 
       return { message: 'Cleared' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -162,9 +158,8 @@ export class ImageErrorModel {
       };
 
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }

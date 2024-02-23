@@ -1,8 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
+import GraphQLError, { InternalServerError, NotFoundError } from '../../errors.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
-import { NotFoundError } from '../../errors.js';
 import { randomUUID } from 'node:crypto';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -43,9 +41,8 @@ export class BatchModel {
 
       return result;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -59,9 +56,8 @@ export class BatchModel {
 
       return batch;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -121,8 +117,8 @@ export class BatchModel {
 
     try {
       const batch = await operation({ _id: input.batch });
-      if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
-      if (batch.stoppingInitiated) throw new ApolloError('Stack is already scheduled for deletion');
+      if (batch.processingEnd) throw new NotFoundError('Stack has already terminated');
+      if (batch.stoppingInitiated) throw new NotFoundError('Stack is already scheduled for deletion');
 
       batch.stoppingInitiated = DateTime.now();
       await batch.save();
@@ -139,10 +135,8 @@ export class BatchModel {
 
       return { message: 'Batch Scheduled for Deletion' };
     } catch (err) {
-      console.error(err);
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -153,7 +147,7 @@ export class BatchModel {
 
         // Ensure the batch actually exists
         const batch = await BatchModel.queryById(input.batch);
-        if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
+        if (batch.processingEnd) throw new NotFoundError('Stack has already terminated');
 
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
@@ -172,10 +166,8 @@ export class BatchModel {
 
       return { message: 'Batch Redrive Initiated' };
     } catch (err) {
-      console.error(err);
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -198,10 +190,8 @@ export class BatchModel {
     try {
       return await operation(input);
     } catch (err) {
-      console.error(err);
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -217,9 +207,8 @@ export class BatchModel {
 
       return { message: 'Upload Closed' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -276,9 +265,8 @@ export class BatchModel {
 
       return res;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }

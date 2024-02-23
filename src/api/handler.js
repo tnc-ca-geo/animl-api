@@ -1,7 +1,6 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
-import { AuthenticationError } from 'apollo-server-errors';
-import { formatError } from './errors.js';
+import { formatError, AuthenticationError } from './errors.js';
 import AuthedProjectModel from './db/models/Project.js';
 import AuthedUserModel from './db/models/User.js';
 import AuthedImageModel from './db/models/Image.js';
@@ -58,6 +57,7 @@ const context = async ({ event, context }) => {
 
 const srv = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
+  status400ForVariableCoercionErrors: true,
   typeDefs,
   resolvers,
   context,

@@ -1,94 +1,124 @@
-import {
-  ApolloError,
-  formatApolloErrors,
-  toApolloError
-} from 'apollo-server-errors';
 import { GraphQLError } from 'graphql/error/GraphQLError.js';
+
+export default GraphQLError;
 
 // Apollo errors docs:
 // https://www.apollographql.com/docs/apollo-server/data/errors/
 
-// good blog post:
-// https://tomek.fojtuch.com/blog/error-handling-with-apollo-server/
-
-export class NotFoundError extends ApolloError {
-  constructor(message) {
-    super(message, 'NOT_FOUND');
-    Object.defineProperty(this, 'name', { value: 'NotFoundError' });
-  }
+export class InternalServerError extends GraphQLError {
+    constructor(message = 'InternalServerError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'INTERNAL_SERVER_ERROR',
+                ...properties
+            }
+        })
+    }
 }
 
-export class DuplicateError extends ApolloError {
-  constructor(message) {
-    super(message, 'DUPLICATE_IMAGE');
-    Object.defineProperty(this, 'name', { value: 'DuplicateError' });
-  }
+export class AuthenticationError extends GraphQLError {
+    constructor(message = 'AuthenticationError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'AUTHENTICATION_ERROR',
+                ...properties
+            }
+        })
+    }
 }
 
-export class DuplicateLabelError extends ApolloError {
-  constructor(message) {
-    super(message, 'DUPLICATE_LABEL');
-    Object.defineProperty(this, 'name', { value: 'DuplicateLabelError' });
-  }
+export class ForbiddenError extends GraphQLError {
+    constructor(message = 'ForbiddenError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'FORBIDDEN',
+                ...properties
+            }
+        })
+    }
 }
 
-export class DBValidationError extends ApolloError {
-  constructor(message) {
-    super(message, 'DB_VALIDATION_FAILED');
-    Object.defineProperty(this, 'name', { value: 'DBValidationError' });
-  }
+export class NotFoundError extends GraphQLError {
+    constructor(message = 'NotFound', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'NOT_FOUND',
+                ...properties
+            }
+        })
+    }
 }
 
-export class DeleteLabelError extends ApolloError {
-  constructor(message) {
-    super(message, 'DELETE_LABEL_FAILED');
-    Object.defineProperty(this, 'name', { value: 'DeleteLabelError' });
-  }
+export class DuplicateImageError extends GraphQLError {
+    constructor(message = 'DuplicateImageError', properties = {}) {
+        super(message,  {
+            extensions: {
+                code: 'DUPLICATE_IMAGE',
+                ...properties
+            }
+        })
+    }
 }
 
-// NOTE: use "properties" in constructor to return additional
-// custom error details in response
-export class CameraRegistrationError extends ApolloError {
-  constructor(message, properties) {
-    super(message, 'CAMERA_REGISTRATION_ERROR', properties);
-    Object.defineProperty(this, 'name', { value: 'CameraRegistrationError' });
-  }
+export class DuplicateLabelError extends GraphQLError {
+    constructor(message = 'DuplicateLabelError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'DUPLICATE_LABEL',
+                ...properties
+            }
+        })
+    }
 }
 
-export function formatError (err) {
-
-  /*
-   * NOTE: The goal here is to coerce all Errors into ApolloErrors
-   * with proper error codes before they're returned to the client.
-   * This probably won't be necessary with the next update of graphql-yoga
-   * if they upgrade to apollo-server 2.0 under the hood.
-   *
-   * If err is an instance of a GraphQLError, it is either:
-   * (a) an ApolloError we intentionally threw somewhere in the code, or
-   * (b) a GraphQLError thrown by graphql-yoga in the parse or validation phase
-   * we can use formatApolloErrors() to format either case.
-   * If the err is not a GraphQLError, that means something unexpected happened,
-   * but we can convert it to an ApolloError and give it the generic code:
-   * INTERNAL_SERVER_ERROR with toApolloError().
-   */
-
-  const error = (err instanceof GraphQLError)
-    ? formatApolloErrors([err])[0]
-    : toApolloError(err);
-
-  if (
-    error.extensions &&
-      (error.message.startsWith('Variable "') ||
-        error.message.startsWith('Cannot query field') ||
-          error.extensions.code === 'GRAPHQL_VALIDATION_FAILED')
-  ) {
-    error.extensions.code = 'GRAPHQL_VALIDATION_FAILED';
-  }
-
-  // TODO: mask unexpected errors (upgrading to graphql-yoga 2.x would do
-  // this automatically)
-  // https://www.graphql-yoga.com/docs/features/error-masking
-  // https://www.apollographql.com/docs/apollo-server/data/errors/#omitting-or-including-stacktrace
-
-  return error;
+export class DBValidationError extends GraphQLError {
+    constructor(message = 'DBValidationError', properties = {}) {
+        super(message, {
+            extensions: {
+                 code: 'DB_VALIDATION_FAILED',
+                ...properties
+            }
+        });
+    }
 }
+
+export class DeleteLabelError extends GraphQLError {
+    constructor(message = 'DeleteLabelError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'DELETE_LABEL_FAILED',
+                ...properties
+            }
+        })
+    }
+}
+
+export class CameraRegistrationError extends GraphQLError {
+    constructor(message = 'CameraRegistrationError', properties = {}) {
+        super(message, {
+            extensions: {
+                code: 'CAMERA_REGISTRATION_ERROR',
+                ...properties
+            }
+        });
+    }
+}
+
+export function formatError(err) {
+    /*
+     * NOTE: The goal here is to coerce all Errors into GraphQLErrors
+     * with proper error codes before they're returned to the client.
+     *
+     * If err is an instance of a GraphQLError, it is likely a GraphQLError
+     * thrown in the parse or validation phase or one intentionally thrown
+     *
+     * If the err is not a GraphQLError, that means something unexpected happened,
+     * but we can convert it to an GraphQLError and give it the generic code INTERNAL_SERVER_ERROR
+     */
+    if (err instanceof GraphQLError) {
+        return err;
+    } else {
+        return new InternalServerError(err instanceof Error ? err.message : String(err))
+    }
+}
+

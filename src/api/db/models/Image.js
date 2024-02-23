@@ -2,11 +2,7 @@ import { text } from 'node:stream/consumers';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
-import { DuplicateError, DuplicateLabelError, DBValidationError } from '../../errors.js';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { DuplicateError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
+import GraphQLError, { ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -78,9 +74,8 @@ export class ImageModel {
 
       return image;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -97,9 +92,8 @@ export class ImageModel {
       // console.log('res: ', JSON.stringify(result));
       return result;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -111,16 +105,15 @@ export class ImageModel {
 
       const errors = res
         .filter((r) => { return r.status === 'rejected'; })
-        .map((r) => { return r.reason; }); // Will always be an ApolloError
+        .map((r) => { return r.reason; }); // Will always be a GraphQLError
 
       return {
         message: 'Images Deleted',
         errors
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -144,9 +137,8 @@ export class ImageModel {
 
       return { message: 'Image Deleted' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -195,7 +187,7 @@ export class ImageModel {
         }
 
       } catch (err) {
-        throw new ApolloError(err);
+        throw new InternalServerError(err instanceof Error ? err.message : String(err));
       }
 
       // 2. validate metadata and create Image record
@@ -310,16 +302,15 @@ export class ImageModel {
       });
       await imageError.save();
 
-      if (err instanceof ApolloError) {
+      if (err instanceof GraphQLError) {
         throw err;
-      }
-      else if (msg.includes('duplicate')) {
-        throw new DuplicateError(err);
-      }
-      else if (msg.includes('validation')) {
+      } else if (msg.includes('duplicate')) {
+        throw new DuplicateImageError(err);
+      } else if (msg.includes('validation')) {
         throw new DBValidationError(err);
+      } else {
+          throw new InternalServerError(err);
       }
-      throw new ApolloError(err);
     }
   }
 
@@ -340,9 +331,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -363,9 +353,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -382,9 +371,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -423,9 +411,8 @@ export class ImageModel {
       console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -463,9 +450,8 @@ export class ImageModel {
       console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -489,9 +475,8 @@ export class ImageModel {
       console.log('ImageModel.deleteObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -571,10 +556,9 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
       console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -632,10 +616,9 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
       console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -673,9 +656,8 @@ export class ImageModel {
       console.log('ImageModel.updateLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -760,9 +742,8 @@ export class ImageModel {
       console.log('ImageModel.deleteLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -831,9 +812,8 @@ export class ImageModel {
       };
 
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -868,9 +848,8 @@ export class ImageModel {
       };
 
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -887,9 +866,8 @@ export class ImageModel {
       const objectText = await text(Body);
       return JSON.parse(objectText);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }

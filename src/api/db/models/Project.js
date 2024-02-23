@@ -1,8 +1,5 @@
 import mongoose from 'mongoose';
-import { GraphQLError } from 'graphql';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { NotFoundError, DeleteLabelError } from '../../errors.js';
+import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -31,9 +28,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -53,9 +49,8 @@ export class ProjectModel {
       const projects = await Project.find(query);
       return projects;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -71,16 +66,16 @@ export class ProjectModel {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
-      throw new ApolloError('Projects must be created by an authenticated user');
+      throw new AuthenticationError('Projects must be created by an authenticated user');
     }
 
-    if (!input.availableMLModels.length) throw new ApolloError('At least 1 MLModel must be enabled for a project');
+    if (!input.availableMLModels.length) throw new DBValidationError('At least 1 MLModel must be enabled for a project');
     const models = (await MLModelModel.getMLModels({
       _ids: input.availableMLModels
     })).map((model) => { return model._id; });
 
     for (const m of input.availableMLModels) {
-      if (!models.includes(m)) throw new ApolloError(`${m} is not a valid model identifier`);
+      if (!models.includes(m)) throw new DBValidationError(`${m} is not a valid model identifier`);
     }
 
     try {
@@ -107,9 +102,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -123,9 +117,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -183,9 +176,8 @@ export class ProjectModel {
     try {
       return await operation(input, context);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -213,9 +205,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -245,9 +236,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -275,9 +265,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -298,9 +287,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -355,9 +343,8 @@ export class ProjectModel {
     try {
       await operation({ projId, camConfig });
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -389,9 +376,8 @@ export class ProjectModel {
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -433,9 +419,8 @@ export class ProjectModel {
       }
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -469,9 +454,8 @@ export class ProjectModel {
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -481,7 +465,7 @@ export class ProjectModel {
 
       if (project.labels.filter((label) => {
         return label.name.toLowerCase() === input.name.toLowerCase();
-      }).length) throw new ApolloError('A label with that name already exists, avoid creating labels with duplicate names');
+      }).length) throw new DBValidationError('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
         name: input.name,
@@ -492,9 +476,8 @@ export class ProjectModel {
 
       return project.labels.pop();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -532,9 +515,8 @@ export class ProjectModel {
 
       return { message: 'Label Removed' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -543,7 +525,7 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
-      if (!label) throw new ApolloError('Label not found on project');
+      if (!label) throw new NotFound('Label not found on project');
 
       Object.assign(label, input);
 
@@ -551,9 +533,8 @@ export class ProjectModel {
 
       return label;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
