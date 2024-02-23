@@ -79,9 +79,9 @@ export class UserModel {
           throw new InternalServerError(err);
         }
       } else {
-          if (err instanceof GraphQLError) throw err;
-          throw new InternalServerError(err);
-        }
+        if (err instanceof GraphQLError) throw err;
+        throw new InternalServerError(err);
+      }
     }
   }
 

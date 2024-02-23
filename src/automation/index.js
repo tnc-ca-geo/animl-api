@@ -55,7 +55,7 @@ const handleEvent = async (payload, context) => {
     )));
 
   } catch (err) {
-      throw new InternalServerError(err instanceof Error ? err.message : String(err));
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 };
 

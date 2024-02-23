@@ -104,9 +104,9 @@ async function getConfig() {
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');
 
-        throw new GraphQLError(`invalid parameter(s) requested: ${invalParams}`, {
-            extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR, },
-        });
+      throw new GraphQLError(`invalid parameter(s) requested: ${invalParams}`, {
+        extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
+      });
     }
     const remoteConfig = formatSSMParams(ssmParams);
     const secretConfig = {
@@ -116,7 +116,7 @@ async function getConfig() {
     return { ...localConfig, ...remoteConfig, ...secretConfig };
   } catch (err) {
     throw new GraphQLError(err, {
-        extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR, },
+      extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
     });
   }
 }

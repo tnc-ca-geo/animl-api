@@ -1,4 +1,4 @@
-import GraphQLError, { InternalServerError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';

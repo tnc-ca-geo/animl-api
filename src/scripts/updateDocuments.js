@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../api/errors.js';
 import { DateTime } from 'luxon';
 import appRoot from 'app-root-path';
 import prompt from 'prompt';
@@ -38,7 +38,7 @@ async function createLogFile(collecton, _ids, operation) {
     });
     await fs.writeFileSync(fileName, data, 'utf8');
   } catch (err) {
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -68,11 +68,10 @@ async function updateDocuments() {
       console.log('res: ', res);
       if (res.nModified === matchCount) {
         await createLogFile('images', matchingImageIds, op);
-      }
-      else {
+      } else {
         const msg = `There was a discrepency between the number of matching
           documents and the number of modified documents`;
-        throw new ApolloError(msg);
+        throw new InternalServerError(msg);
       }
     }
 
@@ -80,7 +79,7 @@ async function updateDocuments() {
     process.exit(0);
   } catch (err) {
     dbClient.connection.close();
-    throw new ApolloError('An error occured while updating documents: ', err);
+    throw new InternalServerError('An error occured while updating documents: ' + (err instanceof Error ? err.message : String(err)));
   }
 }
 

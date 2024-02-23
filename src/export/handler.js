@@ -2,7 +2,7 @@ import ImageExport from './images.js';
 import ImageErrorExport from './image-errors.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
-import { ApolloError } from 'apollo-server-lambda';
+import { InternalServerError } from '../api/errors.js';
 
 async function handler(event) {
   if (!event.Records || !event.Records.length) return;
@@ -29,7 +29,7 @@ async function handler(event) {
       } else if (params.format === 'coco') {
         await dataExport.toCOCO();
       } else {
-        throw new ApolloError(`unsupported export format (${params.format})`);
+        throw new InternalServerError(`unsupported export format (${params.format})`);
       }
 
       await dataExport.success();

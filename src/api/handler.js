@@ -70,6 +70,6 @@ const server = new ApolloServer({
 });
 
 export const graphqlHandler = startServerAndCreateLambdaHandler(
-    server,
-    handlers.createAPIGatewayProxyEventV2RequestHandler(),
+  server,
+  handlers.createAPIGatewayProxyEventV2RequestHandler()
 );

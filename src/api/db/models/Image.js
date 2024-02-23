@@ -2,7 +2,7 @@ import { text } from 'node:stream/consumers';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
-import GraphQLError, { ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -309,7 +309,7 @@ export class ImageModel {
       } else if (msg.includes('validation')) {
         throw new DBValidationError(err);
       } else {
-          throw new InternalServerError(err);
+        throw new InternalServerError(err);
       }
     }
   }

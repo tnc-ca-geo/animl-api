@@ -525,7 +525,7 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
-      if (!label) throw new NotFound('Label not found on project');
+      if (!label) throw new NotFoundError('Label not found on project');
 
       Object.assign(label, input);
 
