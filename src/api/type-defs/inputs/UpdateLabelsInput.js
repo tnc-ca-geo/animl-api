@@ -4,9 +4,14 @@ export default `
     validation: ValidationInput
   }
 
-  input UpdateLabelInput {
+  input LabelUpdate {
     imageId: ID!
     objectId: ID!
     labelId: ID!
     diffs: LabelDiffsInput!
-}`;
+  }
+
+  input UpdateLabelsInput {
+    updates: [LabelUpdate]!
+  }
+`;

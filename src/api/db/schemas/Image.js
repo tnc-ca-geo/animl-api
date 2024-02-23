@@ -13,6 +13,12 @@ const Schema = mongoose.Schema;
  *    userSetData  - user configured EXIF data
  */
 
+const ImageCommentSchema = new Schema({
+  author: { type: String, required: true },
+  created: { type: Date, default: Date.now, required: true },
+  comment: { type: String, required: true }
+});
+
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
   bucket: { type: String, required: true },
@@ -35,7 +41,8 @@ const ImageSchema = new Schema({
   model: { type: String },
   location: { type: LocationSchema },
   triggerSource: { type: String },
-  objects: { type: [ObjectSchema] }
+  objects: { type: [ObjectSchema] },
+  comments: { type: [ImageCommentSchema] }
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);

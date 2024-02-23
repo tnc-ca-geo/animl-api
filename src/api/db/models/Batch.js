@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { ApolloServerErrorCode } from '@apollo/server/errors';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
+import { NotFoundError } from '../../errors.js';
 import { randomUUID } from 'node:crypto';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -52,6 +53,7 @@ export class BatchModel {
     const query = { _id };
     try {
       const batch = await Batch.findOne(query);
+      if (!batch) throw new NotFoundError('Batch not found');
 
       BatchModel.augmentBatch(batch);
 
@@ -119,8 +121,8 @@ export class BatchModel {
 
     try {
       const batch = await operation({ _id: input.batch });
-      if (batch.processingEnd) throw new Error('Stack has already terminated');
-      if (batch.stoppingInitiated) throw new Error('Stack is already scheduled for deletion');
+      if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
+      if (batch.stoppingInitiated) throw new ApolloError('Stack is already scheduled for deletion');
 
       batch.stoppingInitiated = DateTime.now();
       await batch.save();
@@ -151,7 +153,7 @@ export class BatchModel {
 
         // Ensure the batch actually exists
         const batch = await BatchModel.queryById(input.batch);
-        if (batch.processingEnd) throw new Error('Stack has already terminated');
+        if (batch.processingEnd) throw new ApolloError('Stack has already terminated');
 
         const sqs = new SQS.SQSClient({ region: process.env.REGION });
 
@@ -203,6 +205,24 @@ export class BatchModel {
     }
   }
 
+  static async closeUpload(input) {
+    try {
+      const s3 = new S3.S3Client();
+      await s3.send(new S3.CompleteMultipartUploadCommand({
+        Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+        Key: `${input.batchId}.zip`,
+        UploadId: input.multipartUploadId,
+        MultipartUpload: { Parts: input.parts }
+      }));
+
+      return { message: 'Upload Closed' };
+    } catch (err) {
+      // if error is uncontrolled, throw new ApolloError
+      if (err instanceof ApolloError) throw err;
+      throw new ApolloError(err);
+    }
+  }
+
   static async createUpload(input, context) {
     const operation = async (input) => {
       return await retry(async () => {
@@ -229,15 +249,32 @@ export class BatchModel {
       };
 
       const s3 = new S3.S3Client();
-      const put = new S3.PutObjectCommand(params);
 
-      const signedUrl = await getSignedUrl(s3, put);
-
-      return {
+      const res = {
         batch: batch._id,
-        user: context.user.sub,
-        url: signedUrl
+        user: context.user.sub
       };
+
+      if (input.partCount) {
+        const upload = await s3.send(new S3.CreateMultipartUploadCommand(params));
+        res.multipartUploadId = upload.UploadId;
+
+        const promises = [];
+        for (let index = 0; index < input.partCount; index++) {
+          promises.push(getSignedUrl(s3, new S3.UploadPartCommand({
+            Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+            Key: `${id}.zip`,
+            UploadId: upload.UploadId,
+            PartNumber: index + 1
+          }), { expiresIn: 86400 }));
+        }
+
+        res.urls = await Promise.all(promises);
+      } else {
+        res.url = await getSignedUrl(s3, new S3.PutObjectCommand(params), { expiresIn: 86400 });
+      }
+
+      return res;
     } catch (err) {
       // if error is uncontrolled, throw new ApolloError
       if (err instanceof ApolloError) throw err;
@@ -277,5 +314,10 @@ export default class AuthedBatchModel {
   async createUpload(input, context) {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
     return BatchModel.createUpload(input, context);
+  }
+
+  async closeUpload(input) {
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    return BatchModel.closeUpload(input);
   }
 }

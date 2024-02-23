@@ -3,4 +3,9 @@ export default `
     imageId: ID!
     objectId: ID!
     labelId: ID!
-}`;
+  }
+  
+  input DeleteLabelsInput {
+    labels: [DeleteLabelInput]!
+  }
+`;

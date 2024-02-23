@@ -3,6 +3,10 @@ const Query = {
     return await context.models.Project.getProjects(input, context);
   },
 
+  users: async (_, { input }, context) => {
+    return await context.models.User.listUsers(input, context);
+  },
+
   batches: async (_, { input }, context) => {
     const response = await context.models.Batch.queryByFilter(input, context);
     const { previous, hasPrevious, next, hasNext, results } = response;
@@ -52,13 +56,6 @@ const Query = {
   image: async (_, { input }, context) => {
     return await context.models.Image.queryById(input.imageId, context);
   },
-
-  // TODO: Now fetching labels as a field level resolver for Project, but we
-  // should reimplement this & call it when users create new label categories
-
-  // labels: async (_, __, context) => {
-  //   return await context.models.Image.getLabels();
-  // },
 
   wirelessCameras: async (_, { input }, context) => {
     return await context.models.Camera.getWirelessCameras(input, context);

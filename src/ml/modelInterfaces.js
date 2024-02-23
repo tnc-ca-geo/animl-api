@@ -1,5 +1,6 @@
 import { buildImgUrl } from '../api/db/models/utils.js';
 import SM from '@aws-sdk/client-sagemaker-runtime';
+import sharp from 'sharp';
 
 const _getImage = async (image, config) => {
   const url = 'http://' + buildImgUrl(image, config);
@@ -7,7 +8,14 @@ const _getImage = async (image, config) => {
   try {
     const res = await fetch(url);
     const body = await res.arrayBuffer();
-    return Buffer.from(body, 'binary');
+    let imgBuffer = Buffer.from(body, 'binary');
+
+    // resize image if it's over 2.8 MB
+    if (image.imageBytes > 2800000) {
+      imgBuffer = await sharp(imgBuffer).resize({ width: 3500 }).toBuffer();
+    }
+
+    return imgBuffer;
   } catch (err) {
     throw new Error(err);
   }
@@ -32,19 +40,14 @@ async function megadetector(params) {
     const formatedDets = detections.map((det) => ({
       mlModel: modelSource._id,
       mlModelVersion: modelSource.version,
-      type: 'ml',
       bbox: [det.y1, det.x1, det.y2, det.x2],
       conf: det.confidence,
-      category: catConfig.find((cat) => (
-        parseInt(cat._id) === parseInt(det.class)
-      )).name
+      labelId: catConfig.find((cat) => parseInt(cat._id) === parseInt(det.class))._id
     }));
 
     // filter out disabled detections & detections below confThreshold
     const filteredDets = formatedDets.filter((det) => {
-      const { disabled, confThreshold } = catConfig.find((cat) => (
-        cat.name === det.category
-      ));
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === det.labelId);
       return !disabled && det.conf >= confThreshold;
     });
 
@@ -53,9 +56,8 @@ async function megadetector(params) {
       filteredDets.push({
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
-        type: 'ml',
         bbox: [0, 0, 1, 1],
-        category: 'empty'
+        labelId: '0'
       });
     }
 
@@ -90,19 +92,18 @@ async function mirav2(params) {
     console.log(`mirav2 predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
-    Object.keys(predictions).forEach((category) => {
+    Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
-      const conf = predictions[category];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === category);
+      const conf = predictions[labelId];
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
           mlModelVersion: modelSource.version,
-          type: 'ml',
           bbox,
           conf,
-          category
+          labelId
         });
       }
     });
@@ -138,19 +139,18 @@ async function nzdoc(params) {
     console.log(`nzdoc predictions for image ${image._id}: ${body}`);
 
     const filteredDets = [];
-    Object.keys(predictions).forEach((category) => {
+    Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
-      const conf = predictions[category];
-      const { disabled, confThreshold } = catConfig.find((cat) => cat.name === category);
+      const conf = predictions[labelId];
+      const { disabled, confThreshold } = catConfig.find((cat) => cat._id === labelId);
       if (!disabled && conf >= confThreshold) {
         filteredDets.push({
           mlModel: modelSource._id,
           mlModelVersion: modelSource.version,
-          type: 'ml',
           bbox,
           conf,
-          category
+          labelId
         });
       }
     });

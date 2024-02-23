@@ -1,11 +1,28 @@
 export default `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
+    deleteImages(input: DeleteImagesInput!): StandardErrorPayload
+
+    createImageComment(input: CreateImageCommentInput!): ImageCommentsPayload
+    updateImageComment(input: UpdateImageCommentInput!): ImageCommentsPayload
+    deleteImageComment(input: DeleteImageCommentInput!): ImageCommentsPayload
+
+    createUser(input: CreateUserInput!): StandardPayload
+    updateUser(input: UpdateUserInput!): StandardPayload
 
     createUpload(input: CreateUploadInput!): CreateUploadPayload
+    closeUpload(input: CloseUploadInput!): StandardPayload
+
     updateBatch(input: UpdateBatchInput!): BatchPayload
     stopBatch(input: StopBatchInput!): StandardPayload
     redriveBatch(input: RedriveBatchInput!): StandardPayload
+
+    createProject(input: CreateProjectInput!): ProjectPayload
+    updateProject(input: UpdateProjectInput!): ProjectPayload
+
+    createProjectLabel(input: CreateProjectLabelInput!): ProjectLabelPayload
+    updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
+    deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
 
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
@@ -21,13 +38,15 @@ export default `
 
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
 
-    createObject(input: CreateObjectInput!): CreateObjectPayload
-    updateObject(input: UpdateObjectInput!): UpdateObjectPayload
-    deleteObject(input: DeleteObjectInput!): DeleteObjectPayload
+    createObjects(input: CreateObjectsInput!): CreateObjectsPayload
+    updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
+    deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
+
+    createInternalLabels(input: CreateInternalLabelsInput!): CreateLabelsPayload
 
     createLabels(input: CreateLabelsInput!): CreateLabelsPayload
-    updateLabel(input: UpdateLabelInput!): UpdateLabelPayload
-    deleteLabel(input: DeleteLabelInput!): DeleteLabelPayload
+    updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
+    deleteLabels(input: DeleteLabelsInput!): DeleteLabelsPayload
 
     createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
     updateDeployment(input: UpdateDeploymentInput!): UpdateDeploymentPayload

@@ -44,6 +44,7 @@ const localConfig = {
 let cachedSSMParams = null;
 
 const ssmNames = [
+  '/application/cognito/userPoolId',
   `/db/mongo-db-url-${process.env.STAGE}`,
   `/frontend/url-${process.env.STAGE}`,
   `/api/url-${process.env.STAGE}`,

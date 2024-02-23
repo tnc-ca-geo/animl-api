@@ -20,10 +20,7 @@ export default function(t) {
         };
       });
 
-      Parameters.push({
-        Name: '/EXPORTS/EXPORTED_DATA_BUCKET',
-        Value: 'example-bucket'
-      });
+      Parameters.push({ Name: '/EXPORTS/EXPORTED_DATA_BUCKET', Value: 'example-bucket' });
 
       return Promise.resolve({ Parameters, InvalidParameters: [] });
     } else {

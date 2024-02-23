@@ -1,4 +1,4 @@
 export default `
   type CreateLabelsPayload {
-    image: Image
+    isOk: Boolean!
   }`;

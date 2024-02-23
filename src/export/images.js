@@ -8,7 +8,6 @@ import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
 import { idMatch }  from '../api/db/models/utils.js';
-import { ImageModel } from '../api/db/models/Image.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
@@ -18,8 +17,6 @@ export default class ImageExport {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.user = { 'is_superuser': true };
-    this.projectModel = ProjectModel;
-    this.imageModel = ImageModel;
     this.projectId = projectId;
     this.documentId = documentId;
     this.filters = filters;
@@ -57,13 +54,14 @@ export default class ImageExport {
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
 
-      const [project] = await this.projectModel.getProjects(
+      const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
         { user: this.user }
       );
-      const { categories } = await this.imageModel.getLabels(this.projectId);
       this.project = project;
-      this.categories = categories;
+      this.categories = project.labels.map((l) => { return l.name; });
+      this.labelMap = new Map();
+      for (const l of project.labels) this.labelMap.set(l._id, l);
     } catch (err) {
       await this.error(err);
       throw new ApolloError('error initializing the export class');
@@ -348,7 +346,8 @@ export default class ImageExport {
       for (const obj of img.objects) {
         const firstValidLabel = this.findFirstValidLabel(obj);
         if (firstValidLabel) {
-          const cat = firstValidLabel.category;
+          console.error(firstValidLabel, this.labelMap);
+          const cat = this.labelMap.get(firstValidLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
       }
@@ -423,8 +422,9 @@ export default class ImageExport {
 
   createCOCOImg(img) {
     const deployment = this.getDeployment(img, this.project);
-    const deploymentNormalized = deployment.name.toLowerCase().replace("'", '').replace(' ', '_');
-    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id}.${img.fileTypeExtension}`;
+    const deploymentNormalized = deployment.name.toLowerCase().replaceAll("'", '').replaceAll(' ', '_');
+    // Note - replacing ":" in imageIds with "-" because colons are reserved characters in windows filesystems
+    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id.replace(':', '-')}.${img.fileTypeExtension}`;
     const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
     return {
       id: img._id,
@@ -442,7 +442,7 @@ export default class ImageExport {
     let anno;
     const firstValidLabel = this.findFirstValidLabel(object);
     if (firstValidLabel) {
-      const category = catMap.find((cat) => cat.name === firstValidLabel.category);
+      const category = catMap.find((cat) => cat.name === this.labelMap.get(firstValidLabel.labelId).name);
       anno = {
         id: object._id,  // id copied from the object, not the label
         image_id: img._id,

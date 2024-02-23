@@ -24,6 +24,21 @@ const Mutation = {
     return { ...res };
   },
 
+  closeUpload: async (_, { input }, context) => {
+    const res = await context.models.Batch.closeUpload(input);
+    return { ...res };
+  },
+
+  createUser: async (_, { input }, context) => {
+    const res = await context.models.User.createUser(input, context);
+    return { ...res };
+  },
+
+  updateUser: async (_, { input }, context) => {
+    const res = await context.models.User.updateUser(input, context);
+    return { ...res };
+  },
+
   updateBatch: async (_, { input }, context) => {
     const batch = await context.models.Batch.updateBatch(input, context);
     return { batch };
@@ -39,9 +54,29 @@ const Mutation = {
     return { ...res };
   },
 
+  deleteImageComment: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteComment(input, context);
+    return { ...res };
+  },
+
+  updateImageComment: async (_, { input }, context) => {
+    const res = await context.models.Image.updateComment(input, context);
+    return { ...res };
+  },
+
+  createImageComment: async (_, { input }, context) => {
+    const res = await context.models.Image.createComment(input, context);
+    return { ...res };
+  },
+
   createImage: async (_, { input }, context) => {
     const imageAttempt = await context.models.Image.createImage(input, context);
     return { imageAttempt };
+  },
+
+  deleteImages: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteImages(input, context);
+    return { ...res };
   },
 
   registerCamera: async (_, { input }, context) => {
@@ -51,6 +86,31 @@ const Mutation = {
 
   unregisterCamera: async (_, { input }, context) => {
     const res = await context.models.Camera.unregisterCamera(input, context);
+    return { ...res };
+  },
+
+  createProject: async (_, { input }, context) => {
+    const project = await context.models.Project.createProject(input, context);
+    return { project };
+  },
+
+  updateProject: async (_, { input }, context) => {
+    const project = await context.models.Project.updateProject(input, context);
+    return { project };
+  },
+
+  createProjectLabel: async (_, { input }, context) => {
+    const label = await context.models.Project.createLabel(input, context);
+    return { label };
+  },
+
+  updateProjectLabel: async (_, { input }, context) => {
+    const label = await context.models.Project.updateLabel(input, context);
+    return { label };
+  },
+
+  deleteProjectLabel: async (_, { input }, context) => {
+    const res = await context.models.Project.deleteLabel(input, context);
     return { ...res };
   },
 
@@ -85,43 +145,43 @@ const Mutation = {
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const cameraConfig = context.models.Project.deleteDeployment(input, context);
+    const cameraConfig = await context.models.Project.deleteDeployment(input, context);
     return { cameraConfig };
   },
 
-  // updateObjects: async (_, { input }, context) => {
-  //   const image = await context.models.Image.updateObjects(input);
-  //   return { image: image };
-  // },
-
-  createObject: async (_, { input }, context) => {
-    const image = await context.models.Image.createObject(input, context);
-    return { image };
+  createObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.createObjects(input, context);
+    return { isOk: res.ok };
   },
 
-  updateObject: async (_, { input }, context) => {
-    const image = await context.models.Image.updateObject(input, context);
-    return { image };
+  updateObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.updateObjects(input, context);
+    return { isOk: res.ok };
   },
 
-  deleteObject: async (_, { input }, context) => {
-    const image = await context.models.Image.deleteObject(input, context);
-    return { image };
+  deleteObjects: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteObjects(input, context);
+    return { isOk: res.ok };
+  },
+
+  createInternalLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.createInternalLabels(input, context);
+    return { isOk: res.ok };
   },
 
   createLabels: async (_, { input }, context) => {
-    const image = await context.models.Image.createLabels(input, context);
-    return { image };
+    const res = await context.models.Image.createLabels(input, context);
+    return { isOk: res.ok };
   },
 
-  updateLabel: async (_, { input }, context) => {
-    const image = await context.models.Image.updateLabel(input, context);
-    return { image };
+  updateLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.updateLabels(input, context);
+    return { isOk: res.ok };
   },
 
-  deleteLabel: async (_, { input }, context) => {
-    const image = context.models.Image.deleteLabel(input, context);
-    return { image };
+  deleteLabels: async (_, { input }, context) => {
+    const res = await context.models.Image.deleteLabels(input, context);
+    return { isOk: res.ok };
   }
 
 };

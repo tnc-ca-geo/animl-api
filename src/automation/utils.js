@@ -40,13 +40,20 @@ const buildCatConfig = (modelSource, rule) => {
 //   return res.length > 0;
 // };
 
-const ruleApplies = (rule, event, label) => {
+const ruleApplies = (rule, event, label, project) => {
+  // TODO: check whether this rule has already been run on this image
+
   if (rule.event.type === event) {
-    // TODO: check whether this rule has already been run on this image
-    if ((rule.event.type === 'label-added' &&
-        rule.event.label === label.category) ||
-        rule.event.type === 'image-added') {
-      return true;
+    if (rule.event.type === 'image-added') { return true; }
+    if (rule.event.type === 'label-added') {
+
+      const projectLabel = project.labels.find((pl) => {
+        return pl._id.toString() === label.labelId.toString();
+      });
+
+      if (rule.event.label.toLowerCase() === projectLabel?.name.toLowerCase()) {
+        return true;
+      }
     }
   }
   return false;
@@ -55,27 +62,7 @@ const ruleApplies = (rule, event, label) => {
 const buildCallstack = async (payload, context) => {
   const { event, image, label } = payload;
   const [project] = await context.models.Project.getProjects({ _ids: [image.projectId] }, context);
-
-  // let callstack = [];
-  // for (const view of project.views) {
-  //   const imageIncInView = await includedInView(image, view, project._id);
-  //   if (imageIncInView && view.automationRules.length > 0) {
-  //     view.automationRules
-  //       .filter((rule) => ruleApplies(rule, event, label))
-  //       .forEach((rule) => callstack.push(rule));
-  //   }
-  // }
-
-  // remove dupes
-  // BUG: this no longer works, b/c automation rules have unique _id fields,
-  // the name fields for automation rule might differ, and category configs
-  // nested documents also have their own _id fields. I think the ultimate
-  // solution will be to move automation rules from the view level to the
-  // project level: https://github.com/tnc-ca-geo/animl-api/issues/50
-  // callstack = _.uniqWith(callstack, _.isEqual);
-
-  const callstack = project.automationRules.filter((rule) => ruleApplies(rule, event, label));
-
+  const callstack = project.automationRules.filter((rule) => ruleApplies(rule, event, label, project));
   return callstack;
 };
 
