@@ -55,7 +55,7 @@ const context = async ({ event, context }) => {
   };
 };
 
-const server = new ApolloServer({
+const apolloserver = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
   typeDefs,
@@ -69,7 +69,7 @@ const server = new ApolloServer({
   }
 });
 
-export const graphqlHandler = startServerAndCreateLambdaHandler(
-  server,
+export const server = startServerAndCreateLambdaHandler(
+  apolloserver,
   handlers.createAPIGatewayProxyEventV2RequestHandler()
 );
