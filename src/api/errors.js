@@ -7,6 +7,7 @@ export default GraphQLError;
 
 export class InternalServerError extends GraphQLError {
   constructor(message = 'InternalServerError', properties = {}) {
+    console.error(new Error(message));
     super(message, {
       extensions: {
         code: 'INTERNAL_SERVER_ERROR',
