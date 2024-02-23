@@ -55,7 +55,7 @@ const context = async ({ event, context }) => {
   };
 };
 
-const srv = new ApolloServer({
+const server = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
   typeDefs,
@@ -68,8 +68,6 @@ const srv = new ApolloServer({
     formatError
   }
 });
-
-const server = srv.createHandler();
 
 export const graphqlHandler = startServerAndCreateLambdaHandler(
     server,
