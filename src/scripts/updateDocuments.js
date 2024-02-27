@@ -70,7 +70,7 @@ async function updateDocuments() {
         await createLogFile('images', matchingImageIds, op);
       }
       else {
-        const msg = `There was a discrepency between the number of matching
+        const msg = `There was a discrepancy between the number of matching
           documents and the number of modified documents`;
         throw new ApolloError(msg);
       }
@@ -80,7 +80,7 @@ async function updateDocuments() {
     process.exit(0);
   } catch (err) {
     dbClient.connection.close();
-    throw new ApolloError('An error occured while updating documents: ', err);
+    throw new ApolloError('An error occurred while updating documents: ', err);
   }
 }
 

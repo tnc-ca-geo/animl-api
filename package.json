@@ -20,6 +20,9 @@
         "create-project": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/createProject.js",
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
+        "import-wi-labels": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/importWILabels.js",
+        "import-wi-labels-dev": "STAGE=dev npm run import-wi-labels",
+        "import-wi-labels-prod": "STAGE=prod npm run import-wi-labels",
         "test": "tape test/**.test.js",
         "lint": "eslint src/ test/"
     },
