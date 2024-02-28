@@ -23,9 +23,23 @@ const resolvers = {
   ...Scalars
 };
 
-const authMiddleware = async (resolve, parent, args, context, info) => {
-  if (!context.user) throw new AuthenticationError('Authentication failed');
-  return await resolve(parent, args, context, info);
+const corsMiddleware = async (event) => {
+    return result => {
+        result.headers = {
+            ...result.headers,
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "POST, GET",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        };
+
+        if (event.requestContext.http.method === "OPTIONS") {
+            result.body = undefined;
+            result.statusCode = 204;
+        }
+
+        return Promise.resolve();
+    };
 };
 
 const context = async ({ event, context }) => {
@@ -62,16 +76,14 @@ const apolloserver = new ApolloServer({
   resolvers,
   csrfPrevention: true,
   cache: 'bounded',
-  middlewares: [authMiddleware],
-  options: {
-    formatError
-  }
+  formatError
 });
 
 export const server = startServerAndCreateLambdaHandler(
   apolloserver,
   handlers.createAPIGatewayProxyEventRequestHandler(),
   {
+    middleware: [corsMiddleware],
     context
   }
 );
