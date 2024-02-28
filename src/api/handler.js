@@ -27,16 +27,11 @@ const corsMiddleware = async (event) => {
     return result => {
         result.headers = {
             ...result.headers,
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Methods": "POST, GET",
+            "Access-Control-Allow-Origin": '*',
+            "Access-Control-Allow-Methods": "POST",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",
         };
-
-        if (event.requestContext.http.method === "OPTIONS") {
-            result.body = undefined;
-            result.statusCode = 204;
-        }
 
         return Promise.resolve();
     };
