@@ -60,7 +60,6 @@ const apolloserver = new ApolloServer({
   status400ForVariableCoercionErrors: true,
   typeDefs,
   resolvers,
-  context,
   csrfPrevention: true,
   cache: 'bounded',
   middlewares: [authMiddleware],
@@ -71,5 +70,8 @@ const apolloserver = new ApolloServer({
 
 export const server = startServerAndCreateLambdaHandler(
   apolloserver,
-  handlers.createAPIGatewayProxyEventRequestHandler()
+  handlers.createAPIGatewayProxyEventRequestHandler(),
+  {
+    context
+  }
 );
