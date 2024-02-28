@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import Image from '../schemas/Image.js';
+import Project from '../schemas/Project.js';
 import ImageError from '../schemas/ImageError.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
@@ -510,12 +511,27 @@ export class ImageModel {
 
         // Check if Label Exists on Project and if not, add it
         if (!project.labels.some((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); })) {
-          project.labels.push({
-            _id: labelRecord.labelId,
-            name: labelRecord.labelId,
-            color: modelLabel.color
-          });
-          await project.save();
+          await Project.findOneAndUpdate({
+            _id: image.projectId
+          }, [
+            { $addFields: { labelIds : '$labels._id' } },
+            {
+              $set: {
+                labels: {
+                  $cond: {
+                    if: { $in: [labelRecord.labelId, '$labelIds'] },
+                    then: '$labels',
+                    else: { $concatArrays: ['$labels', [{
+                      _id: labelRecord.labelId,
+                      name: modelLabel.name,
+                      color: modelLabel.color
+                    }]] }
+                  }
+                }
+              }
+            }
+          ], { returnDocument: 'after' });
+
         } else {
           const [label] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); });
           labelRecord.labelId = label._id;
