@@ -1,6 +1,6 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
-import { formatError, AuthenticationError } from './errors.js';
+import { formatError } from './errors.js';
 import AuthedProjectModel from './db/models/Project.js';
 import AuthedUserModel from './db/models/User.js';
 import AuthedImageModel from './db/models/Image.js';
@@ -23,18 +23,18 @@ const resolvers = {
   ...Scalars
 };
 
-const corsMiddleware = async (event) => {
-    return result => {
-        result.headers = {
-            ...result.headers,
-            "Access-Control-Allow-Origin": '*',
-            "Access-Control-Allow-Methods": "POST",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        };
-
-        return Promise.resolve();
+const corsMiddleware = async () => {
+  return (result) => {
+    result.headers = {
+      ...result.headers,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Credentials': 'true'
     };
+
+    return Promise.resolve();
+  };
 };
 
 const context = async ({ event, context }) => {
