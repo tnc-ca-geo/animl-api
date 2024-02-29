@@ -541,6 +541,7 @@ export class ProjectModel {
 
 export default class AuthedProjectModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 

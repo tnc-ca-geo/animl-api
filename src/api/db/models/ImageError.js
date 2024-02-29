@@ -1,4 +1,4 @@
-import GraphQLError, { InternalServerError, ForbiddenError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import crypto from 'node:crypto';
@@ -166,6 +166,7 @@ export class ImageErrorModel {
 
 export default class AuthedImageErrorModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 

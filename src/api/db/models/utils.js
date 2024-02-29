@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
-import { ForbiddenError, DuplicateLabelError, NotFoundError } from '../../errors.js';
+import { ForbiddenError, DuplicateLabelError, NotFoundError, AuthenticationError } from '../../errors.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 

@@ -1,4 +1,4 @@
-import GraphQLError, { InternalServerError, ForbiddenError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
@@ -72,6 +72,7 @@ export class BatchErrorModel {
 
 export default class AuthedBatchErrorModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 

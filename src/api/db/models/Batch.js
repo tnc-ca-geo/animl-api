@@ -1,4 +1,4 @@
-import GraphQLError, { InternalServerError, NotFoundError, ForbiddenError } from '../../errors.js';
+import GraphQLError, { InternalServerError, NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import { randomUUID } from 'node:crypto';
@@ -273,6 +273,7 @@ export class BatchModel {
 
 export default class AuthedBatchModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 

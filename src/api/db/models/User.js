@@ -1,5 +1,5 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
-import GraphQLError, { InternalServerError, ForbiddenError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { hasRole } from './utils.js';
 
@@ -210,6 +210,7 @@ export class UserModel {
 
 export default class AuthedUserModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
