@@ -1,4 +1,5 @@
 import GraphQLError, { InternalServerError, NotFoundError, AuthenticationError } from '../../errors.js';
+import { User } from '../../auth/authorization.js';
 import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
@@ -49,7 +50,9 @@ export class MLModelModel {
 }
 
 export default class AuthMLModelModel {
-  constructor(user) {
+  user: User;
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }

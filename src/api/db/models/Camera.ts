@@ -1,4 +1,5 @@
 import GraphQLError, { InternalServerError, CameraRegistrationError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { User } from '../../auth/authorization.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
@@ -207,7 +208,9 @@ export class CameraModel {
 }
 
 export default class AuthedCameraModel {
-  constructor(user) {
+  user: User;
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }

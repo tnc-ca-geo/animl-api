@@ -1,4 +1,5 @@
 import { text } from 'node:stream/consumers';
+import { User } from '../../auth/authorization.js';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
@@ -889,7 +890,9 @@ export class ImageModel {
 }
 
 export default class AuthedImageModel {
-  constructor(user) {
+  user: User;
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }

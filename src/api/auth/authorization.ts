@@ -2,7 +2,18 @@ import jwt from 'jwt-simple';
 
 const BEARER_TOKEN_PATTERN = /^Bearer [-_=.0-9a-zA-Z]+$/i;
 
-async function getUserInfo(req, config) {
+export type User = {
+    aud: string;
+    is_superuser: boolean;
+    curr_project?: string;
+    projects?: Record<string, {
+        roles: Array<string>
+    }>,
+    curr_project_roles?: Array<string>;
+    'cognito:groups'?: Array<string>;
+};
+
+export async function getUserInfo(req, config): Promise<User> {
   const token = req.headers.Authorization || req.headers.authorization;
   const api_key = req.headers['x-api-key'];
 
@@ -59,7 +70,3 @@ async function getUserInfo(req, config) {
   return user;
 
 }
-
-export {
-  getUserInfo
-};

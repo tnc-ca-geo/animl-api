@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { User } from '../../auth/authorization.js';
 import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
@@ -540,7 +541,9 @@ export class ProjectModel {
 }
 
 export default class AuthedProjectModel {
-  constructor(user) {
+  user: User;
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }

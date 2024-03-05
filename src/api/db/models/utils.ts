@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import _ from 'lodash';
+import { User } from '../../auth/authorization.js';
 import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
@@ -445,7 +446,7 @@ export function createLabelRecord(input, authorId) {
 }
 
 // TODO: consider calling this isAuthorized() ?
-export function hasRole(user, targetRoles = []) {
+export function hasRole(user: User, targetRoles = []) {
   const hasAuthorizedRole = user['curr_project_roles'] &&
     user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
   return user['is_superuser'] || hasAuthorizedRole;
