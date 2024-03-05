@@ -215,23 +215,23 @@ export default class AuthedUserModel {
   }
 
   async createGroups(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
 
     return await UserModel.createGroups(input, context);
   }
 
   async createUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.create(input, context);
   }
 
   async listUsers(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.list(input, context);
   }
 
   async updateUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
 
     return await UserModel.update(input, context);
   }

@@ -286,27 +286,27 @@ export default class AuthedBatchModel {
   }
 
   async stopBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.stopBatch(input);
   }
 
   async redriveBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.redriveBatch(input);
   }
 
   async updateBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.updateBatch(input);
   }
 
   async createUpload(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return BatchModel.createUpload(input, context);
   }
 
   async closeUpload(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return BatchModel.closeUpload(input);
   }
 }

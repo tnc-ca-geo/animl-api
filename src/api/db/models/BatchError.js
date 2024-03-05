@@ -77,12 +77,12 @@ export default class AuthedBatchErrorModel {
   }
 
   async createError(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.createError(input);
   }
 
   async clearErrors(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.clearErrors(input);
   }
 }

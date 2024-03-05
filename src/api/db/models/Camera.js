@@ -221,13 +221,13 @@ export default class AuthedCameraModel {
   }
 
   async registerCamera(input, context) {
-    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError();
 
     return await CameraModel.registerCamera(input, context);
   }
 
   async unregisterCamera(input, context) {
-    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError();
     return await CameraModel.unregisterCamera(input, context);
   }
 }

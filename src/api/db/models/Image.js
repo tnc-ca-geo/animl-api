@@ -907,67 +907,67 @@ export default class AuthedImageModel {
   }
 
   async createComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createComment(input, context);
   }
 
   async updateComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateComment(input, context);
   }
 
   async deleteComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteComment(input, context);
   }
 
   async deleteImage(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteImage(input, context);
   }
 
   async deleteImages(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteImages(input, context);
   }
 
   async createImage(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.createImage(input, context);
   }
 
   async createObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createObjects(input, context);
   }
 
   async updateObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateObjects(input, context);
   }
 
   async deleteObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteObjects(input, context);
   }
 
   async createInternalLabels(input, context) {
-    if (!this.user.is_superuser) throw new ForbiddenError;
+    if (!this.user.is_superuser) throw new ForbiddenError();
     return await ImageModel.createInternalLabels(input, context);
   }
 
   async createLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createLabels(input, context);
   }
 
   async updateLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateLabels(input, context);
   }
 
   async deleteLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteLabels(input, context);
   }
 
@@ -976,12 +976,12 @@ export default class AuthedImageModel {
   }
 
   async export(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.export(input, context);
   }
 
   async getExportStatus(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.getExportStatus(input, context);
   }
 
