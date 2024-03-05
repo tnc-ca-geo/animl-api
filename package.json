@@ -6,7 +6,8 @@
     "main": "src/handler.js",
     "scripts": {
         "start": "serverless offline",
-        "build": "tsc",
+        "generate": "graphql-codegen --config codegen.yml",
+        "build": "npm run generate && tsc",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
@@ -61,6 +62,9 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
+        "@graphql-codegen/cli": "^5.0.2",
+        "@graphql-codegen/typescript": "^4.0.6",
+        "@graphql-codegen/typescript-resolvers": "^4.0.6",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",

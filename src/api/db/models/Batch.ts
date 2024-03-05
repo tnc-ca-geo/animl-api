@@ -13,12 +13,13 @@ import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
+import { PipelineStage } from 'mongoose';
 
 export class BatchModel {
   static async queryByFilter(input, context) {
 
     try {
-      const pipeline = [
+      const pipeline: PipelineStage[] = [
         { '$match': { 'user': context.user.sub } },
         { '$match': { 'projectId': context.user['curr_project'] } }
       ];

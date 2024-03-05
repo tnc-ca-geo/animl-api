@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Mongoose } from 'mongoose';
 import { InternalServerError } from '../errors.js';
 
 // TODO: consider using multiple connections (one per model)
@@ -8,7 +8,7 @@ import { InternalServerError } from '../errors.js';
 
 let cachedConnectionPromise = null;
 
-async function connectToDatabase(config) {
+export async function connectToDatabase(config): Promise<Mongoose> {
   if (!cachedConnectionPromise) {
     // If no connection promise is cached, create a new one.
     // We cache the promise instead of the connection itself to prevent race
@@ -25,10 +25,6 @@ async function connectToDatabase(config) {
     const client = await cachedConnectionPromise;
     return client;
   } catch (err) {
-    throw new InternalServerError(err instanceof Error ? err : String(err));
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 }
-
-export {
-  connectToDatabase
-};
