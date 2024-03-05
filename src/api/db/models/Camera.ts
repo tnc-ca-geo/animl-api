@@ -220,7 +220,7 @@ export default class AuthedCameraModel {
   }
 
   async createWirelessCamera(input, context) {
-    return await CameraModel.createWirelesscamera(input, context);
+    return await CameraModel.createWirelessCamera(input, context);
   }
 
   async registerCamera(input, context) {
