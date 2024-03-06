@@ -26,7 +26,7 @@ export class UserModel {
         }));
       }
 
-      return { message: 'Groups Created' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -72,7 +72,7 @@ export class UserModel {
             roles: input.roles
           }, context);
 
-          return { message: 'User Created' };
+          return { isOk: true };
 
         } catch (err) {
           if (err instanceof GraphQLError) throw err;
@@ -127,7 +127,7 @@ export class UserModel {
         }
       }
 
-      return { message: 'User Updated' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);

@@ -35,9 +35,7 @@ tape('User: CreateGroups', async (t) => {
       }
     });
 
-    t.deepEquals(res, {
-      message: 'Groups Created'
-    });
+    t.deepEquals(res, { isOk: true });
   } catch (err) {
     t.error(err);
   }

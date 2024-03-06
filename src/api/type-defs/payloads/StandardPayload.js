@@ -1,4 +1,4 @@
 export default `
   type StandardPayload {
-    message: String
+    isOk: Boolean
   }`;

@@ -513,7 +513,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return { message: 'Label Removed' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);

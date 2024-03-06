@@ -65,7 +65,7 @@ tape('Image: DeleteImages', async (t) => {
     });
 
     t.deepEquals(res, {
-      message: 'Images Deleted',
+      isOk: true,
       errors: []
     });
   } catch (err) {
@@ -161,7 +161,7 @@ tape('Image: DeleteImages - error', async (t) => {
       }
     });
 
-    t.equals(res.message, 'Images Deleted');
+    t.equals(res.isOk, false);
     t.equals(res.errors.length, 1);
   } catch (err) {
     t.error(err);
