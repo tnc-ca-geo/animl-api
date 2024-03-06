@@ -1,6 +1,5 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
-import { formatError } from './errors.js';
 import AuthedProjectModel from './db/models/Project.js';
 import AuthedUserModel from './db/models/User.js';
 import AuthedImageModel from './db/models/Image.js';
@@ -71,7 +70,6 @@ const apolloserver = new ApolloServer({
   resolvers,
   csrfPrevention: true,
   cache: 'bounded',
-  formatError
 });
 
 export const server = startServerAndCreateLambdaHandler(

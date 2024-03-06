@@ -226,6 +226,7 @@ export default class AuthedUserModel {
   }
 
   async listUsers(input, context) {
+        throw new ForbiddenError()
     if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.list(input, context);
   }
