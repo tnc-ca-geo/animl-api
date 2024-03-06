@@ -2,6 +2,7 @@ export default `
   type Batch {
     _id: String!
     projectId: String!
+    created: Date
     errors: [BatchError]
     imageErrors: Int
     uploadComplete: Date
