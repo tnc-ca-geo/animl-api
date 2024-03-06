@@ -69,7 +69,7 @@ const apolloserver = new ApolloServer({
   typeDefs,
   resolvers,
   csrfPrevention: true,
-  cache: 'bounded',
+  cache: 'bounded'
 });
 
 export const server = startServerAndCreateLambdaHandler(

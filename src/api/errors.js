@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { unwrapResolverError } from '@apollo/server/errors';
 
 export default GraphQLError;
 

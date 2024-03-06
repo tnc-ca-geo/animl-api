@@ -216,7 +216,6 @@ export default class AuthedUserModel {
 
   async createGroups(input, context) {
     if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
-
     return await UserModel.createGroups(input, context);
   }
 
