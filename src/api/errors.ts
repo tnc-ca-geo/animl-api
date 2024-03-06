@@ -1,4 +1,4 @@
-import { GraphQLError } from 'graphql/error/GraphQLError.js';
+import { GraphQLError } from 'graphql';
 
 export default GraphQLError;
 
@@ -102,24 +102,6 @@ export class CameraRegistrationError extends GraphQLError {
         ...properties
       }
     });
-  }
-}
-
-export function formatError(err) {
-  /*
-     * NOTE: The goal here is to coerce all Errors into GraphQLErrors
-     * with proper error codes before they're returned to the client.
-     *
-     * If err is an instance of a GraphQLError, it is likely a GraphQLError
-     * thrown in the parse or validation phase or one intentionally thrown
-     *
-     * If the err is not a GraphQLError, that means something unexpected happened,
-     * but we can convert it to an GraphQLError and give it the generic code INTERNAL_SERVER_ERROR
-     */
-  if (err instanceof GraphQLError) {
-    return err;
-  } else {
-    return new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 }
 

@@ -135,7 +135,7 @@ export class BatchModel {
         })
       }));
 
-      return { message: 'Batch Scheduled for Deletion' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -166,7 +166,7 @@ export class BatchModel {
     try {
       await operation(input);
 
-      return { message: 'Batch Redrive Initiated' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -207,7 +207,7 @@ export class BatchModel {
         MultipartUpload: { Parts: input.parts }
       }));
 
-      return { message: 'Upload Closed' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -290,27 +290,27 @@ export default class AuthedBatchModel {
   }
 
   async stopBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.stopBatch(input);
   }
 
   async redriveBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.redriveBatch(input);
   }
 
   async updateBatch(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.updateBatch(input);
   }
 
   async createUpload(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return BatchModel.createUpload(input, context);
   }
 
   async closeUpload(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return BatchModel.closeUpload(input);
   }
 }

@@ -27,7 +27,7 @@ export class UserModel {
         }));
       }
 
-      return { message: 'Groups Created' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -73,7 +73,7 @@ export class UserModel {
             roles: input.roles
           }, context);
 
-          return { message: 'User Created' };
+          return { isOk: true };
 
         } catch (err) {
           if (err instanceof GraphQLError) throw err;
@@ -128,7 +128,7 @@ export class UserModel {
         }
       }
 
-      return { message: 'User Updated' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -218,23 +218,22 @@ export default class AuthedUserModel {
   }
 
   async createGroups(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
-
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.createGroups(input, context);
   }
 
   async createUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.create(input, context);
   }
 
   async listUsers(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.list(input, context);
   }
 
   async updateUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
 
     return await UserModel.update(input, context);
   }

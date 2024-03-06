@@ -1,5 +1,5 @@
 export default `
   type StandardErrorPayload {
-    message: String
+    isOk: Boolean
     errors: [String]
   }`;

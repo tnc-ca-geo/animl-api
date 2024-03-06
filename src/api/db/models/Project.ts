@@ -514,7 +514,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return { message: 'Label Removed' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -557,57 +557,57 @@ export default class AuthedProjectModel {
   }
 
   async deleteLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteLabel(input, context);
   }
 
   async createLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createLabel(input, context);
   }
 
   async updateLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateLabel(input, context);
   }
 
   async updateProject(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateProject(input, context);
   }
 
   async createView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createView(input, context);
   }
 
   async updateView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateView(input, context);
   }
 
   async deleteView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteView(input, context);
   }
 
   async updateAutomationRules(input, context) {
-    if (!hasRole(this.user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateAutomationRules(input, context);
   }
 
   async createDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createDeployment(input, context);
   }
 
   async updateDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateDeployment(input, context);
   }
 
   async deleteDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteDeployment(input, context);
   }
 }

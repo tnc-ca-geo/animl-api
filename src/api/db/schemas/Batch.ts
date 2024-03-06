@@ -7,6 +7,7 @@ const BatchSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
   projectId: { type: String, required: true },
   user: { type: String },
+  created: { type: Date, default: Date.now },
   overrideSerial: { type: String },
   uploadedFile: { type: String },
   originalFile: { type: String },
