@@ -2,8 +2,7 @@ import { text } from 'node:stream/consumers';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
 import SQS from '@aws-sdk/client-sqs';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { DuplicateError, DuplicateLabelError, DBValidationError, NotFoundError } from '../../errors.js';
+import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError, AuthenticationError } from '../../errors.js';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -76,9 +75,8 @@ export class ImageModel {
 
       return image;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -95,9 +93,8 @@ export class ImageModel {
       // console.log('res: ', JSON.stringify(result));
       return result;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -109,16 +106,15 @@ export class ImageModel {
 
       const errors = res
         .filter((r) => { return r.status === 'rejected'; })
-        .map((r) => { return r.reason; }); // Will always be an ApolloError
+        .map((r) => { return r.reason; }); // Will always be a GraphQLError
 
       return {
         message: 'Images Deleted',
         errors
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -142,9 +138,8 @@ export class ImageModel {
 
       return { message: 'Image Deleted' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -193,7 +188,7 @@ export class ImageModel {
         }
 
       } catch (err) {
-        throw new ApolloError(err);
+        throw new InternalServerError(err instanceof Error ? err.message : String(err));
       }
 
       // 2. validate metadata and create Image record
@@ -308,16 +303,15 @@ export class ImageModel {
       });
       await imageError.save();
 
-      if (err instanceof ApolloError) {
+      if (err instanceof GraphQLError) {
         throw err;
-      }
-      else if (msg.includes('duplicate')) {
-        throw new DuplicateError(err);
-      }
-      else if (msg.includes('validation')) {
+      } else if (msg.includes('duplicate')) {
+        throw new DuplicateImageError(err);
+      } else if (msg.includes('validation')) {
         throw new DBValidationError(err);
+      } else {
+        throw new InternalServerError(err);
       }
-      throw new ApolloError(err);
     }
   }
 
@@ -338,9 +332,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -361,9 +354,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -380,9 +372,8 @@ export class ImageModel {
 
       return { comments: image.comments };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -421,9 +412,8 @@ export class ImageModel {
       console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -461,9 +451,8 @@ export class ImageModel {
       console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -487,9 +476,8 @@ export class ImageModel {
       console.log('ImageModel.deleteObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -584,10 +572,9 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
       console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -645,10 +632,9 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
       console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -686,9 +672,8 @@ export class ImageModel {
       console.log('ImageModel.updateLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -773,9 +758,8 @@ export class ImageModel {
       console.log('ImageModel.deleteLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       return res.getRawResponse();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -844,9 +828,8 @@ export class ImageModel {
       };
 
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -881,9 +864,8 @@ export class ImageModel {
       };
 
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -900,15 +882,15 @@ export class ImageModel {
       const objectText = await text(Body);
       return JSON.parse(objectText);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthedImageModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
@@ -925,67 +907,67 @@ export default class AuthedImageModel {
   }
 
   async createComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createComment(input, context);
   }
 
   async updateComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateComment(input, context);
   }
 
   async deleteComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteComment(input, context);
   }
 
   async deleteImage(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteImage(input, context);
   }
 
   async deleteImages(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteImages(input, context);
   }
 
   async createImage(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageModel.createImage(input, context);
   }
 
   async createObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createObjects(input, context);
   }
 
   async updateObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateObjects(input, context);
   }
 
   async deleteObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteObjects(input, context);
   }
 
   async createInternalLabels(input, context) {
-    if (!this.user.is_superuser) throw new ForbiddenError;
+    if (!this.user.is_superuser) throw new ForbiddenError();
     return await ImageModel.createInternalLabels(input, context);
   }
 
   async createLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.createLabels(input, context);
   }
 
   async updateLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.updateLabels(input, context);
   }
 
   async deleteLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
     return await ImageModel.deleteLabels(input, context);
   }
 
@@ -994,12 +976,12 @@ export default class AuthedImageModel {
   }
 
   async export(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.export(input, context);
   }
 
   async getExportStatus(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.getExportStatus(input, context);
   }
 

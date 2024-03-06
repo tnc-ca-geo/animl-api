@@ -1,4 +1,4 @@
-import { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../api/errors.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import Project from '../api/db/schemas/Project.js';
@@ -170,7 +170,7 @@ async function createDefaultMLModels({ defaultMLModelsConfig }) {
         await newModel.save();
         newModelRecords.push(newModel);
       } catch (err) {
-        throw new ApolloError(err);
+        throw new InternalServerError(err instanceof Error ? err.message : String(err));
       }
     }
   }
@@ -192,7 +192,7 @@ async function createDefaultProjects({ defaultProjectsConfig }) {
         await newProject.save();
         newProjectRecords.push(newProject);
       } catch (err) {
-        throw new ApolloError(err);
+        throw new InternalServerError(err instanceof Error ? err.message : String(err));
       }
     }
   }

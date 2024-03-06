@@ -1,4 +1,4 @@
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
@@ -39,9 +39,8 @@ export class BatchErrorModel {
         created: batcherr.created
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -65,25 +64,25 @@ export class BatchErrorModel {
 
       return { message: 'Cleared' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthedBatchErrorModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
   async createError(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.createError(input);
   }
 
   async clearErrors(input) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.clearErrors(input);
   }
 }

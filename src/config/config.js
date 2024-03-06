@@ -1,4 +1,5 @@
-import { ApolloError } from 'apollo-server-errors';
+import { GraphQLError } from 'graphql';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import SM  from '@aws-sdk/client-secrets-manager';
 import SSM from '@aws-sdk/client-ssm';
 
@@ -102,7 +103,10 @@ async function getConfig() {
     const secret = JSON.parse(secretsResponse.SecretString || '{}');
     if (ssmParams.InvalidParameters.length > 0) {
       const invalParams = ssmParams.InvalidParameters.join(', ');
-      throw new ApolloError(`invalid parameter(s) requested: ${invalParams}`);
+
+      throw new GraphQLError(`invalid parameter(s) requested: ${invalParams}`, {
+        extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
+      });
     }
     const remoteConfig = formatSSMParams(ssmParams);
     const secretConfig = {
@@ -111,7 +115,9 @@ async function getConfig() {
     // const secretConfig = formatSSMParams(secret);
     return { ...localConfig, ...remoteConfig, ...secretConfig };
   } catch (err) {
-    throw new ApolloError(err);
+    throw new GraphQLError(err, {
+      extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
+    });
   }
 }
 

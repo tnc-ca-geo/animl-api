@@ -1,5 +1,4 @@
-import { ApolloError } from 'apollo-server-errors';
-import { NotFoundError } from '../../errors.js';
+import GraphQLError, { InternalServerError, NotFoundError, AuthenticationError } from '../../errors.js';
 import MLModel from '../schemas/MLModel.js';
 import retry from 'async-retry';
 
@@ -12,9 +11,8 @@ export class MLModelModel {
 
       return model;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -24,9 +22,8 @@ export class MLModelModel {
       const mlModels = await MLModel.find(query);
       return mlModels;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -45,15 +42,15 @@ export class MLModelModel {
     try {
       return await operation(modelConfig);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthMLModelModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { NotFoundError, DeleteLabelError } from '../../errors.js';
+import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -29,9 +28,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -51,9 +49,8 @@ export class ProjectModel {
       const projects = await Project.find(query);
       return projects;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -69,16 +66,16 @@ export class ProjectModel {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
-      throw new ApolloError('Projects must be created by an authenticated user');
+      throw new AuthenticationError('Projects must be created by an authenticated user');
     }
 
-    if (!input.availableMLModels.length) throw new ApolloError('At least 1 MLModel must be enabled for a project');
+    if (!input.availableMLModels.length) throw new DBValidationError('At least 1 MLModel must be enabled for a project');
     const models = (await MLModelModel.getMLModels({
       _ids: input.availableMLModels
     })).map((model) => { return model._id; });
 
     for (const m of input.availableMLModels) {
-      if (!models.includes(m)) throw new ApolloError(`${m} is not a valid model identifier`);
+      if (!models.includes(m)) throw new DBValidationError(`${m} is not a valid model identifier`);
     }
 
     try {
@@ -105,9 +102,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -121,9 +117,8 @@ export class ProjectModel {
 
       return project;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -181,9 +176,8 @@ export class ProjectModel {
     try {
       return await operation(input, context);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -211,9 +205,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -243,9 +236,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -273,9 +265,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -296,9 +287,8 @@ export class ProjectModel {
     try {
       return await operation(input);
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -353,9 +343,8 @@ export class ProjectModel {
     try {
       await operation({ projId, camConfig });
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -387,9 +376,8 @@ export class ProjectModel {
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -431,9 +419,8 @@ export class ProjectModel {
       }
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -467,9 +454,8 @@ export class ProjectModel {
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -479,7 +465,7 @@ export class ProjectModel {
 
       if (project.labels.filter((label) => {
         return label.name.toLowerCase() === input.name.toLowerCase();
-      }).length) throw new ApolloError('A label with that name already exists, avoid creating labels with duplicate names');
+      }).length) throw new DBValidationError('A label with that name already exists, avoid creating labels with duplicate names');
 
       project.labels.push({
         name: input.name,
@@ -490,9 +476,8 @@ export class ProjectModel {
 
       return project.labels.pop();
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -530,9 +515,8 @@ export class ProjectModel {
 
       return { message: 'Label Removed' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -541,7 +525,7 @@ export class ProjectModel {
       const project = await this.queryById(context.user['curr_project']);
 
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
-      if (!label) throw new ApolloError('Label not found on project');
+      if (!label) throw new NotFoundError('Label not found on project');
 
       Object.assign(label, input);
 
@@ -549,15 +533,15 @@ export class ProjectModel {
 
       return label;
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthedProjectModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
@@ -570,57 +554,57 @@ export default class AuthedProjectModel {
   }
 
   async deleteLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteLabel(input, context);
   }
 
   async createLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createLabel(input, context);
   }
 
   async updateLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateLabel(input, context);
   }
 
   async updateProject(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateProject(input, context);
   }
 
   async createView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createView(input, context);
   }
 
   async updateView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateView(input, context);
   }
 
   async deleteView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteView(input, context);
   }
 
   async updateAutomationRules(input, context) {
-    if (!hasRole(this.user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateAutomationRules(input, context);
   }
 
   async createDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.createDeployment(input, context);
   }
 
   async updateDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.updateDeployment(input, context);
   }
 
   async deleteDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
     return await ProjectModel.deleteDeployment(input, context);
   }
 }

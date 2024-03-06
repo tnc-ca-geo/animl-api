@@ -5,7 +5,7 @@ import { execSync as eS } from 'child_process';
 
 import appRoot from 'app-root-path';
 import { DateTime } from 'luxon';
-import { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../api/errors.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { getConfig } from '../config/config.js';
 import { backupConfig } from './backupConfig.js';
@@ -22,7 +22,7 @@ async function listCollections(config) {
     return collections;
   } catch (err) {
     db.connection.close();
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -40,7 +40,7 @@ async function backupCollection(collection, options) {
     console.log('stdout: ', stdout);
     console.log('stderr: ', stderr);
   } catch (err) {
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -68,7 +68,7 @@ async function exportDb() {
     console.log(`backing up db: ${db}...`);
     const collections = await listCollections(config);
     if (!collections || collections.length === 0) {
-      throw new ApolloError(`Failed to find collections for db ${db}`);
+      throw new InternalServerError(`Failed to find collections for db ${db}`);
     }
     const colCount = collections.length;
     console.log(`${colCount} collections found: ${collections.join(', ')}`);
@@ -84,7 +84,7 @@ async function exportDb() {
 
     process.exit(0);
   } catch (err) {
-    throw new ApolloError('An error occured while backing up the db: ', err);
+    throw new InternalServerError('An error occured while backing up the db: ', err);
   }
 }
 

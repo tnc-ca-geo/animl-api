@@ -1,5 +1,4 @@
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
-import { CameraRegistrationError } from '../../errors.js';
+import GraphQLError, { InternalServerError, CameraRegistrationError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
@@ -18,8 +17,8 @@ export class CameraModel {
       console.log('getWirelessCameras - found wirelessCameras: ', JSON.stringify(wirelessCameras));
       return wirelessCameras;
     } catch (err) {
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err); /* error is uncontrolled, so throw new ApolloError */
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -62,9 +61,8 @@ export class CameraModel {
         }
       }
 
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -133,9 +131,8 @@ export class CameraModel {
         }
       }
 
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -202,15 +199,16 @@ export class CameraModel {
           await CameraModel.registerCamera({ cameraId: op.info.cameraId }, context);
         }
       }
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthedCameraModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
@@ -223,13 +221,13 @@ export default class AuthedCameraModel {
   }
 
   async registerCamera(input, context) {
-    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError();
 
     return await CameraModel.registerCamera(input, context);
   }
 
   async unregisterCamera(input, context) {
-    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, WRITE_CAMERA_REGISTRATION_ROLES)) throw new ForbiddenError();
     return await CameraModel.unregisterCamera(input, context);
   }
 }

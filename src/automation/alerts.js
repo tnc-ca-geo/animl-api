@@ -1,4 +1,4 @@
-import { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../api/errors.js';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
 
@@ -52,7 +52,7 @@ const makeEmail = async (rule, image, context) => {
       Source: context.config['EMAIL_ALERT_SENDER']
     };
   } catch (err) {
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 };
 
@@ -63,7 +63,7 @@ const sendEmail = async (rule, image, context) => {
     const res = await ses.send(command);
     return res;
   } catch (err) {
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 };
 

@@ -3,7 +3,7 @@ import { PassThrough } from 'node:stream';
 import { Upload } from '@aws-sdk/lib-storage';
 import S3 from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ApolloError } from 'apollo-server-lambda';
+import { InternalServerError } from '../api/errors.js';
 import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
@@ -64,7 +64,7 @@ export default class ImageExport {
       for (const l of project.labels) this.labelMap.set(l._id, l);
     } catch (err) {
       await this.error(err);
-      throw new ApolloError('error initializing the export class');
+      throw new InternalServerError('error initializing the export class');
     }
   }
 
@@ -79,7 +79,7 @@ export default class ImageExport {
       count = res[0] ? res[0].count : 0;
     } catch (err) {
       await this.error(err);
-      throw new ApolloError('error counting images');
+      throw new InternalServerError('error counting images');
     }
     return count;
   }
@@ -111,7 +111,7 @@ export default class ImageExport {
       console.log('upload complete');
     } catch (err) {
       await this.error(err);
-      throw new ApolloError('error exporting to CSV');
+      throw new InternalServerError('error exporting to CSV');
     }
 
     // get presigned url for new S3 object (expires in one hour)
@@ -152,7 +152,7 @@ export default class ImageExport {
       }
     } catch (err) {
       await this.error(err);
-      throw new ApolloError('error exporting to COCO');
+      throw new InternalServerError('error exporting to COCO');
     }
 
     // get presigned url for new S3 object (expires in one hour)
@@ -195,7 +195,7 @@ export default class ImageExport {
       }));
       console.log('document updated: ', res);
     } catch (err) {
-      throw new ApolloError('error updating status document');
+      throw new InternalServerError('error updating status document');
     }
   }
 

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import  { ApolloError } from 'apollo-server-errors';
+import { InternalServerError } from '../errors.js';
 
 // TODO: consider using multiple connections (one per model)
 // to reduce risk of slow trains
@@ -25,7 +25,7 @@ async function connectToDatabase(config) {
     const client = await cachedConnectionPromise;
     return client;
   } catch (err) {
-    throw new ApolloError(err);
+    throw new InternalServerError(err instanceof Error ? err : String(err));
   }
 }
 

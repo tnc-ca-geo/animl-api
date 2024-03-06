@@ -1,6 +1,5 @@
-import { ApolloServer } from 'apollo-server-lambda';
-import { AuthenticationError } from 'apollo-server-errors';
-import { formatError } from './errors.js';
+import { ApolloServer } from '@apollo/server';
+import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import AuthedProjectModel from './db/models/Project.js';
 import AuthedUserModel from './db/models/User.js';
 import AuthedImageModel from './db/models/Image.js';
@@ -23,9 +22,18 @@ const resolvers = {
   ...Scalars
 };
 
-const authMiddleware = async (resolve, parent, args, context, info) => {
-  if (!context.user) throw new AuthenticationError('Authentication failed');
-  return await resolve(parent, args, context, info);
+const corsMiddleware = async () => {
+  return (result) => {
+    result.headers = {
+      ...result.headers,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Credentials': 'true'
+    };
+
+    return Promise.resolve();
+  };
 };
 
 const context = async ({ event, context }) => {
@@ -55,21 +63,20 @@ const context = async ({ event, context }) => {
   };
 };
 
-const srv = new ApolloServer({
+const apolloserver = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
+  status400ForVariableCoercionErrors: true,
   typeDefs,
   resolvers,
-  context,
   csrfPrevention: true,
-  cache: 'bounded',
-  middlewares: [authMiddleware],
-  options: {
-    formatError
-  }
+  cache: 'bounded'
 });
 
-const server = srv.createHandler();
-
-export {
-  server
-};
+export const server = startServerAndCreateLambdaHandler(
+  apolloserver,
+  handlers.createAPIGatewayProxyEventRequestHandler(),
+  {
+    middleware: [corsMiddleware],
+    context
+  }
+);

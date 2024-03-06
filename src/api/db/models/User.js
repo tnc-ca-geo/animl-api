@@ -1,5 +1,5 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
-import { ApolloError, ForbiddenError } from 'apollo-server-errors';
+import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { hasRole } from './utils.js';
 
@@ -28,9 +28,8 @@ export class UserModel {
 
       return { message: 'Groups Created' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -76,13 +75,12 @@ export class UserModel {
           return { message: 'User Created' };
 
         } catch (err) {
-          // if error is uncontrolled, throw new ApolloError
-          if (err instanceof ApolloError) throw err;
-          throw new ApolloError(err);
+          if (err instanceof GraphQLError) throw err;
+          throw new InternalServerError(err);
         }
       } else {
-        if (err instanceof ApolloError) throw err;
-        throw new ApolloError(err);
+        if (err instanceof GraphQLError) throw err;
+        throw new InternalServerError(err);
       }
     }
   }
@@ -131,9 +129,8 @@ export class UserModel {
 
       return { message: 'User Updated' };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 
@@ -205,36 +202,35 @@ export class UserModel {
         users: Array.from(roles.values())
       };
     } catch (err) {
-      // if error is uncontrolled, throw new ApolloError
-      if (err instanceof ApolloError) throw err;
-      throw new ApolloError(err);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
     }
   }
 }
 
 export default class AuthedUserModel {
   constructor(user) {
+    if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
   async createGroups(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
-
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.createGroups(input, context);
   }
 
   async createUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.create(input, context);
   }
 
   async listUsers(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
     return await UserModel.list(input, context);
   }
 
   async updateUser(input, context) {
-    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError;
+    if (!hasRole(this.user, MANAGE_USERS_ROLES)) throw new ForbiddenError();
 
     return await UserModel.update(input, context);
   }
