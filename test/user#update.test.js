@@ -50,9 +50,7 @@ tape('User: Update', async (t) => {
       }
     });
 
-    t.deepEquals(res, {
-      message: 'User Updated'
-    });
+    t.deepEquals(res, { isOk: true });
   } catch (err) {
     t.error(err);
   }

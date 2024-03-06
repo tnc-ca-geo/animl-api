@@ -109,7 +109,7 @@ export class ImageModel {
         .map((r) => { return r.reason; }); // Will always be a GraphQLError
 
       return {
-        isOk: errors.length,
+        isOk: !errors.length,
         errors
       };
     } catch (err) {
