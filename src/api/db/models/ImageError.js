@@ -114,7 +114,7 @@ export class ImageErrorModel {
         batch: input.batch
       });
 
-      return { message: 'Cleared' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);

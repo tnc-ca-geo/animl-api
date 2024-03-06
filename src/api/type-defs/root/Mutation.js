@@ -38,15 +38,15 @@ export default `
 
     updateAutomationRules(input: UpdateAutomationRulesInput!): UpdateAutomationRulesPayload
 
-    createObjects(input: CreateObjectsInput!): CreateObjectsPayload
-    updateObjects(input: UpdateObjectsInput!): UpdateObjectsPayload
-    deleteObjects(input: DeleteObjectsInput!): DeleteObjectsPayload
+    createObjects(input: CreateObjectsInput!): StandardPayload
+    updateObjects(input: UpdateObjectsInput!): StandardPayload
+    deleteObjects(input: DeleteObjectsInput!): StandardPayload
 
-    createInternalLabels(input: CreateInternalLabelsInput!): CreateLabelsPayload
+    createInternalLabels(input: CreateInternalLabelsInput!): StandardPayload
 
-    createLabels(input: CreateLabelsInput!): CreateLabelsPayload
-    updateLabels(input: UpdateLabelsInput!): UpdateLabelsPayload
-    deleteLabels(input: DeleteLabelsInput!): DeleteLabelsPayload
+    createLabels(input: CreateLabelsInput!): StandardPayload
+    updateLabels(input: UpdateLabelsInput!): StandardPayload
+    deleteLabels(input: DeleteLabelsInput!): StandardPayload
 
     createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
     updateDeployment(input: UpdateDeploymentInput!): UpdateDeploymentPayload

@@ -109,7 +109,7 @@ export class ImageModel {
         .map((r) => { return r.reason; }); // Will always be a GraphQLError
 
       return {
-        message: 'Images Deleted',
+        isOk: errors.length,
         errors
       };
     } catch (err) {
@@ -136,7 +136,7 @@ export class ImageModel {
       await ImageAttempt.deleteOne({ _id: input.imageId });
       await ImageError.deleteMany({ image: input.imageId });
 
-      return { message: 'Image Deleted' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);

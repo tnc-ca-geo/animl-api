@@ -133,7 +133,7 @@ export class BatchModel {
         })
       }));
 
-      return { message: 'Batch Scheduled for Deletion' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -164,7 +164,7 @@ export class BatchModel {
     try {
       await operation(input);
 
-      return { message: 'Batch Redrive Initiated' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -205,7 +205,7 @@ export class BatchModel {
         MultipartUpload: { Parts: input.parts }
       }));
 
-      return { message: 'Upload Closed' };
+      return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
