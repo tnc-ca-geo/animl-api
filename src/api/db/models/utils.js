@@ -509,8 +509,7 @@ export function findDeployment(img, camConfig, projTimeZone) {
 
 export function mapImgToDep(img, camConfig, projTimeZone) {
   if (camConfig.deployments.length === 0) {
-    const err = new Error('Camera config has no deployments');
-    err.code = 'NoDeployments';
+    const err = new NotFoundError('Camera config has no deployments');
     throw err;
   }
 
@@ -541,8 +540,7 @@ export function sortDeps(deps) {
 export function findActiveProjReg(camera) {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
-    const err = new Error('Can\'t find active project registration on camera');
-    err.code = 'NoRegistration';
+    const err = new NotFoundError('Can\'t find active project registration on camera');
     throw err;
   }
   return activeProjReg.projectId;
