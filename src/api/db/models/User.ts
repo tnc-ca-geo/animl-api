@@ -4,6 +4,16 @@ import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError 
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { hasRole } from './utils.js';
 
+export type UserOutput = {
+  roles: string[];
+  username: string;
+  email: string;
+  created: string;
+  updated: string;
+  enabled: string;
+  status: string;
+};
+
 /**
  * Users are managed in AWS Cognito but as the APIs are designed to be similiar
  * to those of DB objects, the model is defined here
@@ -60,7 +70,6 @@ export class UserModel {
           await cognito.send(new Cognito.AdminCreateUserCommand({
             Username: input.username,
             DesiredDeliveryMediums: ['EMAIL'],
-            UserStatus: 'CONFIRMED',
             UserAttributes: [{
               Name: 'email',
               Value: input.username
@@ -143,13 +152,15 @@ export class UserModel {
    * @param {string} input.filter Filter usernames by string
    * @param {object} context
    */
-  static async list(input, context) {
+  static async list(input, context): Promise<{
+    users: Array<UserOutput>
+  }> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
       const users = (await Promise.all(['manager', 'observer', 'member'].map(async (role) => {
         const list = [];
-        let res = {};
+        let res: Cognito.ListUsersInGroupCommandOutput;
         do {
           res = await cognito.send(new Cognito.ListUsersInGroupCommand({
             Limit: 60,
@@ -188,14 +199,17 @@ export class UserModel {
         return passes;
       });
 
-      const roles = new Map();
+      const roles: Map<string, UserOutput> = new Map();
       for (const user of users) {
         if (roles.has(user.username)) {
           roles.get(user.username).roles.push(user.role);
         } else {
-          user.roles = [user.role];
+          const initRoles = [user.role];
           delete user.role;
-          roles.set(user.username, user);
+          roles.set(user.username, {
+            roles: [user.role],
+            ...user
+          });
         }
       }
 
