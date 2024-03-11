@@ -1,4 +1,5 @@
 import GraphQLError, { InternalServerError, NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { User } from '../../auth/authorization.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import { randomUUID } from 'node:crypto';
@@ -12,12 +13,21 @@ import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
+import { PipelineStage } from 'mongoose';
+
+export type CreateBatchUploadOutput = {
+  batch: string;
+  user: string;
+  multipartUploadId?: string;
+  url?: string;
+  urls?: string[];
+}
 
 export class BatchModel {
   static async queryByFilter(input, context) {
 
     try {
-      const pipeline = [
+      const pipeline: PipelineStage[] = [
         { '$match': { 'user': context.user.sub } },
         { '$match': { 'projectId': context.user['curr_project'] } }
       ];
@@ -106,7 +116,7 @@ export class BatchModel {
   }
 
 
-  static async stopBatch(input) {
+  static async stopBatch(input): Promise<{ isOk: boolean }> {
     const operation = async (input) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) console.log(`Retrying stopBatch operation! Try #: ${attempt}`);
@@ -195,7 +205,7 @@ export class BatchModel {
     }
   }
 
-  static async closeUpload(input) {
+  static async closeUpload(input): Promise<{ isOk: boolean }> {
     try {
       const s3 = new S3.S3Client();
       await s3.send(new S3.CompleteMultipartUploadCommand({
@@ -212,7 +222,7 @@ export class BatchModel {
     }
   }
 
-  static async createUpload(input, context) {
+  static async createUpload(input, context): Promise<CreateBatchUploadOutput> {
     const operation = async (input) => {
       return await retry(async () => {
         const newBatch = new Batch(input);
@@ -239,7 +249,7 @@ export class BatchModel {
 
       const s3 = new S3.S3Client();
 
-      const res = {
+      const res: CreateBatchUploadOutput = {
         batch: batch._id,
         user: context.user.sub
       };
@@ -272,7 +282,9 @@ export class BatchModel {
 }
 
 export default class AuthedBatchModel {
-  constructor(user) {
+    user: User
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
@@ -285,7 +297,7 @@ export default class AuthedBatchModel {
     return await BatchModel.queryById(input);
   }
 
-  async stopBatch(input) {
+  async stopBatch(input): Promise<{ isOk: boolean }> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchModel.stopBatch(input);
   }
@@ -305,7 +317,7 @@ export default class AuthedBatchModel {
     return BatchModel.createUpload(input, context);
   }
 
-  async closeUpload(input) {
+  async closeUpload(input): Promise<{ isOk: boolean }> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return BatchModel.closeUpload(input);
   }

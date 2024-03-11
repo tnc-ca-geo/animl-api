@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
+import { PipelineStage } from 'mongoose';
 import _ from 'lodash';
+import { User } from '../../auth/authorization.js';
 import mongoose from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
@@ -10,19 +12,19 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-export function idMatch(idA, idB) {
+export function idMatch(idA: typeof ObjectId | string, idB: typeof ObjectId | string): boolean {
   return idA.toString() === idB.toString();
 }
 
-export function buildImgUrl(image, config, size = 'original') {
+export function buildImgUrl(image, config, size = 'original'): string {
   const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 }
 
-export function buildLabelPipeline(labels) {
-  const pipeline = [];
+export function buildLabelPipeline(labels: Array<string>): Array<PipelineStage> {
+  const pipeline: PipelineStage[] = [];
 
   // map over objects & labels and filter for first validated label
   pipeline.push({ '$set': {
@@ -84,6 +86,7 @@ export function buildLabelPipeline(labels) {
         }
       } } }
     ] };
+    // @ts-expect-error Have to figure out what the subtypes are here and explicitly add them
     labelsFilter.$or.push(noObjectsFilter);
   }
 
@@ -103,9 +106,9 @@ export function buildPipeline({
   reviewed,
   notReviewed,
   custom
-}, projectId) {
+}, projectId): Array<PipelineStage> {
 
-  const pipeline = [];
+  const pipeline: PipelineStage[] = [];
 
   // match current project
   if (projectId) {
@@ -197,8 +200,8 @@ export function buildPipeline({
   return pipeline;
 }
 
-export function sanitizeMetadata(md) {
-  const sanitized = {};
+export function sanitizeMetadata(md): any {
+  const sanitized: any = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
   // else camel case
@@ -445,7 +448,7 @@ export function createLabelRecord(input, authorId) {
 }
 
 // TODO: consider calling this isAuthorized() ?
-export function hasRole(user, targetRoles = []) {
+export function hasRole(user: User, targetRoles = []) {
   const hasAuthorizedRole = user['curr_project_roles'] &&
     user['curr_project_roles'].some((role) => (targetRoles.includes(role)));
   return user['is_superuser'] || hasAuthorizedRole;
@@ -537,7 +540,7 @@ export function sortDeps(deps) {
   return chronDeps;
 }
 
-export function findActiveProjReg(camera) {
+export function findActiveProjReg(camera): string {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
     const err = new NotFoundError('Can\'t find active project registration on camera');
@@ -546,7 +549,7 @@ export function findActiveProjReg(camera) {
   return activeProjReg.projectId;
 }
 
-export function isImageReviewed(image) {
+export function isImageReviewed(image): boolean {
   // images are considered reviewed if they:
   // have objects,
   // all objects are locked,

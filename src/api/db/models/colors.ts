@@ -1,6 +1,8 @@
 import randomColor from 'random-hex-color';
+import { InferSchemaType } from 'mongoose';
+import { ProjectLabelSchema } from '../schemas/Project.js';
 
-export default function(existingLabels) {
+export default function(existingLabels: Array<InferSchemaType<typeof ProjectLabelSchema>>): string {
   const defaultColors = [
     '#8D8D8D', '#E54D2E', '#E5484D', '#E54666',
     '#E93D82', '#D6409F', '#AB4ABA', '#8E4EC6',
@@ -13,6 +15,7 @@ export default function(existingLabels) {
 
   for (const label of existingLabels) {
     const i = defaultColors.indexOf(label.color);
+
     if (i === -1) continue;
     defaultColors.splice(i, 1);
   }

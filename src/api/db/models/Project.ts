@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { InferSchemaType } from 'mongoose';
+import { User } from '../../auth/authorization.js';
 import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
@@ -20,7 +22,7 @@ import {
 const MAX_LABEL_DELETE = 500;
 
 export class ProjectModel {
-  static async queryById(_id) {
+  static async queryById(_id): Promise<InferSchemaType<typeof Project>> {
     const query = { _id };
     try {
       const project = await Project.findOne(query);
@@ -33,7 +35,7 @@ export class ProjectModel {
     }
   }
 
-  static async getProjects(input, context) {
+  static async getProjects(input, context): Promise<Array<InferSchemaType<typeof Project>>>  {
     console.log('Project.getProjects - input: ', input);
     let query = {};
     if (context.user['is_superuser']) {
@@ -540,7 +542,9 @@ export class ProjectModel {
 }
 
 export default class AuthedProjectModel {
-  constructor(user) {
+  user: User;
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }

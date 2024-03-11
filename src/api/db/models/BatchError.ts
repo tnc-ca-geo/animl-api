@@ -1,4 +1,6 @@
 import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { InferSchemaType } from 'mongoose';
+import { User } from '../../auth/authorization.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
@@ -17,7 +19,7 @@ export class BatchErrorModel {
    * @param {String} input.batch
    * @param {String} input.error
    */
-  static async createError(input) {
+  static async createError(input): Promise<InferSchemaType<typeof BatchError>> {
     const operation = async (input) => {
       return await retry(async () => {
         const newBatchError = new BatchError(input);
@@ -50,7 +52,7 @@ export class BatchErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async clearErrors(input) {
+  static async clearErrors(input): Promise<{ isOk: boolean }> {
     const operation = async (input) => {
       return await retry(async () => {
         return await BatchError.deleteMany(input);
@@ -71,17 +73,19 @@ export class BatchErrorModel {
 }
 
 export default class AuthedBatchErrorModel {
-  constructor(user) {
+    user: User
+
+  constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
-  async createError(input) {
+  async createError(input): Promise<InferSchemaType<typeof BatchError>> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.createError(input);
   }
 
-  async clearErrors(input) {
+  async clearErrors(input): Promise<{ isOk: boolean }> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await BatchErrorModel.clearErrors(input);
   }

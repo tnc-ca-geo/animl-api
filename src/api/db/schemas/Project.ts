@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
-const AutomationRuleSchema = new Schema({
+export const AutomationRuleSchema = new Schema({
   name: { type: String, required: true },
   event: {
     type: {
@@ -32,7 +32,7 @@ const AutomationRuleSchema = new Schema({
   }
 });
 
-const FiltersSchema = new Schema({
+export const FiltersSchema = new Schema({
   cameras: { type: [String], default: undefined },
   deployments: { type: [String], default: undefined },
   labels: { type: [String], default: undefined },
@@ -45,14 +45,14 @@ const FiltersSchema = new Schema({
   custom: { type: String }
 });
 
-const ViewSchema = new Schema({
+export const ViewSchema = new Schema({
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
   editable: { type: Boolean }
 });
 
-const DeploymentSchema = new Schema({
+export const DeploymentSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   location: { type: LocationSchema },
@@ -61,19 +61,19 @@ const DeploymentSchema = new Schema({
   editable: { type: Boolean }
 });
 
-const ProjectLabelSchema = new Schema({
+export const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   name: { type: String, required: true },
   color: { type: String, required: true },
   reviewerEnabled: { type: Boolean, required: true, default: true }
 });
 
-const CameraConfigSchema = new Schema({
+export const CameraConfigSchema = new Schema({
   _id: { type: String, required: true },  /* _id is serial number */
   deployments: { type: [DeploymentSchema] }
 });
 
-const ProjectSchema = new Schema({
+export const ProjectSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
   name: { type: String, required: true },
   timezone: { type: String, default: 'America/Los_Angeles', required: true },
