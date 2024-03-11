@@ -59,7 +59,7 @@ export class UserModel {
         try {
           await cognito.send(new Cognito.AdminCreateUserCommand({
             Username: input.username,
-            DesiredDeliberyMediums: ['EMAIL'],
+            DesiredDeliveryMediums: ['EMAIL'],
             UserStatus: 'CONFIRMED',
             UserAttributes: [{
               Name: 'email',
