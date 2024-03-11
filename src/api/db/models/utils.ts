@@ -23,7 +23,7 @@ export function buildImgUrl(image, config, size = 'original'): string {
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 }
 
-export function buildLabelPipeline(labels): Array<PipelineStage> {
+export function buildLabelPipeline(labels: Array<string>): Array<PipelineStage> {
   const pipeline: PipelineStage[] = [];
 
   // map over objects & labels and filter for first validated label
@@ -199,8 +199,8 @@ export function buildPipeline({
   return pipeline;
 }
 
-export function sanitizeMetadata(md) {
-  const sanitized = {};
+export function sanitizeMetadata(md): any {
+  const sanitized: any = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
   // else camel case
@@ -539,7 +539,7 @@ export function sortDeps(deps) {
   return chronDeps;
 }
 
-export function findActiveProjReg(camera) {
+export function findActiveProjReg(camera): string {
   const activeProjReg = camera.projRegistrations.find((pr) => pr.active);
   if (!activeProjReg) {
     const err = new NotFoundError('Can\'t find active project registration on camera');
@@ -548,7 +548,7 @@ export function findActiveProjReg(camera) {
   return activeProjReg.projectId;
 }
 
-export function isImageReviewed(image) {
+export function isImageReviewed(image): boolean {
   // images are considered reviewed if they:
   // have objects,
   // all objects are locked,
