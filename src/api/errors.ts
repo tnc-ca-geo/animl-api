@@ -6,7 +6,7 @@ export default GraphQLError;
 // https://www.apollographql.com/docs/apollo-server/data/errors/
 
 export class InternalServerError extends GraphQLError {
-  constructor(message = 'InternalServerError', properties = {}) {
+  constructor(message: string = 'InternalServerError', properties: Record<string, string> = {}) {
     console.error(new Error(message));
     super(message, {
       extensions: {
@@ -18,7 +18,7 @@ export class InternalServerError extends GraphQLError {
 }
 
 export class AuthenticationError extends GraphQLError {
-  constructor(message = 'AuthenticationError', properties = {}) {
+  constructor(message: string = 'AuthenticationError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'AUTHENTICATION_ERROR',
@@ -29,7 +29,7 @@ export class AuthenticationError extends GraphQLError {
 }
 
 export class ForbiddenError extends GraphQLError {
-  constructor(message = 'ForbiddenError', properties = {}) {
+  constructor(message: string = 'ForbiddenError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'FORBIDDEN',
@@ -40,7 +40,7 @@ export class ForbiddenError extends GraphQLError {
 }
 
 export class NotFoundError extends GraphQLError {
-  constructor(message = 'NotFound', properties = {}) {
+  constructor(message: string = 'NotFound', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'NOT_FOUND',
@@ -51,7 +51,7 @@ export class NotFoundError extends GraphQLError {
 }
 
 export class DuplicateImageError extends GraphQLError {
-  constructor(message = 'DuplicateImageError', properties = {}) {
+  constructor(message: string = 'DuplicateImageError', properties: Record<string, string> = {}) {
     super(message,  {
       extensions: {
         code: 'DUPLICATE_IMAGE',
@@ -62,7 +62,7 @@ export class DuplicateImageError extends GraphQLError {
 }
 
 export class DuplicateLabelError extends GraphQLError {
-  constructor(message = 'DuplicateLabelError', properties = {}) {
+  constructor(message: string = 'DuplicateLabelError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'DUPLICATE_LABEL',
@@ -73,7 +73,7 @@ export class DuplicateLabelError extends GraphQLError {
 }
 
 export class DBValidationError extends GraphQLError {
-  constructor(message = 'DBValidationError', properties = {}) {
+  constructor(message: string = 'DBValidationError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'DB_VALIDATION_FAILED',
@@ -84,7 +84,7 @@ export class DBValidationError extends GraphQLError {
 }
 
 export class DeleteLabelError extends GraphQLError {
-  constructor(message = 'DeleteLabelError', properties = {}) {
+  constructor(message: string = 'DeleteLabelError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'DELETE_LABEL_FAILED',
@@ -95,7 +95,7 @@ export class DeleteLabelError extends GraphQLError {
 }
 
 export class CameraRegistrationError extends GraphQLError {
-  constructor(message = 'CameraRegistrationError', properties = {}) {
+  constructor(message: string = 'CameraRegistrationError', properties: Record<string, string> = {}) {
     super(message, {
       extensions: {
         code: 'CAMERA_REGISTRATION_ERROR',

@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { PipelineStage } from 'mongoose';
 import _ from 'lodash';
 import { User } from '../../auth/authorization.js';
 import mongoose from 'mongoose';
@@ -11,19 +12,19 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-export function idMatch(idA, idB) {
+export function idMatch(idA, idB): boolean {
   return idA.toString() === idB.toString();
 }
 
-export function buildImgUrl(image, config, size = 'original') {
+export function buildImgUrl(image, config, size = 'original'): string {
   const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 }
 
-export function buildLabelPipeline(labels) {
-  const pipeline = [];
+export function buildLabelPipeline(labels): Array<PipelineStage> {
+  const pipeline: PipelineStage[] = [];
 
   // map over objects & labels and filter for first validated label
   pipeline.push({ '$set': {
@@ -104,9 +105,9 @@ export function buildPipeline({
   reviewed,
   notReviewed,
   custom
-}, projectId) {
+}, projectId): Array<PipelineStage> {
 
-  const pipeline = [];
+  const pipeline: PipelineStage[] = [];
 
   // match current project
   if (projectId) {
