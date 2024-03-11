@@ -1,4 +1,5 @@
 import { text } from 'node:stream/consumers';
+import { PipelineStage } from 'mongoose';
 import { User } from '../../auth/authorization.js';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
@@ -44,15 +45,15 @@ import retry from 'async-retry';
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
-  static async countImages(input, context) {
+  static async countImages(input, context): Promise<number> {
     const pipeline = buildPipeline(input.filters, context.user['curr_project']);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels, context) {
-    const pipeline = [
+  static async countImagesByLabel(labels, context): Promise<number> {
+    const pipeline: PipelineStage[] = [
       { '$match': { 'projectId': context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
       { $count: 'count' }
@@ -70,7 +71,7 @@ export class ImageModel {
       const image = await Image.findOne(query);
       if (!image) throw new NotFoundError('Image not found');
 
-      const epipeline = [];
+      const epipeline: PipelineStage = [];
       epipeline.push({ '$match': { 'image': image._id } });
       image.errors = await ImageError.aggregate(epipeline);
 
@@ -946,12 +947,12 @@ export default class AuthedImageModel {
 
   async updateObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateObjects(input, context);
+    return await ImageModel.updateObjects(input);
   }
 
   async deleteObjects(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteObjects(input, context);
+    return await ImageModel.deleteObjects(input);
   }
 
   async createInternalLabels(input, context) {
@@ -966,12 +967,12 @@ export default class AuthedImageModel {
 
   async updateLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateLabels(input, context);
+    return await ImageModel.updateLabels(input);
   }
 
   async deleteLabels(input, context) {
     if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteLabels(input, context);
+    return await ImageModel.deleteLabels(input);
   }
 
   async getStats(input, context) {

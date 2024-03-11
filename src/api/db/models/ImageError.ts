@@ -1,4 +1,5 @@
 import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { InferSchemaType } from 'mongoose';
 import { User } from '../../auth/authorization.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -8,6 +9,10 @@ import retry from 'async-retry';
 import { hasRole } from './utils.js';
 import SQS from '@aws-sdk/client-sqs';
 import S3 from '@aws-sdk/client-s3';
+
+export type ExportOutput = {
+  documentId: string
+}
 
 /**
  * ImageErrors are errors that are generated when a single image upload
@@ -21,7 +26,7 @@ export class ImageErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async countImageErrors(input) {
+  static async countImageErrors(input): Promise<number> {
     const res = await ImageError.aggregate([
       { '$match': { 'batch': input.batch } },
       { '$count': 'count' }
@@ -68,7 +73,7 @@ export class ImageErrorModel {
    * @param {String} input.batch
    * @param {String} input.error
    */
-  static async createError(input) {
+  static async createError(input): Promise<InferSchemaType<typeof ImageError>> {
     const operation = async (input) => {
       return await retry(async () => {
         const newImageError = new ImageError(input);
@@ -103,7 +108,7 @@ export class ImageErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async clearErrors(input) {
+  static async clearErrors(input): Promise<{ isOk: boolean }> {
     const operation = async (input) => {
       return await retry(async () => {
         return await ImageError.deleteMany(input);
@@ -129,7 +134,7 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {Object} context
    */
-  static async export(input, context) {
+  static async export(input, context): Promise<ExportOutput> {
     const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
     const id = crypto.randomBytes(16).toString('hex');
@@ -172,7 +177,7 @@ export default class AuthedImageErrorModel {
     this.user = user;
   }
 
-  async countImageErrors(input) {
+  async countImageErrors(input): Promise<number> {
     return await ImageErrorModel.countImageErrors(input);
   }
 
@@ -180,17 +185,17 @@ export default class AuthedImageErrorModel {
     return await ImageErrorModel.queryByFilter(input);
   }
 
-  async createError(input) {
+  async createError(input): Promise<InferSchemaType<typeof ImageError>> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageErrorModel.createError(input);
   }
 
-  async clearErrors(input) {
+  async clearErrors(input): Promise<{ isOk: boolean }> {
     if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
     return await ImageErrorModel.clearErrors(input);
   }
 
-  async export(input, context) {
+  async export(input, context): Promise<ExportOutput> {
     if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageErrorModel.export(input, context);
   }
