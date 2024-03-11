@@ -86,6 +86,7 @@ export function buildLabelPipeline(labels: Array<string>): Array<PipelineStage> 
         }
       } } }
     ] };
+    // @ts-expect-error Have to figure out what the subtypes are here and explicitly add them
     labelsFilter.$or.push(noObjectsFilter);
   }
 
