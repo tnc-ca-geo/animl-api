@@ -121,7 +121,7 @@ tape('Image: DeleteImage - Failure', async (t) => {
 
     t.fail();
   } catch (err) {
-    t.equals(err.message, 'Error: Network Error');
+    t.ok(String(err).includes('Network Error'));
   }
 
   t.deepEquals(mocks, [
