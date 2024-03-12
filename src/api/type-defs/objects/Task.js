@@ -8,5 +8,5 @@ export default `
     config: Object!
     created: String!
     updated: String!
-    error: String
+    output: Object
   }`;

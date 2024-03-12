@@ -21,7 +21,7 @@ const TaskSchema = new Schema({
   config: { type: Object, default: {}, required: true },
   created: { type: Date, default: Date.now, required: true },
   updated: { type: Date, default: Date.now, required: true },
-  error: { type: String }
+  output: { type: Object }
 });
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
