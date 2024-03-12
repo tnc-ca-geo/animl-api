@@ -1,9 +1,10 @@
 import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
-import { } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task from '../schemas/Task.js';
-import retry from 'async-retry';
 import { hasRole } from './utils.js';
+import {
+  READ_TASKS_ROLES
+} from '../../auth/roles.js';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -19,12 +20,14 @@ export class TaskModel {
    * @param {String} input.sortAscending
    * @param {String} input.next
    * @param {String} input.previous
+   * @param {Object} context
    */
-  static async queryByFilter(input) {
+  static async queryByFilter(input, context) {
     try {
-      return await MongoPaging.aggregate(ImageError.collection, {
+      return await MongoPaging.aggregate(Task.collection, {
         aggregation: [
-          { '$match': { 'user': context.user['cognito:username'] } }
+          { '$match': { 'projectId': context.user['curr_project'] } },
+          { '$match': { 'user': context.user.sub } }
         ],
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -45,7 +48,9 @@ export default class AuthedTaskModel {
     this.user = user;
   }
 
-  async queryByFilter(input) {
-    return await TaskModel.queryByFilter(input);
+  async queryByFilter(input, context) {
+    if (!hasRole(this.user, READ_TASKS_ROLES)) throw new ForbiddenError();
+
+    return await TaskModel.queryByFilter(input, context);
   }
 }
