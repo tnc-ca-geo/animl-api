@@ -1,4 +1,5 @@
 import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import SQS from '@aws-sdk/client-sqs';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task from '../schemas/Task.js';
 import { hasRole } from './utils.js';
@@ -49,8 +50,23 @@ export class TaskModel {
   }
 
   static async create(input) {
-    const task = new Task(input);
+    const task = new Task({
+        user: input.user,
+        projectId: input.projectId,
+        type: input.type,
+    });
+
+    const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
+
     await task.save();
+
+      await sqs.send(new SQS.SendMessageCommand({
+          QueueUrl: context.config['/TASKS/TASK_QUEUE_URL'],
+          MessageBody: JSON.stringify({
+            config: input.config,
+            ...task
+          })
+      }));
     return task;
   }
 
