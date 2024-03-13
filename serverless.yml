@@ -181,6 +181,19 @@ functions:
               - Arn
           batchSize: 1
     timeout: 120
+  task:
+    image:
+      name: base
+      command: src/task/handler.handler
+    reservedConcurrency: 10
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - taskQueue
+              - Arn
+          batchSize: 1
+    timeout: 900
 
 resources:
   Resources:
@@ -215,7 +228,14 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
-    # Export SQS queue
+    # Task SQS queue
+    taskQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: taskQueue-${self:provider.stage}
+        VisibilityTimeout: 900
+
+    # Export SQS queue - will eventually be replaced by unified tasks queue
     exportQueue:
       Type: AWS::SQS::Queue
       Properties:
