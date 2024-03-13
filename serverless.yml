@@ -260,6 +260,15 @@ resources:
         Type: String
         Value: !Ref inferenceQueue
 
+    # SSM Param - task queue url
+    SSMParameterTaskqueue:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Task queue url
+        Name: /tasks/task-queue-url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: !Ref taskQueue
+
     # SSM Param - export queue url
     SSMParameterExportqueue:
       Type: AWS::SSM::Parameter
