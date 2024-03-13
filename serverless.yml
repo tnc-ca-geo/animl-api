@@ -39,6 +39,9 @@ provider:
             - Fn::GetAtt:
                 - exportQueue
                 - Arn
+            - Fn::GetAtt:
+                - taskQueue
+                - Arn
         - Effect: Allow
           Action:
             - sagemaker:InvokeEndpoint
