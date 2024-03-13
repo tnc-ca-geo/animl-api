@@ -1,4 +1,4 @@
-import GraphQLError, { NotFoundError, InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task from '../schemas/Task.js';
 import { hasRole } from './utils.js';
@@ -24,15 +24,15 @@ export class TaskModel {
    */
   static async queryByFilter(input, context) {
     return await MongoPaging.aggregate(Task.collection, {
-        aggregation: [
-            { '$match': { 'projectId': context.user['curr_project'] } },
-            { '$match': { 'user': context.user.sub } }
-        ],
-        limit: input.limit,
-        paginatedField: input.paginatedField,
-        sortAscending: input.sortAscending,
-        next: input.next,
-        previous: input.previous
+      aggregation: [
+        { '$match': { 'projectId': context.user['curr_project'] } },
+        { '$match': { 'user': context.user.sub } }
+      ],
+      limit: input.limit,
+      paginatedField: input.paginatedField,
+      sortAscending: input.sortAscending,
+      next: input.next,
+      previous: input.previous
     });
   }
 
@@ -42,7 +42,7 @@ export class TaskModel {
     if (!task) throw new NotFoundError('Task not found');
 
     if (task.projectId !== context.user['curr_project']) {
-        throw new NotFoundError('Task does not belong to current project');
+      throw new NotFoundError('Task does not belong to current project');
     }
 
     return task;
@@ -50,6 +50,16 @@ export class TaskModel {
 
   static async create(input) {
     const task = new Task(input);
+    await task.save();
+    return task;
+  }
+
+  static async update(input) {
+    const task = await this.queryById(input._id);
+
+    input.updated = new Date();
+
+    Object.assign(task, input);
     await task.save();
     return task;
   }
