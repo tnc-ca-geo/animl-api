@@ -5,7 +5,6 @@ export default `
     projectId: String!
     type: String!
     status: String!
-    config: Object!
     created: String!
     updated: String!
     output: Object

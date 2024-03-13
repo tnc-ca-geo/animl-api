@@ -17,7 +17,6 @@ const TaskSchema = new Schema({
     enum : ['SUBMITTED', 'FAIL', 'COMPLETE'],
     default: 'SUBMITTED'
   },
-  config: { type: Object, default: {}, required: true },
   created: { type: Date, default: Date.now, required: true },
   updated: { type: Date, default: Date.now, required: true },
   output: { type: Object }
