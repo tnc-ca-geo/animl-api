@@ -4,6 +4,7 @@ export default `
     projects(input: QueryProjectsInput): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
+    imagesCount(input: FiltersInput!): ImagesCount
     imageErrors(input: QueryImageErrorsInput!): ImageErrorsConnection
     labels: LabelList
     wirelessCameras(input: QueryWirelessCamerasInput): [WirelessCamera]

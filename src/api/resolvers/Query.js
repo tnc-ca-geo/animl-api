@@ -22,18 +22,28 @@ const Query = {
   },
 
   images: async (_, { input }, context) => {
-    const count = await context.models.Image.countImages(input, context);
+    console.time('images query');
     const response = await context.models.Image.queryByFilter(input, context);
+    console.timeEnd('images query');
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {
       pageInfo: {
         previous,
         hasPrevious,
         next,
-        hasNext,
-        count
+        hasNext
       },
       images: results
+    };
+  },
+
+  imagesCount: async (_, { input }, context) => {
+    console.log('imagesCount query - input: ', input);
+    console.time('images count');
+    const count = await context.models.Image.countImages(input, context);
+    console.timeEnd('images count');
+    return {
+      count
     };
   },
 
