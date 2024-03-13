@@ -6,6 +6,7 @@ import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError,
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
+import { TaskModel } from './Task.js';
 import Image from '../schemas/Image.js';
 import Project from '../schemas/Project.js';
 import ImageError from '../schemas/ImageError.js';
@@ -972,7 +973,12 @@ export default class AuthedImageModel {
   }
 
   async getStats(input, context) {
-    return await ImageModel.getStats(input, context);
+    return await TaskModel.create({
+        type: 'GetStats',
+        projectId: context.user['curr_project'],
+        user: context.user['cognito:username'],
+        config: input
+    });
   }
 
   async export(input, context) {

@@ -1,6 +1,7 @@
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
+import GetStats from './stats.js';
 
 async function handler(event) {
   if (!event.Records || !event.Records.length) return;
@@ -12,8 +13,8 @@ async function handler(event) {
     const params = JSON.parse(record.body);
 
     try {
-      if (params.type === 'STATS') {
-        console.error('STATS');
+      if (params.type === 'GetStats') {
+        console.error('GetStats');
       } else {
         throw new Error(`Unknown Task: ${params}`);
       }

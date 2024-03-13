@@ -10,7 +10,7 @@ const TaskSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum : ['STATS']
+    enum : ['GetStats']
   },
   status: {
     type: String,
