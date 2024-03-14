@@ -49,7 +49,7 @@ export class TaskModel {
     return task;
   }
 
-  static async create(input) {
+  static async create(input, context) {
     const task = new Task({
         user: input.user,
         projectId: input.projectId,

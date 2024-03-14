@@ -978,7 +978,7 @@ export default class AuthedImageModel {
         projectId: context.user['curr_project'],
         user: context.user['cognito:username'],
         config: input
-    });
+    }, context);
   }
 
   async export(input, context) {
