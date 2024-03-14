@@ -21,8 +21,8 @@ const Query = {
     };
   },
 
-  tasks: async (_, { input }, context) => {
-    return await context.models.Task.queryById(input.task, context);
+  task: async (_, { input }, context) => {
+    return await context.models.Task.queryById(input, context);
   },
 
   batches: async (_, { input }, context) => {

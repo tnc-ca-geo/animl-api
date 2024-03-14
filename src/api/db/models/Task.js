@@ -90,9 +90,7 @@ export default class AuthedTaskModel {
   async queryById(input, context) {
     if (!hasRole(this.user, READ_TASKS_ROLES)) throw new ForbiddenError();
 
-    return await TaskModel.queryById({
-        _id: input.task
-    }, context);
+    return await TaskModel.queryById(input, context);
   }
 
   async queryByFilter(input, context) {
