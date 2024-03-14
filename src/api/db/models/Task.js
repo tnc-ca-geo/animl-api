@@ -70,8 +70,8 @@ export class TaskModel {
     return task;
   }
 
-  static async update(input) {
-    const task = await this.queryById(input._id);
+  static async update(input, context) {
+    const task = await this.queryById(input._id, context);
 
     input.updated = new Date();
 
