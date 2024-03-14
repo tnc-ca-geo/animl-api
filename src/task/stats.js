@@ -1,5 +1,5 @@
 import { ImageModel } from '../api/db/models/Image.js';
 
-export default function(task) {
-    return ImageModel.getStats(task.config);
+export default async function(task) {
+    return await ImageModel.getStats(task.config);
 }

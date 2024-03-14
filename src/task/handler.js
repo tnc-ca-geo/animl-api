@@ -12,18 +12,26 @@ async function handler(event) {
     console.log(`record body: ${record.body}`);
     const params = JSON.parse(record.body);
 
+    let output = {};
+    await TaskModel.update({ _id: params._id, status: 'RUNNING' });
+
     try {
       if (params.type === 'GetStats') {
-        console.error('GetStats');
+        output = await GetStats(task)
       } else {
         throw new Error(`Unknown Task: ${params}`);
       }
-    } catch (err) {
+
       await TaskModel.update({
         _id: params._id,
         status: 'FAIl',
         output: { error: err.message }
       });
+
+    await TaskModel.update({ _id: params._id, status: 'COMPLETE', output });
+
+    } catch (err) {
+      await TaskModel.update({ _id: params._id, status: 'FAIL', output: { error: err.message } });
     }
   }
 

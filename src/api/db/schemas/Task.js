@@ -14,7 +14,7 @@ const TaskSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum : ['SUBMITTED', 'FAIL', 'COMPLETE'],
+    enum : ['SUBMITTED', 'RUNNING', 'FAIL', 'COMPLETE'],
     default: 'SUBMITTED'
   },
   created: { type: Date, default: Date.now, required: true },
