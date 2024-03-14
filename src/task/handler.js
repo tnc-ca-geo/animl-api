@@ -10,28 +10,31 @@ async function handler(event) {
 
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
-    const params = JSON.parse(record.body);
+    const task = JSON.parse(record.body);
 
     let output = {};
-    await TaskModel.update({ _id: params._id, status: 'RUNNING' });
+    await TaskModel.update(
+      { _id: task._id, status: 'RUNNING' },
+      { user: { curr_project: task.projectId } }
+    );
 
     try {
-      if (params.type === 'GetStats') {
-        output = await GetStats(task)
+      if (task.type === 'GetStats') {
+        output = await GetStats(task);
       } else {
-        throw new Error(`Unknown Task: ${params}`);
+        throw new Error(`Unknown Task: ${task}`);
       }
 
-      await TaskModel.update({
-        _id: params._id,
-        status: 'FAIl',
-        output: { error: err.message }
-      });
-
-    await TaskModel.update({ _id: params._id, status: 'COMPLETE', output });
+      await TaskModel.update(
+        { _id: task._id, status: 'COMPLETE', output },
+        { user: { curr_project: task.projectId } }
+      );
 
     } catch (err) {
-      await TaskModel.update({ _id: params._id, status: 'FAIL', output: { error: err.message } });
+      await TaskModel.update(
+        { _id: task._id, status: 'FAIL', output: { error: err.message } },
+        { user: { curr_project: task.projectId } }
+      );
     }
   }
 

@@ -974,10 +974,10 @@ export default class AuthedImageModel {
 
   async getStats(input, context) {
     return await TaskModel.create({
-        type: 'GetStats',
-        projectId: context.user['curr_project'],
-        user: context.user['cognito:username'],
-        config: input
+      type: 'GetStats',
+      projectId: context.user['curr_project'],
+      user: context.user['cognito:username'],
+      config: input
     }, context);
   }
 

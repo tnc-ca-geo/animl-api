@@ -51,22 +51,22 @@ export class TaskModel {
 
   static async create(input, context) {
     const task = new Task({
-        user: input.user,
-        projectId: input.projectId,
-        type: input.type,
+      user: input.user,
+      projectId: input.projectId,
+      type: input.type
     });
 
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
 
     await task.save();
 
-      await sqs.send(new SQS.SendMessageCommand({
-          QueueUrl: context.config['/TASKS/TASK_QUEUE_URL'],
-          MessageBody: JSON.stringify({
-            config: input.config,
-            ...task.toJSON()
-          })
-      }));
+    await sqs.send(new SQS.SendMessageCommand({
+      QueueUrl: context.config['/TASKS/TASK_QUEUE_URL'],
+      MessageBody: JSON.stringify({
+        config: input.config,
+        ...task.toJSON()
+      })
+    }));
     return task;
   }
 
