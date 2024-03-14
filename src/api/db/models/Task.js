@@ -64,7 +64,7 @@ export class TaskModel {
           QueueUrl: context.config['/TASKS/TASK_QUEUE_URL'],
           MessageBody: JSON.stringify({
             config: input.config,
-            ...task
+            ...task.toJSON()
           })
       }));
     return task;
