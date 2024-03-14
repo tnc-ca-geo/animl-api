@@ -7,5 +7,5 @@ export default `
     status: String!
     created: String!
     updated: String!
-    output: Object
+    output: JSONObject
   }`;
