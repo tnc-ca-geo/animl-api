@@ -488,9 +488,7 @@ export class ProjectModel {
       const label = (project.labels || []).filter((p) => { return p._id.toString() === input._id.toString(); })[0];
       if (!label) throw new DeleteLabelError('Label not found on project');
 
-      const count = await ImageModel.countImagesByLabel([input._id], {
-        limit: MAX_LABEL_DELETE
-      }, context);
+      const count = await ImageModel.countImagesByLabel([input._id], context);
 
       if (count > MAX_LABEL_DELETE) {
         const msg = `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
