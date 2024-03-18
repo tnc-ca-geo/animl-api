@@ -323,7 +323,7 @@ export class ImageModel {
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+      if (comment.author !== context.user.sub && !context.user['is_superuser']) {
         throw new ForbiddenError('Can only edit your own comments');
       }
 
@@ -345,7 +345,7 @@ export class ImageModel {
       const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
+      if (comment.author !== context.user.sub && !context.user['is_superuser']) {
         throw new ForbiddenError('Can only edit your own comments');
       }
 
@@ -366,7 +366,7 @@ export class ImageModel {
 
       if (!image.comments) image.comments = [];
       image.comments.push({
-        author: context.user['cognito:username'],
+        author: context.user.sub,
         comment: input.comment
       });
       await image.save();
@@ -976,7 +976,7 @@ export default class AuthedImageModel {
     return await TaskModel.create({
       type: 'GetStats',
       projectId: context.user['curr_project'],
-      user: context.user['cognito:username'],
+      user: context.user.sub,
       config: input
     }, context);
   }
