@@ -66,7 +66,7 @@ config files of other services upon which this app depends, but some must be
 created manually via the AWS console. To make sure you have the correct secrets 
 and parameters available, do the following: 
 
-1. Make sure you've deplpyed [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest), 
+1. Make sure you've deployed [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest), 
 [animl-frontent](http://github.com/tnc-ca-geo/animl-frontend), 
 and [mira-api](https://github.com/tnc-ca-geo/animl-ml/tree/master/api/mira) in the 
 same staging env (dev/prod) as the environtment you intend to deploy `animl-api`.
