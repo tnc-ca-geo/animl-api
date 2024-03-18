@@ -429,6 +429,8 @@ export class ImageModel {
           for (const [key, newVal] of Object.entries(diffs)) {
             overrides[`objects.$[obj].${key}`] = newVal;
           }
+
+          overrides['reviewed'] = false;
           operations.push({
             updateOne: {
               filter: { _id: imageId },
