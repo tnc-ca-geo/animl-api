@@ -5,7 +5,7 @@ export default `
     projectId: String!
     type: String!
     status: String!
-    created: String!
-    updated: String!
+    created: Date!
+    updated: Date!
     output: JSONObject
   }`;
