@@ -32,7 +32,7 @@ async function handler(event) {
 
     } catch (err) {
       await TaskModel.update(
-        { _id: task._id, status: 'FAIL', output: { error: err.message } },
+        { _id: task._id, status: 'FAIL', output: { error: err } },
         { user: { curr_project: task.projectId } }
       );
     }
