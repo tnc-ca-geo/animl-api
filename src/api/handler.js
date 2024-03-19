@@ -8,6 +8,7 @@ import AuthedMLModelModel from './db/models/MLModel.js';
 import AuthedBatchModel from './db/models/Batch.js';
 import AuthedBatchErrorModel from './db/models/BatchError.js';
 import AuthedImageErrorModel from './db/models/ImageError.js';
+import AuthedTaskModel from './db/models/Task.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
@@ -52,6 +53,7 @@ const context = async ({ event, context }) => {
     config,
     models: {
       User: new AuthedUserModel(user),
+      Task: new AuthedTaskModel(user),
       Project: new AuthedProjectModel(user),
       Image: new AuthedImageModel(user),
       ImageError: new AuthedImageErrorModel(user),

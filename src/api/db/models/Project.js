@@ -63,7 +63,7 @@ export class ProjectModel {
       }, { retries: 2 });
     };
 
-    if (!context.user['cognito:username']) {
+    if (!context.user.sub) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
       throw new AuthenticationError('Projects must be created by an authenticated user');
@@ -96,7 +96,7 @@ export class ProjectModel {
       context.user['curr_project'] = _id;
 
       await UserModel.update({
-        username: context.user['cognito:username'],
+        username: context.user.sub,
         roles: ['manager']
       }, context);
 

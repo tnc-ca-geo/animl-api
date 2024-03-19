@@ -39,6 +39,9 @@ provider:
             - Fn::GetAtt:
                 - exportQueue
                 - Arn
+            - Fn::GetAtt:
+                - taskQueue
+                - Arn
         - Effect: Allow
           Action:
             - sagemaker:InvokeEndpoint
@@ -181,6 +184,19 @@ functions:
               - Arn
           batchSize: 1
     timeout: 120
+  task:
+    image:
+      name: base
+      command: src/task/handler.handler
+    reservedConcurrency: 10
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - taskQueue
+              - Arn
+          batchSize: 1
+    timeout: 900
 
 resources:
   Resources:
@@ -215,7 +231,14 @@ resources:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
 
-    # Export SQS queue
+    # Task SQS queue
+    taskQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: taskQueue-${self:provider.stage}
+        VisibilityTimeout: 900
+
+    # Export SQS queue - will eventually be replaced by unified tasks queue
     exportQueue:
       Type: AWS::SQS::Queue
       Properties:
@@ -239,6 +262,15 @@ resources:
         Name: /ml/inference-queue-url-${opt:stage, self:provider.stage, 'dev'}
         Type: String
         Value: !Ref inferenceQueue
+
+    # SSM Param - task queue url
+    SSMParameterTaskqueue:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Description: Task queue url
+        Name: /tasks/task-queue-url-${opt:stage, self:provider.stage, 'dev'}
+        Type: String
+        Value: !Ref taskQueue
 
     # SSM Param - export queue url
     SSMParameterExportqueue:
