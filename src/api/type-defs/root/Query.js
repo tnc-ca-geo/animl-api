@@ -2,7 +2,7 @@ export default `
   type Query {
     users(input: QueryUsersInput): UsersPayload
     tasks(input: QueryTasksInput): TasksPayload
-    task(input: String!): Task
+    task(input: QueryTaskInput!): Task
     projects(input: QueryProjectsInput): [Project]
     image(input: QueryImageInput!): Image
     images(input: QueryImagesInput!): ImagesConnection
