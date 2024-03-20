@@ -5,9 +5,7 @@ import _ from 'lodash';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 
 export default async function(task) {
-  // return await ImageModel.getStats(task.config, { user: { is_superuser: true, curr_project: task.projectId } });
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
-
   let imageCount = 0;
   let reviewed = 0;
   let notReviewed = 0;
@@ -20,9 +18,12 @@ export default async function(task) {
   try {
     const project = await ProjectModel.queryById(context.user['curr_project']);
     const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
-    const images = await Image.aggregate(pipeline);
-    imageCount = images.length;
-    for (const img of images) {
+
+    // stream in images from MongoDB
+    for await (const img of Image.aggregate(pipeline)) {
+
+      // increment imageCount
+      imageCount++;
 
       // increment reviewedCount
       isImageReviewed(img) ? reviewed++ : notReviewed++;
