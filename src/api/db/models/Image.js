@@ -1,9 +1,6 @@
-import { text } from 'node:stream/consumers';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
-import SQS from '@aws-sdk/client-sqs';
 import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError, AuthenticationError } from '../../errors.js';
-import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
@@ -763,20 +760,20 @@ export class ImageModel {
     }
   }
 
-    static async export(input, context) {
-        return await TaskModel.create({
-            type: 'ImageExport',
-            projectId: context.user['curr_project'],
-            user: context.user.sub,
-            config: {
-                filters: input.filters,
-                format: input.format
-            }
-        }, context);
-    } catch (err) {
-        if (err instanceof GraphQLError) throw err;
-        throw new InternalServerError(err);
-    }
+  static async export(input, context) {
+    return await TaskModel.create({
+      type: 'ImageExport',
+      projectId: context.user['curr_project'],
+      user: context.user.sub,
+      config: {
+        filters: input.filters,
+        format: input.format
+      }
+    }, context);
+  } catch (err) {
+    if (err instanceof GraphQLError) throw err;
+    throw new InternalServerError(err);
+  }
 }
 
 export default class AuthedImageModel {

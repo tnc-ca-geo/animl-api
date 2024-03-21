@@ -103,7 +103,7 @@ const Query = {
 
   export: async (_, { input }, context) => {
     return await context.models.Image.export(input, context);
-  },
+  }
 };
 
 export default Query;
