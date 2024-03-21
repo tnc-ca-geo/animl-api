@@ -13,8 +13,7 @@ export default `
     mlModels(input: QueryMLModelsInput): [MLModel]
     batches(input: QueryBatchesInput!): BatchesConnection
     export(input: ExportInput!): Task
-    exportErrors(input: ExportErrorsInput!): ExportPayload
-    exportStatus(input: ExportStatusInput!): ExportStatusPayload
+    exportErrors(input: ExportErrorsInput!): Task
     stats(input: QueryStatsInput!): Task
   }
 `;

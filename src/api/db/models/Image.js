@@ -763,41 +763,20 @@ export class ImageModel {
     }
   }
 
-  static async export(input, context) {
-    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
-    const id = crypto.randomBytes(16).toString('hex');
-    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-    try {
-      // create status document in S3
-      await s3.send(new S3.PutObjectCommand({
-        Bucket: bucket,
-        Key: `${id}.json`,
-        Body: JSON.stringify({ status: 'Pending' }),
-        ContentType: 'application/json; charset=utf-8'
-      }));
-
-      // push message to SQS with { projectId, documentId, filters }
-      await sqs.send(new SQS.SendMessageCommand({
-        QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
-        MessageBody: JSON.stringify({
-          projectId: context.user['curr_project'],
-          documentId: id,
-          filters: input.filters,
-          format: input.format
-        })
-      }));
-
-      return {
-        documentId: id
-      };
-
+    static async export(input, context) {
+        return await TaskModel.create({
+            type: 'ImageExport',
+            projectId: context.user['curr_project'],
+            user: context.user.sub,
+            config: {
+                filters: input.filters,
+                format: input.format
+            }
+        }, context);
     } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+        if (err instanceof GraphQLError) throw err;
+        throw new InternalServerError(err);
     }
-  }
 }
 
 export default class AuthedImageModel {
