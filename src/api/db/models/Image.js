@@ -762,15 +762,6 @@ export class ImageModel {
     }
   }
 
-  async getStats(input, context) {
-    return await TaskModel.create({
-      type: 'GetStats',
-      projectId: context.user['curr_project'],
-      user: context.user.sub,
-      config: input
-    }, context);
-  } 
-
   static async export(input, context) {
     return await TaskModel.create({
       type: 'AnnotationsExport',
