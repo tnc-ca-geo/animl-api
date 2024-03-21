@@ -798,24 +798,6 @@ export class ImageModel {
       throw new InternalServerError(err);
     }
   }
-
-  static async getExportStatus(input, context) {
-    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-    try {
-      const { Body } = await s3.send(new S3.GetObjectCommand({
-        Bucket: bucket,
-        Key: `${input.documentId}.json`
-      }));
-
-      const objectText = await text(Body);
-      return JSON.parse(objectText);
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
-    }
-  }
 }
 
 export default class AuthedImageModel {
@@ -914,10 +896,4 @@ export default class AuthedImageModel {
     if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.export(input, context);
   }
-
-  async getExportStatus(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageModel.getExportStatus(input, context);
-  }
-
 }
