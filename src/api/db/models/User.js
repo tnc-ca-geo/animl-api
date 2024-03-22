@@ -63,6 +63,9 @@ export class UserModel {
             UserAttributes: [{
               Name: 'email',
               Value: input.username
+            }, {
+              Name: 'email_verified',
+              Value: 'true'
             }],
             UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
           }));
