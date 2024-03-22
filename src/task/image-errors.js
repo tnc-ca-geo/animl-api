@@ -133,7 +133,7 @@ export default class ImageExport {
   async getPresignedURL() {
     console.log('getting presigned url');
     const command = new S3.GetObjectCommand({ Bucket: this.bucket, Key: this.filename });
-    return await Signer.getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
   }
 
   streamToS3(filename) {

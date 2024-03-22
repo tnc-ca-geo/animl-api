@@ -61,7 +61,6 @@ provider:
             - 'lambda:InvokeFunction'
           Resource:
             - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:IngestDelete-${self:provider.stage}
-            - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:animl-api-${self:provider.stage}-export
         - Effect: 'Allow'
           Action:
             - 's3:PutObject'

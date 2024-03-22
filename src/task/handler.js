@@ -2,6 +2,8 @@ import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
 import GetStats from './stats.js';
+import ImageErrorExport from './image-errors.js';
+import ImageExport from './images.js';
 
 async function handler(event) {
   if (!event.Records || !event.Records.length) return;

@@ -12,7 +12,21 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
-export default class ImageExport {
+export default async function() {
+    const dataExport = new ImageExport(params, config);
+
+    await dataExport.init();
+
+    if (!params.format || params.format === 'csv') {
+        await dataExport.toCSV();
+    } else if (params.format === 'coco') {
+        await dataExport.toCOCO();
+    } else {
+        throw new Error(`Unsupported export format (${params.format})`);
+    }
+}
+
+export class ImageExport {
   constructor({ projectId, documentId, filters, format }, config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
