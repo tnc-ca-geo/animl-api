@@ -4,6 +4,7 @@ import { TaskModel } from '../api/db/models/Task.js';
 import GetStats from './stats.js';
 import ImageErrorExport from './image-errors.js';
 import ImageExport from './images.js';
+import { parseMessage } from './utils.js';
 
 async function handler(event) {
   if (!event.Records || !event.Records.length) return;
@@ -12,7 +13,7 @@ async function handler(event) {
 
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
-    const task = JSON.parse(record.body);
+    const task = parseMessage(JSON.parse(record.body));
 
     let output = {};
     await TaskModel.update(
