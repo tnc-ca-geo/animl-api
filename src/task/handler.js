@@ -30,7 +30,7 @@ async function handler(event) {
       } else if (task.type === 'ImageErrorsExport') {
         output = await ImageErrorExport(task, config);
       } else {
-        throw new Error(`Unknown Task: ${task}`);
+        throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }
 
       await TaskModel.update(

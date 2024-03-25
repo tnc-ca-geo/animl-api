@@ -23,9 +23,6 @@ export class ImageErrorExport {
     this.pipeline = [
       { $match: { 'batch':  filters.batch } }
     ];
-
-    this.status = 'Pending';
-    this.errs = [];
   }
 
   async init() {

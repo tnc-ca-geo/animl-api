@@ -30,8 +30,6 @@ export class ImageExport {
     this.imageCountThreshold = 18000;  // TODO: Move to config?
     this.reviewedCount = 0;
     this.notReviewedCount = 0;
-
-    this.errs = [];
   }
 
   async init() {
