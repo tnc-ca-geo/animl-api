@@ -9,22 +9,6 @@ import { stringify } from 'csv-stringify';
 import ImageError from '../api/db/schemas/ImageError.js';
 import { ImageErrorModel } from '../api/db/models/ImageError.js';
 
-export default async function(task) {
-    const dataExport = new ImageErrorExport({
-        projectId: task.projectId,
-        filters: task.config.filters,
-        format: task.config.format
-    }, config);
-
-    await dataExport.init();
-
-    if (!params.format || params.format === 'csv') {
-        await dataExport.toCSV();
-    } else {
-        throw new Error(`Unsupported export format (${params.format})`);
-    }
-}
-
 export class ImageErrorExport {
   constructor({ documentId, filters, format }, config) {
     this.config = config;
@@ -104,11 +88,11 @@ export class ImageErrorExport {
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
 
-      return {
-          url: this.presignedURL,
-          count: this.errorCount,
-          meta: {}
-      }
+    return {
+      url: this.presignedURL,
+      count: this.errorCount,
+      meta: {}
+    };
 
   }
 
@@ -137,3 +121,21 @@ export class ImageErrorExport {
     };
   }
 }
+
+export default async function(task, config) {
+  const dataExport = new ImageErrorExport({
+    projectId: task.projectId,
+    documentId: task._id,
+    filters: task.config.filters,
+    format: task.config.format
+  }, config);
+
+  await dataExport.init();
+
+  if (!task.config.format || task.config.format === 'csv') {
+    await dataExport.toCSV();
+  } else {
+    throw new Error(`Unsupported export format (${task.config.format})`);
+  }
+}
+

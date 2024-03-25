@@ -12,26 +12,8 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
-export default async function(task, config) {
-    const dataExport = new ImageExport({
-        projectId: task.projectId,
-        filters: task.config.filters,
-        format: task.config.format
-    }, config);
-
-    await dataExport.init();
-
-    if (!params.format || params.format === 'csv') {
-        return await dataExport.toCSV();
-    } else if (params.format === 'coco') {
-        return await dataExport.toCOCO();
-    } else {
-        throw new Error(`Unsupported export format (${params.format})`);
-    }
-}
-
 export class ImageExport {
-  constructor({ projectId, filters, format }, config) {
+  constructor({ projectId, documentId, filters, format }, config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.user = { 'is_superuser': true };
@@ -131,16 +113,16 @@ export class ImageExport {
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
 
-      return {
-          url: this.presignedURL,
-          count: this.imageCount,
-          meta: {
-              reviewedCount: {
-                  reviewed: this.reviewedCount,
-                  notReviewed: this.notReviewedCount
-              }
-          }
+    return {
+      url: this.presignedURL,
+      count: this.imageCount,
+      meta: {
+        reviewedCount: {
+          reviewed: this.reviewedCount,
+          notReviewed: this.notReviewedCount
+        }
       }
+    };
   }
 
   async toCOCO() {
@@ -182,16 +164,16 @@ export class ImageExport {
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
 
-      return {
-          url: this.presignedURL,
-          count: this.imageCount,
-          meta: {
-              reviewedCount: {
-                  reviewed: this.reviewedCount,
-                  notReviewed: this.notReviewedCount
-              }
-          }
+    return {
+      url: this.presignedURL,
+      count: this.imageCount,
+      meta: {
+        reviewedCount: {
+          reviewed: this.reviewedCount,
+          notReviewed: this.notReviewedCount
+        }
       }
+    };
   }
 
   async multipartUpload(catString, infoString, catMap) {
@@ -460,3 +442,23 @@ export class ImageExport {
   }
 
 }
+
+export default async function(task, config) {
+  const dataExport = new ImageExport({
+    projectId: task.projectId,
+    documentId: task._id,
+    filters: task.config.filters,
+    format: task.config.format
+  }, config);
+
+  await dataExport.init();
+
+  if (!task.config.format || task.config.format === 'csv') {
+    return await dataExport.toCSV();
+  } else if (task.config.format === 'coco') {
+    return await dataExport.toCOCO();
+  } else {
+    throw new Error(`Unsupported export format (${task.config.format})`);
+  }
+}
+
