@@ -1,9 +1,6 @@
-import { text } from 'node:stream/consumers';
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
-import SQS from '@aws-sdk/client-sqs';
 import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError, AuthenticationError } from '../../errors.js';
-import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
@@ -764,57 +761,18 @@ export class ImageModel {
   }
 
   static async export(input, context) {
-    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
-    const id = crypto.randomBytes(16).toString('hex');
-    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-    try {
-      // create status document in S3
-      await s3.send(new S3.PutObjectCommand({
-        Bucket: bucket,
-        Key: `${id}.json`,
-        Body: JSON.stringify({ status: 'Pending' }),
-        ContentType: 'application/json; charset=utf-8'
-      }));
-
-      // push message to SQS with { projectId, documentId, filters }
-      await sqs.send(new SQS.SendMessageCommand({
-        QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
-        MessageBody: JSON.stringify({
-          projectId: context.user['curr_project'],
-          documentId: id,
-          filters: input.filters,
-          format: input.format
-        })
-      }));
-
-      return {
-        documentId: id
-      };
-
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
-    }
-  }
-
-  static async getExportStatus(input, context) {
-    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-    try {
-      const { Body } = await s3.send(new S3.GetObjectCommand({
-        Bucket: bucket,
-        Key: `${input.documentId}.json`
-      }));
-
-      const objectText = await text(Body);
-      return JSON.parse(objectText);
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
-    }
+    return await TaskModel.create({
+      type: 'AnnotationsExport',
+      projectId: context.user['curr_project'],
+      user: context.user.sub,
+      config: {
+        filters: input.filters,
+        format: input.format
+      }
+    }, context);
+  } catch (err) {
+    if (err instanceof GraphQLError) throw err;
+    throw new InternalServerError(err);
   }
 }
 
@@ -914,10 +872,4 @@ export default class AuthedImageModel {
     if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
     return await ImageModel.export(input, context);
   }
-
-  async getExportStatus(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageModel.getExportStatus(input, context);
-  }
-
 }

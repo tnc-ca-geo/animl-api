@@ -3,13 +3,13 @@ import stream from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
 import { Upload } from '@aws-sdk/lib-storage';
 import S3 from '@aws-sdk/client-s3';
-import Signer from './signer.js';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { InternalServerError } from '../api/errors.js';
 import { stringify } from 'csv-stringify';
 import ImageError from '../api/db/schemas/ImageError.js';
 import { ImageErrorModel } from '../api/db/models/ImageError.js';
 
-export default class ImageExport {
+export class ImageErrorExport {
   constructor({ documentId, filters, format }, config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
@@ -23,9 +23,6 @@ export default class ImageExport {
     this.pipeline = [
       { $match: { 'batch':  filters.batch } }
     ];
-
-    this.status = 'Pending';
-    this.errs = [];
   }
 
   async init() {
@@ -34,8 +31,7 @@ export default class ImageExport {
       this.errorCount = await ImageErrorModel.countImageErrors(this.filters);
       console.log('errorCount: ', this.errorCount);
     } catch (err) {
-      await this.error(err.message);
-      throw new InternalServerError('error initializing the export class');
+      throw new InternalServerError('error initializing the export class: ' + err.message);
     }
   }
 
@@ -50,8 +46,7 @@ export default class ImageExport {
       console.log('res: ', res);
       count = res[0] ? res[0].count : 0;
     } catch (err) {
-      await this.error(err.message);
-      throw new InternalServerError('error counting ImageError');
+      throw new InternalServerError('error counting ImageError: ' + err.message);
     }
     return count;
   }
@@ -84,56 +79,24 @@ export default class ImageExport {
       await promise;
       console.log('upload complete');
     } catch (err) {
-      console.error(err);
-      await this.error(err.message);
-      throw new InternalServerError('error exporting to CSV');
+      throw new InternalServerError('error exporting to CSV: ' + err.message);
     }
 
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
-  }
 
-  async success() {
-    console.log('export success');
-    this.status = 'Success';
-    await this.updateStatus();
-  }
+    return {
+      url: this.presignedURL,
+      count: this.errorCount,
+      meta: {}
+    };
 
-  async error(message) {
-    console.log('export error');
-    this.errs.push(message);
-    this.status = 'Error';
-    await this.updateStatus();
-  }
-
-  async updateStatus() {
-    console.log(`updating ${this.documentId}.json status document`);
-    // TODO: make sure the status document exists first
-    try {
-      console.log(`s3://${this.bucket}/${this.documentId}.json`);
-
-      const res = await this.s3.send(new S3.PutObjectCommand({
-        Bucket: this.bucket,
-        Key: `${this.documentId}.json`,
-        Body: JSON.stringify({
-          status: this.status,
-          error: this.errs,
-          url: this.presignedURL,
-          count: this.errorCount,
-          meta: {}
-        }),
-        ContentType: 'application/json; charset=utf-8'
-      }));
-      console.log('document updated: ', res);
-    } catch (err) {
-      throw new InternalServerError('error updating status document');
-    }
   }
 
   async getPresignedURL() {
     console.log('getting presigned url');
     const command = new S3.GetObjectCommand({ Bucket: this.bucket, Key: this.filename });
-    return await Signer.getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
   }
 
   streamToS3(filename) {
@@ -155,3 +118,21 @@ export default class ImageExport {
     };
   }
 }
+
+export default async function(task, config) {
+  const dataExport = new ImageErrorExport({
+    projectId: task.projectId,
+    documentId: task._id,
+    filters: task.config.filters,
+    format: task.config.format
+  }, config);
+
+  await dataExport.init();
+
+  if (!task.config.format || task.config.format === 'csv') {
+    return await dataExport.toCSV();
+  } else {
+    throw new Error(`Unsupported export format (${task.config.format})`);
+  }
+}
+

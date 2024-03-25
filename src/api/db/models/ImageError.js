@@ -1,12 +1,10 @@
 import GraphQLError, { InternalServerError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { TaskModel } from './Task.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging from 'mongo-cursor-pagination';
-import crypto from 'node:crypto';
 import ImageError from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
-import SQS from '@aws-sdk/client-sqs';
-import S3 from '@aws-sdk/client-s3';
 
 /**
  * ImageErrors are errors that are generated when a single image upload
@@ -129,38 +127,18 @@ export class ImageErrorModel {
    * @param {Object} context
    */
   static async export(input, context) {
-    const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
-    const id = crypto.randomBytes(16).toString('hex');
-    const bucket = context.config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-
-    try {
-      // create status document in S3
-      await s3.send(new S3.PutObjectCommand({
-        Bucket: bucket,
-        Key: `${id}.json`,
-        Body: JSON.stringify({ status: 'Pending' }),
-        ContentType: 'application/json; charset=utf-8'
-      }));
-
-      await sqs.send(new SQS.SendMessageCommand({
-        QueueUrl: context.config['/EXPORTS/EXPORT_QUEUE_URL'],
-        MessageBody: JSON.stringify({
-          type: 'ImageErrors',
-          documentId: id,
-          filters: input.filters,
-          format: 'csv'
-        })
-      }));
-
-      return {
-        documentId: id
-      };
-
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
-    }
+    return await TaskModel.create({
+      type: 'ImageErrorsExport',
+      projectId: context.user['curr_project'],
+      user: context.user.sub,
+      config: {
+        filters: input.filters,
+        format: 'csv'
+      }
+    }, context);
+  } catch (err) {
+    if (err instanceof GraphQLError) throw err;
+    throw new InternalServerError(err);
   }
 }
 

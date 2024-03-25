@@ -12,7 +12,7 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
-export default class ImageExport {
+export class ImageExport {
   constructor({ projectId, documentId, filters, format }, config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
@@ -30,9 +30,6 @@ export default class ImageExport {
     this.imageCountThreshold = 18000;  // TODO: Move to config?
     this.reviewedCount = 0;
     this.notReviewedCount = 0;
-
-    this.status = 'Pending';
-    this.errs = [];
   }
 
   async init() {
@@ -63,8 +60,7 @@ export default class ImageExport {
       this.labelMap = new Map();
       for (const l of project.labels) this.labelMap.set(l._id, l);
     } catch (err) {
-      await this.error(err);
-      throw new InternalServerError('error initializing the export class');
+      throw new InternalServerError('Error initializing the export class: ' + err.message);
     }
   }
 
@@ -78,8 +74,7 @@ export default class ImageExport {
       console.log('res: ', res);
       count = res[0] ? res[0].count : 0;
     } catch (err) {
-      await this.error(err);
-      throw new InternalServerError('error counting images');
+      throw new InternalServerError('Error counting images: ' + err.message);
     }
     return count;
   }
@@ -110,12 +105,22 @@ export default class ImageExport {
       await promise;
       console.log('upload complete');
     } catch (err) {
-      await this.error(err);
-      throw new InternalServerError('error exporting to CSV');
+      throw new InternalServerError('Error exporting to CSV: ' + err.message);
     }
 
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
+
+    return {
+      url: this.presignedURL,
+      count: this.imageCount,
+      meta: {
+        reviewedCount: {
+          reviewed: this.reviewedCount,
+          notReviewed: this.notReviewedCount
+        }
+      }
+    };
   }
 
   async toCOCO() {
@@ -151,52 +156,22 @@ export default class ImageExport {
         await this.putUpload(catMap, info);
       }
     } catch (err) {
-      await this.error(err);
-      throw new InternalServerError('error exporting to COCO');
+      throw new InternalServerError('Error exporting to COCO: ' + err.message);
     }
 
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
-  }
 
-  async success() {
-    console.log('export success');
-    this.status = 'Success';
-    await this.updateStatus();
-  }
-
-  async error(message) {
-    console.log('export error');
-    this.errs.push(message);
-    this.status = 'Error';
-    await this.updateStatus();
-  }
-
-  async updateStatus() {
-    console.log(`updating ${this.documentId}.json status document`);
-    // TODO: make sure the status document exists first
-    try {
-      const res = await this.s3.send(new S3.PutObjectCommand({
-        Bucket: this.bucket,
-        Key: `${this.documentId}.json`,
-        Body: JSON.stringify({
-          status: this.status,
-          error: this.errs,
-          url: this.presignedURL,
-          count: this.imageCount,
-          meta: {
-            reviewedCount: {
-              reviewed: this.reviewedCount,
-              notReviewed: this.notReviewedCount
-            }
-          }
-        }),
-        ContentType: 'application/json; charset=utf-8'
-      }));
-      console.log('document updated: ', res);
-    } catch (err) {
-      throw new InternalServerError('error updating status document');
-    }
+    return {
+      url: this.presignedURL,
+      count: this.imageCount,
+      meta: {
+        reviewedCount: {
+          reviewed: this.reviewedCount,
+          notReviewed: this.notReviewedCount
+        }
+      }
+    };
   }
 
   async multipartUpload(catString, infoString, catMap) {
@@ -465,3 +440,23 @@ export default class ImageExport {
   }
 
 }
+
+export default async function(task, config) {
+  const dataExport = new ImageExport({
+    projectId: task.projectId,
+    documentId: task._id,
+    filters: task.config.filters,
+    format: task.config.format
+  }, config);
+
+  await dataExport.init();
+
+  if (!task.config.format || task.config.format === 'csv') {
+    return await dataExport.toCSV();
+  } else if (task.config.format === 'coco') {
+    return await dataExport.toCOCO();
+  } else {
+    throw new Error(`Unsupported export format (${task.config.format})`);
+  }
+}
+

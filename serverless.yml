@@ -37,9 +37,6 @@ provider:
                 - inferenceQueue
                 - Arn
             - Fn::GetAtt:
-                - exportQueue
-                - Arn
-            - Fn::GetAtt:
                 - taskQueue
                 - Arn
         - Effect: Allow
@@ -64,7 +61,6 @@ provider:
             - 'lambda:InvokeFunction'
           Resource:
             - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:IngestDelete-${self:provider.stage}
-            - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:animl-api-${self:provider.stage}-export
         - Effect: 'Allow'
           Action:
             - 's3:PutObject'
@@ -171,19 +167,6 @@ functions:
       command: src/ml/handler.inference
     reservedConcurrency: 8
     timeout: 120
-  export:
-    image:
-      name: base
-      command: src/export/handler.handler
-    reservedConcurrency: 10
-    events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - exportQueue
-              - Arn
-          batchSize: 1
-    timeout: 120
   task:
     image:
       name: base
@@ -238,13 +221,6 @@ resources:
         QueueName: taskQueue-${self:provider.stage}
         VisibilityTimeout: 900
 
-    # Export SQS queue - will eventually be replaced by unified tasks queue
-    exportQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: exportQueue-${self:provider.stage}
-        VisibilityTimeout: 120
-
     # SSM Param - API URL
     SSMParameterApiurl:
       Type: AWS::SSM::Parameter
@@ -271,15 +247,6 @@ resources:
         Name: /tasks/task-queue-url-${opt:stage, self:provider.stage, 'dev'}
         Type: String
         Value: !Ref taskQueue
-
-    # SSM Param - export queue url
-    SSMParameterExportqueue:
-      Type: AWS::SSM::Parameter
-      Properties:
-        Description: Export queue url
-        Name: /exports/export-queue-url-${opt:stage, self:provider.stage, 'dev'}
-        Type: String
-        Value: !Ref exportQueue
 
     # Exported data bucket
     S3BucketAnimlexporteddata:

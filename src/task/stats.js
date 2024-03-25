@@ -2,7 +2,6 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
 import Image from '../api/db/schemas/Image.js';
 import _ from 'lodash';
-import GraphQLError, { InternalServerError } from '../api/errors.js';
 
 export default async function(task) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
@@ -15,65 +14,59 @@ export default async function(task) {
   // by more than one reviewer. can remove later
   let multiReviewerCount = 0;
 
-  try {
-    const project = await ProjectModel.queryById(context.user['curr_project']);
-    const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
+  const project = await ProjectModel.queryById(context.user['curr_project']);
+  const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
 
-    // stream in images from MongoDB
-    for await (const img of Image.aggregate(pipeline)) {
+  // stream in images from MongoDB
+  for await (const img of Image.aggregate(pipeline)) {
 
-      // increment imageCount
-      imageCount++;
+    // increment imageCount
+    imageCount++;
 
-      // increment reviewedCount
-      isImageReviewed(img) ? reviewed++ : notReviewed++;
+    // increment reviewedCount
+    isImageReviewed(img) ? reviewed++ : notReviewed++;
 
-      // build reviwer list
-      let reviewers = [];
-      for (const obj of img.objects) {
-        for (const lbl of obj.labels) {
-          if (lbl.validation) reviewers.push(lbl.validation.userId);
-        }
+    // build reviwer list
+    let reviewers = [];
+    for (const obj of img.objects) {
+      for (const lbl of obj.labels) {
+        if (lbl.validation) reviewers.push(lbl.validation.userId);
       }
-      reviewers = _.uniq(reviewers);
-      if (reviewers.length > 1) multiReviewerCount++;
+    }
+    reviewers = _.uniq(reviewers);
+    if (reviewers.length > 1) multiReviewerCount++;
 
-      for (const userId of reviewers) {
-        const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId));
-        !usr
-          ? reviewerList.push({ userId: userId, reviewedCount: 1 })
-          : usr.reviewedCount++;
-      }
-
-      // order reviewer list by reviewed count
-      reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
-
-      // build label list
-      for (const obj of img.objects) {
-        if (obj.locked) {
-          const firstValidLabel = obj.labels.find((label) => (
-            label.validation && label.validation.validated
-          ));
-          if (firstValidLabel) {
-            const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
-            const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-            labelList[labelName] = Object.prototype.hasOwnProperty.call(labelList, labelName) ? labelList[labelName] + 1 : 1;
-          }
-        }
-      }
-
+    for (const userId of reviewers) {
+      const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId));
+      !usr
+        ? reviewerList.push({ userId: userId, reviewedCount: 1 })
+        : usr.reviewedCount++;
     }
 
-    return {
-      imageCount,
-      reviewedCount: { reviewed, notReviewed },
-      reviewerList,
-      labelList,
-      multiReviewerCount
-    };
+    // order reviewer list by reviewed count
+    reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
 
-  } catch (err) {
-    if (err instanceof GraphQLError) throw err;
-    throw new InternalServerError(err);
+    // build label list
+    for (const obj of img.objects) {
+      if (obj.locked) {
+        const firstValidLabel = obj.labels.find((label) => (
+          label.validation && label.validation.validated
+        ));
+        if (firstValidLabel) {
+          const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
+          const labelName = projLabel?.name || 'ERROR FINDING LABEL';
+          labelList[labelName] = Object.prototype.hasOwnProperty.call(labelList, labelName) ? labelList[labelName] + 1 : 1;
+        }
+      }
+    }
+
   }
+
+  return {
+    imageCount,
+    reviewedCount: { reviewed, notReviewed },
+    reviewerList,
+    labelList,
+    multiReviewerCount
+  };
 }

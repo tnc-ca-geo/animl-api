@@ -103,10 +103,6 @@ const Query = {
 
   export: async (_, { input }, context) => {
     return await context.models.Image.export(input, context);
-  },
-
-  exportStatus: async (_, { input }, context) => {
-    return await context.models.Image.getExportStatus(input, context);
   }
 };
 
