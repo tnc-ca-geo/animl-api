@@ -24,9 +24,9 @@ async function handler(event) {
     try {
       if (task.type === 'GetStats') {
         output = await GetStats(task);
-      } else if (task.type === 'ImageExport') {
+      } else if (task.type === 'AnnotationsExport') {
         output = await ImageExport(task, config);
-      } else if (task.type === 'ImageErrorExport') {
+      } else if (task.type === 'ImageErrorsExport') {
         output = await ImageErrorExport(task, config);
       } else {
         throw new Error(`Unknown Task: ${task}`);

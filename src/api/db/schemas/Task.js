@@ -9,7 +9,7 @@ const TaskSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum : ['GetStats', 'ImageExport', 'ImageErrorExport']
+    enum : ['GetStats', 'AnnotationsExport', 'ImageErrorsExport']
   },
   status: {
     type: String,

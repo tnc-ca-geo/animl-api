@@ -762,7 +762,7 @@ export class ImageModel {
 
   static async export(input, context) {
     return await TaskModel.create({
-      type: 'ImageExport',
+      type: 'AnnotationsExport',
       projectId: context.user['curr_project'],
       user: context.user.sub,
       config: {
