@@ -133,7 +133,7 @@ export default async function(task, config) {
   await dataExport.init();
 
   if (!task.config.format || task.config.format === 'csv') {
-    await dataExport.toCSV();
+    return await dataExport.toCSV();
   } else {
     throw new Error(`Unsupported export format (${task.config.format})`);
   }
