@@ -2,6 +2,7 @@ import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
 import GetStats from './stats.js';
+import { UpdateDeployment } from './deployment.js';
 import ImageErrorExport from './image-errors.js';
 import ImageExport from './images.js';
 import { parseMessage } from './utils.js';
@@ -29,6 +30,8 @@ async function handler(event) {
         output = await ImageExport(task, config);
       } else if (task.type === 'ImageErrorsExport') {
         output = await ImageErrorExport(task, config);
+      } else if (task.type === 'UpdateDeployment') {
+        output = await UpdateDeployment(task);
       } else {
         throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }

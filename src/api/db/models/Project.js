@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { TaskModel } from './Task.js';
 import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
@@ -381,6 +382,20 @@ export class ProjectModel {
     }
   }
 
+  static async updateDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'UpdateDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
   static async updateDeployment(input, context) {
     const operation = async ({ cameraId, deploymentId, diffs }) => {
       return await retry(async (bail) => {
@@ -600,7 +615,7 @@ export default class AuthedProjectModel {
 
   async updateDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateDeployment(input, context);
+    return await ProjectModel.updateDeploymentTask(input, context);
   }
 
   async deleteDeployment(input, context) {
