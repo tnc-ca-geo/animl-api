@@ -135,8 +135,7 @@ const Mutation = {
   },
 
   createDeployment: async (_, { input }, context) => {
-    const cameraConfig = await context.models.Project.createDeployment(input, context);
-    return { cameraConfig };
+    return await context.models.Project.createDeployment(input, context);
   },
 
   updateDeployment: async (_, { input }, context) => {
@@ -144,8 +143,7 @@ const Mutation = {
   },
 
   deleteDeployment: async (_, { input }, context) => {
-    const cameraConfig = await context.models.Project.deleteDeployment(input, context);
-    return { cameraConfig };
+    return await context.models.Project.deleteDeployment(input, context);
   },
 
   createObjects: async (_, { input }, context) => {

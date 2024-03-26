@@ -349,6 +349,20 @@ export class ProjectModel {
     }
   }
 
+  static async createDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'CreateDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
   static async createDeployment(input, context) {
     const operation = async ({ cameraId, deployment }) => {
       return await retry(async () => {
@@ -433,6 +447,20 @@ export class ProjectModel {
         await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       }
       return camConfig;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  static async deleteDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'DeleteDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -610,7 +638,7 @@ export default class AuthedProjectModel {
 
   async createDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.createDeployment(input, context);
+    return await ProjectModel.createDeploymentTask(input, context);
   }
 
   async updateDeployment(input, context) {
@@ -620,6 +648,6 @@ export default class AuthedProjectModel {
 
   async deleteDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.deleteDeployment(input, context);
+    return await ProjectModel.deleteDeploymentTask(input, context);
   }
 }

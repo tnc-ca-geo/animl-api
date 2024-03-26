@@ -13,7 +13,9 @@ const TaskSchema = new Schema({
       'GetStats',
       'AnnotationsExport',
       'ImageErrorsExport',
-      'UpdateDeployment'
+      'CreateDeployment',
+      'UpdateDeployment',
+      'DeleteDeployment',
     ]
   },
   status: {
