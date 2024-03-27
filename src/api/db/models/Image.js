@@ -417,6 +417,8 @@ export class ImageModel {
 
   static async updateObjects(input) {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
+    const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
+
     const operation = async ({ updates }) => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
@@ -445,8 +447,9 @@ export class ImageModel {
     };
 
     try {
-      const res = await operation(input);
-      console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      const objectUpdateRes = await operation(input);
+      console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(objectUpdateRes.getRawResponse()));
+      const res = await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -802,15 +805,14 @@ export class ImageModel {
    * @param {Array<string>} imageIds - An array of image IDs to update. 
    */
   static async updateReviewStatus(imageIds) {
-    const operation = async ({ imageIds }) => {
+    const operation = async () => {
       return await retry(async (bail, attempt) => {
         if (attempt > 1) {
           console.log(`Retrying updateReviewed operation! Try #: ${attempt}`);
         }
         
         const images = await Image.find({
-          '_id': { $in: imageIds },
-          'projectId': context.user['curr_project']
+          '_id': { $in: imageIds }
         });
 
         const operations = [];
@@ -831,9 +833,9 @@ export class ImageModel {
     };
 
     try {
-      const res = await operation(imageIds);
+      const res = await operation();
       console.log('ImageModel.updateReviewed - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
-      return res.getRawResponse();
+      return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
