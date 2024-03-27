@@ -31,7 +31,8 @@ import {
   createImageRecord,
   createLabelRecord,
   reviewerLabelRecord,
-  findActiveProjReg
+  findActiveProjReg,
+  isImageReviewed
 } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -384,7 +385,7 @@ export class ImageModel {
         const operations = objects.map(({ imageId, object }) => ({
           updateOne: {
             filter: { _id: imageId },
-            update: { $push: { objects: object } }
+            update: { $push: { objects: object }, $set: { reviewed: false } }
           }
         }));
         console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
@@ -430,7 +431,6 @@ export class ImageModel {
             overrides[`objects.$[obj].${key}`] = newVal;
           }
 
-          overrides['reviewed'] = false;
           operations.push({
             updateOne: {
               filter: { _id: imageId },
@@ -441,7 +441,6 @@ export class ImageModel {
         }
         console.log('ImageModel.updateObjects - operations: ', JSON.stringify(operations));
         return await Image.bulkWrite(operations);
-
       }, { retries: 2 });
     };
 
@@ -552,6 +551,8 @@ export class ImageModel {
             labels: [labelRecord]
           });
         }
+
+        image.reviewed = false;
 
         await image.save();
         return { image, newLabel: labelRecord };
@@ -788,6 +789,51 @@ export class ImageModel {
           format: input.format
         }
       }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  /**
+   * A custom middleware-like method that is used to update the reviewed status of 
+   * images that should only be ran by operations that would affect the reviewed status.
+   * 
+   * @param {Array<string>} imageIds - An array of image IDs to update. 
+   */
+  static async updateReviewStatus(imageIds) {
+    const operation = async ({ imageIds }) => {
+      return await retry(async (bail, attempt) => {
+        if (attempt > 1) {
+          console.log(`Retrying updateReviewed operation! Try #: ${attempt}`);
+        }
+        
+        const images = await Image.find({
+          '_id': { $in: imageIds },
+          'projectId': context.user['curr_project']
+        });
+
+        const operations = [];
+        for (const image of images) {
+          const isReviewed = isImageReviewed(image);
+          if (isReviewed !== image.reviewed) {
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: { $set: { reviewed: isReviewed } }
+              }
+            });
+          }
+        }
+        console.log('ImageModel.updateReviewed - operations: ', JSON.stringify(operations));
+        return await Image.bulkWrite(operations);
+      }, { retries: 2 });
+    };
+
+    try {
+      const res = await operation(imageIds);
+      console.log('ImageModel.updateReviewed - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
