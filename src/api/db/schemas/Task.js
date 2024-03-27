@@ -15,7 +15,7 @@ const TaskSchema = new Schema({
       'ImageErrorsExport',
       'CreateDeployment',
       'UpdateDeployment',
-      'DeleteDeployment',
+      'DeleteDeployment'
     ]
   },
   status: {
