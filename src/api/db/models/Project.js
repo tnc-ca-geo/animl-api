@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { TaskModel } from './Task.js';
 import GraphQLError, { AuthenticationError, InternalServerError, NotFoundError, DeleteLabelError,ForbiddenError, DBValidationError } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project from '../schemas/Project.js';
@@ -348,6 +349,20 @@ export class ProjectModel {
     }
   }
 
+  static async createDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'CreateDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
   static async createDeployment(input, context) {
     const operation = async ({ cameraId, deployment }) => {
       return await retry(async () => {
@@ -375,6 +390,20 @@ export class ProjectModel {
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  static async updateDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'UpdateDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -418,6 +447,20 @@ export class ProjectModel {
         await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       }
       return camConfig;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  static async deleteDeploymentTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'DeleteDeployment',
+        projectId: context.user['curr_project'],
+        user: context.user.sub,
+        config: input
+      }, context);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -595,16 +638,16 @@ export default class AuthedProjectModel {
 
   async createDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.createDeployment(input, context);
+    return await ProjectModel.createDeploymentTask(input, context);
   }
 
   async updateDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateDeployment(input, context);
+    return await ProjectModel.updateDeploymentTask(input, context);
   }
 
   async deleteDeployment(input, context) {
     if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.deleteDeployment(input, context);
+    return await ProjectModel.deleteDeploymentTask(input, context);
   }
 }

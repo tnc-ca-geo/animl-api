@@ -48,8 +48,8 @@ export default `
     updateLabels(input: UpdateLabelsInput!): StandardPayload
     deleteLabels(input: DeleteLabelsInput!): StandardPayload
 
-    createDeployment(input: CreateDeploymentInput!): CreateDeploymentPayload
-    updateDeployment(input: UpdateDeploymentInput!): UpdateDeploymentPayload
-    deleteDeployment(input: DeleteDeploymentInput!): DeleteDeploymentPayload
+    createDeployment(input: CreateDeploymentInput!): Task
+    updateDeployment(input: UpdateDeploymentInput!): Task
+    deleteDeployment(input: DeleteDeploymentInput!): Task
   }
 `;
