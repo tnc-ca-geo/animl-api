@@ -43,6 +43,7 @@ The instructions below assume you have the following tools globally installed:
 - Node & npm
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
 - [aws-cli](https://aws.amazon.com/cli/)
+- [Docker] (https://docs.docker.com/engine/install/)
 
 ### Create "animl" AWS config profile
 The name of the profile must be "animl" (because it's referenced in the 
@@ -97,6 +98,8 @@ npm run seed-db-prod
 ```
 npm run start
 ```
+
+Note: The first time running serverless will require you to the login to the serverless console and be granted a seat from the TNC organization. 
 
 - To deploy the Cloudformation development stack, run: 
 ```
