@@ -100,7 +100,7 @@ const Query = {
 
   // async task
   exportErrors: async (_, { input }, context) => {
-    return await context.models.ImageError.export(input, context);
+    return await context.models.ImageError.exportErrors(input, context);
   },
 
   // async task
