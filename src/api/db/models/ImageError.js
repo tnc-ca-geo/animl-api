@@ -128,7 +128,7 @@ export class ImageErrorModel {
    */
   static async export(input, context) {
     return await TaskModel.create({
-      type: 'ImageErrorsExport',
+      type: 'ExportImageErrors',
       projectId: context.user['curr_project'],
       user: context.user.sub,
       config: {

@@ -12,9 +12,8 @@ export default `
     wirelessCameras(input: QueryWirelessCamerasInput): [WirelessCamera]
     mlModels(input: QueryMLModelsInput): [MLModel]
     batches(input: QueryBatchesInput!): BatchesConnection
-    export(input: ExportInput!): Task
+    exportAnnotations(input: ExportInput!): Task
     exportErrors(input: ExportErrorsInput!): Task
     stats(input: QueryStatsInput!): Task
   }
 `;
-

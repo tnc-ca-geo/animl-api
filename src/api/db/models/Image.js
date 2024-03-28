@@ -760,19 +760,35 @@ export class ImageModel {
     }
   }
 
-  static async export(input, context) {
-    return await TaskModel.create({
-      type: 'AnnotationsExport',
-      projectId: context.user['curr_project'],
-      user: context.user['cognito:username'],
-      config: {
-        filters: input.filters,
-        format: input.format
-      }
-    }, context);
-  } catch (err) {
-    if (err instanceof GraphQLError) throw err;
-    throw new InternalServerError(err);
+  static async getStatsTask(input, context) {
+    try {
+      return await TaskModel.create({
+        type: 'GetStats',
+        projectId: context.user['curr_project'],
+        user: context.user['cognito:username'],
+        config: input
+      }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  static async exportAnnotationsTask(input, context) {
+    try {
+      return TaskModel.create({
+        type: 'ExportAnnotations',
+        projectId: context.user['curr_project'],
+        user: context.user['cognito:username'],
+        config: {
+          filters: input.filters,
+          format: input.format
+        }
+      }, context);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
   }
 }
 
@@ -860,16 +876,11 @@ export default class AuthedImageModel {
   }
 
   async getStats(input, context) {
-    return await TaskModel.create({
-      type: 'GetStats',
-      projectId: context.user['curr_project'],
-      user: context.user['cognito:username'],
-      config: input
-    }, context);
+    return await ImageModel.getStatsTask(input, context);
   }
 
-  async export(input, context) {
+  async exportAnnotations(input, context) {
     if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageModel.export(input, context);
+    return await ImageModel.exportAnnotationsTask(input, context);
   }
 }

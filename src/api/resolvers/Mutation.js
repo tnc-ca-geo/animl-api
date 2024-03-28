@@ -134,14 +134,17 @@ const Mutation = {
     return { automationRules };
   },
 
+  // async task
   createDeployment: async (_, { input }, context) => {
     return await context.models.Project.createDeployment(input, context);
   },
 
+  // async task
   updateDeployment: async (_, { input }, context) => {
     return await context.models.Project.updateDeployment(input, context);
   },
 
+  // async task
   deleteDeployment: async (_, { input }, context) => {
     return await context.models.Project.deleteDeployment(input, context);
   },
