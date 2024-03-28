@@ -314,8 +314,7 @@ export class ProjectModel {
             };
           }
 
-          const imgs = await Image.find(filter);
-          for (const img of imgs) {
+          for await (const img of Image.find(filter)) {
 
             const update = {};
             if (img.deploymentId.toString() !== dep._id.toString()) {
