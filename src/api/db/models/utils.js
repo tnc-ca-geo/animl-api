@@ -365,6 +365,7 @@ export function createImageRecord(md) {
     make: md.make,
     deploymentId: md.deploymentId,
     projectId: md.projectId,
+    reviewed: false,
     ...(md.model &&       { model: md.model }),
     ...(md.fileName &&    { originalFileName: md.fileName }),
     ...(md.path &&        { path: md.path }),
