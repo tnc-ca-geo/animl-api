@@ -558,7 +558,7 @@ export class ImageModel {
           });
         }
 
-        // set image as unreviwed due to new labels
+        // set image as unreviewed due to new labels
         image.reviewed = false;
 
         await image.save();
@@ -638,7 +638,7 @@ export class ImageModel {
           }, context);
         }
       }
-      const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
+      const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
       return { ok: true };
     } catch (err) {
