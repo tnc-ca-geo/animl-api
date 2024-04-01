@@ -477,7 +477,7 @@ export class ImageModel {
       const res = await operation(input);
       console.log('ImageModel.deleteObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
       const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
-      await updateReviewStatus(imageIds);
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
