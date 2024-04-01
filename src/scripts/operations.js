@@ -1,4 +1,5 @@
 import Image from '../api/db/schemas/Image.js';
+import { isImageReviewed } from '../api/db/models/utils.js';
 import Mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 
@@ -221,10 +222,9 @@ const operations = {
       let doneCount = 0
 
       while (skip < count) {
-        const documents = await Image.find().skip(skip).limit(limit).toArray();
-        console.log('documents fetched: ', documents.length);
+        const documents = await Image.find().skip(skip).limit(limit);
         const operations = []
-        for (image in documents) {
+        for (const image of documents) {
           operations.push({
             updateOne: {
               filter: { _id: image._id },
