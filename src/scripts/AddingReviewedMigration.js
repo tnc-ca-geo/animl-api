@@ -1,14 +1,12 @@
-const { isImageReviewed } = require('../api/db/models/utils');
-
-const MongoClient = require('mongodb').MongoClient;
+import { getConfig } from '../config/config.js';
+import { connectToDatabase } from '../api/db/connect.js';
+import { isImageReviewed } from '../api/db/models/utils.js';
+import Image from '../api/db/schemas/Image.js';
 
 async function updateImages() {
-    const uri = 'server'; // Replace with your MongoDB connection string
-    const client = new MongoClient(uri);
-
     try {
-        await client.connect();
-        const collection = client.db('animl-dev').collection('images');
+        const config = await getConfig();
+        const dbClient = await connectToDatabase(config);
 
         let skip = 0;
         let limit = 1; // how many images to fetch at a time
@@ -17,7 +15,7 @@ async function updateImages() {
         let doneCount = 0
 
         while (skip < count) {
-            const documents = await collection.find().skip(skip).limit(limit).toArray();
+            const documents = await Image.find().skip(skip).limit(limit).toArray();
             console.log('documents fetched: ', documents.length);
             const operations = []
             for (image in documents) {
@@ -28,16 +26,16 @@ async function updateImages() {
                     }
                 });
             }
-            await collection.bulkWrite(operations);
+            await dbClient.bulkWrite(operations);
             skip += limit;
             doneCount += documents.length;
         }
 
-        console.log('All documents updated successfully!');
+        console.log('Documents updated successfully: ', doneCount);
     } catch (error) {
         console.error('Error:', error);
     } finally {
-        client.close();
+        dbClient.connection.close();
     }
 }
 

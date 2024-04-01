@@ -179,7 +179,7 @@ async function createDefaultMLModels({ defaultMLModelsConfig }) {
 }
 
 async function createDefaultProjects({ defaultProjectsConfig }) {
-  console.log('Creaing default projects...');
+  console.log('Creating default projects...');
   let existingProjIds = await await Project.find({}, '_id');
   existingProjIds = existingProjIds.map((proj) => proj._id);
   console.log('Found existing projects: ', existingProjIds);
