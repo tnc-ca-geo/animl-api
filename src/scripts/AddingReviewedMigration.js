@@ -26,7 +26,7 @@ async function updateImages() {
                     }
                 });
             }
-            await dbClient.bulkWrite(operations);
+            await Image.bulkWrite(operations);
             skip += limit;
             doneCount += documents.length;
         }
