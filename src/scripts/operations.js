@@ -205,8 +205,40 @@ const operations = {
         }
       }, { strict: false });
     }
-  }
+  },
 
+  'add-reviewed-field-to-images': {
+    getIds: async () => (
+      await Image.find().select('_id')
+    ),
+    update: async () => {
+      console.log('Adding reviewed field to all images...');
+
+      let skip = 0;
+      let limit = 1; // how many images to fetch at a time
+      let count = Image.countDocuments();
+      console.log('Total documents: ', count);
+      let doneCount = 0
+
+      while (skip < count) {
+        const documents = await Image.find().skip(skip).limit(limit).toArray();
+        console.log('documents fetched: ', documents.length);
+        const operations = []
+        for (image in documents) {
+          operations.push({
+            updateOne: {
+              filter: { _id: image._id },
+              update: { $set: { reviewed: isImageReviewed(image) } }
+            }
+          });
+        }
+        await Image.bulkWrite(operations);
+        skip += limit;
+        doneCount += documents.length;
+      }
+      return { nModified: doneCount };
+    }
+  },
 };
 
 export {
