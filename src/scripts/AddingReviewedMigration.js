@@ -21,15 +21,12 @@ async function updateImages() {
             console.log('documents fetched: ', documents.length);
             const operations = []
             for (image in documents) {
-                const isReviewed = isImageReviewed(image);
-                if (image.reviewed !== undefined && image.reviewed !== isReviewed) {
-                    operations.push({
-                        updateOne: {
-                            filter: { _id: image._id },
-                            update: { $set: { reviewed: isReviewed } }
-                        }
-                    });
-                }
+                operations.push({
+                    updateOne: {
+                        filter: { _id: image._id },
+                        update: { $set: { reviewed: isImageReviewed(image) } }
+                    }
+                });
             }
             await collection.bulkWrite(operations);
             skip += limit;
