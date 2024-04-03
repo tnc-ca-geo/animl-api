@@ -386,7 +386,7 @@ export class ImageModel {
         const operations = objects.map(({ imageId, object }) => ({
           updateOne: {
             filter: { _id: imageId },
-            update: { $push: { objects: object }, $set: { reviewed: false } }
+            update: { $push: { objects: object } }
           }
         }));
         console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
@@ -409,6 +409,8 @@ export class ImageModel {
 
       const res = await operation(input);
       console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
