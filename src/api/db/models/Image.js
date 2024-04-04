@@ -752,7 +752,7 @@ export class ImageModel {
   }
 
   static async deleteLabels(input) {
-    console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));    
+    console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
     const operation = async ({ labels }) => {
       return await retry(async () => {
         const operations = labels.map(({ imageId, objectId, labelId }) => ({
@@ -811,10 +811,10 @@ export class ImageModel {
   }
 
   /**
-   * A custom middleware-like method that is used to update the reviewed status of 
+   * A custom middleware-like method that is used to update the reviewed status of
    * images that should only be ran by operations that would affect the reviewed status.
-   * 
-   * @param {Array<string>} imageIds - An array of image IDs to update. 
+   *
+   * @param {Array<string>} imageIds - An array of image IDs to update.
    */
   static async updateReviewStatus(imageIds) {
     const operation = async () => {
@@ -822,7 +822,7 @@ export class ImageModel {
         if (attempt > 1) {
           console.log(`Retrying updateReviewStatus operation! Try #: ${attempt}`);
         }
-        
+
         const images = await Image.find({
           '_id': { $in: imageIds }
         });
