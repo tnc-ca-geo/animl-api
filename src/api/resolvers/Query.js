@@ -93,17 +93,14 @@ const Query = {
     return await context.models.MLModel.getMLModels(input, context);
   },
 
-  // async task
   stats: async (_, { input }, context) => {
     return await context.models.Image.getStats(input, context);
   },
 
-  // async task
   exportErrors: async (_, { input }, context) => {
     return await context.models.ImageError.exportErrors(input, context);
   },
 
-  // async task
   exportAnnotations: async (_, { input }, context) => {
     return await context.models.Image.exportAnnotations(input, context);
   }

@@ -363,6 +363,7 @@ export class ProjectModel {
     }
   }
 
+  // NOTE: this function is called by the task handler
   static async createDeployment(input, context) {
     const operation = async ({ cameraId, deployment }) => {
       return await retry(async () => {
@@ -410,6 +411,7 @@ export class ProjectModel {
     }
   }
 
+  // NOTE: this function is called by the task handler
   static async updateDeployment(input, context) {
     const operation = async ({ cameraId, deploymentId, diffs }) => {
       return await retry(async (bail) => {
@@ -467,6 +469,7 @@ export class ProjectModel {
     }
   }
 
+  // NOTE: this function is called by the task handler
   static async deleteDeployment(input, context) {
     const operation = async ({ cameraId, deploymentId }) => {
       return await retry(async () => {

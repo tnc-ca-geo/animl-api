@@ -6,6 +6,40 @@ const ObjectId = Mongoose.Types.ObjectId;
 
 const operations = {
 
+  'change-label-id': {
+    getIds: async () => (
+      await Image.find({
+        projectId: 'lord_howe_island',
+        'objects.labels.labelId': '0'
+      }).select('_id')
+    ),
+    update: async () => {
+      console.log('changing labelId for "empty" labels from "0" to "empty" on lord_howe_island images');
+      const imgs = await Image.find({
+        projectId: 'lord_howe_island',
+        'objects.labels.labelId': '0'
+      });
+      try {
+        const res = { nModified: 0 };
+        for (const img of imgs) {
+          for (const obj of img.objects) {
+            for (const lbl of obj.labels) {
+              if (lbl.labelId === '0'){
+                lbl.labelId = 'empty';
+              }
+            }
+          }
+          await img.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+
+    }
+  },
+
   'add-timezone-field': {
     getIds: async () => (
       await Image.find({}).select('_id')
