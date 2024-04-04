@@ -12,7 +12,7 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import Image from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
 
-export class ImageExport {
+export class AnnotationsExport {
   constructor({ projectId, documentId, filters, format }, config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
@@ -442,7 +442,7 @@ export class ImageExport {
 }
 
 export default async function(task, config) {
-  const dataExport = new ImageExport({
+  const dataExport = new AnnotationsExport({
     projectId: task.projectId,
     documentId: task._id,
     filters: task.config.filters,

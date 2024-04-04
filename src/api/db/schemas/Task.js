@@ -11,8 +11,8 @@ const TaskSchema = new Schema({
     required: true,
     enum : [
       'GetStats',
-      'AnnotationsExport',
-      'ImageErrorsExport',
+      'ExportAnnotations',
+      'ExportImageErrors',
       'CreateDeployment',
       'UpdateDeployment',
       'DeleteDeployment'

@@ -126,9 +126,9 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {Object} context
    */
-  static async export(input, context) {
+  static async exportErrorsTask(input, context) {
     return await TaskModel.create({
-      type: 'ImageErrorsExport',
+      type: 'ExportImageErrors',
       projectId: context.user['curr_project'],
       user: context.user.sub,
       config: {
@@ -166,8 +166,8 @@ export default class AuthedImageErrorModel {
     return await ImageErrorModel.clearErrors(input);
   }
 
-  async export(input, context) {
+  async exportErrors(input, context) {
     if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageErrorModel.export(input, context);
+    return await ImageErrorModel.exportErrorsTask(input, context);
   }
 }

@@ -98,11 +98,11 @@ const Query = {
   },
 
   exportErrors: async (_, { input }, context) => {
-    return await context.models.ImageError.export(input, context);
+    return await context.models.ImageError.exportErrors(input, context);
   },
 
-  export: async (_, { input }, context) => {
-    return await context.models.Image.export(input, context);
+  exportAnnotations: async (_, { input }, context) => {
+    return await context.models.Image.exportAnnotations(input, context);
   }
 };
 
