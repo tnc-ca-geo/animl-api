@@ -321,7 +321,6 @@ export class AnnotationsExport {
       for (const obj of img.objects) {
         const firstValidLabel = this.findFirstValidLabel(obj);
         if (firstValidLabel) {
-          console.error(firstValidLabel, this.labelMap);
           const cat = this.labelMap.get(firstValidLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
