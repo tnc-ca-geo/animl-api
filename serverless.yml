@@ -220,6 +220,19 @@ resources:
       Properties:
         QueueName: taskQueue-${self:provider.stage}
         VisibilityTimeout: 900
+        RedrivePolicy:
+          deadLetterTargetArn:
+            "Fn::GetAtt":
+              - taskDeadLetterQueue
+              - Arn
+          maxReceiveCount: 5
+
+    # Task - dead-letter SQS queue
+    taskDeadLetterQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: taskDLQ-${self:provider.stage}
+        MessageRetentionPeriod: 1209600 # 14 days in seconds
 
     # SSM Param - API URL
     SSMParameterApiurl:
