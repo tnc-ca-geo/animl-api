@@ -216,14 +216,14 @@ const operations = {
       console.log('Adding reviewed field to all images...');
 
       let skip = 0;
-      let limit = 1; // how many images to fetch at a time
-      let count = Image.countDocuments();
+      const limit = 1; // how many images to fetch at a time
+      const count = Image.countDocuments();
       console.log('Total documents: ', count);
-      let doneCount = 0
+      let doneCount = 0;
 
       while (skip < count) {
         const documents = await Image.find().skip(skip).limit(limit);
-        const operations = []
+        const operations = [];
         for (const image of documents) {
           operations.push({
             updateOne: {
@@ -238,7 +238,7 @@ const operations = {
       }
       return { nModified: doneCount };
     }
-  },
+  }
 };
 
 export {
