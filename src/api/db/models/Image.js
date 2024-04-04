@@ -530,6 +530,7 @@ export class ImageModel {
           ], { returnDocument: 'after' });
 
         } else {
+          // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
           const [label] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); });
           labelRecord.labelId = label._id;
         }
