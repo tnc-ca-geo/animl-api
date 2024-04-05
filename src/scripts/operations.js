@@ -216,9 +216,9 @@ const operations = {
       console.log('Adding reviewed field to all images...');
 
       let skip = 0;
-      const limit = 1; // how many images to fetch at a time
-      const count = Image.countDocuments();
-      console.log('Total documents: ', count);
+      const limit = 5000; // how many images to fetch at a time
+      const count = await Image.countDocuments();
+      console.log('Number of documents: ', count);
       let doneCount = 0;
 
       while (skip < count) {
