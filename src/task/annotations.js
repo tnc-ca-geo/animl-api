@@ -40,6 +40,7 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId
       );
+      console.log('getting notReviewedCount...')
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
       // add notReviewed = false filter
@@ -47,6 +48,7 @@ export class AnnotationsExport {
         sanitizedFilters.notReviewed = false;
       }
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
+      console.log('getting total imageCount...');
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
       console.log('imageCount: ', this.imageCount);
@@ -59,6 +61,7 @@ export class AnnotationsExport {
       this.categories = project.labels.map((l) => { return l.name; });
       this.labelMap = new Map();
       for (const l of project.labels) this.labelMap.set(l._id, l);
+      console.log('this.project: ', this.project);
     } catch (err) {
       throw new InternalServerError('Error initializing the export class: ' + err.message);
     }
@@ -88,9 +91,14 @@ export class AnnotationsExport {
       const createRow = stringify({ header: true, columns });
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
+      let flattenedImgCount = 0; // NOTE: just for testing
       // stream in images from MongoDB, write to transformation stream
       for await (const img of Image.aggregate(this.pipeline)) {
         flattenImg.write(img);
+        flattenedImgCount++;
+        if (flattenedImgCount % 1000 === 0) {
+          console.log(`flattened img count: ${flattenedImgCount}. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
+        }
       }
       flattenImg.end();
 
@@ -210,6 +218,10 @@ export class AnnotationsExport {
           ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
           : annoString + ', ';
         annotationsUpload.streamToS3.write(annoString);
+      }
+
+      if (i % 1000 === 0) {
+        console.log(`processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
       }
     }
 
