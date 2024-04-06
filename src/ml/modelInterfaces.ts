@@ -2,7 +2,10 @@ import { buildImgUrl } from "../api/db/models/utils.js";
 import SM from "@aws-sdk/client-sagemaker-runtime";
 import sharp from "sharp";
 
-const _getImage = async (image: Image, config: Config) => {
+const _getImage = async (
+  image: ML.Image,
+  config: ML.ModelInterfaceParams["config"]
+) => {
   const url = "http://" + buildImgUrl(image, config);
 
   try {
@@ -22,8 +25,8 @@ const _getImage = async (image: Image, config: Config) => {
 };
 
 async function megadetector(
-  params: ModelInterfaceParams
-): Promise<Detection[]> {
+  params: ML.ModelInterfaceParams
+): Promise<ML.Detection[]> {
   const { modelSource, catConfig, image, config } = params;
   const Body = await _getImage(image, config);
 
@@ -39,12 +42,19 @@ async function megadetector(
     const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString("utf8");
-    const detections: RawDetection[] = JSON.parse(body);
+    const detections: {
+      y1: number;
+      x1: number;
+      y2: number;
+      x2: number;
+      confidence: number;
+      class: string;
+    }[] = JSON.parse(body);
     console.log(
       `detections returned from megadetector endpoint for image ${image._id}: ${body}`
     );
 
-    const formatedDets: Detection[] = detections.map((det) => ({
+    const formatedDets: ML.Detection[] = detections.map((det) => ({
       mlModel: modelSource._id,
       mlModelVersion: modelSource.version,
       bbox: [det.y1, det.x1, det.y2, det.x2],
@@ -55,7 +65,7 @@ async function megadetector(
     }));
 
     // filter out disabled detections & detections below confThreshold
-    const filteredDets: Detection[] = formatedDets.filter((det) => {
+    const filteredDets: ML.Detection[] = formatedDets.filter((det) => {
       const { disabled, confThreshold } = catConfig.find(
         (cat) => cat._id === det.labelId
       )!;
@@ -79,10 +89,12 @@ async function megadetector(
   }
 }
 
-async function mirav2(params: ModelInterfaceParams): Promise<Detection[]> {
+async function mirav2(
+  params: ML.ModelInterfaceParams
+): Promise<ML.Detection[]> {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image: imgBuffer.toString("base64"),
     bbox: bbox,
@@ -102,7 +114,7 @@ async function mirav2(params: ModelInterfaceParams): Promise<Detection[]> {
     const predictions = JSON.parse(body);
     console.log(`mirav2 predictions for image ${image._id}: ${body}`);
 
-    const filteredDets: Detection[] = [];
+    const filteredDets: ML.Detection[] = [];
     Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
@@ -128,10 +140,10 @@ async function mirav2(params: ModelInterfaceParams): Promise<Detection[]> {
   }
 }
 
-async function nzdoc(params: ModelInterfaceParams): Promise<Detection[]> {
+async function nzdoc(params: ML.ModelInterfaceParams): Promise<ML.Detection[]> {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image: imgBuffer.toString("base64"),
     bbox: bbox,
@@ -151,7 +163,7 @@ async function nzdoc(params: ModelInterfaceParams): Promise<Detection[]> {
     const predictions = JSON.parse(body);
     console.log(`nzdoc predictions for image ${image._id}: ${body}`);
 
-    const filteredDets: Detection[] = [];
+    const filteredDets: ML.Detection[] = [];
     Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
@@ -177,64 +189,10 @@ async function nzdoc(params: ModelInterfaceParams): Promise<Detection[]> {
   }
 }
 
-const modelInterfaces = new Map<string, ModelInterface>();
+const modelInterfaces = new Map<string, ML.InferenceFunction>();
 modelInterfaces.set("megadetector_v5a", megadetector);
 modelInterfaces.set("megadetector_v5b", megadetector);
 modelInterfaces.set("mirav2", mirav2);
 modelInterfaces.set("nzdoc", nzdoc);
 
 export { modelInterfaces };
-
-interface Image {
-  _id: string;
-  batchId: string;
-  imageBytes: number;
-}
-
-interface ModelSource {
-  _id: string;
-  version: string;
-}
-
-interface Cat {
-  _id: string;
-  disabled: boolean;
-  confThreshold: number;
-}
-
-type BBox = [number, number, number, number];
-
-interface Label {
-  bbox: BBox;
-}
-
-interface ModelInterface {
-  (params: ModelInterfaceParams): Promise<Detection[]>;
-}
-
-interface Config extends Record<any, any> {}
-
-export interface ModelInterfaceParams {
-  modelSource: ModelSource;
-  catConfig: Cat[];
-  image: Image;
-  label: Label;
-  config: Config;
-}
-
-interface RawDetection {
-  y1: number;
-  x1: number;
-  y2: number;
-  x2: number;
-  confidence: number;
-  class: string;
-}
-
-export interface Detection {
-  mlModel: string;
-  mlModelVersion: string;
-  bbox: BBox;
-  conf?: number;
-  labelId: string;
-}
