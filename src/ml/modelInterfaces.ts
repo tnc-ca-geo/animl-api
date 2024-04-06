@@ -214,9 +214,9 @@ interface ModelInterface {
 
 interface Config extends Record<any, any> {}
 
-interface ModelInterfaceParams {
+export interface ModelInterfaceParams {
   modelSource: ModelSource;
-  catConfig: Cat[]; // TODO: Verify
+  catConfig: Cat[];
   image: Image;
   label: Label;
   config: Config;
@@ -231,7 +231,7 @@ interface RawDetection {
   class: string;
 }
 
-interface Detection {
+export interface Detection {
   mlModel: string;
   mlModelVersion: string;
   bbox: BBox;

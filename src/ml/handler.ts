@@ -1,11 +1,17 @@
 import "source-map-support/register";
 import { GraphQLClient, gql } from "graphql-request";
-import { modelInterfaces } from "./modelInterfaces.js";
+import {
+  Detection,
+  ModelInterfaceParams,
+  modelInterfaces,
+} from "./modelInterfaces.js";
 import { getConfig } from "../config/config.js";
+import { GraphQLError } from "graphql";
+import { DuplicateLabelError } from "../api/errors.js";
 
 async function requestCreateInternalLabels(
   input: requestCreateInternalLabelsInput,
-  config
+  config: any
 ) {
   const variables = { input: input };
   const mutation = gql`
@@ -24,17 +30,17 @@ async function requestCreateInternalLabels(
 }
 
 interface requestCreateInternalLabelsInput {
-  labels: 
+  labels: Detection[];
 }
 
-async function singleInference(config, record) {
+async function singleInference(config: ModelInterfaceParams, record: Record) {
   const { modelSource, catConfig, image, label } = JSON.parse(record.body);
 
   console.log(`message related to image ${image._id}: ${record.body}`);
 
   // run inference
   if (modelInterfaces.has(modelSource._id)) {
-    const requestInference = modelInterfaces.get(modelSource._id);
+    const requestInference = modelInterfaces.get(modelSource._id)!;
 
     const detections = await requestInference({
       modelSource,
@@ -62,7 +68,7 @@ async function singleInference(config, record) {
         // https://github.com/jasonkuhrt/graphql-request/issues/201
         const errParsed = JSON.parse(JSON.stringify(err));
         const hasDuplicateLabelErrors = errParsed.response.errors.some(
-          (e) => e.extensions.code === "DUPLICATE_LABEL"
+          (e: GraphQLError) => e.extensions.code === "DUPLICATE_LABEL"
         );
         if (!hasDuplicateLabelErrors) {
           throw err;
@@ -74,12 +80,12 @@ async function singleInference(config, record) {
   }
 }
 
-async function inference(event) {
-  const config = await getConfig();
+async function inference(event: InferenceEvent): Promise<InferenceOutput> {
+  const config = (await getConfig()) as any as ModelInterfaceParams; // TODO: Confirm that the is correct
 
   console.log("event: ", event);
 
-  const batchItemFailures = [];
+  const batchItemFailures: InferenceOutput["batchItemFailures"] = [];
   if (!event.Records || !event.Records.length) {
     return { batchItemFailures };
   }
@@ -93,7 +99,8 @@ async function inference(event) {
   console.log("results: ", results);
 
   for (let i = 0; i < results.length; i++) {
-    if (!(results[i].reason instanceof Error)) continue;
+    const result = results[i];
+    if (result.status !== "rejected") continue;
 
     batchItemFailures.push({
       itemIdentifier: event.Records[i].messageId,
@@ -108,3 +115,15 @@ async function inference(event) {
 }
 
 export { inference };
+
+interface Record {
+  messageId: string;
+  body: string;
+}
+interface InferenceEvent {
+  Records: Record[];
+}
+
+interface InferenceOutput {
+  batchItemFailures: Array<{ itemIdentifier: string }>;
+}
