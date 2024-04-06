@@ -6,6 +6,7 @@
     "main": "src/handler.js",
     "scripts": {
         "start": "serverless offline",
+        "build": "tsc",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
