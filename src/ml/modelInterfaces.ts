@@ -24,9 +24,7 @@ const _getImage = async (
   }
 };
 
-async function megadetector(
-  params: ML.ModelInterfaceParams
-): Promise<ML.Detection[]> {
+const megadetector: ML.InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, config } = params;
   const Body = await _getImage(image, config);
 
@@ -87,11 +85,9 @@ async function megadetector(
     console.log(`megadetector() ERROR on image ${image._id}: ${err}`);
     throw new Error(err as any as string);
   }
-}
+};
 
-async function mirav2(
-  params: ML.ModelInterfaceParams
-): Promise<ML.Detection[]> {
+const mirav2: ML.InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
   const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
@@ -138,9 +134,9 @@ async function mirav2(
     console.log(`mirav2() ERROR on image ${image._id}: ${err}`);
     throw new Error(err as any as string);
   }
-}
+};
 
-async function nzdoc(params: ML.ModelInterfaceParams): Promise<ML.Detection[]> {
+const nzdoc: ML.InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
   const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
@@ -187,7 +183,7 @@ async function nzdoc(params: ML.ModelInterfaceParams): Promise<ML.Detection[]> {
     console.log(`nzdoc() ERROR on image ${image._id}: ${err}`);
     throw new Error(err as any as string);
   }
-}
+};
 
 const modelInterfaces = new Map<string, ML.InferenceFunction>();
 modelInterfaces.set("megadetector_v5a", megadetector);
