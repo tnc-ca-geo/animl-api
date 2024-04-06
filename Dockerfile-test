@@ -14,5 +14,5 @@ RUN export NODEV='20.12.2' \
 
 RUN npm install
 
-CMD npm run lint && npm test
+CMD npm run lint && npm run build && npm test
 
