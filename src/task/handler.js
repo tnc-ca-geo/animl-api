@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
