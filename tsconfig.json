@@ -1,0 +1,10 @@
+{
+  "extends": "@tsconfig/node14/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-14-tsconfigjson
+  "compilerOptions": {
+    "outDir": "./dist",
+    "allowJs": true,
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}
