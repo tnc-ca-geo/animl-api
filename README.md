@@ -99,7 +99,7 @@ npm run seed-db-prod
 npm run start
 ```
 
-Note: The first time running serverless will require you to the login to the serverless console and be granted a seat from the TNC organization. 
+Note: The first time running serverless will require you to login to the serverless console and be granted a seat from the TNC organization. 
 
 - To deploy the Cloudformation development stack, run: 
 ```
