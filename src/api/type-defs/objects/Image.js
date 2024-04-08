@@ -21,6 +21,7 @@ export default `
     userSetData: JSONObject
     model: String
     location: Location
+    reviewed: Boolean
     objects: [Object]
     comments: [ImageComment]
   }`;
