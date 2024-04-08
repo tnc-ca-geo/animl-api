@@ -1,13 +1,12 @@
 import "source-map-support/register";
 import { GraphQLClient, gql } from "graphql-request";
 import {
-  Detection,
-  ModelInterfaceParams,
+  type Detection,
+  type ModelInterfaceParams,
   modelInterfaces,
 } from "./modelInterfaces.js";
 import { getConfig } from "../config/config.js";
 import { GraphQLError } from "graphql";
-import { DuplicateLabelError } from "../api/errors.js";
 
 async function requestCreateInternalLabels(
   input: requestCreateInternalLabelsInput,
@@ -67,7 +66,7 @@ async function singleInference(config: ModelInterfaceParams, record: Record) {
         // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
         // https://github.com/jasonkuhrt/graphql-request/issues/201
         const errParsed = JSON.parse(JSON.stringify(err));
-        const hasDuplicateLabelErrors = errParsed.response.errors.some(
+        const hasDuplicateLabelErrors: boolean = errParsed.response.errors.some(
           (e: GraphQLError) => e.extensions.code === "DUPLICATE_LABEL"
         );
         if (!hasDuplicateLabelErrors) {

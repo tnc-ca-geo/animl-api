@@ -1,10 +1,11 @@
+import { RecoveryOptionNameType } from "@aws-sdk/client-cognito-identity-provider";
 import { buildImgUrl } from "../api/db/models/utils.js";
 import SM from "@aws-sdk/client-sagemaker-runtime";
 import sharp from "sharp";
 
 const _getImage = async (
-  image: ML.Image,
-  config: ML.ModelInterfaceParams["config"]
+  image: Image,
+  config: ModelInterfaceParams["config"]
 ) => {
   const url = "http://" + buildImgUrl(image, config);
 
@@ -24,7 +25,7 @@ const _getImage = async (
   }
 };
 
-const megadetector: ML.InferenceFunction = async (params) => {
+const megadetector: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, config } = params;
   const Body = await _getImage(image, config);
 
@@ -52,7 +53,7 @@ const megadetector: ML.InferenceFunction = async (params) => {
       `detections returned from megadetector endpoint for image ${image._id}: ${body}`
     );
 
-    const formatedDets: ML.Detection[] = detections.map((det) => ({
+    const formatedDets: Detection[] = detections.map((det) => ({
       mlModel: modelSource._id,
       mlModelVersion: modelSource.version,
       bbox: [det.y1, det.x1, det.y2, det.x2],
@@ -63,7 +64,7 @@ const megadetector: ML.InferenceFunction = async (params) => {
     }));
 
     // filter out disabled detections & detections below confThreshold
-    const filteredDets: ML.Detection[] = formatedDets.filter((det) => {
+    const filteredDets: Detection[] = formatedDets.filter((det) => {
       const { disabled, confThreshold } = catConfig.find(
         (cat) => cat._id === det.labelId
       )!;
@@ -87,10 +88,10 @@ const megadetector: ML.InferenceFunction = async (params) => {
   }
 };
 
-const mirav2: ML.InferenceFunction = async (params) => {
+const mirav2: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image: imgBuffer.toString("base64"),
     bbox: bbox,
@@ -110,7 +111,7 @@ const mirav2: ML.InferenceFunction = async (params) => {
     const predictions = JSON.parse(body);
     console.log(`mirav2 predictions for image ${image._id}: ${body}`);
 
-    const filteredDets: ML.Detection[] = [];
+    const filteredDets: Detection[] = [];
     Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
@@ -136,10 +137,10 @@ const mirav2: ML.InferenceFunction = async (params) => {
   }
 };
 
-const nzdoc: ML.InferenceFunction = async (params) => {
+const nzdoc: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: ML.BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image: imgBuffer.toString("base64"),
     bbox: bbox,
@@ -159,7 +160,7 @@ const nzdoc: ML.InferenceFunction = async (params) => {
     const predictions = JSON.parse(body);
     console.log(`nzdoc predictions for image ${image._id}: ${body}`);
 
-    const filteredDets: ML.Detection[] = [];
+    const filteredDets: Detection[] = [];
     Object.keys(predictions).forEach((labelId) => {
       // filter out disabled detections,
       // empty detections, & detections below confThreshold
@@ -185,10 +186,53 @@ const nzdoc: ML.InferenceFunction = async (params) => {
   }
 };
 
-const modelInterfaces = new Map<string, ML.InferenceFunction>();
+const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set("megadetector_v5a", megadetector);
 modelInterfaces.set("megadetector_v5b", megadetector);
 modelInterfaces.set("mirav2", mirav2);
 modelInterfaces.set("nzdoc", nzdoc);
 
 export { modelInterfaces };
+
+export interface Detection {
+  mlModel: string;
+  mlModelVersion: string;
+  bbox: BBox;
+  conf?: number;
+  labelId: string;
+}
+
+interface Image {
+  _id: string;
+  batchId: string;
+  imageBytes: number;
+}
+
+interface ModelSource {
+  _id: string;
+  version: string;
+}
+
+interface Cat {
+  _id: string;
+  disabled: boolean;
+  confThreshold: number;
+}
+
+type BBox = [number, number, number, number];
+
+type Label = any; // TODO: Find true type for `Label`
+
+type Config = Record<any, any>; // TODO: Find true type for `config`
+
+export interface ModelInterfaceParams {
+  modelSource: ModelSource;
+  catConfig: Cat[];
+  image: Image;
+  label: Label;
+  config: Config;
+}
+
+interface InferenceFunction {
+  (params: ModelInterfaceParams): Promise<Detection[]>;
+}
