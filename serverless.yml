@@ -123,9 +123,8 @@ provider:
 
 functions:
   graphql:
-    image:
-      name: base
-      command: src/api/handler.server
+    handler: src/api/handler.server
+    runtime: nodejs20.x
     events:
     - http:
         path: /
