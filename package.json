@@ -55,6 +55,7 @@
         "prompt": "^1.2.0",
         "random-hex-color": "^1.0.1",
         "sharp": "^0.33.1",
+        "source-map-support": "^0.5.21",
         "stream-transform": "^3.3.1",
         "superagent": "^6.1.0"
     },
@@ -67,7 +68,6 @@
         "serverless-offline": "^13.0.0",
         "serverless-plugin-typescript": "^2.1.5",
         "sinon": "^17.0.0",
-        "source-map-support": "^0.5.21",
         "tape": "^5.5.3",
         "typescript": "^5.4.4",
         "undici": "^6.0.0"
