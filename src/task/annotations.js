@@ -40,7 +40,7 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId
       );
-      console.log('getting notReviewedCount...')
+      console.log('getting notReviewedCount...');
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
       // add notReviewed = false filter
