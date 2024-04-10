@@ -55,7 +55,7 @@
         "prompt": "^1.2.0",
         "random-hex-color": "^1.0.1",
         "sharp": "^0.33.1",
-        "stream-transform": "^3.2.0",
+        "stream-transform": "^3.3.1",
         "superagent": "^6.1.0"
     },
     "devDependencies": {
