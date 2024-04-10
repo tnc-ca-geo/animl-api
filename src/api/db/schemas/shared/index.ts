@@ -1,5 +1,5 @@
 import mongoose, { mongo } from 'mongoose';
-import Label from '../../../type-defs/objects/Label';
+import Label from '../../../type-defs/objects/Label.js';
 const Schema = mongoose.Schema;
 
 const PointSchema = new Schema({

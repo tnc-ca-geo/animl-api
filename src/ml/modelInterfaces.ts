@@ -1,10 +1,10 @@
-import { RecoveryOptionNameType } from "@aws-sdk/client-cognito-identity-provider";
 import { buildImgUrl } from "../api/db/models/utils.js";
 import SM from "@aws-sdk/client-sagemaker-runtime";
 import sharp from "sharp";
+import type { ImageSchema, LabelSchema } from "../api/db/schemas/index.js";
 
 const _getImage = async (
-  image: Image,
+  image: ImageSchema,
   config: ModelInterfaceParams["config"]
 ) => {
   const url = "http://" + buildImgUrl(image, config);
@@ -15,7 +15,7 @@ const _getImage = async (
     let imgBuffer = Buffer.from(body);
 
     // resize image if it's over 2.8 MB
-    if (image.imageBytes > 2800000) {
+    if (image.imageBytes! > 2800000) {
       imgBuffer = await sharp(imgBuffer).resize({ width: 3500 }).toBuffer();
     }
 
@@ -194,19 +194,10 @@ modelInterfaces.set("nzdoc", nzdoc);
 
 export { modelInterfaces };
 
-export interface Detection {
-  mlModel: string;
-  mlModelVersion: string;
-  bbox: BBox;
-  conf?: number;
-  labelId: string;
-}
-
-interface Image {
-  _id: string;
-  batchId: string;
-  imageBytes: number;
-}
+export type Detection = Pick<
+  LabelSchema,
+  "mlModel" | "mlModelVersion" | "bbox" | "conf" | "labelId"
+>;
 
 interface ModelSource {
   _id: string;
@@ -219,17 +210,15 @@ interface Cat {
   confThreshold: number;
 }
 
-type BBox = [number, number, number, number];
-
-type Label = any; // TODO: Find true type for `Label`
+type BBox = number[];
 
 type Config = Record<any, any>; // TODO: Find true type for `config`
 
 export interface ModelInterfaceParams {
   modelSource: ModelSource;
   catConfig: Cat[];
-  image: Image;
-  label: Label;
+  image: ImageSchema;
+  label: LabelSchema;
   config: Config;
 }
 
