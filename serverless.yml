@@ -128,9 +128,11 @@ provider:
 
 functions:
   graphql:
-    image:
-      name: base
-      command: src/api/handler.server
+    # image:
+    #   name: base
+    #   command: src/api/handler.server
+    handler: src/api/handler.server
+    runtime: nodejs20.x
     events:
     - http:
         path: /
@@ -153,9 +155,11 @@ functions:
     memorySize: 3008
     timeout: 30
   inference:
-    image:
-      name: base
-      command: src/ml/handler.inference
+    # image:
+    #   name: base
+    #   command: src/ml/handler.inference
+    handler: src/ml/handler.inference
+    runtime: nodejs20.x
     reservedConcurrency: 20
     events:
       - sqs:
@@ -167,15 +171,19 @@ functions:
           functionResponseType: ReportBatchItemFailures
     timeout: 120
   batchinference:
-    image:
-      name: base
-      command: src/ml/handler.inference
+    # image:
+    #   name: base
+    #   command: src/ml/handler.inference
+    handler: src/ml/handler.inference
+    runtime: nodejs20.x
     reservedConcurrency: 8
     timeout: 120
   task:
-    image:
-      name: base
-      command: src/task/handler.handler
+    # image:
+    #   name: base
+    #   command: src/task/handler.handler
+    handler: src/task/handler.handler
+    runtime: nodejs20.x
     reservedConcurrency: 10
     events:
       - sqs:
