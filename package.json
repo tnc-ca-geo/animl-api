@@ -5,7 +5,7 @@
     "description": "Lambda-based graphQL API for camera trap data management platform",
     "main": "src/handler.js",
     "scripts": {
-        "start": "serverless offline --noAuth",
+        "start": "AWS_PROFILE=animl serverless offline --noAuth",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
