@@ -60,7 +60,7 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
-        "@tsconfig/node14": "^14.1.2",
+        "@tsconfig/node18": "^18",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",
