@@ -40,7 +40,6 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId
       );
-      console.log('getting notReviewedCount...')
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
       // add notReviewed = false filter
@@ -48,10 +47,8 @@ export class AnnotationsExport {
         sanitizedFilters.notReviewed = false;
       }
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
-      console.log('getting total imageCount...');
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
-      console.log('imageCount: ', this.imageCount);
 
       const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
@@ -61,20 +58,17 @@ export class AnnotationsExport {
       this.categories = project.labels.map((l) => { return l.name; });
       this.labelMap = new Map();
       for (const l of project.labels) this.labelMap.set(l._id, l);
-      console.log('this.project: ', this.project);
     } catch (err) {
       throw new InternalServerError('Error initializing the export class: ' + err.message);
     }
   }
 
   async getCount(pipeline) {
-    console.log('getting image count');
     let count = null;
     try {
       const pipelineCopy = pipeline.map((stage) => ({ ...stage }));
       pipelineCopy.push({ $count: 'count' });
       const res = await Image.aggregate(pipelineCopy);
-      console.log('res: ', res);
       count = res[0] ? res[0].count : 0;
     } catch (err) {
       throw new InternalServerError('Error counting images: ' + err.message);
