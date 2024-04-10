@@ -41,7 +41,7 @@ const localConfig = {
  *  from SSM Parameter Store
  */
 
-let cachedSSMParams = null;
+let cachedSSMParams: SSM.GetParametersCommandOutput | null = null;
 
 const ssmNames = [
   '/application/cognito/userPoolId',
@@ -61,19 +61,19 @@ const ssmNames = [
   `/ml/nzdoc-batch-endpoint-${process.env.STAGE}` // NOTE: currently only supporting batch endpoint for nzdoc
 ];
 
-function formatSSMParams(ssmParams) {
-  const formattedParams = {};
-  for (const param of ssmParams.Parameters) {
-    const key = param.Name
+function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
+  const formattedParams: Record<string, string>  = {};
+  for (const param of ssmParams.Parameters ?? []) {
+    const key = param.Name!
       .replace(`-${process.env.STAGE}`, '')
       .replace(/-/g, '_')
       .toUpperCase();
-    formattedParams[key] = param.Value;
+    formattedParams[key] = param.Value!;
   }
-  return formattedParams;
+  return formattedParams as T;
 }
 
-async function getConfig() {
+async function getConfig(): Promise<Config> {
   const ssm = new SSM.SSMClient({ region: process.env.REGION });
 
   if (!cachedSSMParams) {
@@ -86,8 +86,8 @@ async function getConfig() {
       if (!cachedSSMParams) {
         cachedSSMParams = res;
       } else {
-        cachedSSMParams.Parameters.push(...res.Parameters);
-        cachedSSMParams.InvalidParameters.push(...res.InvalidParameters);
+        cachedSSMParams.Parameters?.push(...res.Parameters?? []);
+        cachedSSMParams.InvalidParameters?.push(...res.InvalidParameters?? []);
       }
     } while (ssmNames.length);
   }
@@ -101,25 +101,53 @@ async function getConfig() {
     }));
 
     const secret = JSON.parse(secretsResponse.SecretString || '{}');
-    if (ssmParams.InvalidParameters.length > 0) {
-      const invalParams = ssmParams.InvalidParameters.join(', ');
+    if (ssmParams.InvalidParameters?.length! > 0) {
+      const invalParams = ssmParams.InvalidParameters?.join(', ');
 
       throw new GraphQLError(`invalid parameter(s) requested: ${invalParams}`, {
         extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
       });
     }
-    const remoteConfig = formatSSMParams(ssmParams);
+    const remoteConfig = formatSSMParams<RemoteConfig>(ssmParams);
     const secretConfig = {
       'APIKEY': secret.apikey
     };
     // const secretConfig = formatSSMParams(secret);
     return { ...localConfig, ...remoteConfig, ...secretConfig };
   } catch (err) {
-    throw new GraphQLError(err, {
+    throw new GraphQLError(err instanceof Error ? err.message : String(err), {
       extensions: { code:  ApolloServerErrorCode.INTERNAL_SERVER_ERROR }
     });
   }
 }
+
+
+// Values retrieved from AWS SSM Parameter Store
+export interface RemoteConfig {
+  "/API/URL": string
+  "/APPLICATION/COGNITO/USERPOOLID": string
+  "/DB/MONGO_DB_URL": string
+  "/EXPORTS/EXPORTED_DATA_BUCKET": string
+  "/FRONTEND/URL": string
+  "/IMAGES/URL": string
+  "/ML/INFERENCE_QUEUE_URL": string
+  "/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT": string
+  "/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT": string
+  "/TASKS/TASK_QUEUE_URL": string
+  "/ML/MEGADETECTOR_V5B_BATCH_ENDPOINT": string
+  "/ML/MEGADETECTOR_V5B_REALTIME_ENDPOINT": string
+  "/ML/MIRAV2_BATCH_ENDPOINT": string
+  "/ML/MIRAV2_REALTIME_ENDPOINT": string
+  "/ML/NZDOC_BATCH_ENDPOINT": string
+  "/ML/NZDOC_REALTIME_ENDPOINT": string
+}
+
+// Values retrieved from AWS Secrets Manager
+interface SecretConfig {
+  APIKEY: any;
+}
+
+export type Config = typeof localConfig & RemoteConfig & SecretConfig;
 
 export {
   localConfig,

@@ -1,10 +1,6 @@
 import { GraphQLClient, gql } from "graphql-request";
-import {
-  type Detection,
-  type ModelInterfaceParams,
-  modelInterfaces,
-} from "./modelInterfaces.js";
-import { getConfig } from "../config/config.js";
+import { Detection, modelInterfaces } from "./modelInterfaces.js";
+import { Config, getConfig } from "../config/config.js";
 import { GraphQLError } from "graphql";
 
 async function requestCreateInternalLabels(
@@ -31,7 +27,7 @@ interface requestCreateInternalLabelsInput {
   labels: Detection[];
 }
 
-async function singleInference(config: ModelInterfaceParams, record: Record) {
+async function singleInference(config: Config, record: Record) {
   const { modelSource, catConfig, image, label } = JSON.parse(record.body);
 
   console.log(`message related to image ${image._id}: ${record.body}`);
@@ -79,7 +75,7 @@ async function singleInference(config: ModelInterfaceParams, record: Record) {
 }
 
 async function inference(event: InferenceEvent): Promise<InferenceOutput> {
-  const config = (await getConfig()) as any as ModelInterfaceParams; // TODO: Confirm that the is correct
+  const config = (await getConfig());
 
   console.log("event: ", event);
 

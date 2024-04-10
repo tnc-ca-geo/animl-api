@@ -2,6 +2,7 @@ import { buildImgUrl } from "../api/db/models/utils.js";
 import SM from "@aws-sdk/client-sagemaker-runtime";
 import sharp from "sharp";
 import type { ImageSchema, LabelSchema } from "../api/db/schemas/index.js";
+import { Config } from "../config/config.js";
 
 const _getImage = async (
   image: ImageSchema,
@@ -211,8 +212,6 @@ interface Cat {
 }
 
 type BBox = number[];
-
-type Config = Record<any, any>; // TODO: Find true type for `config`
 
 export interface ModelInterfaceParams {
   modelSource: ModelSource;
