@@ -9,5 +9,6 @@ const BatchErrorSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   error: { type: String, required: true }
 });
+type BatchErrorSchema = mongoose.InferSchemaType<typeof BatchErrorSchema>;
 
 export default mongoose.model('BatchError', BatchErrorSchema);

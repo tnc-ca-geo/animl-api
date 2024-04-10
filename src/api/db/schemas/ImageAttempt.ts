@@ -27,6 +27,7 @@ const ImageMetadataSchema = new Schema({
   mimeType: { type: String },
   model: { type: String }
 });
+type ImageMetadataSchema = mongoose.InferSchemaType<typeof ImageMetadataSchema>;
 
 /*
  * ImageAttemptSchema - for registering image ingestion attempts
@@ -40,5 +41,6 @@ const ImageAttemptSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   metadata: { type: ImageMetadataSchema }
 });
+type ImageAttemptSchema = mongoose.InferSchemaType<typeof ImageAttemptSchema>;
 
 export default mongoose.model('ImageAttempt', ImageAttemptSchema);

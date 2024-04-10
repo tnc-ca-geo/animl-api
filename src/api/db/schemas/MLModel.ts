@@ -37,5 +37,6 @@ const MLModelSchema = new Schema({
   }
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
+type MLModelSchema = mongoose.InferSchemaType<typeof MLModelSchema>;
 
 export default mongoose.model('MLModel', MLModelSchema);

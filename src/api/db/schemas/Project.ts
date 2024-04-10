@@ -31,6 +31,7 @@ const AutomationRuleSchema = new Schema({
     }
   }
 });
+type AutomationRuleSchema = mongoose.InferSchemaType<typeof AutomationRuleSchema>;
 
 const FiltersSchema = new Schema({
   cameras: { type: [String], default: undefined },
@@ -44,6 +45,7 @@ const FiltersSchema = new Schema({
   notReviewed: { type: Boolean },
   custom: { type: String }
 });
+type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;
 
 const ViewSchema = new Schema({
   name: { type: String, required: true },
@@ -51,6 +53,7 @@ const ViewSchema = new Schema({
   description: { type: String },
   editable: { type: Boolean }
 });
+type ViewSchema = mongoose.InferSchemaType<typeof ViewSchema>;
 
 const DeploymentSchema = new Schema({
   name: { type: String, required: true },
@@ -60,6 +63,7 @@ const DeploymentSchema = new Schema({
   startDate: { type: Date },
   editable: { type: Boolean }
 });
+type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
 
 const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
@@ -67,11 +71,13 @@ const ProjectLabelSchema = new Schema({
   color: { type: String, required: true },
   reviewerEnabled: { type: Boolean, required: true, default: true }
 });
+type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
 
 const CameraConfigSchema = new Schema({
   _id: { type: String, required: true },  /* _id is serial number */
   deployments: { type: [DeploymentSchema] }
 });
+type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 
 const ProjectSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
@@ -92,5 +98,6 @@ const ProjectSchema = new Schema({
     color: '#E93D82'
   }], required: true }
 });
+type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
 
 export default mongoose.model('Project', ProjectSchema);

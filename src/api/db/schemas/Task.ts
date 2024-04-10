@@ -28,6 +28,7 @@ const TaskSchema = new Schema({
   updated: { type: Date, default: Date.now, required: true },
   output: { type: Object }
 });
+type TaskSchema = mongoose.InferSchemaType<typeof TaskSchema>;
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
 

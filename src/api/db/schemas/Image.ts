@@ -18,6 +18,7 @@ const ImageCommentSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   comment: { type: String, required: true }
 });
+type ImageCommentSchema = mongoose.InferSchemaType<typeof ImageCommentSchema>;
 
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
@@ -44,6 +45,7 @@ const ImageSchema = new Schema({
   objects: { type: [ObjectSchema] },
   comments: { type: [ImageCommentSchema] }
 });
+export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 

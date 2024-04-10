@@ -18,6 +18,7 @@ const BatchSchema = new Schema({
   stoppingInitiated: { type: Date },
   total: { type: Number }
 });
+type BatchSchema = mongoose.InferSchemaType<typeof BatchSchema>;
 
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 

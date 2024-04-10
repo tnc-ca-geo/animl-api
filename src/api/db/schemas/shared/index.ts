@@ -1,10 +1,12 @@
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
+import Label from '../../../type-defs/objects/Label';
 const Schema = mongoose.Schema;
 
 const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
   coordinates: { type: [Number], required: true }
 });
+type PointSchema = mongoose.InferSchemaType<typeof PointSchema>;
 
 const LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
@@ -12,6 +14,7 @@ const LocationSchema = new Schema({
   name: { type: String }
   // azimuth: { type: Number },
 });
+type LocationSchema = mongoose.InferSchemaType<typeof LocationSchema>;
 
 /*
  * ValidationSchema
@@ -24,6 +27,7 @@ const ValidationSchema = new Schema({
   validationDate: { type: Date, default: Date.now, required: true },
   userId: { type: String }
 });
+type ValidationSchema = mongoose.InferSchemaType<typeof ValidationSchema>;
 
 /*
  * LabelSchema
@@ -42,6 +46,8 @@ const LabelSchema = new Schema({
   mlModelVersion: { type: 'String' },
   userId: { type: String } // if type === 'manual'
 });
+type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;
+
 
 /*
  * ObjectSchema
@@ -57,6 +63,7 @@ const ObjectSchema = new Schema({
   locked: { type: Boolean, default: false, required: true },
   labels: { type: [LabelSchema] }
 });
+type ObjectSchema = mongoose.InferSchemaType<typeof ObjectSchema>;
 
 export {
   PointSchema,
