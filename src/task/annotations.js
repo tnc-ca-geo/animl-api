@@ -84,6 +84,7 @@ export class AnnotationsExport {
 
   async toCSV() {
     console.log('exporting to CSV');
+
     try {
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
@@ -91,21 +92,24 @@ export class AnnotationsExport {
       const createRow = stringify({ header: true, columns });
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
-      let flattenedImgCount = 0; // NOTE: just for testing
-      // stream in images from MongoDB, write to transformation stream
-      for await (const img of Image.aggregate(this.pipeline)) {
-        flattenImg.write(img);
-        flattenedImgCount++;
-        if (flattenedImgCount % 1000 === 0) {
-          console.log(`flattened img count: ${flattenedImgCount}. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
+      // log memory usage every 10k images (just for testing)
+      const logMemoryUsage = transform((data) => {
+        const { finished } = logMemoryUsage.state;
+        if (finished === 1 || finished % 10000 === 0) {
+          console.log(`Processed ${finished} images. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
         }
-      }
-      flattenImg.end();
+        return data;
+      });
 
-      // pipe together transform and write streams
+      // create a Mongoose aggregation cursor to read in documents one at a time
+      const cursor = Image.aggregate(this.pipeline).cursor();
+
+      // pipe together aggregation cursor, transform and write streams
       await stream.pipeline(
+        cursor,
         flattenImg,
         createRow,
+        logMemoryUsage,
         streamToS3
       );
 
