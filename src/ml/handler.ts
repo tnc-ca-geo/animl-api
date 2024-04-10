@@ -1,4 +1,3 @@
-import "source-map-support/register";
 import { GraphQLClient, gql } from "graphql-request";
 import {
   type Detection,

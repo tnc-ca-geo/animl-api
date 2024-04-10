@@ -1,4 +1,3 @@
-import 'source-map-support/register';
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import AuthedProjectModel from './db/models/Project.js';
