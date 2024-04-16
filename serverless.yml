@@ -19,12 +19,6 @@ provider:
     STAGE: ${self:provider.stage}
     ACCOUNT: ${aws:accountId}
 
-  ecr:
-    images:
-      base:
-        path: .
-        platform: linux/amd64
-
   iam:
     role:
       statements:
@@ -116,7 +110,7 @@ provider:
               - ''
               - - 'arn:aws:s3:::'
                 - 'animl-images-serving-${self:provider.stage}/*'
-                
+
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
@@ -148,9 +142,8 @@ functions:
     memorySize: 3008
     timeout: 30
   inference:
-    image:
-      name: base
-      command: src/ml/handler.inference
+    handler: src/api/handler.server
+    runtime: nodejs20.x
     reservedConcurrency: 20
     events:
       - sqs:
@@ -162,15 +155,13 @@ functions:
           functionResponseType: ReportBatchItemFailures
     timeout: 120
   batchinference:
-    image:
-      name: base
-      command: src/ml/handler.inference
+    handler: src/api/handler.server
+    runtime: nodejs20.x
     reservedConcurrency: 8
     timeout: 120
   task:
-    image:
-      name: base
-      command: src/task/handler.handler
+    handler: src/api/handler.server
+    runtime: nodejs20.x
     reservedConcurrency: 10
     events:
       - sqs:
