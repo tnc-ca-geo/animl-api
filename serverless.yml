@@ -142,7 +142,7 @@ functions:
     memorySize: 3008
     timeout: 30
   inference:
-    handler: src/api/handler.server
+    handler: src/ml/handler.inference
     runtime: nodejs20.x
     reservedConcurrency: 20
     events:
@@ -155,12 +155,12 @@ functions:
           functionResponseType: ReportBatchItemFailures
     timeout: 120
   batchinference:
-    handler: src/api/handler.server
+    handler: src/ml/handler.inference
     runtime: nodejs20.x
     reservedConcurrency: 8
     timeout: 120
   task:
-    handler: src/api/handler.server
+    handler: src/task/handler.handler
     runtime: nodejs20.x
     reservedConcurrency: 10
     events:
