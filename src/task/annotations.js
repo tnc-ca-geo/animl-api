@@ -42,6 +42,10 @@ export class AnnotationsExport {
       );
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
+      if (this.onlyIncludeReviewed) {
+        sanitizedFilters.reviewed = true;
+      }
+
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
