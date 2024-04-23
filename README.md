@@ -38,7 +38,7 @@ associated deployment resources are managed with the
 
 ## `Development`
 
-### Prerequisits
+### Prerequisites
 The instructions below assume you have the following tools globally installed:
 - Node & npm
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
