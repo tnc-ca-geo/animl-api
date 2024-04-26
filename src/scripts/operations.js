@@ -25,7 +25,7 @@ const operations = {
         for (const img of imgs) {
           for (const obj of img.objects) {
             for (const lbl of obj.labels) {
-              if (lbl.labelId === '0'){
+              if (lbl.labelId === '0') {
                 lbl.labelId = 'empty';
               }
             }
@@ -72,7 +72,8 @@ const operations = {
           const op = {
             updateOne: {
               filter: { _id: img._id },
-              update : { dateTimeOriginal: newDT } }
+              update: { dateTimeOriginal: newDT }
+            }
           };
           operations.push(op);
         }
@@ -127,31 +128,33 @@ const operations = {
       const mergeExpression = {
         $mergeObjects: [
           '$$lbl',
-          { mlModel: {
-            $switch: {
-              branches: [{
-                case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                then: 'megadetector'
-              },{
-                case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                then: 'mira'
-              }],
-              default: '$$REMOVE'
+          {
+            mlModel: {
+              $switch: {
+                branches: [{
+                  case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                  then: 'megadetector'
+                }, {
+                  case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                  then: 'mira'
+                }],
+                default: '$$REMOVE'
+              }
             }
-          }
           },
-          { mlModelVersion: {
-            $switch: {
-              branches: [{
-                case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                then: 'v4.1'
-              },{
-                case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                then: 'v1.0'
-              }],
-              default: '$$REMOVE'
+          {
+            mlModelVersion: {
+              $switch: {
+                branches: [{
+                  case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                  then: 'v4.1'
+                }, {
+                  case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                  then: 'v1.0'
+                }],
+                default: '$$REMOVE'
+              }
             }
-          }
           }
         ]
       };
@@ -235,6 +238,7 @@ const operations = {
         await Image.bulkWrite(operations);
         skip += limit;
         doneCount += documents.length;
+        console.log('Done: ', doneCount);
       }
       return { nModified: doneCount };
     }
