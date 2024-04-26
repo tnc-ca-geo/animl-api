@@ -8,6 +8,7 @@ plugins:
 package:
   patterns:
     - '!backups/**'
+    - '!.build/**'
 
 provider:
   name: aws
@@ -36,12 +37,12 @@ provider:
         - Effect: Allow
           Action:
             - sagemaker:InvokeEndpoint
-          Resource: "*"
+          Resource: '*'
         - Effect: Allow
           Action:
             - ses:SendEmail
             - ses:SendRawEmail
-          Resource: "*"
+          Resource: '*'
         - Effect: Allow
           Action:
             - ssm:GetParameters
@@ -49,7 +50,7 @@ provider:
         - Effect: Allow
           Action:
             - secretsmanager:GetSecretValue
-          Resource: "*"
+          Resource: '*'
         - Effect: 'Allow'
           Action:
             - 'lambda:InvokeFunction'
@@ -61,14 +62,14 @@ provider:
             - 's3:GetObject'
           Resource:
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - 'animl-images-ingestion-${self:provider.stage}'
+                - ''
+                - - 'arn:aws:s3:::'
+                  - 'animl-images-ingestion-${self:provider.stage}'
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - 'animl-images-ingestion-${self:provider.stage}'
-                - '/*'
+                - ''
+                - - 'arn:aws:s3:::'
+                  - 'animl-images-ingestion-${self:provider.stage}'
+                  - '/*'
         - Effect: 'Allow'
           Action:
             - 'cognito-idp:ListGroups'
@@ -90,26 +91,26 @@ provider:
             - 's3:GetObject'
           Resource:
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - Ref: S3BucketAnimlexporteddata
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: S3BucketAnimlexporteddata
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - Ref: S3BucketAnimlexporteddata
-                - '/*'
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: S3BucketAnimlexporteddata
+                  - '/*'
         - Effect: 'Allow'
           Action:
             - 's3:DeleteObject'
           Resource:
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - 'animl-images-serving-${self:provider.stage}'
+                - ''
+                - - 'arn:aws:s3:::'
+                  - 'animl-images-serving-${self:provider.stage}'
             - Fn::Join:
-              - ''
-              - - 'arn:aws:s3:::'
-                - 'animl-images-serving-${self:provider.stage}/*'
+                - ''
+                - - 'arn:aws:s3:::'
+                  - 'animl-images-serving-${self:provider.stage}/*'
 
   apiGateway:
     apiKeys:
@@ -121,21 +122,21 @@ functions:
     handler: src/api/handler.server
     runtime: nodejs20.x
     events:
-    - http:
-        path: /
-        method: post
-        cors: true
-    - http:
-        path: /internal
-        method: post
-        cors: true
-        private: true
-    - http:
-        path: /external
-        method: post
-        cors:
-          headers: '*'
-        authorizer:
+      - http:
+          path: /
+          method: post
+          cors: true
+      - http:
+          path: /internal
+          method: post
+          cors: true
+          private: true
+      - http:
+          path: /external
+          method: post
+          cors:
+            headers: '*'
+          authorizer:
             name: CognitoAuthN
             type: COGNITO_USER_POOLS
             arn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
@@ -174,15 +175,14 @@ functions:
 
 resources:
   Resources:
-
     # Secrets Manager secret for API key
     apiKey:
       Type: AWS::SecretsManager::Secret
       Properties:
         Description: API Key that will allow access for the APIs
         GenerateSecretString:
-            GenerateStringKey: apikey
-            SecretStringTemplate: '{"user": "api"}'
+          GenerateStringKey: apikey
+          SecretStringTemplate: '{"user": "api"}'
         Name: api-key-${self:provider.stage}
 
     # Inference SQS queue
@@ -193,14 +193,14 @@ resources:
         VisibilityTimeout: 120
         RedrivePolicy:
           deadLetterTargetArn:
-            "Fn::GetAtt":
+            'Fn::GetAtt':
               - inferenceDeadLetterQueue
               - Arn
           maxReceiveCount: 5
 
     # Inference - dead-letter SQS queue
     inferenceDeadLetterQueue:
-      Type: "AWS::SQS::Queue"
+      Type: 'AWS::SQS::Queue'
       Properties:
         QueueName: inferenceDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds
@@ -213,14 +213,14 @@ resources:
         VisibilityTimeout: 900
         RedrivePolicy:
           deadLetterTargetArn:
-            "Fn::GetAtt":
+            'Fn::GetAtt':
               - taskDeadLetterQueue
               - Arn
           maxReceiveCount: 5
 
     # Task - dead-letter SQS queue
     taskDeadLetterQueue:
-      Type: "AWS::SQS::Queue"
+      Type: 'AWS::SQS::Queue'
       Properties:
         QueueName: taskDLQ-${self:provider.stage}
         MessageRetentionPeriod: 1209600 # 14 days in seconds

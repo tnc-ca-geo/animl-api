@@ -1,6 +1,14 @@
 import _ from 'lodash';
 import S3 from '@aws-sdk/client-s3';
-import GraphQLError, { InternalServerError, ForbiddenError, DuplicateImageError, DuplicateLabelError, DBValidationError, NotFoundError, AuthenticationError } from '../../errors.js';
+import GraphQLError, {
+  InternalServerError,
+  ForbiddenError,
+  DuplicateImageError,
+  DuplicateLabelError,
+  DBValidationError,
+  NotFoundError,
+  AuthenticationError,
+} from '../../errors.js';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
@@ -18,7 +26,7 @@ import {
   WRITE_OBJECTS_ROLES,
   WRITE_IMAGES_ROLES,
   WRITE_COMMENTS_ROLES,
-  EXPORT_DATA_ROLES
+  EXPORT_DATA_ROLES,
 } from '../../auth/roles.js';
 import {
   hasRole,
@@ -31,7 +39,8 @@ import {
   createImageRecord,
   createLabelRecord,
   reviewerLabelRecord,
-  findActiveProjReg
+  findActiveProjReg,
+  isImageReviewed,
 } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -49,9 +58,9 @@ export class ImageModel {
 
   static async countImagesByLabel(labels, context) {
     const pipeline = [
-      { '$match': { 'projectId': context.user['curr_project'] } },
+      { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
-      { $count: 'count' }
+      { $count: 'count' },
     ];
 
     const res = await Image.aggregate(pipeline);
@@ -67,7 +76,7 @@ export class ImageModel {
       if (!image) throw new NotFoundError('Image not found');
 
       const epipeline = [];
-      epipeline.push({ '$match': { 'image': image._id } });
+      epipeline.push({ $match: { image: image._id } });
       image.errors = await ImageError.aggregate(epipeline);
 
       return image;
@@ -85,7 +94,7 @@ export class ImageModel {
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
-        previous: input.previous
+        previous: input.previous,
       });
       // console.log('res: ', JSON.stringify(result));
       return result;
@@ -97,17 +106,23 @@ export class ImageModel {
 
   static async deleteImages(input, context) {
     try {
-      const res = await Promise.allSettled(input.imageIds.map((imageId) => {
-        return this.deleteImage({ imageId }, context);
-      }));
+      const res = await Promise.allSettled(
+        input.imageIds.map((imageId) => {
+          return this.deleteImage({ imageId }, context);
+        }),
+      );
 
       const errors = res
-        .filter((r) => { return r.status === 'rejected'; })
-        .map((r) => { return r.reason; }); // Will always be a GraphQLError
+        .filter((r) => {
+          return r.status === 'rejected';
+        })
+        .map((r) => {
+          return r.reason;
+        }); // Will always be a GraphQLError
 
       return {
         isOk: !errors.length,
-        errors
+        errors,
       };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -122,12 +137,16 @@ export class ImageModel {
       // Ensure Image is part of a project that the user has access to
       const image = await ImageModel.queryById(input.imageId, context);
 
-      await Promise.all(['medium', 'original', 'small'].map((size) => {
-        return s3.send(new S3.DeleteObjectCommand({
-          Bucket: `animl-images-serving-${process.env.STAGE}`,
-          Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension || 'jpg'}`
-        }));
-      }));
+      await Promise.all(
+        ['medium', 'original', 'small'].map((size) => {
+          return s3.send(
+            new S3.DeleteObjectCommand({
+              Bucket: `animl-images-serving-${process.env.STAGE}`,
+              Key: `${size}/${input.imageId}-${size}.${image.fileTypeExtension || 'jpg'}`,
+            }),
+          );
+        }),
+      );
 
       await Image.deleteOne({ _id: input.imageId });
       await ImageAttempt.deleteOne({ _id: input.imageId });
@@ -150,7 +169,6 @@ export class ImageModel {
     let imageAttempt;
 
     try {
-
       // 1. create ImageAttempt record
       try {
         // NOTE: to create the record, we need go generate the image's _id,
@@ -183,14 +201,12 @@ export class ImageModel {
           imageAttempt = createImageAttemptRecord(md);
           await imageAttempt.save();
         }
-
       } catch (err) {
         throw new InternalServerError(err instanceof Error ? err.message : String(err));
       }
 
       // 2. validate metadata and create Image record
       try {
-
         // check for errors passed in from animl-ingest (e.g. corrupted image file)
         if (input.md.errors) {
           input.md.errors
@@ -219,12 +235,15 @@ export class ImageModel {
             // create camera config if there isn't one yet
             await ProjectModel.createCameraConfig({ projectId, cameraId }, context);
           } else if (!existingCam) {
-            await CameraModel.createWirelessCamera({
-              projectId,
-              cameraId,
-              make: md.make,
-              ...(md.model && { model: md.model })
-            }, context);
+            await CameraModel.createWirelessCamera(
+              {
+                projectId,
+                cameraId,
+                make: md.make,
+                ...(md.model && { model: md.model }),
+              },
+              context,
+            );
             successfulOps.push({ op: 'cam-created', info: { cameraId } });
           }
 
@@ -237,13 +256,18 @@ export class ImageModel {
 
           md.deploymentId = deployment._id;
           md.timezone = deployment.timezone;
-          md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, { keepLocalTime: true });
+          md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, {
+            keepLocalTime: true,
+          });
 
-          const image = await retry(async (bail, attempt) => {
-            if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
-            const newImage = createImageRecord(md);
-            return await newImage.save();
-          }, { retries: 2 });
+          const image = await retry(
+            async (bail, attempt) => {
+              if (attempt > 1) console.log(`Retrying saveImage! Try #: ${attempt}`);
+              const newImage = createImageRecord(md);
+              return await newImage.save();
+            },
+            { retries: 2 },
+          );
           console.log(`image successfully created: ${JSON.stringify(image)}`);
           await handleEvent({ event: 'image-added', image }, context);
           console.log('automation successfully run');
@@ -257,12 +281,16 @@ export class ImageModel {
         // reverse successful operations
         for (const op of successfulOps) {
           if (op.op === 'cam-created') {
-            console.log('Image.createImage() - an error occurred, so reversing successful cam-created operation');
+            console.log(
+              'Image.createImage() - an error occurred, so reversing successful cam-created operation',
+            );
             // delete newly created wireless camera record
             await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
-            proj.cameraConfigs = proj.cameraConfigs.filter((camConfig) => !idMatch(camConfig._id, op.info.cameraId));
+            proj.cameraConfigs = proj.cameraConfigs.filter(
+              (camConfig) => !idMatch(camConfig._id, op.info.cameraId),
+            );
             proj.save();
           }
         }
@@ -276,7 +304,7 @@ export class ImageModel {
             image: md.imageId,
             batch: md.batchId,
             path: md.path || md.fileName,
-            error: errors[i].message
+            error: errors[i].message,
           });
           console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
           await errors[i].save();
@@ -286,7 +314,6 @@ export class ImageModel {
       // return imageAttempt
       imageAttempt.errors = errors;
       return imageAttempt;
-
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
@@ -296,7 +323,7 @@ export class ImageModel {
         image: md.imageId,
         batch: md.batchId,
         path: md.path || md.fileName,
-        error: msg
+        error: msg,
       });
       await imageError.save();
 
@@ -316,14 +343,18 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
+      const comment = (image.comments || []).filter((c) => {
+        return idMatch(c._id, input.id);
+      })[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
         throw new ForbiddenError('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => { return !idMatch(c._id, input.id); });
+      image.comments = image.comments.filter((c) => {
+        return !idMatch(c._id, input.id);
+      });
 
       await image.save();
 
@@ -338,7 +369,9 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => { return idMatch(c._id, input.id); })[0];
+      const comment = (image.comments || []).filter((c) => {
+        return idMatch(c._id, input.id);
+      })[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -363,7 +396,7 @@ export class ImageModel {
       if (!image.comments) image.comments = [];
       image.comments.push({
         author: context.user['cognito:username'],
-        comment: input.comment
+        comment: input.comment,
       });
       await image.save();
 
@@ -375,21 +408,25 @@ export class ImageModel {
   }
 
   static async createObjects(input, context) {
+    console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
     const operation = async ({ objects }) => {
-      return await retry(async (bail, attempt) => {
-        if (attempt > 1) {
-          console.log(`Retrying createObjects operation! Try #: ${attempt}`);
-        }
-        // find images, add objects, and bulk write
-        const operations = objects.map(({ imageId, object }) => ({
-          updateOne: {
-            filter: { _id: imageId },
-            update: { $push: { objects: object } }
+      return await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying createObjects operation! Try #: ${attempt}`);
           }
-        }));
-        console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
-        return await Image.bulkWrite(operations);
-      }, { retries: 2 });
+          // find images, add objects, and bulk write
+          const operations = objects.map(({ imageId, object }) => ({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $push: { objects: object } },
+            },
+          }));
+          console.log('ImageModel.createObjects - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
     };
 
     try {
@@ -400,13 +437,21 @@ export class ImageModel {
         const image = await ImageModel.queryById(input.objects[oid].imageId, context);
 
         for (let lid = 0; lid < (input.objects[oid].labels || []).length; lid++) {
-          input.objects[oid].labels[lid] = reviewerLabelRecord(project, image, input.objects[oid].labels[lid]);
+          input.objects[oid].labels[lid] = reviewerLabelRecord(
+            project,
+            image,
+            input.objects[oid].labels[lid],
+          );
         }
       }
 
-
       const res = await operation(input);
-      console.log('ImageModel.createObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      console.log(
+        'ImageModel.createObjects - Image.bulkWrite() res: ',
+        JSON.stringify(res.getRawResponse()),
+      );
+      const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -417,35 +462,43 @@ export class ImageModel {
   static async updateObjects(input) {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
     const operation = async ({ updates }) => {
-      return await retry(async (bail, attempt) => {
-        if (attempt > 1) {
-          console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
-        }
-
-        const operations = [];
-        for (const update of updates) {
-          const { imageId, objectId, diffs } = update;
-          const overrides = {};
-          for (const [key, newVal] of Object.entries(diffs)) {
-            overrides[`objects.$[obj].${key}`] = newVal;
+      return await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
           }
-          operations.push({
-            updateOne: {
-              filter: { _id: imageId },
-              update: { $set: overrides },
-              arrayFilters: [{ 'obj._id': new ObjectId(objectId) }]
-            }
-          });
-        }
-        console.log('ImageModel.updateObjects - operations: ', JSON.stringify(operations));
-        return await Image.bulkWrite(operations);
 
-      }, { retries: 2 });
+          const operations = [];
+          for (const update of updates) {
+            const { imageId, objectId, diffs } = update;
+            const overrides = {};
+            for (const [key, newVal] of Object.entries(diffs)) {
+              overrides[`objects.$[obj].${key}`] = newVal;
+            }
+
+            operations.push({
+              updateOne: {
+                filter: { _id: imageId },
+                update: { $set: overrides },
+                arrayFilters: [{ 'obj._id': new ObjectId(objectId) }],
+              },
+            });
+          }
+          console.log('ImageModel.updateObjects - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
     };
 
     try {
       const res = await operation(input);
-      console.log('ImageModel.updateObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      console.log(
+        'ImageModel.updateObjects - Image.bulkWrite() res: ',
+        JSON.stringify(res.getRawResponse()),
+      );
+      const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -454,23 +507,32 @@ export class ImageModel {
   }
 
   static async deleteObjects(input) {
+    console.log('ImageModel.deleteObjects - input: ', JSON.stringify(input));
     const operation = async ({ objects }) => {
-      return await retry(async () => {
-        // find images, remove objects, and bulk write
-        const operations = objects.map(({ imageId, objectId }) => ({
-          updateOne: {
-            filter: { _id: imageId },
-            update: { $pull: { objects: { _id: objectId } } }
-          }
-        }));
-        console.log('ImageModel.deleteObjects - operations: ', JSON.stringify(operations));
-        return await Image.bulkWrite(operations);
-      }, { retries: 2 });
+      return await retry(
+        async () => {
+          // find images, remove objects, and bulk write
+          const operations = objects.map(({ imageId, objectId }) => ({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $pull: { objects: { _id: objectId } } },
+            },
+          }));
+          console.log('ImageModel.deleteObjects - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
     };
 
     try {
       const res = await operation(input);
-      console.log('ImageModel.deleteObjects - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      console.log(
+        'ImageModel.deleteObjects - Image.bulkWrite() res: ',
+        JSON.stringify(res.getRawResponse()),
+      );
+      const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -488,72 +550,99 @@ export class ImageModel {
   static async createInternalLabels(input, context) {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
     const operation = async ({ label }) => {
-      return await retry(async () => {
-        console.log('ImageModel.createInternalLabels - creating label: ', JSON.stringify(label));
+      return await retry(
+        async () => {
+          console.log('ImageModel.createInternalLabels - creating label: ', JSON.stringify(label));
 
-        label.type = 'ml';
+          label.type = 'ml';
 
-        // find image, create label record
-        const image = await ImageModel.queryById(label.imageId, context);
-        if (isLabelDupe(image, label)) throw new DuplicateLabelError();
+          // find image, create label record
+          const image = await ImageModel.queryById(label.imageId, context);
+          if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
-        const project = await ProjectModel.queryById(image.projectId);
-        const labelRecord = createLabelRecord(label, label.mlModel);
+          const project = await ProjectModel.queryById(image.projectId);
+          const labelRecord = createLabelRecord(label, label.mlModel);
 
-        const model = await MLModelModel.queryById(labelRecord.mlModel);
-        const cats = model.categories.filter((cat) => { return idMatch(cat._id, labelRecord.labelId); });
-
-        if (cats.length !== 1) throw new DBValidationError('Models should always produce labels tracked in MLModels.categories');
-        const modelLabel = cats[0];
-
-        // Check if Label Exists on Project and if not, add it
-        if (!project.labels.some((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); })) {
-          await Project.findOneAndUpdate({
-            _id: image.projectId
-          }, [
-            { $addFields: { labelIds : '$labels._id' } },
-            {
-              $set: {
-                labels: {
-                  $cond: {
-                    if: { $in: [labelRecord.labelId, '$labelIds'] },
-                    then: '$labels',
-                    else: { $concatArrays: ['$labels', [{
-                      _id: labelRecord.labelId,
-                      name: modelLabel.name,
-                      color: modelLabel.color
-                    }]] }
-                  }
-                }
-              }
-            }
-          ], { returnDocument: 'after' });
-
-        } else {
-          // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
-          const [label] =  project.labels.filter((l) => { return l.name.toLowerCase() === modelLabel.name.toLowerCase(); });
-          labelRecord.labelId = label._id;
-        }
-
-        let objExists = false;
-        for (const object of image.objects) {
-          if (_.isEqual(object.bbox, label.bbox)) {
-            object.labels.unshift(labelRecord);
-            objExists = true;
-            break;
-          }
-        }
-        if (!objExists) {
-          image.objects.unshift({
-            bbox: labelRecord.bbox,
-            locked: false,
-            labels: [labelRecord]
+          const model = await MLModelModel.queryById(labelRecord.mlModel);
+          const cats = model.categories.filter((cat) => {
+            return idMatch(cat._id, labelRecord.labelId);
           });
-        }
 
-        await image.save();
-        return { image, newLabel: labelRecord };
-      }, { retries: 2 });
+          if (cats.length !== 1)
+            throw new DBValidationError(
+              'Models should always produce labels tracked in MLModels.categories',
+            );
+          const modelLabel = cats[0];
+
+          // Check if Label Exists on Project and if not, add it
+          if (
+            !project.labels.some((l) => {
+              return l.name.toLowerCase() === modelLabel.name.toLowerCase();
+            })
+          ) {
+            await Project.findOneAndUpdate(
+              {
+                _id: image.projectId,
+              },
+              [
+                { $addFields: { labelIds: '$labels._id' } },
+                {
+                  $set: {
+                    labels: {
+                      $cond: {
+                        if: { $in: [labelRecord.labelId, '$labelIds'] },
+                        then: '$labels',
+                        else: {
+                          $concatArrays: [
+                            '$labels',
+                            [
+                              {
+                                _id: labelRecord.labelId,
+                                name: modelLabel.name,
+                                color: modelLabel.color,
+                              },
+                            ],
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+              { returnDocument: 'after' },
+            );
+          } else {
+            // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
+            const [label] = project.labels.filter((l) => {
+              return l.name.toLowerCase() === modelLabel.name.toLowerCase();
+            });
+            labelRecord.labelId = label._id;
+          }
+
+          let objExists = false;
+          for (const object of image.objects) {
+            if (_.isEqual(object.bbox, label.bbox)) {
+              object.labels.unshift(labelRecord);
+              objExists = true;
+              break;
+            }
+          }
+          if (!objExists) {
+            image.objects.unshift({
+              bbox: labelRecord.bbox,
+              locked: false,
+              labels: [labelRecord],
+            });
+          }
+
+          // set image as unreviewed due to new labels
+          image.reviewed = false;
+
+          await image.save();
+          return { image, newLabel: labelRecord };
+        },
+        { retries: 2 },
+      );
     };
 
     try {
@@ -561,11 +650,14 @@ export class ImageModel {
         const res = await operation({ label });
         console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
-          await handleEvent({
-            event: 'label-added',
-            label: res.newLabel,
-            image: res.image
-          }, context);
+          await handleEvent(
+            {
+              event: 'label-added',
+              label: res.newLabel,
+              image: res.image,
+            },
+            context,
+          );
         }
       }
       return { ok: true };
@@ -579,41 +671,44 @@ export class ImageModel {
   static async createLabels(input, context) {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
     const operation = async ({ label }) => {
-      return await retry(async () => {
-        console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
+      return await retry(
+        async () => {
+          console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
 
-        // find image, create label record
-        const image = await ImageModel.queryById(label.imageId, context);
-        const project = await ProjectModel.queryById(image.projectId);
-        const labelRecord = reviewerLabelRecord(project, image, label);
+          // find image, create label record
+          const image = await ImageModel.queryById(label.imageId, context);
+          const project = await ProjectModel.queryById(image.projectId);
+          const labelRecord = reviewerLabelRecord(project, image, label);
 
-        // if label.objectId was specified, find object and save label to it
-        // else try to match to existing object bbox and merge label into that
-        // else add new object
-        if (label.objectId) {
-          const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
-          object.labels.unshift(labelRecord);
-        } else {
-          let objExists = false;
-          for (const object of image.objects) {
-            if (_.isEqual(object.bbox, label.bbox)) {
-              object.labels.unshift(labelRecord);
-              objExists = true;
-              break;
+          // if label.objectId was specified, find object and save label to it
+          // else try to match to existing object bbox and merge label into that
+          // else add new object
+          if (label.objectId) {
+            const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
+            object.labels.unshift(labelRecord);
+          } else {
+            let objExists = false;
+            for (const object of image.objects) {
+              if (_.isEqual(object.bbox, label.bbox)) {
+                object.labels.unshift(labelRecord);
+                objExists = true;
+                break;
+              }
+            }
+            if (!objExists) {
+              image.objects.unshift({
+                bbox: labelRecord.bbox,
+                locked: false,
+                labels: [labelRecord],
+              });
             }
           }
-          if (!objExists) {
-            image.objects.unshift({
-              bbox: labelRecord.bbox,
-              locked: false,
-              labels: [labelRecord]
-            });
-          }
-        }
 
-        await image.save();
-        return { image, newLabel: labelRecord };
-      }, { retries: 2 });
+          await image.save();
+          return { image, newLabel: labelRecord };
+        },
+        { retries: 2 },
+      );
     };
 
     try {
@@ -621,13 +716,18 @@ export class ImageModel {
         const res = await operation({ label });
         console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
-          await handleEvent({
-            event: 'label-added',
-            label: res.newLabel,
-            image: res.image
-          }, context);
+          await handleEvent(
+            {
+              event: 'label-added',
+              label: res.newLabel,
+              image: res.image,
+            },
+            context,
+          );
         }
       }
+      const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
+      await this.updateReviewStatus(imageIds);
       return { ok: true };
     } catch (err) {
       console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
@@ -639,35 +739,41 @@ export class ImageModel {
   static async updateLabels(input) {
     console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
     const operation = async ({ updates }) => {
-      return await retry(async () => {
-
-        const operations = [];
-        for (const update of updates) {
-          const { imageId, objectId, labelId, diffs } = update;
-          const overrides = {};
-          for (const [key, newVal] of Object.entries(diffs)) {
-            overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
-          }
-          operations.push({
-            updateOne: {
-              filter: { _id: imageId },
-              update: { $set: overrides },
-              arrayFilters: [
-                { 'obj._id': new ObjectId(objectId) },
-                { 'lbl._id': new ObjectId(labelId) }
-              ]
+      return await retry(
+        async () => {
+          const operations = [];
+          for (const update of updates) {
+            const { imageId, objectId, labelId, diffs } = update;
+            const overrides = {};
+            for (const [key, newVal] of Object.entries(diffs)) {
+              overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
             }
-          });
-        }
-        console.log('ImageModel.updateLabels - operations: ', JSON.stringify(operations));
-        return await Image.bulkWrite(operations);
-
-      }, { retries: 2 });
+            operations.push({
+              updateOne: {
+                filter: { _id: imageId },
+                update: { $set: overrides },
+                arrayFilters: [
+                  { 'obj._id': new ObjectId(objectId) },
+                  { 'lbl._id': new ObjectId(labelId) },
+                ],
+              },
+            });
+          }
+          console.log('ImageModel.updateLabels - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
     };
 
     try {
       const res = await operation(input);
-      console.log('ImageModel.updateLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      console.log(
+        'ImageModel.updateLabels - Image.bulkWrite() res: ',
+        JSON.stringify(res.getRawResponse()),
+      );
+      const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -688,12 +794,14 @@ export class ImageModel {
   static async deleteAnyLabels(input, context) {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
-      'projectId': context.user['curr_project']
+      projectId: context.user['curr_project'],
     });
 
-    return await Promise.all(images.map((image) => {
-      return ImageModel.deleteAnyLabel(image, input.labelId);
-    }));
+    return await Promise.all(
+      images.map((image) => {
+        return ImageModel.deleteAnyLabel(image, input.labelId);
+      }),
+    );
   }
 
   /**
@@ -703,10 +811,9 @@ export class ImageModel {
    * @param {string} labelId
    */
   static async deleteAnyLabel(image, labelId) {
-
     function removeLabels(obj) {
       for (let lid = 0; lid < (obj.labels || []).length; lid++) {
-        if (idMatch(obj.labels[lid].labelId , labelId)) {
+        if (idMatch(obj.labels[lid].labelId, labelId)) {
           obj.labels.splice(lid, 1);
         }
       }
@@ -714,12 +821,13 @@ export class ImageModel {
 
     for (let oid = 0; oid < (image.objects || []).length; oid++) {
       const object = image.objects[oid];
-      const firstValidLabel = object.labels?.find((lbl) => lbl.validation && lbl.validation.validated) || null;
+      const firstValidLabel =
+        object.labels?.find((lbl) => lbl.validation && lbl.validation.validated) || null;
 
       if (object.labels.length === 1 && idMatch(object.labels[0].labelId, labelId)) {
         // the object only has one label and it's the one we're removing, so delete object
         image.objects = image.objects.filter((obj) => !idMatch(obj._id, image.objects[oid]._id));
-      } else if (object.locked && (firstValidLabel && idMatch(firstValidLabel.labelId, labelId))) {
+      } else if (object.locked && firstValidLabel && idMatch(firstValidLabel.labelId, labelId)) {
         // the object is locked and the first validated label is one of the labels we're removing,
         // so delete label(s) and unlock the object
         object.locked = false;
@@ -728,32 +836,40 @@ export class ImageModel {
         // delete labels
         removeLabels(object);
       }
-
     }
 
     await image.save();
+    await this.updateReviewStatus([image._id]);
     return image;
   }
 
   static async deleteLabels(input) {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
     const operation = async ({ labels }) => {
-      return await retry(async () => {
-        const operations = labels.map(({ imageId, objectId, labelId }) => ({
-          updateOne: {
-            filter: { _id: imageId },
-            update: { $pull: { 'objects.$[obj].labels': { _id: new ObjectId(labelId) } } },
-            arrayFilters: [{ 'obj._id': new ObjectId(objectId) }]
-          }
-        }));
-        console.log('ImageModel.deleteLabels - operations: ', JSON.stringify(operations));
-        return await Image.bulkWrite(operations);
-      }, { retries: 2 });
+      return await retry(
+        async () => {
+          const operations = labels.map(({ imageId, objectId, labelId }) => ({
+            updateOne: {
+              filter: { _id: imageId },
+              update: { $pull: { 'objects.$[obj].labels': { _id: new ObjectId(labelId) } } },
+              arrayFilters: [{ 'obj._id': new ObjectId(objectId) }],
+            },
+          }));
+          console.log('ImageModel.deleteLabels - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
     };
 
     try {
       const res = await operation(input);
-      console.log('ImageModel.deleteLabels - Image.bulkWrite() res: ', JSON.stringify(res.getRawResponse()));
+      console.log(
+        'ImageModel.deleteLabels - Image.bulkWrite() res: ',
+        JSON.stringify(res.getRawResponse()),
+      );
+      const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
+      await this.updateReviewStatus(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -763,12 +879,15 @@ export class ImageModel {
 
   static async getStatsTask(input, context) {
     try {
-      return await TaskModel.create({
-        type: 'GetStats',
-        projectId: context.user['curr_project'],
-        user: context.user['cognito:username'],
-        config: input
-      }, context);
+      return await TaskModel.create(
+        {
+          type: 'GetStats',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);
@@ -777,15 +896,70 @@ export class ImageModel {
 
   static async exportAnnotationsTask(input, context) {
     try {
-      return TaskModel.create({
-        type: 'ExportAnnotations',
-        projectId: context.user['curr_project'],
-        user: context.user['cognito:username'],
-        config: {
-          filters: input.filters,
-          format: input.format
-        }
-      }, context);
+      return TaskModel.create(
+        {
+          type: 'ExportAnnotations',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: {
+            filters: input.filters,
+            format: input.format,
+          },
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err);
+    }
+  }
+
+  /**
+   * A custom middleware-like method that is used to update the reviewed status of
+   * images that should only be ran by operations that would affect the reviewed status.
+   *
+   * @param {Array<string>} imageIds - An array of image IDs to update.
+   */
+  static async updateReviewStatus(imageIds) {
+    const operation = async () => {
+      return await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying updateReviewStatus operation! Try #: ${attempt}`);
+          }
+
+          const images = await Image.find({
+            _id: { $in: imageIds },
+          });
+
+          const operations = [];
+          for (const image of images) {
+            const isReviewed = isImageReviewed(image);
+            if (isReviewed !== image.reviewed) {
+              operations.push({
+                updateOne: {
+                  filter: { _id: image._id },
+                  update: { $set: { reviewed: isReviewed } },
+                },
+              });
+            }
+          }
+          console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+    };
+
+    try {
+      const res = await operation();
+      if (res.ok) {
+        console.log(
+          'ImageModel.updateReviewStatus - Image.bulkWrite() res: ',
+          JSON.stringify(res.getRawResponse()),
+        );
+      }
+      return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err);

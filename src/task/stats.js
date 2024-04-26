@@ -1,5 +1,5 @@
 import { ProjectModel } from '../api/db/models/Project.js';
-import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
+import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import Image from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 
@@ -24,7 +24,7 @@ export default async function(task) {
     imageCount++;
 
     // increment reviewedCount
-    isImageReviewed(img) ? reviewed++ : notReviewed++;
+    img.reviewed ? reviewed++ : notReviewed++;
 
     // build reviwer list
     let reviewers = [];
