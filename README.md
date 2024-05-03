@@ -38,11 +38,12 @@ associated deployment resources are managed with the
 
 ## `Development`
 
-### Prerequisits
+### Prerequisites
 The instructions below assume you have the following tools globally installed:
 - Node & npm
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
 - [aws-cli](https://aws.amazon.com/cli/)
+- [Docker] (https://docs.docker.com/engine/install/)
 
 ### Create "animl" AWS config profile
 The name of the profile must be "animl" (because it's referenced in the 
@@ -66,7 +67,7 @@ config files of other services upon which this app depends, but some must be
 created manually via the AWS console. To make sure you have the correct secrets 
 and parameters available, do the following: 
 
-1. Make sure you've deplpyed [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest), 
+1. Make sure you've deployed [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest), 
 [animl-frontent](http://github.com/tnc-ca-geo/animl-frontend), 
 and [mira-api](https://github.com/tnc-ca-geo/animl-ml/tree/master/api/mira) in the 
 same staging env (dev/prod) as the environtment you intend to deploy `animl-api`.
@@ -97,6 +98,8 @@ npm run seed-db-prod
 ```
 npm run start
 ```
+
+Note: The first time running serverless will require you to login to the serverless console and be granted a seat from the TNC organization. 
 
 - To deploy the Cloudformation development stack, run: 
 ```
@@ -131,12 +134,14 @@ Use caution when deploying to production, as the application involves multiple s
 
 1. Set the frontend `IN_MAINTENANCE_MODE` to `true` (in `animl-frontend/src/config.js`), deploy to prod, then invalidate its cloudfront cache. This will temporarily prevent users from interacting with the frontend (editing labels, bulk uploading images, etc.) while the rest of the updates are being deployed.
 
-2. Set ingest-image's `IN_MAINTENANCE_MODE` to `true` (in `animl-ingest/ingest-image/task.js`) and deploy to prod. This will temporarily route any images from wireless cameras that happen to get send to the ingestion bucket to the `animl-images-parkinglot-prod` bucket so that Animl isn't trying to process new images while the updates are being deployed.
+2. Set ingest-image's `IN_MAINTENANCE_MODE` to `true` (in `animl-ingest/ingest-image/task.js`) and deploy to prod. While in maintenance mode, any images from wireless cameras that happen to get sent to the ingestion bucket will be routed instead to the `animl-images-parkinglot-prod` bucket so that Animl isn't trying to process new images while the updates are being deployed.
+   
+3. Wait for messages in ALL SQS queues to wind down to zero (i.e., if there's currently a bulk upload job being processed, wait for it to finish).
 
-3. Backup prod DB by running `npm run export-db-prod` from the `animl-api` project root.
+4. Backup prod DB by running `npm run export-db-prod` from the `animl-api` project root.
 
-4. Deploy animl-api to prod. 
+5. Deploy animl-api to prod.
 
-5. Turn off `IN_MAINTENANCE_MODE` in animl-frontend and animl-ingest, and deploy both to prod, and clear cloudfront cache.
+6. Turn off `IN_MAINTENANCE_MODE` in animl-frontend and animl-ingest, and deploy both to prod, and clear cloudfront cache.
 
-6. Copy any images that happened to land in `animl-images-parkinglot-prod` while the stacks were being deployed to `animl-images-ingestion-prod`, and then delete them from the parking lot bucket.
+7. Copy any images that happened to land in `animl-images-parkinglot-prod` while the stacks were being deployed to `animl-images-ingestion-prod`, and then delete them from the parking lot bucket.

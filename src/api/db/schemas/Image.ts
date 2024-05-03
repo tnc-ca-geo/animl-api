@@ -45,6 +45,7 @@ const ImageSchema = new Schema({
   model: { type: String },
   location: { type: LocationSchema },
   triggerSource: { type: String },
+  reviewed: { type: Boolean },
   objects: { type: [ObjectSchema] },
   comments: { type: [ImageCommentSchema] }
 });

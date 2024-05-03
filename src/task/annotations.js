@@ -42,10 +42,10 @@ export class AnnotationsExport {
       );
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
-      // add notReviewed = false filter
-      if (this.onlyIncludeReviewed && (sanitizedFilters.notReviewed !== false)) {
-        sanitizedFilters.notReviewed = false;
+      if (this.onlyIncludeReviewed) {
+        sanitizedFilters.reviewed = true;
       }
+
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
