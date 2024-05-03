@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const Schema = mongoose.Schema;
 
@@ -11,6 +12,6 @@ const ImageErrorSchema = new Schema({
   path: { type: String },
   error: { type: String, required: true }
 });
-type ImageErrorSchema = mongoose.InferSchemaType<typeof ImageErrorSchema>;
+type ImageErrorSchema = InferSchemaTypeWithDateTime<typeof ImageErrorSchema>;
 
 export default mongoose.model('ImageError', ImageErrorSchema);

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
+import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const Schema = mongoose.Schema;
 
@@ -18,7 +19,7 @@ const BatchSchema = new Schema({
   stoppingInitiated: { type: Date },
   total: { type: Number }
 });
-type BatchSchema = mongoose.InferSchemaType<typeof BatchSchema>;
+type BatchSchema = InferSchemaTypeWithDateTime<typeof BatchSchema>;
 
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 

@@ -1,20 +1,21 @@
-import mongoose, { mongo } from 'mongoose';
-import Label from '../../../type-defs/objects/Label.js';
+import mongoose from 'mongoose';
+import { InferSchemaTypeWithDateTime } from "../utils.js";
+
 const Schema = mongoose.Schema;
 
 const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
   coordinates: { type: [Number], required: true }
 });
-type PointSchema = mongoose.InferSchemaType<typeof PointSchema>;
+export type PointSchema = InferSchemaTypeWithDateTime<typeof PointSchema>;
 
 const LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
   altitude: { type: String },
-  name: { type: String }
+  name: { type: String },
   // azimuth: { type: Number },
 });
-type LocationSchema = mongoose.InferSchemaType<typeof LocationSchema>;
+export type LocationSchema = InferSchemaTypeWithDateTime<typeof LocationSchema>;
 
 /*
  * ValidationSchema
@@ -27,7 +28,9 @@ const ValidationSchema = new Schema({
   validationDate: { type: Date, default: Date.now, required: true },
   userId: { type: String }
 });
-type ValidationSchema = mongoose.InferSchemaType<typeof ValidationSchema>;
+export type ValidationSchema = InferSchemaTypeWithDateTime<
+  typeof ValidationSchema
+>;
 
 /*
  * LabelSchema
@@ -46,8 +49,7 @@ const LabelSchema = new Schema({
   mlModelVersion: { type: 'String' },
   userId: { type: String } // if type === 'manual'
 });
-type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;
-
+export type LabelSchema = InferSchemaTypeWithDateTime<typeof LabelSchema>;
 
 /*
  * ObjectSchema
@@ -61,9 +63,9 @@ type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;
 const ObjectSchema = new Schema({
   bbox: { type: [Number], required: true },
   locked: { type: Boolean, default: false, required: true },
-  labels: { type: [LabelSchema] }
+  labels: { type: [LabelSchema] },
 });
-type ObjectSchema = mongoose.InferSchemaType<typeof ObjectSchema>;
+export type ObjectSchema = InferSchemaTypeWithDateTime<typeof ObjectSchema>;
 
 export {
   PointSchema,

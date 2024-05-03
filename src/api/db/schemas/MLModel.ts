@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const Schema = mongoose.Schema;
 
@@ -37,6 +38,6 @@ const MLModelSchema = new Schema({
   }
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
-type MLModelSchema = mongoose.InferSchemaType<typeof MLModelSchema>;
+type MLModelSchema = InferSchemaTypeWithDateTime<typeof MLModelSchema>;
 
 export default mongoose.model('MLModel', MLModelSchema);

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const Schema = mongoose.Schema;
 
@@ -9,6 +10,6 @@ const BatchErrorSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   error: { type: String, required: true }
 });
-type BatchErrorSchema = mongoose.InferSchemaType<typeof BatchErrorSchema>;
+type BatchErrorSchema = InferSchemaTypeWithDateTime<typeof BatchErrorSchema>;
 
 export default mongoose.model('BatchError', BatchErrorSchema);

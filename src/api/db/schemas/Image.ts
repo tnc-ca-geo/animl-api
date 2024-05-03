@@ -4,6 +4,7 @@ import {
   LocationSchema,
   ObjectSchema
 } from './shared/index.js';
+import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const Schema = mongoose.Schema;
 
@@ -18,7 +19,9 @@ const ImageCommentSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   comment: { type: String, required: true }
 });
-type ImageCommentSchema = mongoose.InferSchemaType<typeof ImageCommentSchema>;
+type ImageCommentSchema = InferSchemaTypeWithDateTime<
+  typeof ImageCommentSchema
+>;
 
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
@@ -45,7 +48,7 @@ const ImageSchema = new Schema({
   objects: { type: [ObjectSchema] },
   comments: { type: [ImageCommentSchema] }
 });
-export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
+export type ImageSchema = InferSchemaTypeWithDateTime<typeof ImageSchema>;
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
