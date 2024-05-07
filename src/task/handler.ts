@@ -7,8 +7,9 @@ import ImageErrorExport from './image-errors.js';
 import AnnotationsExport from './annotations.js';
 import { parseMessage } from './utils.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
+import { SQSEvent } from 'aws-lambda';
 
-async function handler(event) {
+async function handler(event: SQSEvent) {
   if (!event.Records || !event.Records.length) return;
   const config = await getConfig();
   await connectToDatabase(config);
@@ -20,7 +21,7 @@ async function handler(event) {
     let output = {};
     await TaskModel.update(
       { _id: task._id, status: 'RUNNING' },
-      { user: { curr_project: task.projectId } }
+      { user: { curr_project: task.projectId } },
     );
 
     try {
@@ -42,13 +43,18 @@ async function handler(event) {
 
       await TaskModel.update(
         { _id: task._id, status: 'COMPLETE', output },
-        { user: { curr_project: task.projectId } }
+        { user: { curr_project: task.projectId } },
       );
-
     } catch (err) {
       await TaskModel.update(
-        { _id: task._id, status: 'FAIL', output: { error: err instanceof GraphQLError ? err : new InternalServerError(err) } },
-        { user: { curr_project: task.projectId } }
+        {
+          _id: task._id,
+          status: 'FAIL',
+          output: {
+            error: err instanceof GraphQLError ? err : new InternalServerError(err as string),
+          },
+        },
+        { user: { curr_project: task.projectId } },
       );
     }
   }
