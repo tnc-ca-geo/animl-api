@@ -51,7 +51,7 @@
         "lodash": "^4.17.20",
         "luxon": "^3.2.1",
         "mongo-cursor-pagination": "^8.1.2",
-        "mongodb-query-parser": "^4.0.0",
+        "mongodb-query-parser": "^4.1.0",
         "mongoose": "^8.0.0",
         "prompt": "^1.2.0",
         "random-hex-color": "^1.0.1",
@@ -61,6 +61,7 @@
     },
     "devDependencies": {
         "@tsconfig/node18": "^18",
+        "@types/luxon": "^3.4.2",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",

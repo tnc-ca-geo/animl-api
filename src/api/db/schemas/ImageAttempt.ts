@@ -28,7 +28,7 @@ const ImageMetadataSchema = new Schema({
   mimeType: { type: String },
   model: { type: String }
 });
-type ImageMetadataSchema = InferSchemaTypeWithDateTime<
+export type ImageMetadataSchema = InferSchemaTypeWithDateTime<
   typeof ImageMetadataSchema
 >;
 
