@@ -1,15 +1,16 @@
+import { DateTime } from 'luxon';
 import { ProjectModel } from '../api/db/models/Project.js';
-import { buildPipeline, idMatch } from '../api/db/models/utils.js';
-import Image from '../api/db/schemas/Image.js';
+import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
+import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 
-export default async function(task) {
+export default async function(task: TaskInput) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
   let reviewed = 0;
   let notReviewed = 0;
-  const reviewerList = [];
-  const labelList = {};
+  const reviewerList: Array<Reviewer> = [];
+  const labelList: Record<string, number> = {};
   // NOTE: just curious how many images get touched
   // by more than one reviewer. can remove later
   let multiReviewerCount = 0;
@@ -18,13 +19,13 @@ export default async function(task) {
   const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
 
   // stream in images from MongoDB
-  for await (const img of Image.aggregate(pipeline)) {
+  for await (const img of Image.aggregate<ImageSchema>(pipeline)) {
 
     // increment imageCount
     imageCount++;
 
     // increment reviewedCount
-    img.reviewed ? reviewed++ : notReviewed++;
+    isImageReviewed(img) ? reviewed++ : notReviewed++;
 
     // build reviwer list
     let reviewers = [];
@@ -37,9 +38,9 @@ export default async function(task) {
     if (reviewers.length > 1) multiReviewerCount++;
 
     for (const userId of reviewers) {
-      const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId));
+      const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
       !usr
-        ? reviewerList.push({ userId: userId, reviewedCount: 1 })
+        ? reviewerList.push({ userId: userId!, reviewedCount: 1 })
         : usr.reviewedCount++;
     }
 
@@ -69,4 +70,28 @@ export default async function(task) {
     labelList,
     multiReviewerCount
   };
+}
+
+interface TaskInput {
+  projectId: string;
+  config: {
+    // TODO: Copied from src/api/type-defs/inputs/QueryImagesInput.js, figure out how to align
+    filters: {
+      createdStart?: DateTime | null;
+      createdEnd?: DateTime | null;
+      addedStart?: DateTime | null;
+      addedEnd?: DateTime | null;
+      cameras?: string[] | null;
+      deployments?: string[] | null;
+      labels?: string[] | null;
+      reviewed?: boolean | null;
+      notReviewed?: boolean | null;
+      custom?: string | null;
+    }
+  }
+}
+
+interface Reviewer {
+  userId: string;
+  reviewedCount: number;
 }
