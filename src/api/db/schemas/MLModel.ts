@@ -38,6 +38,6 @@ const MLModelSchema = new Schema({
   }
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
-type MLModelSchema = InferSchemaTypeWithDateTime<typeof MLModelSchema>;
+export type MLModelSchema = InferSchemaTypeWithDateTime<typeof MLModelSchema>;
 
 export default mongoose.model('MLModel', MLModelSchema);
