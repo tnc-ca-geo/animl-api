@@ -1,8 +1,8 @@
-import { DateTime } from 'luxon';
 import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
+import { TaskInput } from './utils.js';
 
 export default async function(task: TaskInput) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
@@ -70,25 +70,6 @@ export default async function(task: TaskInput) {
     labelList,
     multiReviewerCount
   };
-}
-
-interface TaskInput {
-  projectId: string;
-  config: {
-    // TODO: Copied from src/api/type-defs/inputs/QueryImagesInput.js, figure out how to align
-    filters: {
-      createdStart?: DateTime | null;
-      createdEnd?: DateTime | null;
-      addedStart?: DateTime | null;
-      addedEnd?: DateTime | null;
-      cameras?: string[] | null;
-      deployments?: string[] | null;
-      labels?: string[] | null;
-      reviewed?: boolean | null;
-      notReviewed?: boolean | null;
-      custom?: string | null;
-    }
-  }
 }
 
 interface Reviewer {

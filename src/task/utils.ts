@@ -58,3 +58,30 @@ const parseMessage = <T extends Record<string, any>>(msg: T): T => {
 };
 
 export { parseMessage };
+
+export interface TaskInput {
+  _id: string;
+  projectId: string;
+  type:
+    | 'GetStats'
+    | 'ExportAnnotations'
+    | 'ExportImageErrors'
+    | 'CreateDeployment'
+    | 'UpdateDeployment'
+    | 'DeleteDeployment';
+  config: {
+    // TODO: Copied from src/api/type-defs/inputs/QueryImagesInput.js, figure out how to align
+    filters: {
+      createdStart?: DateTime | null;
+      createdEnd?: DateTime | null;
+      addedStart?: DateTime | null;
+      addedEnd?: DateTime | null;
+      cameras?: string[] | null;
+      deployments?: string[] | null;
+      labels?: string[] | null;
+      reviewed?: boolean | null;
+      notReviewed?: boolean | null;
+      custom?: string | null;
+    };
+  };
+}
