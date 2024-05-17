@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
+import { FiltersSchema } from '../api/db/schemas/Project.js';
 
 const flattenObj = (ob: Record<any, any>): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -70,18 +71,6 @@ export interface TaskInput {
     | 'UpdateDeployment'
     | 'DeleteDeployment';
   config: {
-    // TODO: Copied from src/api/type-defs/inputs/QueryImagesInput.js, figure out how to align
-    filters: {
-      createdStart?: DateTime | null;
-      createdEnd?: DateTime | null;
-      addedStart?: DateTime | null;
-      addedEnd?: DateTime | null;
-      cameras?: string[] | null;
-      deployments?: string[] | null;
-      labels?: string[] | null;
-      reviewed?: boolean | null;
-      notReviewed?: boolean | null;
-      custom?: string | null;
-    };
+    filters: FiltersSchema;
   };
 }
