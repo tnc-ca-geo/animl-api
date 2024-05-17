@@ -59,7 +59,9 @@ async function getUserInfo(req: AWSLambda.APIGatewayProxyEvent, config: Config) 
 
 // TODO: Build out interface further...
 export interface User {
+  sub: string;
   aud: string;
+  'cognito:username': string;
   is_superuser: boolean;
   curr_project: string | null;
   projects: Record<string, { roles: string[] }>;
