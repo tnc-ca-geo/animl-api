@@ -18,7 +18,7 @@ async function handler(event: SQSEvent) {
     console.log(`record body: ${record.body}`);
     const task: TaskInput = parseMessage(JSON.parse(record.body));
 
-    let output: Record<any, any> = {};
+    let output: Record<any, any> | undefined = {};
     await TaskModel.update(
       { _id: task._id, status: 'RUNNING' },
       { user: { curr_project: task.projectId } },
