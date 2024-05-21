@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
-import { FiltersSchema } from '../api/db/schemas/Project.js';
 
 const flattenObj = (ob: Record<any, any>): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -60,7 +59,7 @@ const parseMessage = <T extends Record<string, any>>(msg: T): T => {
 
 export { parseMessage };
 
-export interface TaskInput {
+export interface TaskInput<T extends {} = {}> {
   _id: string;
   projectId: string;
   type:
@@ -70,7 +69,5 @@ export interface TaskInput {
     | 'CreateDeployment'
     | 'UpdateDeployment'
     | 'DeleteDeployment';
-  config: {
-    filters: FiltersSchema;
-  };
+  config: T;
 }
