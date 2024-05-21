@@ -2,16 +2,21 @@
 // const { buildPipeline } = require('../api/db/models/utils');
 // const Image = require('../api/db/schemas/Image');
 
+import { Context as BaseContext, Handler } from 'aws-lambda';
+import { MLModelSchema } from '../api/db/schemas/MLModel.js';
+import { AutomationRuleSchema, ProjectSchema } from '../api/db/schemas/Project.js';
+import { ImageSchema } from '../api/db/schemas/Image.js';
+import { ProjectModel } from '../api/db/models/Project.js';
+import { Config } from '../config/config.js';
+import { User } from '../api/auth/authorization.js';
 
-const buildCatConfig = (modelSource, rule) => {
+const buildCatConfig = (modelSource: MLModelSchema, rule: AutomationRuleSchema) => {
   return modelSource.categories.map((cs) => {
     const { _id, name } = cs;
-    const catConfig = rule.action.categoryConfig &&
-                      rule.action.categoryConfig.get(name);
+    const catConfig = rule.action?.categoryConfig && rule.action?.categoryConfig.get(name);
     // for confidence threshold, priorize the automation rule / category-level
     // setting if it exists, else use the model source's default setting
-    const ct = (catConfig && catConfig.confThreshold) ||
-                modelSource.defaultConfThreshold;
+    const ct = (catConfig && catConfig.confThreshold) || modelSource.defaultConfThreshold;
     const disabled = (catConfig && catConfig.disabled) || false;
     return { _id, name, disabled, confThreshold: ct };
   });
@@ -40,13 +45,19 @@ const buildCatConfig = (modelSource, rule) => {
 //   return res.length > 0;
 // };
 
-const ruleApplies = (rule, event, label, project) => {
+const ruleApplies = (
+  rule: AutomationRuleSchema,
+  event: Payload['event'],
+  label: Payload['label'],
+  project: ProjectSchema,
+) => {
   // TODO: check whether this rule has already been run on this image
 
   if (rule.event.type === event) {
-    if (rule.event.type === 'image-added') { return true; }
+    if (rule.event.type === 'image-added') {
+      return true;
+    }
     if (rule.event.type === 'label-added') {
-
       const projectLabel = project.labels.find((pl) => {
         return pl._id.toString() === label.labelId.toString();
       });
@@ -59,14 +70,26 @@ const ruleApplies = (rule, event, label, project) => {
   return false;
 };
 
-const buildCallstack = async (payload, context) => {
+const buildCallstack = async (payload: Payload, context: Context) => {
   const { event, image, label } = payload;
   const [project] = await context.models.Project.getProjects({ _ids: [image.projectId] }, context);
-  const callstack = project.automationRules.filter((rule) => ruleApplies(rule, event, label, project));
+  const callstack = project.automationRules.filter((rule) =>
+    ruleApplies(rule as any as AutomationRuleSchema, event, label, project), // KLUDGE: Work around TS issues with AutomationRuleSchema type
+  );
   return callstack;
 };
 
-export {
-  buildCatConfig,
-  buildCallstack
-};
+export { buildCatConfig, buildCallstack };
+
+interface Payload {
+  event: any;
+  image: ImageSchema;
+  label: any;
+}
+export interface Context extends BaseContext {
+  models: {
+    Project: typeof ProjectModel;
+  };
+  config: Config;
+  user: User;
+}
