@@ -2,13 +2,18 @@ import { InternalServerError } from '../api/errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import {
   buildCatConfig,
-  buildCallstack
+  buildCallstack,
+  Context
 } from './utils.js';
 import { sendEmail } from './alerts.js';
+import { AutomationRuleSchema } from '../api/db/schemas/Project.js';
 
 const sqs = new SQS.SQSClient();
 
-const executeRule = {
+type ActionType = AutomationRuleSchema['action']['type']
+type Action = (rule: AutomationRuleSchema, payload: any, context: Context) => Promise<any>;
+
+const executeRule: Record<ActionType, Action> = {
   'run-inference': async (rule, payload, context) => {
     try {
       const mlModel = rule.action.mlModel;
@@ -44,14 +49,14 @@ const executeRule = {
   }
 };
 
-const handleEvent = async (payload, context) => {
+const handleEvent = async (payload: any, context: Context) => {
   try {
     const callstack = await buildCallstack(payload, context);
     if (callstack.length === 0) return;
     console.log(`automation rule callstack for ${payload.image.originalFileName}: `, callstack);
 
     await Promise.all(callstack.map(async (rule) => (
-      await executeRule[rule.action.type](rule, payload, context)
+      await executeRule[rule.action!.type as any as ActionType](rule as any as AutomationRuleSchema, payload, context)  // KLUDGE: Work around TS issues with AutomationRuleSchema type
     )));
 
   } catch (err) {
