@@ -35,13 +35,25 @@ const AutomationRuleSchema = new Schema({
 type _AutomationRuleSchema = InferSchemaTypeWithDateTime<
   typeof AutomationRuleSchema
 >;
-export type AutomationRuleSchema = Omit<_AutomationRuleSchema, 'action'> & {
+export type AutomationRuleSchema = Omit<_AutomationRuleSchema, 'action' | 'event'> & {
   // NOTE: The 'type' field of the AutomationRuleSchema causes some problems with 
   // TypeScript as it interferes with the MongoDB Schema 'type' field. This is despite
   // the fact that we are using the 'type' field as instructed in the docs:
   // https://mongoosejs.com/docs/schematypes.html#type-key
-  action: _AutomationRuleSchema['action'] & {
-    categoryConfig: Map<string, CategoryConfigSchema>;
+  event: {
+    type: 'image-added' | 'label-added',
+    label: string
+  }
+  action: {
+    type: 'run-inference' | 'send-alert',
+    alertRecipients: string[],
+    mlModel: string,
+    categoryConfig: {
+      [key: string]: {
+        confThreshold: number,
+        disabled: boolean
+      }
+    }
   };
 };
 
