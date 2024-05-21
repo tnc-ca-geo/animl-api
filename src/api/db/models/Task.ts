@@ -2,11 +2,13 @@ import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors
 import SQS from '@aws-sdk/client-sqs';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
-import { ModelMethod, hasRole } from './utils.js';
+import { Context, ModelMethod, hasRole, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { FiltersSchema } from '../schemas/Project.js';
-import { Context } from './utils.js';
+import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
+import { FromDb } from '../schemas/utils.js';
+import { MethodParams } from './utils.js';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -24,7 +26,7 @@ export class TaskModel {
    * @param {String} input.previous
    * @param {Object} context
    */
-  static async queryByFilter(input: Pagination, context: Context) {
+  static async queryByFilter(input: Pagination, context: UserContext) {
     return await MongoPaging.aggregate(Task.collection, {
       aggregation: [
         { $match: { projectId: context.user['curr_project'] } },
@@ -38,7 +40,7 @@ export class TaskModel {
     });
   }
 
-  static async queryById(_id: string, context: Context) {
+  static async queryById(_id: string, context: { user: Pick<User, 'curr_project'> }) {
     const query = { _id };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
@@ -50,7 +52,6 @@ export class TaskModel {
     return task;
   }
 
-  
   static async create(input: TaskInput<TaskSchema>, context: Context) {
     const task = new Task({
       user: input.user,
@@ -74,7 +75,10 @@ export class TaskModel {
     return task;
   }
 
-  static async update(input: {updated?: Date, _id: string}, context: Context) {
+  static async update(
+    input: FromDb<Partial<TaskSchema>>,
+    context: { user: Pick<User, 'curr_project'> },
+  ) {
     const task = await this.queryById(input._id, context);
 
     input.updated = new Date();
@@ -86,30 +90,29 @@ export class TaskModel {
 }
 
 export default class AuthedTaskModel {
-  user: User
+  user: User;
   constructor(user: User) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 
-  async queryById(input: string, context: Context) {
-    if (!hasRole(this.user, READ_TASKS_ROLES)) throw new ForbiddenError();
-
-    return await TaskModel.queryById(input, context);
+  @roleCheck(READ_TASKS_ROLES)
+  queryById(...args: MethodParams<typeof TaskModel.queryById>) {
+    return TaskModel.queryById(...args);
   }
 
-  async queryByFilter(input: Pagination, context: Context) {
-    if (!hasRole(this.user, READ_TASKS_ROLES)) throw new ForbiddenError();
-
-    return await TaskModel.queryByFilter(input, context);
+  @roleCheck(READ_TASKS_ROLES)
+  queryByFilter(...args: MethodParams<typeof TaskModel.queryByFilter>) {
+    return TaskModel.queryByFilter(...args);
   }
 }
 
-export interface TaskInput<T extends {} = {}> extends Pick<TaskSchema, 'user' | 'projectId' | 'type' > {
+export interface TaskInput<T extends {} = {}>
+  extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
   config: T;
 }
 
-interface Pagination {
+export interface Pagination {
   paginatedField: string;
   sortAscending: boolean;
   limit: number;

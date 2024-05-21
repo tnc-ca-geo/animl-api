@@ -5,7 +5,8 @@ import GetStats from './stats.js';
 import { CreateDeployment, UpdateDeployment, DeleteDeployment } from './deployment.js';
 import ImageErrorExport from './image-errors.js';
 import AnnotationsExport from './annotations.js';
-import { TaskInput, parseMessage } from './utils.js';
+import { parseMessage } from './utils.js';
+import { TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 import { SQSEvent } from 'aws-lambda';
 
@@ -16,7 +17,7 @@ async function handler(event: SQSEvent) {
 
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
-    const task: TaskInput = parseMessage(JSON.parse(record.body));
+    const task: TaskInput<any> & {_id: string} = parseMessage(JSON.parse(record.body));
 
     let output: Record<any, any> | undefined = {};
     await TaskModel.update(
