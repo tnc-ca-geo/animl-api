@@ -48,12 +48,10 @@ export type AutomationRuleSchema = Omit<_AutomationRuleSchema, 'action' | 'event
     type: 'run-inference' | 'send-alert',
     alertRecipients: string[],
     mlModel: string,
-    categoryConfig: {
-      [key: string]: {
-        confThreshold: number,
-        disabled: boolean
-      }
-    }
+    categoryConfig: Map<string, {
+      confThreshold: number,
+      disabled: boolean
+    }>
   };
 };
 
