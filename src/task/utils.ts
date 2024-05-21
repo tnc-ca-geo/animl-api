@@ -59,15 +59,4 @@ const parseMessage = <T extends Record<string, any>>(msg: T): T => {
 
 export { parseMessage };
 
-export interface TaskInput<T extends {} = {}> {
-  _id: string;
-  projectId: string;
-  type:
-    | 'GetStats'
-    | 'ExportAnnotations'
-    | 'ExportImageErrors'
-    | 'CreateDeployment'
-    | 'UpdateDeployment'
-    | 'DeleteDeployment';
-  config: T;
-}
+
