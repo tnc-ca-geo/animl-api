@@ -2,9 +2,10 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
-import { TaskInput } from './utils.js';
+import { TaskInput } from '../api/db/models/Task.js';
+import { FiltersSchema } from '../api/db/schemas/Project.js';
 
-export default async function(task: TaskInput) {
+export default async function(task: TaskInput<{filters: FiltersSchema }>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
   let reviewed = 0;
