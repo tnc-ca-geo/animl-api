@@ -9,6 +9,7 @@ import { ImageSchema } from '../api/db/schemas/Image.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import { Config } from '../config/config.js';
 import { User } from '../api/auth/authorization.js';
+import { MLModelModel } from '../api/db/models/MLModel.js';
 
 const buildCatConfig = (modelSource: MLModelSchema, rule: AutomationRuleSchema) => {
   return modelSource.categories.map((cs) => {
@@ -89,6 +90,7 @@ interface Payload {
 export interface Context extends BaseContext {
   models: {
     Project: typeof ProjectModel;
+    MLModel: typeof MLModelModel;
   };
   config: Config;
   user: User;
