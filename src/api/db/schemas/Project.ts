@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
 import { LocationSchema } from './shared/index.js';
 import { randomUUID } from 'node:crypto';
@@ -70,6 +71,7 @@ const FiltersSchema = new Schema({
 export type FiltersSchema = InferSchemaTypeWithDateTime<typeof FiltersSchema>;
 
 const ViewSchema = new Schema({
+  _id: { type: ObjectId, required: true },
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
