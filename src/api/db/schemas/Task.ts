@@ -29,7 +29,7 @@ const TaskSchema = new Schema({
   updated: { type: Date, default: Date.now, required: true },
   output: { type: Object },
 });
-type TaskSchema = InferSchemaTypeWithDateTime<typeof TaskSchema>;
+export type TaskSchema = InferSchemaTypeWithDateTime<typeof TaskSchema>;
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
 

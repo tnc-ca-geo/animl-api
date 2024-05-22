@@ -1,10 +1,9 @@
-import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { NotFoundError, AuthenticationError } from '../../errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
-import { Context, ModelMethod, hasRole, roleCheck } from './utils.js';
+import { Context, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
-import { FiltersSchema } from '../schemas/Project.js';
 import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
 import { FromDb } from '../schemas/utils.js';
