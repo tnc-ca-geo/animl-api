@@ -1,18 +1,21 @@
 import { InternalServerError } from '../api/errors.js';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
+import { Config } from '../config/config.js';
+import { ImageSchema } from '../api/db/schemas/Image.js';
+import { AutomationRuleSchema, ProjectSchema } from '../api/db/schemas/Project.js';
+import { Context } from './utils.js';
 
 const ses = new SESClient({ apiVersion: '2010-12-01' });
 
-const buildFrontendUrl = async (image, project, config) => {
+const buildFrontendUrl = async (image: ImageSchema, project: ProjectSchema, config: Config) => {
   const url = config['/FRONTEND/URL'];
   const projId = image.projectId;
-  const viewId = project.views.find((v) => v.name === 'All images')._id;
+  const viewId = project.views.find((v) => v.name === 'All images')!._id;
   return `https://${url}/app/${projId}/${viewId}?img=${image._id}`;
 };
 
-const makeEmail = async (rule, image, context) => {
-
+const makeEmail = async (rule: AutomationRuleSchema, image: ImageSchema, context: Context) => {
   try {
     const projId = image.projectId;
     const [project] = await context.models.Project.getProjects({ _ids: [projId] }, context);
@@ -22,7 +25,7 @@ const makeEmail = async (rule, image, context) => {
     let deployment;
     for (const camConfig of project.cameraConfigs) {
       for (const dep of camConfig.deployments) {
-        if (idMatch(dep._id, image.deploymentId)) {
+        if (idMatch(dep._id!, image.deploymentId)) {
           deployment = dep;
         }
       }
@@ -30,33 +33,33 @@ const makeEmail = async (rule, image, context) => {
 
     const body =
       '<div>' +
-        `<a href=${frontendUrl}>View image in Animl</a>` +
+      `<a href=${frontendUrl}>View image in Animl</a>` +
       '</div>' +
       '<div>' +
-        `<img src="https://${imageUrl}" alt="detected ${rule.event.label}"/>` +
+      `<img src="https://${imageUrl}" alt="detected ${rule.event?.label}"/>` +
       '</div>';
 
     return {
       Destination: {
-        ToAddresses: rule.action.alertRecipients
+        ToAddresses: rule.action.alertRecipients,
       },
       Message: {
         Body: {
-          Html: { Charset: 'UTF-8', Data: body }
+          Html: { Charset: 'UTF-8', Data: body },
         },
         Subject: {
           Charset: 'UTF-8',
-          Data: `${rule.event.label} detected at ${deployment.name}`
-        }
+          Data: `${rule.event.label} detected at ${deployment!.name}`,
+        },
       },
-      Source: context.config['EMAIL_ALERT_SENDER']
+      Source: context.config['EMAIL_ALERT_SENDER'],
     };
   } catch (err) {
     throw new InternalServerError(err instanceof Error ? err.message : String(err));
   }
 };
 
-const sendEmail = async (rule, image, context) => {
+const sendEmail = async (rule: AutomationRuleSchema, image: ImageSchema, context: Context) => {
   try {
     const email = await makeEmail(rule, image, context);
     const command = new SendEmailCommand(email);
@@ -67,6 +70,4 @@ const sendEmail = async (rule, image, context) => {
   }
 };
 
-export {
-  sendEmail
-};
+export { sendEmail };

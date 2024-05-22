@@ -21,7 +21,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-export function idMatch(idA: string, idB: string): boolean {
+export function idMatch(idA: string | mongoose.Types.ObjectId, idB: string | mongoose.Types.ObjectId): boolean {
   return idA.toString() === idB.toString();
 }
 
