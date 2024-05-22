@@ -4,7 +4,7 @@ import mongoose, { PipelineStage } from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
-import { ForbiddenError, DuplicateLabelError, NotFoundError } from '../../errors.js';
+import { ForbiddenError, DuplicateLabelError, NotFoundError, AuthenticationError } from '../../errors.js';
 import { Config } from '../../../config/config.js';
 import {
   CameraConfigSchema,
@@ -663,3 +663,10 @@ export function roleCheck(roles: string[]) {
 }
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 
+export class BaseAuthedModel {
+  user: User;
+  constructor(user: User) {
+    if (!user) throw new AuthenticationError('Authentication failed');
+    this.user = user;
+  }
+}

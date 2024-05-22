@@ -1,8 +1,8 @@
-import { NotFoundError, AuthenticationError } from '../../errors.js';
+import { NotFoundError } from '../../errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
-import { Context, roleCheck } from './utils.js';
+import { BaseAuthedModel, Context, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
@@ -88,13 +88,7 @@ export class TaskModel {
   }
 }
 
-export default class AuthedTaskModel {
-  user: User;
-  constructor(user: User) {
-    if (!user) throw new AuthenticationError('Authentication failed');
-    this.user = user;
-  }
-
+export default class AuthedTaskModel extends BaseAuthedModel {
   @roleCheck(READ_TASKS_ROLES)
   queryById(...args: MethodParams<typeof TaskModel.queryById>) {
     return TaskModel.queryById(...args);
