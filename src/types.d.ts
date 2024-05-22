@@ -2,6 +2,7 @@
 declare module 'mongo-cursor-pagination' {
   const defaultExport: {
     mongoosePlugin: any;
+    aggregate: any;
   };
   export default defaultExport;
 }
