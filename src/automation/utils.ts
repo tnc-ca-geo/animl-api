@@ -75,7 +75,12 @@ const buildCallstack = async (payload: Payload, context: Context) => {
   const { event, image, label } = payload;
   const [project] = await context.models.Project.getProjects({ _ids: [image.projectId] }, context);
   const callstack = project.automationRules.filter((rule) =>
-    ruleApplies(rule as any as AutomationRuleSchema, event, label, project), // KLUDGE: Work around TS issues with AutomationRuleSchema type
+    ruleApplies(
+      rule as any as AutomationRuleSchema, // KLUDGE: Work around TS issues with AutomationRuleSchema type
+      event,
+      label,
+      project,
+    ),
   );
   return callstack;
 };

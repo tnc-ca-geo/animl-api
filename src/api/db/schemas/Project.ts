@@ -33,26 +33,27 @@ const AutomationRuleSchema = new Schema({
     }
   }
 });
-type _AutomationRuleSchema = InferSchemaTypeWithDateTime<
-  typeof AutomationRuleSchema
->;
+export type _AutomationRuleSchema = InferSchemaTypeWithDateTime<typeof AutomationRuleSchema>;
 export type AutomationRuleSchema = Omit<_AutomationRuleSchema, 'action' | 'event'> & {
-  // NOTE: The 'type' field of the AutomationRuleSchema causes some problems with 
+  // NOTE: The 'type' field of the AutomationRuleSchema causes some problems with
   // TypeScript as it interferes with the MongoDB Schema 'type' field. This is despite
   // the fact that we are using the 'type' field as instructed in the docs:
   // https://mongoosejs.com/docs/schematypes.html#type-key
   event: {
-    type: 'image-added' | 'label-added',
-    label: string
-  }
+    type: 'image-added' | 'label-added';
+    label: string;
+  };
   action: {
-    type: 'run-inference' | 'send-alert',
-    alertRecipients: string[],
-    mlModel: string,
-    categoryConfig: Map<string, {
-      confThreshold: number,
-      disabled: boolean
-    }>
+    type: 'run-inference' | 'send-alert';
+    alertRecipients: string[];
+    mlModel: string;
+    categoryConfig: Map<
+      string,
+      {
+        confThreshold: number;
+        disabled: boolean;
+      }
+    >;
   };
 };
 
@@ -66,12 +67,11 @@ const FiltersSchema = new Schema({
   addedEnd: { type: Date },
   reviewed: { type: Boolean },
   notReviewed: { type: Boolean },
-  custom: { type: String }
+  custom: { type: String },
 });
 export type FiltersSchema = InferSchemaTypeWithDateTime<typeof FiltersSchema>;
 
 const ViewSchema = new Schema({
-  _id: { type: ObjectId, required: true },
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
@@ -85,7 +85,7 @@ const DeploymentSchema = new Schema({
   location: { type: LocationSchema },
   timezone: { type: String, required: true },
   startDate: { type: Date },
-  editable: { type: Boolean }
+  editable: { type: Boolean },
 });
 export type DeploymentSchema = InferSchemaTypeWithDateTime<
   typeof DeploymentSchema

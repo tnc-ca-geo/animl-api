@@ -3,14 +3,15 @@ import mongoose from 'mongoose';
 
 // Generic interface to transform properties
 export type ReplaceDateWithDateTime<T> = {
-  [P in keyof T]: T[P] extends Date
-    ? DateTime
-    : T[P] extends Date | null | undefined
-    ? DateTime | Extract<T[P], null | undefined>
-    : // Handle relationships
-    T[P] extends mongoose.Types.DocumentArray<infer U>
-    ? Array<ReplaceDateWithDateTime<U>>
-    : T[P];
+  // TODO: We should better separate data coming from the database (which has date as DateTime) and
+  // data going to the database (which has date as Date).
+  [P in keyof T]: [P] extends Date // If property is a Date...
+    ? DateTime | Date // then convert to Date or Datetime.
+    : T[P] extends Date | null | undefined // If property is an optional Date...
+    ? DateTime | Extract<T[P], null | undefined> // then mark all optional Date properties as optional DateTime
+    : T[P] extends mongoose.Types.DocumentArray<infer U> // If property is a relationship...
+    ? mongoose.Types.DocumentArray<ReplaceDateWithDateTime<U>> // then recursively transform the relationship
+    : T[P]; // otherwise, leave the property as is.
 };
 
 // A utility type that applies our custom transformation to the result of mongoose.InferSchemaType

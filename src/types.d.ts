@@ -49,3 +49,5 @@ declare module 'mongodb-query-parser' {
     DEFAULT_MAX_TIME_MS,
   };
 }
+
+declare module 'random-hex-color';
