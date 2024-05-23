@@ -1,12 +1,10 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import {
   LocationSchema,
   ObjectSchema
 } from './shared/index.js';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 /*
  * ImageSchema
@@ -53,4 +51,4 @@ export type ImageSchema = InferSchemaTypeWithDateTime<typeof ImageSchema>;
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
-export default mongoose.model('Image', ImageSchema);
+export default model<ImageSchema>('Image', ImageSchema);

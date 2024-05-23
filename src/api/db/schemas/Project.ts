@@ -1,10 +1,7 @@
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { LocationSchema } from './shared/index.js';
 import { randomUUID } from 'node:crypto';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 const AutomationRuleSchema = new Schema({
   name: { type: String, required: true },
@@ -130,4 +127,4 @@ const ProjectSchema = new Schema({
 });
 export type ProjectSchema = InferSchemaTypeWithDateTime<typeof ProjectSchema>;
 
-export default mongoose.model('Project', ProjectSchema);
+export default model<ProjectSchema>('Project', ProjectSchema);

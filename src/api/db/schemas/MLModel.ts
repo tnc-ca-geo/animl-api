@@ -1,7 +1,5 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 // /*
 //  * MLModelPerformanceSchema
@@ -40,4 +38,4 @@ const MLModelSchema = new Schema({
 });
 export type MLModelSchema = InferSchemaTypeWithDateTime<typeof MLModelSchema>;
 
-export default mongoose.model('MLModel', MLModelSchema);
+export default model<MLModelSchema>('MLModel', MLModelSchema);

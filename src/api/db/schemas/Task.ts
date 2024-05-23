@@ -1,8 +1,6 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 const TaskSchema = new Schema({
   user: { type: String, required: true },
@@ -33,4 +31,4 @@ export type TaskSchema = InferSchemaTypeWithDateTime<typeof TaskSchema>;
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
 
-export default mongoose.model('Task', TaskSchema);
+export default model<TaskSchema>('Task', TaskSchema);

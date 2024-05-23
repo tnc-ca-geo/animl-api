@@ -1,7 +1,5 @@
-import mongoose from 'mongoose';
+import { Schema } from 'mongoose';
 import { InferSchemaTypeWithDateTime } from "../utils.js";
-
-const Schema = mongoose.Schema;
 
 const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },

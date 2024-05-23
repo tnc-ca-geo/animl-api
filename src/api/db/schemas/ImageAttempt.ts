@@ -1,8 +1,6 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 /*
  * ImageMetadataSchema - for storing pre-validated image metadata in ImageAttempt documents
@@ -48,4 +46,4 @@ type ImageAttemptSchema = InferSchemaTypeWithDateTime<
   typeof ImageAttemptSchema
 >;
 
-export default mongoose.model('ImageAttempt', ImageAttemptSchema);
+export default model<ImageAttemptSchema>('ImageAttempt', ImageAttemptSchema);

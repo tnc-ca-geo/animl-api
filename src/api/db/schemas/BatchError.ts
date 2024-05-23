@@ -1,8 +1,6 @@
-import mongoose from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 const BatchErrorSchema = new Schema({
   _id: { type: String, default: randomUUID, required: true },  /* _id is name in_snake_case */
@@ -12,4 +10,4 @@ const BatchErrorSchema = new Schema({
 });
 type BatchErrorSchema = InferSchemaTypeWithDateTime<typeof BatchErrorSchema>;
 
-export default mongoose.model('BatchError', BatchErrorSchema);
+export default model<BatchErrorSchema>('BatchError', BatchErrorSchema);

@@ -1,5 +1,4 @@
-import mongoose from 'mongoose';
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
 
 const ProjectRegistrationSchema = new Schema({
@@ -20,4 +19,4 @@ export type WirelessCameraSchema = InferSchemaTypeWithDateTime<
   typeof WirelessCameraSchema
 >;
 
-export default mongoose.model('WirelessCameraSchema', WirelessCameraSchema);
+export default model<WirelessCameraSchema>('WirelessCameraSchema', WirelessCameraSchema);

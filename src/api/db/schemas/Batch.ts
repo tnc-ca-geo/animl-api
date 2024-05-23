@@ -1,8 +1,6 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { InferSchemaTypeWithDateTime } from "./utils.js";
-
-const Schema = mongoose.Schema;
 
 const BatchSchema = new Schema({
   _id: { type: String, required: true },  /* _id is name in_snake_case */
@@ -23,4 +21,4 @@ type BatchSchema = InferSchemaTypeWithDateTime<typeof BatchSchema>;
 
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 
-export default mongoose.model('Batch', BatchSchema);
+export default model<BatchSchema>('Batch', BatchSchema);
