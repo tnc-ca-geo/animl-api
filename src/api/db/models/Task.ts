@@ -7,6 +7,7 @@ import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
 import { MethodParams } from './utils.js';
+import { DateTime } from 'luxon';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -79,7 +80,7 @@ export class TaskModel {
   ) {
     const task = await this.queryById(input._id, context);
 
-    input.updated = new Date();
+    input.updated = new Date() as any;
 
     Object.assign(task, input);
     await task.save();

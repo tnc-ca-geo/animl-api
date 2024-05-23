@@ -549,7 +549,7 @@ export function findDeployment(
   // get associated with that more recent deployment
 
   let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
-    ? DateTime.fromISO(img.dateTimeOriginal.toString())
+    ? DateTime.fromISO((img.dateTimeOriginal as Date).toString())
     : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
@@ -583,13 +583,13 @@ export function mapImgToDep(img: ImageSchema, camConfig: CameraConfigSchema, pro
     : findDeployment(img, camConfig, projTimeZone);
 }
 
-export function sortDeps(deps: DeploymentSchema[]) {
+export function sortDeps<T extends DeploymentSchema[]>(deps: T): T {
   return deps.toSorted((a, b) => {
     if (a.name === 'default') return -1;
     const aStart = a.startDate!;
     const bStart = b.startDate!;
     return aStart.diff(bStart).as('milliseconds');
-  });
+  }) as T;
 }
 
 export function findActiveProjReg(camera: WirelessCameraSchema) {

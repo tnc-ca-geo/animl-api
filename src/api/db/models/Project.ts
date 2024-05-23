@@ -352,7 +352,7 @@ export class ProjectModel {
               }
 
               if (img.timezone !== dep.timezone) {
-                const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal).setZone(img.timezone);
+                const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal as any as Date).setZone(img.timezone);
                 const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
                 update.dateTimeOriginal = newDT;
                 update.timezone = dep.timezone;
@@ -409,9 +409,7 @@ export class ProjectModel {
 
           // add new deployment, sort them, and save project
           camConfig.deployments.push(deployment);
-          camConfig.deployments = sortDeps(
-            camConfig!.deployments as DeploymentSchema[],
-          ) as mongoose.Types.DocumentArray<DeploymentSchema>;
+          camConfig.deployments = sortDeps(camConfig!.deployments);
           await project.save();
           return { project, camConfig };
         },
@@ -513,10 +511,12 @@ export class ProjectModel {
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId))!;
 
           // filter out deployment, sort remaining ones, and save project
-          camConfig.deployments = camConfig!.deployments.filter(
-            (dep) => !idMatch(dep._id!, deploymentId),
+          camConfig.deployments = sortDeps(
+            camConfig!.deployments.filter(
+              (dep) => !idMatch(dep._id!, deploymentId),
+            ) as typeof camConfig.deployments,
           );
-          camConfig.deployments = sortDeps(camConfig.deployments);
+
           await project.save();
           return { project, camConfig };
         },
@@ -583,7 +583,7 @@ export class ProjectModel {
 
       project.labels.splice(project.labels.indexOf(label), 1);
 
-      project.views = project.views.map((view) => {
+      const views = project.views.map((view) => {
         if (!Array.isArray(view.filters.labels)) return view;
 
         return {
@@ -596,6 +596,7 @@ export class ProjectModel {
           },
         } as mongoose.Types.Subdocument<mongoose.Types.ObjectId> & ViewSchema;
       });
+      project.views = views as typeof project.views;
 
       await project.save();
 
