@@ -1,16 +1,14 @@
 import { DateTime } from 'luxon';
 import _ from 'lodash';
-import asyncRetry from 'async-retry';
 import mongoose, { PipelineStage } from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
-import GraphQLError, {
+import {
   ForbiddenError,
   DuplicateLabelError,
   NotFoundError,
   AuthenticationError,
-  InternalServerError,
 } from '../../errors.js';
 import { Config } from '../../../config/config.js';
 import {

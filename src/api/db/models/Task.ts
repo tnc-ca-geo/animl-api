@@ -51,7 +51,7 @@ export class TaskModel {
     return task;
   }
 
-  static async create(input: TaskInput<TaskSchema>, context: Context) {
+  static async create<T>(input: TaskInput<T>, context: Context) {
     const task = new Task({
       user: input.user,
       projectId: input.projectId,
@@ -100,8 +100,7 @@ export default class AuthedTaskModel extends BaseAuthedModel {
   }
 }
 
-export interface TaskInput<T extends {} = {}>
-  extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
+export interface TaskInput<T> extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
   config: T;
 }
 
