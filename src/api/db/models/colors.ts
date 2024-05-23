@@ -1,6 +1,7 @@
 import randomColor from 'random-hex-color';
+import { ProjectLabelSchema } from '../schemas/Project.js';
 
-export default function(existingLabels) {
+export default function(existingLabels: ProjectLabelSchema[]): string {
   const defaultColors = [
     '#8D8D8D', '#E54D2E', '#E5484D', '#E54666',
     '#E93D82', '#D6409F', '#AB4ABA', '#8E4EC6',
