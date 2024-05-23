@@ -1,10 +1,17 @@
 import { DateTime } from 'luxon';
 import _ from 'lodash';
+import asyncRetry from 'async-retry';
 import mongoose, { PipelineStage } from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
-import { ForbiddenError, DuplicateLabelError, NotFoundError, AuthenticationError } from '../../errors.js';
+import GraphQLError, {
+  ForbiddenError,
+  DuplicateLabelError,
+  NotFoundError,
+  AuthenticationError,
+  InternalServerError,
+} from '../../errors.js';
 import { Config } from '../../../config/config.js';
 import {
   CameraConfigSchema,
@@ -21,7 +28,10 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // TODO: this file is getting unwieldy, break up
 
-export function idMatch(idA: string | mongoose.Types.ObjectId, idB: string | mongoose.Types.ObjectId): boolean {
+export function idMatch(
+  idA: string | mongoose.Types.ObjectId,
+  idB: string | mongoose.Types.ObjectId,
+): boolean {
   return idA.toString() === idB.toString();
 }
 
@@ -541,7 +551,7 @@ export function findDeployment(
   // get associated with that more recent deployment
 
   let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
-    ? DateTime.fromISO((img.dateTimeOriginal as string).toString())
+    ? DateTime.fromISO(img.dateTimeOriginal.toString())
     : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
@@ -648,7 +658,7 @@ export interface Context extends UserContext {
  * @returns
  */
 export function roleCheck(roles: string[]) {
-  return function (target: UserContext, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
@@ -661,6 +671,7 @@ export function roleCheck(roles: string[]) {
     return descriptor;
   };
 }
+
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 
 export class BaseAuthedModel {
