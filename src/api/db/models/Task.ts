@@ -6,7 +6,6 @@ import { BaseAuthedModel, Context, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
-import { FromDb } from '../schemas/utils.js';
 import { MethodParams } from './utils.js';
 
 /**
@@ -75,7 +74,7 @@ export class TaskModel {
   }
 
   static async update(
-    input: FromDb<Partial<TaskSchema>>,
+    input: Partial<TaskSchema> & { _id: string },
     context: { user: Pick<User, 'curr_project'> },
   ) {
     const task = await this.queryById(input._id, context);
