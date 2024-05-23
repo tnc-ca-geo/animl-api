@@ -16,11 +16,12 @@ import Project, {
   ProjectLabelSchema,
   ProjectSchema,
   ViewSchema,
+  _AutomationRuleSchema,
 } from '../schemas/Project.js';
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
-import Image from '../schemas/Image.js';
-import { sortDeps, hasRole, idMatch, MethodParams, roleCheck, BaseAuthedModel } from './utils.js';
+import Image, { ImageSchema } from '../schemas/Image.js';
+import { sortDeps, idMatch, MethodParams, roleCheck, BaseAuthedModel } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -29,8 +30,6 @@ import {
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES,
 } from '../../auth/roles.js';
-import { TaskInput } from './Task.js';
-import { User } from '../../auth/authorization.js';
 import { Context } from './utils.js';
 
 // The max number of labeled images that can be deleted
@@ -259,11 +258,9 @@ export class ProjectModel {
           }
 
           // appy updates & save project
-          for (const [key, newVal] of Object.entries(input.diffs)) {
-            view[key] = newVal;
-          }
+          Object.assign(view!, input.diffs);
           const updatedProj = await project.save();
-          return updatedProj.views.find((v) => idMatch(v._id, input.viewId));
+          return updatedProj.views.find((v) => idMatch(v._id!, input.viewId));
         },
         { retries: 2 },
       );
@@ -282,13 +279,15 @@ export class ProjectModel {
             { _ids: [context.user['curr_project']!] },
             context,
           );
-          const view = project.views.find((v) => idMatch(v._id, input.viewId));
+          const view = project.views.find((v) => idMatch(v._id!, input.viewId));
           if (!view?.editable) {
             bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
           // remove view from project and save
-          project.views = project.views.filter((v) => !idMatch(v._id, input.viewId));
+          project.views = project.views.filter(
+            (v) => !idMatch(v._id!, input.viewId),
+          ) as mongoose.Types.DocumentArray<ViewSchema>;
           return await project.save();
         },
         { retries: 2 },
@@ -311,7 +310,8 @@ export class ProjectModel {
             { _ids: [context.user['curr_project']!] },
             context,
           );
-          project.automationRules = automationRules;
+          project.automationRules =
+            automationRules as any as mongoose.Types.DocumentArray<_AutomationRuleSchema>;
           await project.save();
           return project.automationRules;
         },
@@ -337,7 +337,7 @@ export class ProjectModel {
               ? camConfig.deployments[index + 1].startDate
               : null;
 
-            const filter = { projectId: projId, cameraId: camConfig._id };
+            const filter: Record<any, any> = { projectId: projId, cameraId: camConfig._id };
             if (createdStart || createdEnd) {
               filter.dateTimeOriginal = {
                 ...(createdStart && { $gte: createdStart }),
@@ -346,8 +346,8 @@ export class ProjectModel {
             }
 
             for await (const img of Image.find(filter)) {
-              const update = {};
-              if (img.deploymentId.toString() !== dep._id.toString()) {
+              const update: Partial<ImageSchema> = {};
+              if (img.deploymentId.toString() !== dep._id!.toString()) {
                 update.deploymentId = dep._id;
               }
 
@@ -405,10 +405,13 @@ export class ProjectModel {
             context,
           );
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          if (!camConfig) throw new NotFoundError('Camera config not found');
 
           // add new deployment, sort them, and save project
-          camConfig!.deployments.push(deployment);
-          camConfig.deployments = sortDeps(camConfig!.deployments);
+          camConfig.deployments.push(deployment);
+          camConfig.deployments = sortDeps(
+            camConfig!.deployments as DeploymentSchema[],
+          ) as mongoose.Types.DocumentArray<DeploymentSchema>;
           await project.save();
           return { project, camConfig };
         },
@@ -452,15 +455,14 @@ export class ProjectModel {
             context,
           );
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-          const deployment = camConfig.deployments.find((dep) => idMatch(dep._id, deploymentId));
-          if (deployment.name === 'default') {
-            bail(new ForbiddenError(`View ${deployment.name} is not editable`));
+          if (!camConfig) throw new NotFoundError('Camera config not found');
+          const deployment = camConfig!.deployments.find((dep) => idMatch(dep._id!, deploymentId));
+          if (deployment!.name === 'default') {
+            bail(new ForbiddenError(`View ${deployment!.name} is not editable`));
           }
 
           // apply updates, sort deployments, and save project
-          for (const [key, newVal] of Object.entries(diffs)) {
-            deployment[key] = newVal;
-          }
+          Object.assign(deployment!, diffs);
           camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();
           return { project, camConfig };
@@ -508,7 +510,7 @@ export class ProjectModel {
             { _ids: [context.user['curr_project']!] },
             context,
           );
-          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId))!;
 
           // filter out deployment, sort remaining ones, and save project
           camConfig.deployments = camConfig!.deployments.filter(
@@ -581,15 +583,18 @@ export class ProjectModel {
 
       project.labels.splice(project.labels.indexOf(label), 1);
 
-      project.view = project.views.map((view) => {
-        if (!view.filters || !view.filters.labels || !Array.isArray(view.filters.labels))
-          return view;
-        view.filters.labels = view.filters.labels.filter((label) => {
-          return project.labels.some((l) => {
-            return l._id === label;
-          });
-        });
-        return view;
+      project.views = project.views.map((view) => {
+        if (!Array.isArray(view.filters.labels)) return view;
+
+        return {
+          ...view,
+          filters: {
+            ...view.filters,
+            labels: view.filters.labels.filter((label) =>
+              project.labels.some((l) => l._id === label),
+            ),
+          },
+        } as mongoose.Types.Subdocument<mongoose.Types.ObjectId> & ViewSchema;
       });
 
       await project.save();
