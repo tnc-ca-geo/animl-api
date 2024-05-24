@@ -17,7 +17,7 @@ const BatchSchema = new Schema({
   stoppingInitiated: { type: Date },
   total: { type: Number }
 });
-type BatchSchema = InferSchemaTypeWithDateTime<typeof BatchSchema>;
+export type BatchSchema = InferSchemaTypeWithDateTime<typeof BatchSchema>;
 
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 
