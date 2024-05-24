@@ -40,7 +40,7 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {String} input.filters.batch
    */
-  static async queryByFilter(input: Pagination & { filters: { batch: string } }) {
+  static async queryByFilter(input: Pagination<{ filters: { batch: string } }>) {
     try {
       return await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [{ $match: { batch: input.filters.batch } }],

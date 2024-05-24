@@ -15,7 +15,7 @@ import { ImageErrorModel } from './ImageError.js';
 import { Pagination } from './Task.js';
 
 export class BatchModel {
-  static async queryByFilter(input: { filter: string } & Pagination, context: Context) {
+  static async queryByFilter(input: Pagination<{ filter: string }>, context: Context) {
     try {
       const pipeline: Array<{ $match: Record<string, any> }> = [
         { $match: { user: context.user.sub } },

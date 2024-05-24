@@ -102,10 +102,10 @@ export interface TaskInput<T> extends Pick<TaskSchema, 'user' | 'projectId' | 't
   config: T;
 }
 
-export interface Pagination {
+export type Pagination<T = {}> = T & {
   paginatedField: string;
   sortAscending: boolean;
   limit: number;
   next: string;
   previous: string;
-}
+};
