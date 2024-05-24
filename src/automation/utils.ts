@@ -2,14 +2,10 @@
 // const { buildPipeline } = require('../api/db/models/utils');
 // const Image = require('../api/db/schemas/Image');
 
-import { Context as BaseContext, Handler } from 'aws-lambda';
 import { MLModelSchema } from '../api/db/schemas/MLModel.js';
 import { AutomationRuleSchema, ProjectSchema } from '../api/db/schemas/Project.js';
 import { ImageSchema } from '../api/db/schemas/Image.js';
-import { ProjectModel } from '../api/db/models/Project.js';
-import { Config } from '../config/config.js';
-import { User } from '../api/auth/authorization.js';
-import { MLModelModel } from '../api/db/models/MLModel.js';
+import { Context } from '../api/db/models/utils.js';
 
 const buildCatConfig = (modelSource: MLModelSchema, rule: AutomationRuleSchema) => {
   return modelSource.categories.map((cs) => {
@@ -91,12 +87,4 @@ interface Payload {
   event: any;
   image: ImageSchema;
   label: any;
-}
-export interface Context extends BaseContext {
-  models: {
-    Project: typeof ProjectModel;
-    MLModel: typeof MLModelModel;
-  };
-  config: Config;
-  user: User;
 }

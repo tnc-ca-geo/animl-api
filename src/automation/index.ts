@@ -1,10 +1,7 @@
 import { InternalServerError } from '../api/errors.js';
 import SQS from '@aws-sdk/client-sqs';
-import {
-  buildCatConfig,
-  buildCallstack,
-  Context
-} from './utils.js';
+import { buildCatConfig, buildCallstack } from './utils.js';
+import { Context } from '../api/db/models/utils.js';
 import { sendEmail } from './alerts.js';
 import { AutomationRuleSchema } from '../api/db/schemas/Project.js';
 

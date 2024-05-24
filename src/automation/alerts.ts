@@ -4,7 +4,7 @@ import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
 import { Config } from '../config/config.js';
 import { ImageSchema } from '../api/db/schemas/Image.js';
 import { AutomationRuleSchema, ProjectSchema } from '../api/db/schemas/Project.js';
-import { Context } from './utils.js';
+import { Context } from '../api/db/models/utils.js';
 
 const ses = new SESClient({ apiVersion: '2010-12-01' });
 

@@ -21,6 +21,9 @@ import { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import { User } from '../../auth/authorization.js';
 import { ImageSchema, LabelSchema } from '../schemas/index.js';
 import { WithId } from 'mongodb';
+import { Context as AwsContext } from 'aws-lambda';
+import { MLModelModel } from './MLModel.js';
+import { ProjectModel } from './Project.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -642,14 +645,6 @@ interface ImageMetadata extends ImageMetadataSchema {
   GPSAltitude?: string;
 }
 
-export interface UserContext {
-  user: User;
-}
-
-export interface Context extends UserContext {
-  config: Config;
-}
-
 /**
  * Decorator to check if user has role before calling underlying method
  * @param roles
@@ -679,3 +674,12 @@ export class BaseAuthedModel {
     this.user = user;
   }
 }
+export interface Context extends AwsContext {
+  models: {
+    Project: typeof ProjectModel;
+    MLModel: typeof MLModelModel;
+  };
+  config: Config;
+  user: User;
+}
+

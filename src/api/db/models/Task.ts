@@ -4,10 +4,8 @@ import MongoPaging from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
 import { BaseAuthedModel, Context, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
-import { UserContext } from './utils.js';
 import { User } from '../../auth/authorization.js';
 import { MethodParams } from './utils.js';
-import { DateTime } from 'luxon';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -25,7 +23,7 @@ export class TaskModel {
    * @param {String} input.previous
    * @param {Object} context
    */
-  static async queryByFilter(input: Pagination, context: UserContext) {
+  static async queryByFilter(input: Pagination, context: Context) {
     return await MongoPaging.aggregate(Task.collection, {
       aggregation: [
         { $match: { projectId: context.user['curr_project'] } },
