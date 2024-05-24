@@ -17,9 +17,7 @@ const ImageCommentSchema = new Schema({
   created: { type: Date, default: Date.now, required: true },
   comment: { type: String, required: true }
 });
-type ImageCommentSchema = InferSchemaTypeWithDateTime<
-  typeof ImageCommentSchema
->;
+export type ImageCommentSchema = InferSchemaTypeWithDateTime<typeof ImageCommentSchema>;
 
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
