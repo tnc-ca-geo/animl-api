@@ -206,7 +206,7 @@ export class ProjectModel {
             );
           }
 
-          return updatedProject;
+          return updatedProject as typeof project;
         },
         { retries: 2 },
       );
