@@ -260,7 +260,7 @@ export function buildPipeline(
   return pipeline;
 }
 
-export function sanitizeMetadata(md: ImageMetadata): ImageMetadata {
+export function sanitizeMetadata<T>(md: T): T {
   const sanitized: Record<any, any> = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
@@ -270,7 +270,7 @@ export function sanitizeMetadata(md: ImageMetadata): ImageMetadata {
     const newKey = !(key.charAt(1) == key.charAt(1).toUpperCase())
       ? key.charAt(0).toLowerCase() + key.slice(1)
       : key;
-    sanitized[newKey as keyof ImageMetadata] = md[key as keyof ImageMetadata];
+    sanitized[newKey as keyof ImageMetadata] = md[key as keyof T];
   }
 
   // TODO: I don't love that this is here. We can't parse the dateTimeOriginal
@@ -282,7 +282,7 @@ export function sanitizeMetadata(md: ImageMetadata): ImageMetadata {
     sanitized.dateTimeOriginal = dto;
   }
 
-  return sanitized as ImageMetadata;
+  return sanitized;
 }
 
 export function createImageAttemptRecord(md: ImageMetadata) {
@@ -583,7 +583,7 @@ export function mapImgToDep(img: ImageSchema, camConfig: CameraConfigSchema, pro
 
   return camConfig.deployments.length === 1
     ? camConfig.deployments[0]
-    : findDeployment(img, camConfig, projTimeZone);
+    : findDeployment(img, camConfig, projTimeZone)!;
 }
 
 export function sortDeps<T extends DeploymentSchema[]>(deps: T): T {
@@ -617,7 +617,7 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
-interface ImageMetadata extends ImageMetadataSchema {
+export interface ImageMetadata extends ImageMetadataSchema {
   imageId: string;
   // batchId: string;
   prodBucket: string;
@@ -643,6 +643,9 @@ interface ImageMetadata extends ImageMetadataSchema {
   GPSLongitude?: string;
   GPSLatitude?: string;
   GPSAltitude?: string;
+
+  hash: string;
+  errors?: Array<Error | string>;
 }
 
 /**
