@@ -1,11 +1,12 @@
-import { NotFoundError } from '../../errors.js';
 import SQS from '@aws-sdk/client-sqs';
+import { NotFoundError } from '../../errors.js';
 import MongoPaging from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
-import { BaseAuthedModel, Context, roleCheck } from './utils.js';
+import { BaseAuthedModel, Context, WithId, roleCheck } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { User } from '../../auth/authorization.js';
 import { MethodParams } from './utils.js';
+import { ObjectId } from 'mongoose';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -37,7 +38,7 @@ export class TaskModel {
     });
   }
 
-  static async queryById(_id: string, context: { user: Pick<User, 'curr_project'> }) {
+  static async queryById(_id: ObjectId, context: { user: Pick<User, 'curr_project'> }) {
     const query = { _id };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
@@ -73,7 +74,7 @@ export class TaskModel {
   }
 
   static async update(
-    input: Partial<TaskSchema> & { _id: string },
+    input: WithId<Partial<TaskSchema>>,
     context: { user: Pick<User, 'curr_project'> },
   ) {
     const task = await this.queryById(input._id, context);

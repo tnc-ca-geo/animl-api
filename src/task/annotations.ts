@@ -7,16 +7,58 @@ import { InternalServerError } from '../api/errors.js';
 import { transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
-import { idMatch }  from '../api/db/models/utils.js';
+import { Context, WithId, idMatch } from '../api/db/models/utils.js';
 import { ProjectModel } from '../api/db/models/Project.js';
-import Image from '../api/db/schemas/Image.js';
+import Image, { ImageSchema } from '../api/db/schemas/Image.js';
+import { ObjectSchema } from '../api/db/schemas/shared/index.js';
 import { buildPipeline } from '../api/db/models/utils.js';
+import { FiltersSchema, ProjectSchema } from '../api/db/schemas/Project.js';
+import { HydratedDocument, PipelineStage } from 'mongoose';
+import { User } from '../api/auth/authorization.js';
+import { Config } from '../config/config.js';
+import { TaskInput } from '../api/db/models/Task.js';
+import { ImageTaskConfig } from './image-errors.js';
 
 export class AnnotationsExport {
-  constructor({ projectId, documentId, filters, format }, config) {
+  config: Config;
+  s3: S3.S3Client;
+  user: User;
+  projectId: string;
+  documentId: string;
+  filters: FiltersSchema;
+  format: string;
+  ext: string;
+  filename: string;
+  bucket: string;
+  onlyIncludeReviewed: boolean;
+  presignedURL: string | null;
+  imageCount: number;
+  imageCountThreshold: number;
+  reviewedCount: number;
+  notReviewedCount: number;
+
+  pipeline?: PipelineStage[];
+  project?: HydratedDocument<ProjectSchema>;
+  categories?: string[];
+  labelMap?: Map<string, any>;
+
+  constructor(
+    {
+      projectId,
+      documentId,
+      filters,
+      format,
+    }: {
+      projectId: string;
+      documentId: string;
+      filters: FiltersSchema;
+      format: string;
+    },
+    config: any,
+  ) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
-    this.user = { 'is_superuser': true };
+    this.user = { is_superuser: true } as User;
     this.projectId = projectId;
     this.documentId = documentId;
     this.filters = filters;
@@ -24,10 +66,10 @@ export class AnnotationsExport {
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-    this.onlyIncludeReviewed = true;  // TODO: move into config or expose as option?
+    this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
     this.presignedURL = null;
     this.imageCount = 0;
-    this.imageCountThreshold = 18000;  // TODO: Move to config?
+    this.imageCountThreshold = 18000; // TODO: Move to config?
     this.reviewedCount = 0;
     this.notReviewedCount = 0;
   }
@@ -38,7 +80,7 @@ export class AnnotationsExport {
       const sanitizedFilters = this.sanitizeFilters();
       const notReviewedPipeline = buildPipeline(
         { ...sanitizedFilters, reviewed: false },
-        this.projectId
+        this.projectId,
       );
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
 
@@ -50,20 +92,21 @@ export class AnnotationsExport {
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
 
-      const [project] = await ProjectModel.getProjects(
-        { _ids: [this.projectId] },
-        { user: this.user }
-      );
+      const [project] = await ProjectModel.getProjects({ _ids: [this.projectId] }, {
+        user: this.user,
+      } as Context);
       this.project = project;
-      this.categories = project.labels.map((l) => { return l.name; });
+      this.categories = project.labels.map((l) => l.name);
       this.labelMap = new Map();
       for (const l of project.labels) this.labelMap.set(l._id, l);
     } catch (err) {
-      throw new InternalServerError('Error initializing the export class: ' + err.message);
+      throw new InternalServerError(
+        'Error initializing the export class: ' + (err as Error).message,
+      );
     }
   }
 
-  async getCount(pipeline) {
+  async getCount(pipeline: PipelineStage[]) {
     let count = null;
     try {
       const pipelineCopy = pipeline.map((stage) => ({ ...stage }));
@@ -71,7 +114,7 @@ export class AnnotationsExport {
       const res = await Image.aggregate(pipelineCopy);
       count = res[0] ? res[0].count : 0;
     } catch (err) {
-      throw new InternalServerError('Error counting images: ' + err.message);
+      throw new InternalServerError('Error counting images: ' + (err as Error).message);
     }
     return count;
   }
@@ -82,7 +125,7 @@ export class AnnotationsExport {
     try {
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
-      const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories);
+      const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
       const createRow = stringify({ header: true, columns });
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
@@ -90,7 +133,11 @@ export class AnnotationsExport {
       const logMemoryUsage = transform((data) => {
         const { finished } = logMemoryUsage.state;
         if (finished === 1 || finished % 10000 === 0) {
-          console.log(`Processed ${finished} images. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
+          console.log(
+            `Processed ${finished} images. remaining memory: ${JSON.stringify(
+              process.memoryUsage(),
+            )}`,
+          );
         }
         return data;
       });
@@ -99,19 +146,13 @@ export class AnnotationsExport {
       const cursor = Image.aggregate(this.pipeline).cursor();
 
       // pipe together aggregation cursor, transform and write streams
-      await stream.pipeline(
-        cursor,
-        flattenImg,
-        createRow,
-        logMemoryUsage,
-        streamToS3
-      );
+      await stream.pipeline(cursor, flattenImg, createRow, logMemoryUsage, streamToS3);
 
       // wait for upload complete
       await promise;
       console.log('upload complete');
     } catch (err) {
-      throw new InternalServerError('Error exporting to CSV: ' + err.message);
+      throw new InternalServerError('Error exporting to CSV: ' + (err as Error).message);
     }
 
     // get presigned url for new S3 object (expires in one hour)
@@ -123,9 +164,9 @@ export class AnnotationsExport {
       meta: {
         reviewedCount: {
           reviewed: this.reviewedCount,
-          notReviewed: this.notReviewedCount
-        }
-      }
+          notReviewed: this.notReviewedCount,
+        },
+      },
     };
   }
 
@@ -133,20 +174,21 @@ export class AnnotationsExport {
     console.log('exporting to coco');
     try {
       // create categories map & string
-      let catMap = [{ 'name': 'empty' }];
-      this.categories.forEach((cat) => {
-        if (cat !== 'empty') catMap.push({ 'name': cat });
+      let catMap = [{ name: 'empty' }];
+      this.categories?.forEach((cat) => {
+        if (cat !== 'empty') catMap.push({ name: cat });
       });
-      catMap = catMap.map((cat, i) => ({ 'id': i, 'name': cat.name }));
+      catMap = catMap.map((cat, i) => ({ id: i, name: cat.name }));
       const catString = JSON.stringify(catMap, null, 4);
 
       // create info object & string
       const info = {
-        version : '1.0',
-        description : `Image data exported from Animl project '${this.projectId}'.` +
+        version: '1.0',
+        description:
+          `Image data exported from Animl project '${this.projectId}'.` +
           ` Export ID: ${this.documentId}`,
-        year : DateTime.now().get('year'),
-        date_created: DateTime.now().toISO()
+        year: DateTime.now().get('year'),
+        date_created: DateTime.now().toISO(),
       };
       const infoString = JSON.stringify(info, null, 4);
 
@@ -162,7 +204,7 @@ export class AnnotationsExport {
         await this.putUpload(catMap, info);
       }
     } catch (err) {
-      throw new InternalServerError('Error exporting to COCO: ' + err.message);
+      throw new InternalServerError('Error exporting to COCO: ' + (err as Error).message);
     }
 
     // get presigned url for new S3 object (expires in one hour)
@@ -174,13 +216,13 @@ export class AnnotationsExport {
       meta: {
         reviewedCount: {
           reviewed: this.reviewedCount,
-          notReviewed: this.notReviewedCount
-        }
-      }
+          notReviewed: this.notReviewedCount,
+        },
+      },
     };
   }
 
-  async multipartUpload(catString, infoString, catMap) {
+  async multipartUpload(catString: string, infoString: string, catMap: Array<Category>) {
     console.log('uploading via multipart');
 
     // TODO: review try/catch strategy through out and make make sure
@@ -212,31 +254,33 @@ export class AnnotationsExport {
       for (const [o, obj] of reviewedObjects.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
         let annoString = JSON.stringify(annoObj, null, 4);
-        annoString = (i === this.imageCount && o === reviewedObjects.length - 1)
-          ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
-          : annoString + ', ';
+        annoString =
+          i === this.imageCount && o === reviewedObjects.length - 1
+            ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
+            : annoString + ', ';
         annotationsUpload.streamToS3.write(annoString);
       }
 
       if (i % 1000 === 0) {
-        console.log(`processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`);
+        console.log(
+          `processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`,
+        );
       }
     }
 
     // end both upload streams and wait for promises to finish
     imagesUpload.streamToS3.end();
     annotationsUpload.streamToS3.end();
-    const res = await Promise.allSettled([
-      imagesUpload.promise,
-      annotationsUpload.promise
-    ]);
+    const res = await Promise.allSettled([imagesUpload.promise, annotationsUpload.promise]);
     console.log('finished uploading all the parts: ', res);
 
     // concatonate images and annotations .json files via multipart upload copy part
-    const initResponse = await this.s3.send(new S3.CreateMultipartUploadCommand({
-      Key: this.filename,
-      Bucket: this.bucket
-    }));
+    const initResponse = await this.s3.send(
+      new S3.CreateMultipartUploadCommand({
+        Key: this.filename,
+        Bucket: this.bucket,
+      }),
+    );
     const mpUploadId = initResponse['UploadId'];
     console.log('multipart upload initiated: ', mpUploadId);
 
@@ -246,26 +290,29 @@ export class AnnotationsExport {
         Key: this.filename,
         CopySource: `${this.bucket}/${part}`,
         PartNumber: i + 1,
-        UploadId: mpUploadId
-      }
+        UploadId: mpUploadId,
+      },
     }));
     const imagesPartRes = await this.s3.send(new S3.UploadPartCopyCommand(parts[0].params));
     const annoPartRes = await this.s3.send(new S3.UploadPartCopyCommand(parts[1].params));
     const completedParts = [imagesPartRes, annoPartRes].map((m, i) => ({
-      ETag: m.CopyPartResult.ETag, PartNumber: i + 1
+      ETag: m?.CopyPartResult?.ETag,
+      PartNumber: i + 1,
     }));
     console.log('completed parts: ', completedParts);
 
-    const result = await this.s3.send(new S3.CompleteMultipartUploadCommand({
-      Key: this.filename,
-      Bucket: this.bucket,
-      UploadId: mpUploadId,
-      MultipartUpload: { Parts: completedParts }
-    }));
+    const result = await this.s3.send(
+      new S3.CompleteMultipartUploadCommand({
+        Key: this.filename,
+        Bucket: this.bucket,
+        UploadId: mpUploadId,
+        MultipartUpload: { Parts: completedParts },
+      }),
+    );
     console.log('multipart upload complete! ', result);
   }
 
-  async putUpload(catMap, info) {
+  async putUpload(catMap: Category[], info: Info) {
     console.log('uploading via put');
 
     const imagesArray = [];
@@ -287,31 +334,38 @@ export class AnnotationsExport {
     }
 
     // combine images, annotations, categories, and info objects, stringify
-    const data = JSON.stringify({
-      images: imagesArray,
-      annotations: annotationsArray,
-      categories: catMap,
-      info: info
-    }, null, 4);
+    const data = JSON.stringify(
+      {
+        images: imagesArray,
+        annotations: annotationsArray,
+        categories: catMap,
+        info: info,
+      },
+      null,
+      4,
+    );
 
     // upload to S3 via putObject
     console.log('uploading data to s3');
-    const res = await this.s3.send(new S3.PutObjectCommand({
-      Bucket: this.bucket,
-      Key: this.filename,
-      Body: data,
-      ContentType: 'application/json; charset=utf-8'
-    }));
+    const res = await this.s3.send(
+      new S3.PutObjectCommand({
+        Bucket: this.bucket,
+        Key: this.filename,
+        Body: data,
+        ContentType: 'application/json; charset=utf-8',
+      }),
+    );
     console.log('successfully uploaded to s3: ', res);
   }
 
   flattenImgTransform() {
-    return transform((img) => {
-      const deployment = this.getDeployment(img, this.project);
+    return transform((img: ImageSchema) => {
+      const deployment = this.getDeployment(img, this.project!);
+      if (!deployment) throw new Error('Deployment not found for image');
       const flatImgRecord = {
         _id: img._id.toString(),
-        dateAdded: DateTime.fromJSDate(img.dateAdded).toISO(),
-        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
+        dateAdded: DateTime.fromJSDate(img.dateAdded as any as Date).toISO(),
+        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal as any as Date).toISO(),
         cameraId: img.cameraId.toString(),
         projectId: img.projectId.toString(),
         make: img.make,
@@ -321,18 +375,18 @@ export class AnnotationsExport {
         ...(img.originalFileName && { originalFileName: img.originalFileName }),
         ...(deployment.location && {
           deploymentLat: deployment.location.geometry.coordinates[1],
-          deploymentLong: deployment.location.geometry.coordinates[0]
-        })
+          deploymentLong: deployment.location.geometry.coordinates[0],
+        }),
       };
 
       // build flattened representation of objects/labels
-      const catCounts = {};
-      this.categories.forEach((cat) => catCounts[cat] = null );
+      const catCounts: Record<string, number | null> = {};
+      this.categories?.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
         const firstValidLabel = this.findFirstValidLabel(obj);
         if (firstValidLabel) {
-          const cat = this.labelMap.get(firstValidLabel.labelId).name;
-          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          const cat = this.labelMap?.get(firstValidLabel.labelId).name;
+          catCounts[cat] = catCounts[cat] ? catCounts[cat]! + 1 : 1;
         }
       }
 
@@ -342,11 +396,11 @@ export class AnnotationsExport {
 
   sanitizeFilters() {
     console.log('sanitizing filters');
-    const sanitizedFilters = {};
+    const sanitizedFilters: Record<string, any> = {};
     // parse ISO strings into DateTimes
     for (const [key, value] of Object.entries(this.filters)) {
       if ((key.includes('Start') || key.includes('End')) && value) {
-        const dt = !DateTime.isDateTime(value) ? DateTime.fromISO(value) : value;
+        const dt = !DateTime.isDateTime(value) ? DateTime.fromISO(value as string) : value;
         sanitizedFilters[key] = dt;
       } else {
         sanitizedFilters[key] = value;
@@ -355,19 +409,13 @@ export class AnnotationsExport {
     return sanitizedFilters;
   }
 
-  findFirstValidLabel(obj) {
-    return obj.labels.find((label) => (
-      label.validation && label.validation.validated
-    ));
+  findFirstValidLabel(obj: ObjectSchema) {
+    return obj.labels.find((label) => label.validation && label.validation.validated);
   }
 
-  getDeployment(img) {
-    const camConfig = this.project.cameraConfigs.find((cc) => (
-      idMatch(cc._id, img.cameraId)
-    ));
-    return camConfig.deployments.find((dep) => (
-      idMatch(dep._id, img.deploymentId))
-    );
+  getDeployment(img: ImageSchema, project: HydratedDocument<ProjectSchema>) {
+    const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, img.cameraId));
+    return camConfig?.deployments.find((dep) => idMatch(dep._id!, img.deploymentId));
   }
 
   async getPresignedURL() {
@@ -376,7 +424,7 @@ export class AnnotationsExport {
     return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
   }
 
-  streamToS3(filename) {
+  streamToS3(filename: string) {
     // https://engineering.lusha.com/blog/upload-csv-from-large-data-table-to-s3-using-nodejs-stream/
     const contentType = this.format === 'csv' ? 'text/csv' : 'application/json; charset=utf-8';
     const pass = new PassThrough();
@@ -386,29 +434,35 @@ export class AnnotationsExport {
         Bucket: this.bucket,
         Key: filename,
         Body: pass,
-        ContentType: contentType
-      }
+        ContentType: contentType,
+      },
     });
     return {
       streamToS3: pass,
-      promise: parallelUploadS3.done()
+      promise: parallelUploadS3.done(),
     };
   }
 
-  getReviewedObjects(img) {
+  getReviewedObjects(img: ImageSchema) {
     return img.objects.filter((obj) => {
-      const hasValidatedLabel = obj.labels.find((label) => (
-        label.validation && label.validation.validated
-      ));
+      const hasValidatedLabel = obj.labels.find(
+        (label) => label.validation && label.validation.validated,
+      );
       return obj.locked && hasValidatedLabel;
     });
   }
 
-  createCOCOImg(img) {
-    const deployment = this.getDeployment(img, this.project);
-    const deploymentNormalized = deployment.name.toLowerCase().replaceAll("'", '').replaceAll(' ', '_');
+  createCOCOImg(img: ImageSchema) {
+    const deployment = this.getDeployment(img, this.project!)!;
+    const deploymentNormalized = deployment.name
+      .toLowerCase()
+      .replaceAll("'", '')
+      .replaceAll(' ', '_');
     // Note - replacing ":" in imageIds with "-" because colons are reserved characters in windows filesystems
-    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id.replace(':', '-')}.${img.fileTypeExtension}`;
+    const destPath = `${this.projectId}/${img.cameraId}/${deploymentNormalized}/${img._id.replace(
+      ':',
+      '-',
+    )}.${img.fileTypeExtension}`;
     const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
     return {
       id: img._id,
@@ -417,46 +471,50 @@ export class AnnotationsExport {
       serving_bucket_key: servingPath,
       datetime: img.dateTimeOriginal,
       location: deployment.name,
-      ...(img.imageWidth &&  { width: img.imageWidth }),
-      ...(img.imageHeight && { height: img.imageHeight })
+      ...(img.imageWidth && { width: img.imageWidth }),
+      ...(img.imageHeight && { height: img.imageHeight }),
     };
   }
 
-  createCOCOAnnotation(object, img, catMap) {
+  createCOCOAnnotation(object: any, img: ImageSchema, catMap: Category[]) {
     let anno;
     const firstValidLabel = this.findFirstValidLabel(object);
     if (firstValidLabel) {
-      const category = catMap.find((cat) => cat.name === this.labelMap.get(firstValidLabel.labelId).name);
+      const category = catMap.find(
+        (cat) => cat.name === this.labelMap?.get(firstValidLabel.labelId).name,
+      );
       anno = {
-        id: object._id,  // id copied from the object, not the label
+        id: object._id, // id copied from the object, not the label
         image_id: img._id,
-        category_id: category.id,
+        category_id: category!.id,
         sequence_level_annotation: false,
-        bbox: this.relToAbs(object.bbox, img.imageWidth, img.imageHeight)
+        bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
       };
     }
     return anno;
   }
 
-  relToAbs(bbox, imageWidth, imageHeight) {
+  relToAbs(bbox: number[], imageWidth: number, imageHeight: number) {
     // convert bbox in relative vals ([ymin, xmin, ymax, xmax])
     // to absolute values ([x,y,width,height])
-    const x =       Math.round(bbox[1] * imageWidth);
-    const y =       Math.round(bbox[0] * imageHeight);
-    const width =   Math.round((bbox[3] - bbox[1]) * imageWidth);
-    const height =  Math.round((bbox[2] - bbox[0]) * imageHeight);
+    const x = Math.round(bbox[1] * imageWidth);
+    const y = Math.round(bbox[0] * imageHeight);
+    const width = Math.round((bbox[3] - bbox[1]) * imageWidth);
+    const height = Math.round((bbox[2] - bbox[0]) * imageHeight);
     return [x, y, width, height];
   }
-
 }
 
-export default async function(task, config) {
-  const dataExport = new AnnotationsExport({
-    projectId: task.projectId,
-    documentId: task._id,
-    filters: task.config.filters,
-    format: task.config.format
-  }, config);
+export default async function (task: WithId<TaskInput<ImageTaskConfig>>, config: Config) {
+  const dataExport = new AnnotationsExport(
+    {
+      projectId: task.projectId,
+      documentId: task._id as any as string,
+      filters: task.config.filters,
+      format: task.config.format,
+    },
+    config,
+  );
 
   await dataExport.init();
 
@@ -469,3 +527,14 @@ export default async function(task, config) {
   }
 }
 
+interface Category {
+  id?: number;
+  name: string;
+}
+
+interface Info {
+  version: string;
+  description: string;
+  year: number;
+  date_created: string;
+}

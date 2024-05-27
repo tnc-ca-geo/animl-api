@@ -1,3 +1,4 @@
+import { SQSEvent } from 'aws-lambda';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
@@ -8,7 +9,7 @@ import AnnotationsExport from './annotations.js';
 import { parseMessage } from './utils.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
-import { SQSEvent } from 'aws-lambda';
+import { WithId } from '../api/db/models/utils.js';
 
 async function handler(event: SQSEvent) {
   if (!event.Records || !event.Records.length) return;
@@ -17,7 +18,7 @@ async function handler(event: SQSEvent) {
 
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
-    const task: TaskInput<any> & {_id: string} = parseMessage(JSON.parse(record.body));
+    const task: WithId<TaskInput<any>> = parseMessage(JSON.parse(record.body));
 
     let output: Record<any, any> | undefined = {};
     await TaskModel.update(

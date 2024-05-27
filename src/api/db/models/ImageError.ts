@@ -5,7 +5,7 @@ import MongoPaging from 'mongo-cursor-pagination';
 import ImageError from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { BaseAuthedModel, Context, MethodParams, roleCheck } from './utils.js';
-import { ImageErrorTaskConfig } from '../../../task/image-errors.js';
+import { ImageTaskConfig } from '../../../task/image-errors.js';
 
 /**
  * ImageErrors are errors that are generated when a single image upload
@@ -123,7 +123,7 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {Object} context
    */
-  static async exportErrorsTask(input: ImageErrorTaskConfig, context: Context) {
+  static async exportErrorsTask(input: ImageTaskConfig, context: Context) {
     try {
       return await TaskModel.create(
         {

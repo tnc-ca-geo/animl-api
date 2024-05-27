@@ -10,6 +10,8 @@ import ImageError from '../api/db/schemas/ImageError.js';
 import { ImageErrorModel } from '../api/db/models/ImageError.js';
 import { Config } from '../config/config.js';
 import { TaskInput } from '../api/db/models/Task.js';
+import { WithId } from '../api/db/models/utils.js';
+import { ObjectId } from 'mongoose';
 
 export class ImageErrorExport {
   config: Config;
@@ -130,10 +132,7 @@ export class ImageErrorExport {
   }
 }
 
-export default async function (
-  task: TaskInput<ImageErrorTaskConfig> & { _id: string },
-  config: Config,
-) {
+export default async function (task: WithId<TaskInput<ImageTaskConfig>>, config: Config) {
   const dataExport = new ImageErrorExport(
     {
       documentId: task._id,
@@ -152,11 +151,11 @@ export default async function (
   }
 }
 
-export interface ImageErrorTaskConfig {
+export interface ImageTaskConfig {
   filters: any;
   format: string;
 }
 
-interface ImageErrorExportInput extends ImageErrorTaskConfig {
-  documentId: string;
+interface ImageErrorExportInput extends ImageTaskConfig {
+  documentId: ObjectId;
 }

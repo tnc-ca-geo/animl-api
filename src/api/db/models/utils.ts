@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import _ from 'lodash';
-import mongoose, { PipelineStage } from 'mongoose';
+import mongoose, { ObjectId, PipelineStage } from 'mongoose';
 import { isFilterValid } from 'mongodb-query-parser';
 import Image from '../schemas/Image.js';
 import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
@@ -20,7 +20,6 @@ import {
 import { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import { User } from '../../auth/authorization.js';
 import { ImageSchema, LabelSchema } from '../schemas/index.js';
-import { WithId } from 'mongodb';
 import { Context as AwsContext } from 'aws-lambda';
 import { MLModelModel } from './MLModel.js';
 import { ProjectModel } from './Project.js';
@@ -148,8 +147,8 @@ export function buildPipeline(
     custom,
   }: FiltersSchema,
   projectId?: string,
-) {
-  const pipeline = [];
+): PipelineStage[] {
+  const pipeline: PipelineStage[] = [];
 
   // match current project
   if (projectId) {
@@ -682,3 +681,5 @@ export interface Context extends AwsContext {
   config: Config;
   user: User;
 }
+
+export type WithId<BaseType, IdType = ObjectId> = BaseType & { _id: IdType };

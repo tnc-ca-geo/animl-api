@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { WithId } from 'mongodb';
 import S3 from '@aws-sdk/client-s3';
+import retry from 'async-retry';
 import GraphQLError, {
   InternalServerError,
   ForbiddenError,
@@ -46,11 +46,10 @@ import {
   BaseAuthedModel,
   Context,
   ImageMetadata,
+  WithId,
 } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
-import retry from 'async-retry';
-import { ValidationError } from '@aws-sdk/client-sagemaker-runtime';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -307,7 +306,7 @@ export class ImageModel {
             batch: md.batchId,
             path: md.path || md.fileName,
             error: (errors[i] as Error).message,
-          })
+          });
           errors[i] = err;
           console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
           await err.save();
