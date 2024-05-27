@@ -12,11 +12,11 @@ import GraphQLError, {
 import mongoose, { HydratedDocument } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { Pagination, TaskModel } from './Task.js';
-import Image, { ImageCommentSchema, ImageSchema } from '../schemas/Image.js';
+import Image, { ImageSchema } from '../schemas/Image.js';
 import { LabelSchema } from '../schemas/index.js';
 import Project, { FiltersSchema } from '../schemas/Project.js';
-import ImageError from '../schemas/ImageError.js';
-import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
+import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
+import ImageAttempt from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
 import { CameraModel } from './Camera.js';
@@ -50,6 +50,7 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
+import { ValidationError } from '@aws-sdk/client-sagemaker-runtime';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -82,7 +83,7 @@ export class ImageModel {
 
       const epipeline = [];
       epipeline.push({ $match: { image: image._id } });
-      image.errors = await ImageError.aggregate(epipeline);
+      image.errors = (await ImageError.aggregate(epipeline)) as any; // TODO: Verify that aggregation is a properly formatted error
 
       return image;
     } catch (err) {
@@ -160,7 +161,7 @@ export class ImageModel {
 
   static async createImage(input: { md: ImageMetadata }, context: Context) {
     const successfulOps = [];
-    const errors: Error[] = [];
+    const errors: Array<Error | HydratedDocument<ImageErrorSchema>> = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
@@ -255,7 +256,7 @@ export class ImageModel {
           console.log('camConfig associated with image: ', camConfig);
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
-          md.deploymentId = deployment._id!;
+          md.deploymentId = deployment._id!.toString();
           md.timezone = deployment.timezone;
           md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, {
             keepLocalTime: true,
@@ -291,7 +292,7 @@ export class ImageModel {
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter(
               (camConfig) => !idMatch(camConfig._id, op.info.cameraId),
-            );
+            ) as typeof proj.cameraConfigs;
             proj.save();
           }
         }
@@ -301,19 +302,20 @@ export class ImageModel {
       if (errors.length) {
         console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
-          errors[i] = new ImageError({
+          const err = new ImageError({
             image: md.imageId,
             batch: md.batchId,
             path: md.path || md.fileName,
-            error: errors[i].message,
-          });
+            error: (errors[i] as Error).message,
+          })
+          errors[i] = err;
           console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
-          await errors[i].save();
+          await err.save();
         }
       }
 
       // return imageAttempt
-      imageAttempt.errors = errors;
+      imageAttempt.errors = errors as any as mongoose.Error.ValidationError;
       return imageAttempt;
     } catch (err) {
       // Fallback catch for unforeseen errors
@@ -656,7 +658,10 @@ export class ImageModel {
     }
   }
 
-  static async createLabels(input: ImageCreateLabelsInput<{ objectId: string; imageId: string }>, context: Context) {
+  static async createLabels(
+    input: ImageCreateLabelsInput<{ objectId: string; imageId: string }>,
+    context: Context,
+  ) {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
     try {
@@ -675,7 +680,7 @@ export class ImageModel {
             // else add new object
             if (label.objectId) {
               const object = image.objects.find((obj) => idMatch(obj._id!, label.objectId));
-              object.labels.unshift(labelRecord);
+              object?.labels.unshift(labelRecord);
             } else {
               let objExists = false;
               for (const object of image.objects) {

@@ -16,3 +16,6 @@ export type ReplaceDateWithDateTime<T> = {
 
 // A utility type that applies our custom transformation to the result of mongoose.InferSchemaType
 export type InferSchemaTypeWithDateTime<T> = ReplaceDateWithDateTime<mongoose.InferSchemaType<T>>;
+
+// Helper to make some properties of an object required (not undefined or null)
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> }

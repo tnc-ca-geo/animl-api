@@ -24,6 +24,7 @@ import { WithId } from 'mongodb';
 import { Context as AwsContext } from 'aws-lambda';
 import { MLModelModel } from './MLModel.js';
 import { ProjectModel } from './Project.js';
+import { WithRequired } from '../schemas/utils.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -520,7 +521,7 @@ export function hasRole(user: User, targetRoles: string[] = []) {
 
 // TODO: accommodate user-created deployments with no startDate?
 export function findDeployment(
-  img: ImageSchema,
+  img: Pick<ImageMetadata, 'dateTimeOriginal'>,
   camConfig: CameraConfigSchema,
   projTimeZone: string,
 ) {
@@ -575,7 +576,11 @@ export function findDeployment(
   return mostRecentDep || defaultDep;
 }
 
-export function mapImgToDep(img: ImageSchema, camConfig: CameraConfigSchema, projTimeZone: string) {
+export function mapImgToDep(
+  img: Pick<ImageMetadata, 'dateTimeOriginal'>,
+  camConfig: CameraConfigSchema,
+  projTimeZone: string,
+) {
   if (camConfig.deployments.length === 0) {
     const err = new NotFoundError('Camera config has no deployments');
     throw err;
@@ -617,23 +622,15 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
-export interface ImageMetadata extends ImageMetadataSchema {
+// NOTE: This interface was reverse-engineered by looking at the properties that were
+// accessed on this object within this file. It is not authoratative and may be incomplete.
+export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
   imageId: string;
-  // batchId: string;
   prodBucket: string;
-  // fileTypeExtension: string;
-  // dateTimeOriginal: string; // Assuming string, adjust if it's a different type like Date
-  // timezone: string;
   serialNumber: string; // Used as cameraId
-  // make: string;
   deploymentId: string;
   projectId: string;
-  // model?: string; // Optional as it is conditionally added
   fileName?: string; // Used as originalFileName, optional
-  // path?: string; // Optional
-  // imageWidth?: number; // Optional
-  // imageHeight?: number; // Optional
-  // imageBytes?: number; // Optional
   MIMEType?: string; // Optional, note the case sensitivity
 
   comment?: string;
@@ -685,4 +682,3 @@ export interface Context extends AwsContext {
   config: Config;
   user: User;
 }
-

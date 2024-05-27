@@ -10,6 +10,6 @@ const ImageErrorSchema = new Schema({
   path: { type: String },
   error: { type: String, required: true }
 });
-type ImageErrorSchema = InferSchemaTypeWithDateTime<typeof ImageErrorSchema>;
+export type ImageErrorSchema = InferSchemaTypeWithDateTime<typeof ImageErrorSchema>;
 
 export default model<ImageErrorSchema>('ImageError', ImageErrorSchema);
