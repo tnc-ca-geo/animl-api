@@ -1006,7 +1006,7 @@ export type QueryWirelessCamerasInput = {
 };
 
 export type RedriveBatchInput = {
-  batch?: InputMaybe<Scalars['String']['input']>;
+  batch: Scalars['String']['input'];
 };
 
 export type RegisterCameraInput = {
