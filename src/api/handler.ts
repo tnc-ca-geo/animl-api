@@ -19,6 +19,7 @@ import { getUserInfo } from './auth/authorization.js';
 import { APIGatewayEvent } from 'aws-lambda';
 import { GraphQLFormattedError } from 'graphql';
 import { Context } from './db/models/utils.js';
+import { AuthenticationError } from './errors.js';
 
 const resolvers = {
   Query,
@@ -50,6 +51,7 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
   console.log('connected to db');
   const user = await getUserInfo(event, config);
   console.log('user: ', user);
+  if (!user) throw new AuthenticationError('Authentication failed');
 
   return {
     ...event,

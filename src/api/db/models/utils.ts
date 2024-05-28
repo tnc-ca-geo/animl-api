@@ -1,16 +1,18 @@
-import { DateTime } from 'luxon';
+import { Context as AwsContext, APIGatewayEvent } from 'aws-lambda';
 import _ from 'lodash';
-import mongoose, { ObjectId, PipelineStage } from 'mongoose';
+import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
+import mongoose, { PipelineStage } from 'mongoose';
+import { Config } from '../../../config/config.js';
+import { User } from '../../auth/authorization.js';
+import {
+  AuthenticationError,
+  DuplicateLabelError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../errors.js';
 import Image from '../schemas/Image.js';
 import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
-import {
-  ForbiddenError,
-  DuplicateLabelError,
-  NotFoundError,
-  AuthenticationError,
-} from '../../errors.js';
-import { Config } from '../../../config/config.js';
 import {
   CameraConfigSchema,
   DeploymentSchema,
@@ -18,14 +20,17 @@ import {
   ProjectSchema,
 } from '../schemas/Project.js';
 import { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
-import { User } from '../../auth/authorization.js';
 import { ImageSchema, LabelSchema } from '../schemas/index.js';
-import { Context as AwsContext } from 'aws-lambda';
-import { MLModelModel } from './MLModel.js';
-import { ProjectModel } from './Project.js';
 import { WithRequired } from '../schemas/utils.js';
-
-const ObjectId = mongoose.Types.ObjectId;
+import AuthedMLModelModel from './MLModel.js';
+import AuthedProjectModel from './Project.js';
+import AuthedBatchErrorModel from './BatchError.js';
+import AuthedImageErrorModel from './ImageError.js';
+import AuthedCameraModel from './Camera.js';
+import AuthedUserModel from './User.js';
+import AuthedBatchModel from './Batch.js';
+import AuthedImageModel from './Image.js';
+import AuthedTaskModel from './Task.js';
 
 // TODO: this file is getting unwieldy, break up
 
@@ -163,7 +168,7 @@ export function buildPipeline(
   // match deployments filter
   if (deployments) {
     // cast string id to ObjectId
-    const deploymentIds = deployments.map((depString) => new ObjectId(depString));
+    const deploymentIds = deployments.map((depString) => new mongoose.Types.ObjectId(depString));
     pipeline.push({ $match: { deploymentId: { $in: deploymentIds } } });
   }
 
@@ -654,7 +659,7 @@ export function roleCheck(roles: string[]) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-      if (!hasRole((this as { user: User }).user, roles)) {
+      if (!hasRole((this as BaseAuthedModel).user, roles)) {
         throw new ForbiddenError();
       }
       return originalMethod.apply(this, args);
@@ -664,22 +669,28 @@ export function roleCheck(roles: string[]) {
   };
 }
 
-export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
-
 export class BaseAuthedModel {
   user: User;
-  constructor(user: User) {
+  constructor(user: User | null) {
     if (!user) throw new AuthenticationError('Authentication failed');
     this.user = user;
   }
 }
-export interface Context extends AwsContext {
+export interface Context extends APIGatewayEvent {
   models: {
-    Project: typeof ProjectModel;
-    MLModel: typeof MLModelModel;
+    Batch: AuthedBatchModel;
+    BatchError: AuthedBatchErrorModel;
+    Camera: AuthedCameraModel;
+    Image: AuthedImageModel;
+    ImageError: AuthedImageErrorModel;
+    MLModel: AuthedMLModelModel;
+    Project: AuthedProjectModel;
+    Task: AuthedTaskModel;
+    User: AuthedUserModel;
   };
   config: Config;
   user: User;
 }
 
-export type WithId<BaseType, IdType = ObjectId> = BaseType & { _id: IdType };
+export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
+export type WithId<BaseType, IdType = mongoose.Schema.Types.ObjectId> = BaseType & { _id: IdType };
