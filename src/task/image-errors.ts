@@ -12,6 +12,7 @@ import { Config } from '../config/config.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import { WithId } from '../api/db/models/utils.js';
 import { ObjectId } from 'mongoose';
+import { FiltersInput, Format } from '../generated/graphql.js';
 
 export class ImageErrorExport {
   config: Config;
@@ -152,8 +153,8 @@ export default async function (task: WithId<TaskInput<ImageTaskConfig>>, config:
 }
 
 export interface ImageTaskConfig {
-  filters: any;
-  format: string;
+  filters: FiltersInput;
+  format: Format;
 }
 
 interface ImageErrorExportInput extends ImageTaskConfig {

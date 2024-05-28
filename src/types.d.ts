@@ -1,15 +1,25 @@
 // https://github.com/mixmaxhq/mongo-cursor-pagination
 declare module 'mongo-cursor-pagination' {
   import { Collection } from 'mongoose';
-  import { Pagination } from './api/db/models/Task.ts';
 
   interface AggregationInput extends Pagination {}
-  export interface AggregationOutput<T> {
-    metadata: {
-      total: number;
-      page: number;
-    }[];
-    data: T[];
+  export interface AggregationOutput<T> extends PageInfo {
+    // metadata: {
+    //   total: number;
+    //   page: number;
+    // }[];
+    // data: T[];
+
+    paginatedField: string;
+    sortAscending: boolean;
+    limit: number;
+
+    previous: string;
+    hasPrevious: boolean;
+    next: string;
+    hasNext: boolean;
+    
+    results: T;
   }
 
   const defaultExport: {
