@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { ApolloServer, BaseContext } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import AuthedProjectModel from './db/models/Project.js';
@@ -13,6 +12,7 @@ import AuthedTaskModel from './db/models/Task.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
+import typeDefs from './type-defs/index.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
 import { getUserInfo } from './auth/authorization.js';
@@ -80,7 +80,7 @@ interface ContextInput {
 const apolloserver = new ApolloServer<BaseContext>({
   includeStacktraceInErrorResponses: OFFLINE_MODE || process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
-  typeDefs: readFileSync('./schema.graphql', 'utf8'),
+  typeDefs,
   resolvers,
   csrfPrevention: false,
   cache: 'bounded',

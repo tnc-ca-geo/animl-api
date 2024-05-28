@@ -325,9 +325,22 @@ export type ExportError = {
   message?: Maybe<Scalars['String']['output']>;
 };
 
+export type ExportErrorsInput = {
+  filters: ImageErrorsFilterInput;
+};
+
+export type ExportInput = {
+  filters: FiltersInput;
+  format: Format;
+};
+
 export type ExportPayload = {
   __typename?: 'ExportPayload';
   documentId: Scalars['ID']['output'];
+};
+
+export type ExportStatusInput = {
+  documentId: Scalars['ID']['input'];
 };
 
 export type ExportStatusPayload = {
@@ -862,12 +875,12 @@ export type QueryBatchesArgs = {
 
 
 export type QueryExportAnnotationsArgs = {
-  input: QueryExportAnnotationsInput;
+  input: ExportInput;
 };
 
 
 export type QueryExportErrorsArgs = {
-  input: QueryExportErrorsInput;
+  input: ExportErrorsInput;
 };
 
 
@@ -932,15 +945,6 @@ export type QueryBatchesInput = {
   paginatedField?: InputMaybe<Scalars['String']['input']>;
   previous?: InputMaybe<Scalars['String']['input']>;
   sortAscending?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-export type QueryExportAnnotationsInput = {
-  filters: FiltersInput;
-  format: Format;
-};
-
-export type QueryExportErrorsInput = {
-  filters: ImageErrorsFilterInput;
 };
 
 export type QueryImageErrorsInput = {
@@ -1311,7 +1315,10 @@ export type ResolversTypes = {
   DeploymentDiffsInput: DeploymentDiffsInput;
   DeploymentInput: DeploymentInput;
   ExportError: ResolverTypeWrapper<ExportError>;
+  ExportErrorsInput: ExportErrorsInput;
+  ExportInput: ExportInput;
   ExportPayload: ResolverTypeWrapper<ExportPayload>;
+  ExportStatusInput: ExportStatusInput;
   ExportStatusPayload: ResolverTypeWrapper<ExportStatusPayload>;
   Filters: ResolverTypeWrapper<Filters>;
   FiltersInput: FiltersInput;
@@ -1352,8 +1359,6 @@ export type ResolversTypes = {
   ProjectRegistration: ResolverTypeWrapper<ProjectRegistration>;
   Query: ResolverTypeWrapper<{}>;
   QueryBatchesInput: QueryBatchesInput;
-  QueryExportAnnotationsInput: QueryExportAnnotationsInput;
-  QueryExportErrorsInput: QueryExportErrorsInput;
   QueryImageErrorsInput: QueryImageErrorsInput;
   QueryImageInput: QueryImageInput;
   QueryImagesCountInput: QueryImagesCountInput;
@@ -1452,7 +1457,10 @@ export type ResolversParentTypes = {
   DeploymentDiffsInput: DeploymentDiffsInput;
   DeploymentInput: DeploymentInput;
   ExportError: ExportError;
+  ExportErrorsInput: ExportErrorsInput;
+  ExportInput: ExportInput;
   ExportPayload: ExportPayload;
+  ExportStatusInput: ExportStatusInput;
   ExportStatusPayload: ExportStatusPayload;
   Filters: Filters;
   FiltersInput: FiltersInput;
@@ -1492,8 +1500,6 @@ export type ResolversParentTypes = {
   ProjectRegistration: ProjectRegistration;
   Query: {};
   QueryBatchesInput: QueryBatchesInput;
-  QueryExportAnnotationsInput: QueryExportAnnotationsInput;
-  QueryExportErrorsInput: QueryExportErrorsInput;
   QueryImageErrorsInput: QueryImageErrorsInput;
   QueryImageInput: QueryImageInput;
   QueryImagesCountInput: QueryImagesCountInput;

@@ -1,0 +1,3 @@
+input QueryMLModelsInput {
+  _ids: [String!]
+}

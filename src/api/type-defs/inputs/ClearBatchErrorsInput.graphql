@@ -1,0 +1,3 @@
+input ClearBatchErrorsInput {
+  batch: String!
+}

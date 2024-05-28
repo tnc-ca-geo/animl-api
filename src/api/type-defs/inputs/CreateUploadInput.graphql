@@ -1,0 +1,4 @@
+input CreateUploadInput {
+  originalFile: String!
+  partCount: Int
+}

@@ -1,0 +1,5 @@
+input UpdateImageCommentInput {
+  imageId: ID!
+  id: String!
+  comment: String!
+}

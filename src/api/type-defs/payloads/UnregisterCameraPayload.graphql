@@ -1,0 +1,4 @@
+type UnregisterCameraPayload {
+  project: Project
+  wirelessCameras: [WirelessCamera]
+}

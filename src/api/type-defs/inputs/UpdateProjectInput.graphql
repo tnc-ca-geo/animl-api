@@ -1,0 +1,4 @@
+input UpdateProjectInput {
+  name: String
+  description: String
+}

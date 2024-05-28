@@ -1,0 +1,4 @@
+input CreateImageCommentInput {
+  imageId: ID!
+  comment: String!
+}

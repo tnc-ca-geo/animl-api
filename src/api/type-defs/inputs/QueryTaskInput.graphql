@@ -1,0 +1,3 @@
+input QueryTaskInput {
+  taskId: ID!
+}

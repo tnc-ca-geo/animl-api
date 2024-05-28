@@ -1,0 +1,4 @@
+input DeleteImageCommentInput {
+  imageId: ID!
+  id: String!
+}

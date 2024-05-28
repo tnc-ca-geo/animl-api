@@ -1,0 +1,4 @@
+input DeleteDeploymentInput {
+  cameraId: ID!
+  deploymentId: ID!
+}

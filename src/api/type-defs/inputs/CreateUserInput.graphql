@@ -1,0 +1,4 @@
+input CreateUserInput {
+  username: String!
+  roles: [UserRole]!
+}

@@ -1,0 +1,3 @@
+input QueryProjectsInput {
+  _ids: [String!]
+}
