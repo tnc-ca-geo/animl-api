@@ -63,6 +63,7 @@
         "@graphql-codegen/cli": "5.0.2",
         "@graphql-codegen/typescript": "4.0.7",
         "@graphql-codegen/typescript-resolvers": "4.1.0",
+        "@parcel/watcher": "^2.4.1",
         "@tsconfig/node18": "^18",
         "@types/async-retry": "^1.4.8",
         "@types/aws-lambda": "^8.10.138",
