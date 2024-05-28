@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { ApolloServer, BaseContext } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import AuthedProjectModel from './db/models/Project.js';
@@ -12,12 +13,12 @@ import AuthedTaskModel from './db/models/Task.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
-import typeDefs from './type-defs/index.js';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
 import { getUserInfo } from './auth/authorization.js';
 import { APIGatewayEvent } from 'aws-lambda';
 import { GraphQLFormattedError } from 'graphql';
+import { Context } from './db/models/utils.js';
 
 const resolvers = {
   Query,
@@ -41,7 +42,7 @@ const corsMiddleware = async () => {
 const OFFLINE_MODE = process.env.IS_OFFLINE === 'true';
 
 // Context comes from API Gateway event
-const context = async ({ event, context }: ContextInput) => {
+const context = async ({ event, context }: ContextInput): Promise<Context> => {
   console.log('event: ', event.body);
   context.callbackWaitsForEmptyEventLoop = false;
   const config = await getConfig();
@@ -64,8 +65,8 @@ const context = async ({ event, context }: ContextInput) => {
       Camera: new AuthedCameraModel(user),
       MLModel: new AuthedMLModelModel(user),
       Batch: new AuthedBatchModel(user),
-      BatchError: new AuthedBatchErrorModel(user)
-    }
+      BatchError: new AuthedBatchErrorModel(user),
+    },
   };
 };
 
@@ -77,7 +78,7 @@ interface ContextInput {
 const apolloserver = new ApolloServer<BaseContext>({
   includeStacktraceInErrorResponses: OFFLINE_MODE || process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
-  typeDefs,
+  typeDefs: readFileSync('./schema.graphql', 'utf8'),
   resolvers,
   csrfPrevention: false,
   cache: 'bounded',
@@ -93,6 +94,6 @@ export const server = startServerAndCreateLambdaHandler(
   handlers.createAPIGatewayProxyEventRequestHandler(),
   {
     middleware: [corsMiddleware],
-    context
-  }
+    context,
+  },
 );

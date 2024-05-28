@@ -22,7 +22,8 @@
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
         "test": "tape test/**.test.js",
-        "lint": "eslint src/ test/"
+        "lint": "eslint src/ test/",
+        "codegen": "graphql-codegen --config codegen.ts"
     },
     "author": "Nathaniel Rindlaub",
     "license": "ISC",
@@ -59,6 +60,9 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
+        "@graphql-codegen/cli": "5.0.2",
+        "@graphql-codegen/typescript": "4.0.7",
+        "@graphql-codegen/typescript-resolvers": "4.1.0",
         "@tsconfig/node18": "^18",
         "@types/async-retry": "^1.4.8",
         "@types/aws-lambda": "^8.10.138",
