@@ -11,7 +11,7 @@ type Query {
   wirelessCameras(input: QueryWirelessCamerasInput): [WirelessCamera]
   mlModels(input: QueryMLModelsInput): [MLModel]
   batches(input: QueryBatchesInput!): BatchesConnection
-  exportAnnotations(input: ExportInput!): Task
-  exportErrors(input: ExportErrorsInput!): Task
+  exportAnnotations(input: QueryExportInput!): Task
+  exportErrors(input: QueryExportErrorsInput!): Task
   stats(input: QueryStatsInput!): Task
 }

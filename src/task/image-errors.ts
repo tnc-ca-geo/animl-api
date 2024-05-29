@@ -18,16 +18,16 @@ export class ImageErrorExport {
   config: Config;
   s3: S3.S3Client;
   ext: string;
-  documentId: ImageErrorExportInput['documentId'];
+  documentId: ImageErrorQueryExportInput['documentId'];
   filename: string;
   bucket: string;
   errorCount: number;
   imageCountThreshold: number;
-  filters: ImageErrorExportInput['filters'];
+  filters: ImageErrorQueryExportInput['filters'];
   pipeline: any[];
   presignedURL?: string;
 
-  constructor({ documentId, filters, format }: ImageErrorExportInput, config: Config) {
+  constructor({ documentId, filters, format }: ImageErrorQueryExportInput, config: Config) {
     this.config = config;
     this.s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
     this.ext = '.csv';
@@ -157,6 +157,6 @@ export interface ImageTaskConfig {
   format: Format;
 }
 
-interface ImageErrorExportInput extends ImageTaskConfig {
+interface ImageErrorQueryExportInput extends ImageTaskConfig {
   documentId: ObjectId;
 }

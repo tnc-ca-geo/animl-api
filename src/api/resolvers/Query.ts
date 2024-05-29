@@ -123,7 +123,7 @@ const Query = {
 
   exportErrors: async (
     _: unknown,
-    { input }: QLInput<graphql.ExportErrorsInput>,
+    { input }: QLInput<graphql.QueryExportErrorsInput>,
     context: Context,
   ) => {
     return await context.models.ImageError.exportErrors(input, context);
@@ -131,7 +131,7 @@ const Query = {
 
   exportAnnotations: async (
     _: unknown,
-    { input }: QLInput<graphql.ExportInput>,
+    { input }: QLInput<graphql.QueryExportInput>,
     context: Context,
   ) => {
     return await context.models.Image.exportAnnotations(input, context);

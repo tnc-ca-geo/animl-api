@@ -3,7 +3,7 @@ enum Format {
   coco
 }
 
-input ExportInput {
+input QueryExportInput {
   format: Format!
   filters: FiltersInput!
 }
