@@ -17,5 +17,6 @@ input CreateLabelInput {
 }
 
 input CreateLabelsInput {
+  imageId: ID!
   labels: [CreateLabelInput]!
 }

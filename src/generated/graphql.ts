@@ -188,6 +188,7 @@ export type CreateLabelInput = {
 };
 
 export type CreateLabelsInput = {
+  imageId: Scalars['ID']['input'];
   labels: Array<InputMaybe<CreateLabelInput>>;
 };
 
