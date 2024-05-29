@@ -1,4 +1,4 @@
-import { ApolloServer, BaseContext } from '@apollo/server';
+import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateLambdaHandler, handlers } from '@as-integrations/aws-lambda';
 import AuthedProjectModel from './db/models/Project.js';
 import AuthedUserModel from './db/models/User.js';
@@ -17,7 +17,6 @@ import { Config, getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
 import { User, getUserInfo } from './auth/authorization.js';
 import { APIGatewayEvent } from 'aws-lambda';
-import { GraphQLFormattedError } from 'graphql';
 import { AuthenticationError } from './errors.js';
 
 const resolvers = {
@@ -71,12 +70,7 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
   };
 };
 
-interface ContextInput {
-  event: APIGatewayEvent;
-  context: BaseContext & { callbackWaitsForEmptyEventLoop?: boolean };
-}
-
-const apolloserver = new ApolloServer<BaseContext>({
+const apolloserver = new ApolloServer({
   includeStacktraceInErrorResponses: OFFLINE_MODE || process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
   typeDefs,
@@ -84,20 +78,25 @@ const apolloserver = new ApolloServer<BaseContext>({
   csrfPrevention: false,
   cache: 'bounded',
   introspection: OFFLINE_MODE,
-  formatError: (error: GraphQLFormattedError) => {
+  formatError: (error) => {
     console.error(error);
     return error;
   },
 });
 
 export const server = startServerAndCreateLambdaHandler(
-  apolloserver as any, // TODO: Getting strange error about type mismatch due to apolloserver being typed as ApolloServer<BaseContext>  instead of ApolloServer<any>
+  apolloserver as any, // NOTE: Getting strange error about type mismatch
   handlers.createAPIGatewayProxyEventRequestHandler(),
   {
     middleware: [corsMiddleware],
     context,
   },
 );
+
+interface ContextInput {
+  event: APIGatewayEvent;
+  context: { callbackWaitsForEmptyEventLoop?: boolean };
+}
 
 export interface Context extends APIGatewayEvent {
   models: {

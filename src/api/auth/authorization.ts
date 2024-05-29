@@ -60,7 +60,6 @@ async function getUserInfo(
   return user;
 }
 
-// TODO: Build out interface further...
 export interface User {
   sub: string;
   aud: string;

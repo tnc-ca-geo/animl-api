@@ -10,7 +10,6 @@ import { Config } from '../../config/config.js';
 let client: typeof mongoose | null = null;
 
 async function connectToDatabase(config: Config) {
-  // TODO: type config
   if (!client) {
     // If no connection promise is cached, create a new one.
     // We cache the promise instead of the connection itself to prevent race
