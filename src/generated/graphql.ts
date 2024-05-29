@@ -974,11 +974,11 @@ export type QueryImagesInput = {
 };
 
 export type QueryMlModelsInput = {
-  _ids?: InputMaybe<Array<Scalars['String']['input']>>;
+  _ids: Array<Scalars['String']['input']>;
 };
 
 export type QueryProjectsInput = {
-  _ids?: InputMaybe<Array<Scalars['String']['input']>>;
+  _ids: Array<Scalars['String']['input']>;
 };
 
 export type QueryStatsInput = {
@@ -1002,7 +1002,7 @@ export type QueryUsersInput = {
 };
 
 export type QueryWirelessCamerasInput = {
-  _ids?: InputMaybe<Array<Scalars['String']['input']>>;
+  _ids: Array<Scalars['String']['input']>;
 };
 
 export type RedriveBatchInput = {
