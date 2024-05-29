@@ -59,12 +59,12 @@ const Mutation = {
   },
 
   createUser: async (_: unknown, { input }: QLInput<graphql.CreateUserInput>, context: Context) => {
-    const res = await context.models.User.create(input, context);
+    const res = await context.models.User.createUser(input, context);
     return { ...res };
   },
 
   updateUser: async (_: unknown, { input }: QLInput<graphql.UpdateUserInput>, context: Context) => {
-    const res = await context.models.User.update(input, context);
+    const res = await context.models.User.updateUser(input, context);
     return { ...res };
   },
 
