@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-18-tsconfigjson
+  "extends": "@tsconfig/node20/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-20-tsconfigjson
   "compilerOptions": {
     "strict": true,
     "preserveConstEnums": true,
