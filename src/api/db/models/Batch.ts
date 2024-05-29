@@ -15,7 +15,7 @@ import { ImageErrorModel } from './ImageError.js';
 import { Pagination } from './Task.js';
 
 export class BatchModel {
-  static async queryByFilter(input: Pagination<{ filter: string }>, context: Context) {
+  static async queryByFilter(input: Pagination<{ filter?: string }>, context: Context) {
     try {
       const pipeline: Array<{ $match: Record<string, any> }> = [
         { $match: { user: context.user.sub } },
@@ -30,14 +30,14 @@ export class BatchModel {
         });
       }
 
-      const result = (await MongoPaging.aggregate(Batch.collection, {
+      const result = await MongoPaging.aggregate<BatchSchema[]>(Batch.collection, {
         aggregation: pipeline,
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
         next: input.next,
         previous: input.previous,
-      })) as AggregationOutput<typeof Batch.collection> & { results: any[] };
+      });
 
       result.results = await Promise.all(
         result.results.map((batch: BatchSchema) => BatchModel.augmentBatch(batch)),

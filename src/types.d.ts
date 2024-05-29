@@ -4,12 +4,6 @@ declare module 'mongo-cursor-pagination' {
 
   interface AggregationInput extends Pagination {}
   export interface AggregationOutput<T> extends PageInfo {
-    // metadata: {
-    //   total: number;
-    //   page: number;
-    // }[];
-    // data: T[];
-
     paginatedField: string;
     sortAscending: boolean;
     limit: number;
@@ -18,13 +12,13 @@ declare module 'mongo-cursor-pagination' {
     hasPrevious: boolean;
     next: string;
     hasNext: boolean;
-    
+
     results: T;
   }
 
   const defaultExport: {
     mongoosePlugin: any;
-    aggregate: <T extends Collection>(model: T, input: AggregationInput) => AggregationOutput<T>;
+    aggregate: <T>(model: Collection, input: AggregationInput) => AggregationOutput<T>;
   };
   export default defaultExport;
 }
