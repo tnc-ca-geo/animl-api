@@ -2,10 +2,10 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import S3 from '@aws-sdk/client-s3';
-import ImageModel from '../src/api/db/models/Image.js';
-import ImageSchema from '../src/api/db/schemas/Image.js';
-import ImageErrorSchema from '../src/api/db/schemas/ImageError.js';
-import ImageAttemptSchema from '../src/api/db/schemas/ImageAttempt.js';
+import ImageModel from '../.build/api/db/models/Image.js';
+import ImageSchema from '../.build/api/db/schemas/Image.js';
+import ImageErrorSchema from '../.build/api/db/schemas/ImageError.js';
+import ImageAttemptSchema from '../.build/api/db/schemas/ImageAttempt.js';
 
 process.env.AWS_REGION = process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';
