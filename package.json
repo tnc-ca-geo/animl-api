@@ -5,7 +5,8 @@
     "description": "Lambda-based graphQL API for camera trap data management platform",
     "main": "src/handler.js",
     "scripts": {
-        "start": "AWS_PROFILE=animl serverless offline --noAuth",
+        "start": "serverless offline",
+        "build": "tsc",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
@@ -58,7 +59,7 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
-        "@tsconfig/node14": "^14.1.2",
+        "@tsconfig/node18": "^18",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",
