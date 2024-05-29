@@ -11,8 +11,8 @@ export class InternalServerError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'INTERNAL_SERVER_ERROR',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -22,8 +22,8 @@ export class AuthenticationError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'AUTHENTICATION_ERROR',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -33,8 +33,8 @@ export class ForbiddenError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'FORBIDDEN',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -44,19 +44,19 @@ export class NotFoundError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'NOT_FOUND',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
 
 export class DuplicateImageError extends GraphQLError {
   constructor(message = 'DuplicateImageError', properties = {}) {
-    super(message,  {
+    super(message, {
       extensions: {
         code: 'DUPLICATE_IMAGE',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -66,8 +66,8 @@ export class DuplicateLabelError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'DUPLICATE_LABEL',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -77,8 +77,8 @@ export class DBValidationError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'DB_VALIDATION_FAILED',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -88,8 +88,8 @@ export class DeleteLabelError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'DELETE_LABEL_FAILED',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
@@ -99,9 +99,8 @@ export class CameraRegistrationError extends GraphQLError {
     super(message, {
       extensions: {
         code: 'CAMERA_REGISTRATION_ERROR',
-        ...properties
-      }
+        ...properties,
+      },
     });
   }
 }
-
