@@ -158,5 +158,5 @@ export interface ImageTaskConfig {
 }
 
 interface ImageErrorQueryExportInput extends ImageTaskConfig {
-  documentId: ObjectId;
+  documentId: string;
 }

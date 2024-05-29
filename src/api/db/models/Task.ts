@@ -38,7 +38,7 @@ export class TaskModel {
     });
   }
 
-  static async queryById(_id: ObjectId, context: { user: Pick<User, 'curr_project'> }) {
+  static async queryById(_id: string, context: { user: Pick<User, 'curr_project'> }) {
     const query = { _id };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');

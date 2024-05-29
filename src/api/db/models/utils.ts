@@ -501,7 +501,7 @@ export function createLabelRecord(
 ): WithId<LabelSchema> {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   const label = {
-    ...(_id && { _id }),
+    _id,
     type,
     labelId,
     conf,
@@ -693,4 +693,4 @@ export interface Context extends APIGatewayEvent {
 }
 
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
-export type WithId<BaseType, IdType = mongoose.Schema.Types.ObjectId> = BaseType & { _id: IdType };
+export type WithId<BaseType, IdType = string> = BaseType & { _id: IdType };
