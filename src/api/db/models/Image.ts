@@ -12,6 +12,7 @@ import GraphQLError, {
 import mongoose, { HydratedDocument } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { Pagination, TaskModel } from './Task.js';
+import { ObjectSchema } from '../schemas/shared/index.js';
 import Image, { ImageSchema } from '../schemas/Image.js';
 import { LabelSchema } from '../schemas/index.js';
 import Project, { FiltersSchema } from '../schemas/Project.js';
@@ -408,19 +409,22 @@ export class ImageModel {
     }
   }
 
-  static async createObjects(input: { objects: ImageCreateLabelsInput[] }, context: Context) {
+  static async createObjects(
+    input: { objects: Array<{ imageId: string; object: ObjectSchema }> },
+    context: Context,
+  ) {
     console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
 
     try {
       // find image, create label record
       const project = await ProjectModel.queryById(context.user['curr_project']!);
 
-      for (const imageFoo of input.objects) {
-        const image = await ImageModel.queryById(imageFoo.imageId, context);
+      for (const labelInput of input.objects) {
+        const image = await ImageModel.queryById(labelInput.imageId, context);
 
-        for (let lid = 0; lid < (imageFoo.labels || []).length; lid++) {
-          imageFoo.labels[lid] = reviewerLabelRecord(project, image, imageFoo.labels[lid]);
-        }
+        labelInput.object.labels = labelInput.object.labels.map((label) =>
+          reviewerLabelRecord(project, image, label),
+        );
       }
 
       const res = await retry(
@@ -555,7 +559,7 @@ export class ImageModel {
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
             const project = await ProjectModel.queryById(image.projectId);
-            const labelRecord = createLabelRecord(label, label.mlModel);
+            const labelRecord = createLabelRecord(label, label.mlModel!);
 
             const model = await MLModelModel.queryById(labelRecord.mlModel!);
             const cats = model.categories.filter((cat) => {
@@ -651,7 +655,7 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
+      console.log(`Image.createInternalLabels() ERROR on image ${input.labels[0].imageId}: ${err}`);
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -945,15 +949,16 @@ export class ImageModel {
   }
 }
 
+type NewLabelInput = LabelSchema & { imageId: string; type: string; mlModel: string };
+
 interface ImageCreateLabelsInput<ExtraLabelProps = {}> {
   imageId: string;
   labels: WithId<LabelSchema & ExtraLabelProps>[];
-  object: any;
 }
 
 interface ImageCreateInternalLabelsInput {
-  imageId: string;
-  labels: WithId<LabelSchema & { imageId: string; type: string; mlModel: string }>[];
+  // imageId: string;
+  labels: WithId<LabelSchema & { imageId: string; type: string }>[];
 }
 
 interface Label {

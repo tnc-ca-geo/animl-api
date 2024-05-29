@@ -8,6 +8,7 @@ input FiltersInput {
   labels: [String]
   reviewed: Boolean
   custom: String
+  batch: String!
 }
 
 input QueryImagesInput {

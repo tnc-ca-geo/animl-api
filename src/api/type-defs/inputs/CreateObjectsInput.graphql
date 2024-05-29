@@ -11,5 +11,5 @@ input CreateObjectInput {
 }
 
 input CreateObjectsInput {
-  objects: [CreateObjectInput]!
+  objects: [CreateObjectInput!]!
 }

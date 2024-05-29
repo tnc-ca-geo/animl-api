@@ -2,7 +2,7 @@ import { Context as AwsContext, APIGatewayEvent } from 'aws-lambda';
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
-import mongoose, { PipelineStage } from 'mongoose';
+import mongoose, { HydratedDocument, PipelineStage } from 'mongoose';
 import { Config } from '../../../config/config.js';
 import { User } from '../../auth/authorization.js';
 import {
@@ -31,6 +31,7 @@ import AuthedUserModel from './User.js';
 import AuthedBatchModel from './Batch.js';
 import AuthedImageModel from './Image.js';
 import AuthedTaskModel from './Task.js';
+import { Label } from '../../../generated/graphql.js';
 
 // TODO: this file is getting unwieldy, break up
 
@@ -469,7 +470,7 @@ export function isLabelDupe(image: ImageSchema, newLabel: LabelSchema) {
 export function reviewerLabelRecord(
   project: ProjectSchema,
   image: ImageSchema,
-  label: WithId<LabelSchema>,
+  label: LabelSchema,
 ): WithId<LabelSchema> {
   label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId!);
@@ -495,13 +496,13 @@ export function reviewerLabelRecord(
 }
 
 // TODO: accommodate users as label authors as well as models
-export function createLabelRecord(
-  input: WithId<LabelSchema>,
+export function createLabelRecord<T extends HydratedDocument<LabelSchema>>(
+  input: T,
   authorId: string,
-): WithId<LabelSchema> {
+): T {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   const label = {
-    _id,
+    ...(_id && { _id }),
     type,
     labelId,
     conf,

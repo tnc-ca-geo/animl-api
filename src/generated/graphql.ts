@@ -198,7 +198,7 @@ export type CreateObjectInput = {
 };
 
 export type CreateObjectsInput = {
-  objects: Array<InputMaybe<CreateObjectInput>>;
+  objects: Array<CreateObjectInput>;
 };
 
 export type CreateProjectInput = {
@@ -256,7 +256,7 @@ export type DeleteImageCommentInput = {
 };
 
 export type DeleteImagesInput = {
-  imageIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  imageIds: Array<Scalars['ID']['input']>;
 };
 
 export type DeleteLabelInput = {
@@ -361,6 +361,7 @@ export type Filters = {
 export type FiltersInput = {
   addedEnd?: InputMaybe<Scalars['Date']['input']>;
   addedStart?: InputMaybe<Scalars['Date']['input']>;
+  batch: Scalars['String']['input'];
   cameras?: InputMaybe<Array<Scalars['String']['input']>>;
   createdEnd?: InputMaybe<Scalars['Date']['input']>;
   createdStart?: InputMaybe<Scalars['Date']['input']>;
