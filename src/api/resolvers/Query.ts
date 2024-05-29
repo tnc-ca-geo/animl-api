@@ -82,7 +82,7 @@ const Query = {
     { input }: QLInput<graphql.QueryImageErrorsInput>,
     context: Context,
   ) => {
-    const count = await context.models.ImageError.countImageErrors(input);
+    const count = await context.models.ImageError.countImageErrors(input.filters);
     const response = await context.models.ImageError.queryByFilter(input);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {
