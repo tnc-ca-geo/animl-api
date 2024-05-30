@@ -65,7 +65,7 @@ cd animl-api
 npm install
 ```
 
-NOTE: Sharp, one of the dependencies that's essential for opening image files and performing inference, may have issues once deployed to Lambda. See [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda) for more info on deploying Sharp to Lambda, but in short, unless your `node_modules/@img` directory has the following binaries, the inference Lambda will throw errors indicating it can't open Sharp:
+IMPORTANT NOTE: Sharp, one of the dependencies that's essential for opening image files and performing inference, may have issues once deployed to Lambda. See [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda) for more info on deploying Sharp to Lambda, but in short, unless your `node_modules/@img` directory has the following binaries, the inference Lambda will throw errors indicating it can't open Sharp:
 
 ```
 sharp-darwin-arm64
