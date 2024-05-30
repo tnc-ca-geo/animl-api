@@ -1,10 +1,11 @@
-import mongoose from 'mongoose';
-const Schema = mongoose.Schema;
+import { Schema } from 'mongoose';
+import { InferSchemaTypeWithDateTime } from '../utils.js';
 
 const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
   coordinates: { type: [Number], required: true },
 });
+export type PointSchema = InferSchemaTypeWithDateTime<typeof PointSchema>;
 
 const LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
@@ -12,6 +13,7 @@ const LocationSchema = new Schema({
   name: { type: String },
   // azimuth: { type: Number },
 });
+export type LocationSchema = InferSchemaTypeWithDateTime<typeof LocationSchema>;
 
 /*
  * ValidationSchema
@@ -24,6 +26,7 @@ const ValidationSchema = new Schema({
   validationDate: { type: Date, default: Date.now, required: true },
   userId: { type: String },
 });
+export type ValidationSchema = InferSchemaTypeWithDateTime<typeof ValidationSchema>;
 
 /*
  * LabelSchema
@@ -42,6 +45,7 @@ const LabelSchema = new Schema({
   mlModelVersion: { type: 'String' },
   userId: { type: String }, // if type === 'manual'
 });
+export type LabelSchema = InferSchemaTypeWithDateTime<typeof LabelSchema>;
 
 /*
  * ObjectSchema
@@ -57,5 +61,6 @@ const ObjectSchema = new Schema({
   locked: { type: Boolean, default: false, required: true },
   labels: { type: [LabelSchema] },
 });
+export type ObjectSchema = InferSchemaTypeWithDateTime<typeof ObjectSchema>;
 
 export { PointSchema, LocationSchema, LabelSchema, ObjectSchema };

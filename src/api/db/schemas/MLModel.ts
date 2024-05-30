@@ -1,6 +1,5 @@
-import mongoose from 'mongoose';
-
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
+import { InferSchemaTypeWithDateTime } from './utils.js';
 
 // /*
 //  * MLModelPerformanceSchema
@@ -23,19 +22,22 @@ const Schema = mongoose.Schema;
  */
 
 const MLModelSchema = new Schema({
-  _id : { type: String, required: true }, /* _id is name of ml model */
+  _id: { type: String, required: true } /* _id is name of ml model */,
   description: { type: String },
   version: { type: String, required: true },
   defaultConfThreshold: { type: Number, required: true },
   categories: {
-    type: [new Schema({
-      _id: { type: String, required: true },
-      name: { type: String, required: true },
-      color: { type: String, required: true }
-    })],
-    required: true
-  }
+    type: [
+      new Schema({
+        _id: { type: String, required: true },
+        name: { type: String, required: true },
+        color: { type: String, required: true },
+      }),
+    ],
+    required: true,
+  },
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
+export type MLModelSchema = InferSchemaTypeWithDateTime<typeof MLModelSchema>;
 
-export default mongoose.model('MLModel', MLModelSchema);
+export default model<MLModelSchema>('MLModel', MLModelSchema);

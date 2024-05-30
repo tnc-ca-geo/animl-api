@@ -1,11 +1,7 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
-import {
-  LocationSchema,
-  ObjectSchema
-} from './shared/index.js';
-
-const Schema = mongoose.Schema;
+import { LocationSchema, ObjectSchema } from './shared/index.js';
+import { InferSchemaTypeWithDateTime } from './utils.js';
 
 /*
  * ImageSchema
@@ -16,8 +12,9 @@ const Schema = mongoose.Schema;
 const ImageCommentSchema = new Schema({
   author: { type: String, required: true },
   created: { type: Date, default: Date.now, required: true },
-  comment: { type: String, required: true }
+  comment: { type: String, required: true },
 });
+export type ImageCommentSchema = InferSchemaTypeWithDateTime<typeof ImageCommentSchema>;
 
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
@@ -43,9 +40,10 @@ const ImageSchema = new Schema({
   triggerSource: { type: String },
   reviewed: { type: Boolean },
   objects: { type: [ObjectSchema] },
-  comments: { type: [ImageCommentSchema] }
+  comments: { type: [ImageCommentSchema] },
 });
+export type ImageSchema = InferSchemaTypeWithDateTime<typeof ImageSchema>;
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
-export default mongoose.model('Image', ImageSchema);
+export default model<ImageSchema>('Image', ImageSchema);
