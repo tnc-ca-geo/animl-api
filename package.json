@@ -62,6 +62,7 @@
     "devDependencies": {
         "@graphql-codegen/cli": "^5.0.2",
         "@tsconfig/node20": "^20",
+        "@types/luxon": "^3.4.2",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",
