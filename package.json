@@ -22,7 +22,8 @@
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
         "test": "tape test/**.test.js",
-        "lint": "eslint src/ test/"
+        "lint": "eslint src/ test/",
+        "codegen": "graphql-codegen --config codegen.ts"
     },
     "author": "Nathaniel Rindlaub",
     "license": "ISC",
@@ -59,6 +60,7 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
+        "@graphql-codegen/cli": "^5.0.2",
         "@tsconfig/node20": "^20",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",

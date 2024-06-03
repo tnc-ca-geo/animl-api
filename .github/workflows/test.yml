@@ -25,4 +25,4 @@ jobs:
         run: docker build -t test -f Dockerfile-test .
 
       - name: Docker API Test Run
-        run: docker run test
+        run: docker run -e CHECK_CODEGEN=true test
