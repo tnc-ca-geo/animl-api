@@ -1,6 +1,6 @@
 export default /* GraphQL */ `
   type ImageErrorsConnection {
-    pageInfo: PageInfo
+    pageInfo: PageInfoWithCount
     errors: [ImageError]!
   }
 `;

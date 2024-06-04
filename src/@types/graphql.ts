@@ -445,7 +445,7 @@ export type ImageError = {
 export type ImageErrorsConnection = {
   __typename?: 'ImageErrorsConnection';
   errors: Array<Maybe<ImageError>>;
-  pageInfo?: Maybe<PageInfo>;
+  pageInfo?: Maybe<PageInfoWithCount>;
 };
 
 export type ImageErrorsFilterInput = {
@@ -790,6 +790,11 @@ export type ObjectUpdate = {
   objectId: Scalars['ID']['input'];
 };
 
+export type PageCount = {
+  __typename?: 'PageCount';
+  count?: Maybe<Scalars['Int']['output']>;
+};
+
 export type PageInfo = {
   __typename?: 'PageInfo';
   hasNext?: Maybe<Scalars['Boolean']['output']>;
@@ -797,6 +802,8 @@ export type PageInfo = {
   next?: Maybe<Scalars['String']['output']>;
   previous?: Maybe<Scalars['String']['output']>;
 };
+
+export type PageInfoWithCount = PageCount | PageInfo;
 
 export type Point = {
   __typename?: 'Point';
