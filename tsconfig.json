@@ -1,0 +1,13 @@
+{
+  "extends": "@tsconfig/node20/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-20-tsconfigjson
+  "compilerOptions": {
+    "strict": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "outDir": "./.build",
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}

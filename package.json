@@ -6,6 +6,7 @@
     "main": "src/handler.js",
     "scripts": {
         "start": "AWS_PROFILE=animl serverless offline --noAuth",
+        "build": "tsc",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
         "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
@@ -58,13 +59,16 @@
         "superagent": "^6.1.0"
     },
     "devDependencies": {
+        "@tsconfig/node20": "^20",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
         "serverless": "^3.20.0",
         "serverless-dotenv-plugin": "^6.0.0",
         "serverless-offline": "^13.0.0",
+        "serverless-plugin-typescript": "^2.1.5",
         "sinon": "^17.0.0",
         "tape": "^5.5.3",
+        "typescript": "^5.4.4",
         "undici": "^6.0.0"
     }
 }

@@ -3,7 +3,12 @@ app: animl
 service: animl-api
 
 plugins:
+  - serverless-plugin-typescript
   - serverless-offline
+
+custom:
+  serverlessPluginTypescript:
+    tsConfigFileLocation: './tsconfig.json'
 
 package:
   patterns:
