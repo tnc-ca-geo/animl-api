@@ -7,7 +7,7 @@ import { Config } from '../../config/config.js';
 // https://mongoosejs.com/docs/connections.html#multiple_connections
 // https://thecodebarbarian.com/slow-trains-in-mongodb-and-nodejs
 
-let client: typeof mongoose | null = null;
+let client: mongoose.Mongoose | null = null;
 
 async function connectToDatabase(config: Config) {
   if (!client) {
