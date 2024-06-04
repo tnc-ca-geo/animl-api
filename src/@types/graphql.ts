@@ -532,7 +532,7 @@ export type LocationInput = {
 export type MlModel = {
   __typename?: 'MLModel';
   _id: Scalars['String']['output'];
-  categories?: Maybe<Array<Maybe<Categories>>>;
+  categories?: Maybe<Array<Categories>>;
   defaultConfThreshold?: Maybe<Scalars['Float']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   version: Scalars['String']['output'];
