@@ -7,7 +7,8 @@ export default {
     { input }: gql.QueryProjectsArgs,
     context: Context,
   ): Promise<gql.Project[]> => {
-    return context.models.Project.getProjects(input, context);
+    const projects = await context.models.Project.getProjects(input, context);
+    return projects.map((project) => project.toObject());
   },
 
   users: async (
@@ -118,7 +119,8 @@ export default {
     { input }: gql.QueryImageArgs,
     context: Context,
   ): Promise<gql.Image> => {
-    return context.models.Image.queryById(input.imageId, context);
+    const image = await context.models.Image.queryById(input.imageId, context);
+    return image.toObject();
   },
 
   wirelessCameras: async (
@@ -126,7 +128,8 @@ export default {
     { input }: gql.QueryWirelessCamerasArgs,
     context: Context,
   ): Promise<gql.WirelessCamera[]> => {
-    return context.models.Camera.getWirelessCameras(input, context);
+    const cameras = await context.models.Camera.getWirelessCameras(input, context);
+    return cameras.map((camera) => camera.toObject());
   },
 
   mlModels: async (
