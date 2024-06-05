@@ -2,7 +2,7 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
-import UserModel from '../src/api/db/models/User.js';
+import UserModel from '../.build/api/db/models/User.js';
 
 process.env.AWS_REGION = process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';

@@ -5,7 +5,7 @@ import path from 'node:path';
 import Sinon from 'sinon';
 import SM from '@aws-sdk/client-sagemaker-runtime';
 
-import { modelInterfaces } from '../src/ml/modelInterfaces.js';
+import { modelInterfaces } from '../.build/ml/modelInterfaces.js';
 
 const base = new URL(path.parse(import.meta.url).dir).pathname;
 

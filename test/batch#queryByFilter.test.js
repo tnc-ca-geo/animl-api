@@ -2,10 +2,10 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import SQS from '@aws-sdk/client-sqs';
-import { BatchModel } from '../src/api/db/models/Batch.js';
+import { BatchModel } from '../.build/api/db/models/Batch.js';
 import MongoPaging from 'mongo-cursor-pagination';
-import BatchError from '../src/api/db/schemas/BatchError.js';
-import ImageError from '../src/api/db/schemas/ImageError.js';
+import BatchError from '../.build/api/db/schemas/BatchError.js';
+import ImageError from '../.build/api/db/schemas/ImageError.js';
 
 process.env.AWS_REGION = process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';

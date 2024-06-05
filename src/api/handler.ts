@@ -13,31 +13,34 @@ import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
 import typeDefs from './type-defs/index.js';
-import { getConfig } from '../config/config.js';
+import { Config, getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
-import { getUserInfo } from './auth/authorization.js';
+import { User, getUserInfo } from './auth/authorization.js';
+import { APIGatewayEvent } from 'aws-lambda';
+import { AuthenticationError } from './errors.js';
 
 const resolvers = {
   Query,
   Mutation,
-  ...Scalars
+  ...Scalars,
 };
 
 const corsMiddleware = async () => {
-  return (result) => {
+  return (result: any) => {
     result.headers = {
       ...result.headers,
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST',
       'Access-Control-Allow-Headers': '*',
-      'Access-Control-Allow-Credentials': 'true'
+      'Access-Control-Allow-Credentials': 'true',
     };
 
     return Promise.resolve();
   };
 };
 
-const context = async ({ event, context }) => {
+// Context comes from API Gateway event
+const context = async ({ event, context }: ContextInput): Promise<Context> => {
   console.log('event: ', event.body);
   context.callbackWaitsForEmptyEventLoop = false;
   const config = await getConfig();
@@ -45,6 +48,7 @@ const context = async ({ event, context }) => {
   console.log('connected to db');
   const user = await getUserInfo(event, config);
   console.log('user: ', user);
+  if (!user) throw new AuthenticationError('Authentication failed');
 
   return {
     ...event,
@@ -60,8 +64,8 @@ const context = async ({ event, context }) => {
       Camera: new AuthedCameraModel(user),
       MLModel: new AuthedMLModelModel(user),
       Batch: new AuthedBatchModel(user),
-      BatchError: new AuthedBatchErrorModel(user)
-    }
+      BatchError: new AuthedBatchErrorModel(user),
+    },
   };
 };
 
@@ -71,14 +75,35 @@ const apolloserver = new ApolloServer({
   typeDefs,
   resolvers,
   csrfPrevention: true,
-  cache: 'bounded'
+  cache: 'bounded',
 });
 
 export const server = startServerAndCreateLambdaHandler(
-  apolloserver,
+  apolloserver as any, // NOTE: Getting strange error about type mismatch
   handlers.createAPIGatewayProxyEventRequestHandler(),
   {
     middleware: [corsMiddleware],
-    context
-  }
+    context,
+  },
 );
+
+interface ContextInput {
+  event: APIGatewayEvent;
+  context: { callbackWaitsForEmptyEventLoop?: boolean };
+}
+
+export interface Context extends APIGatewayEvent {
+  models: {
+    Batch: AuthedBatchModel;
+    BatchError: AuthedBatchErrorModel;
+    Camera: AuthedCameraModel;
+    Image: AuthedImageModel;
+    ImageError: AuthedImageErrorModel;
+    MLModel: AuthedMLModelModel;
+    Project: AuthedProjectModel;
+    Task: AuthedTaskModel;
+    User: AuthedUserModel;
+  };
+  config: Config;
+  user: User;
+}
