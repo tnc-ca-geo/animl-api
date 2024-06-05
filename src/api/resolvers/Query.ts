@@ -37,7 +37,8 @@ export default {
   },
 
   task: async (_: unknown, { input }: gql.QueryTaskArgs, context: Context): Promise<gql.Task> => {
-    return context.models.Task.queryById(input.taskId, context);
+    const task = await context.models.Task.queryById(input.taskId, context);
+    return task.toObject();
   },
 
   batches: async (
@@ -137,7 +138,8 @@ export default {
   },
 
   stats: async (_: unknown, { input }: gql.QueryStatsArgs, context: Context): Promise<gql.Task> => {
-    return context.models.Image.getStats(input, context);
+    const task = await context.models.Image.getStats(input, context);
+    return task.toObject();
   },
 
   exportErrors: async (
@@ -145,7 +147,8 @@ export default {
     { input }: gql.QueryExportErrorsArgs,
     context: Context,
   ): Promise<gql.Task> => {
-    return context.models.ImageError.exportErrors(input, context);
+    const task = await context.models.ImageError.exportErrors(input, context);
+    return task.toObject();
   },
 
   exportAnnotations: async (
@@ -153,6 +156,7 @@ export default {
     { input }: gql.QueryExportAnnotationsArgs,
     context: Context,
   ): Promise<gql.Task> => {
-    return context.models.Image.exportAnnotations(input, context);
+    const task = await context.models.Image.exportAnnotations(input, context);
+    return task.toObject();
   },
 };
