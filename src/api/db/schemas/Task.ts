@@ -1,4 +1,4 @@
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 
 const Schema = mongoose.Schema;
