@@ -49,7 +49,7 @@ export class UserModel {
         UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID']
       }));
 
-      await this.update({
+      return this.update({
         username: input.username,
         roles: input.roles
       }, context);
