@@ -1047,6 +1047,7 @@ export type Task = {
 
 export type TasksPayload = {
   __typename?: 'TasksPayload';
+  pageInfo: PageInfo;
   tasks: Array<Maybe<Task>>;
 };
 
