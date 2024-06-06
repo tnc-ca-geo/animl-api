@@ -14,5 +14,24 @@ RUN export NODEV='20.12.2' \
 
 RUN npm install
 
-CMD npm run lint && npm run build && npm test
-
+# Verify project successfully builds with type-checks
+CMD npm run build && \
+    # Verify tests pass
+    npm test && \
+    # Lint project
+    npm run lint && \
+    # Ensure that codegen is successful
+    npm run codegen && \
+    # Ensure that codegen output is committed
+    sh -c \
+        'if [ "$CHECK_CODEGEN" = "true" ]; then \
+            if [ -n "$(git status --porcelain src/@types)" ]; then \
+                echo "Uncommitted changes detected after running codegen"; \
+                git status; \
+                exit 1; \
+            else \
+                echo "No uncommitted changes detected"; \
+            fi; \
+        else \
+            echo "CHECK_CODEGEN flag not set, skipping uncommitted changes check"; \
+        fi'
