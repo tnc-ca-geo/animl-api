@@ -6,11 +6,13 @@ export default /* GraphQL */ `
     hasNext: Boolean
   }
 
-  type PageCount {
+  type PageInfoWithCount implements PageInfo {
+    previous: String
+    hasPrevious: Boolean
+    next: String
+    hasNext: Boolean
     count: Int
   }
-
-  union PageInfoWithCount = PageInfo | PageCount
 `;
 
 // TODO: should any of these be required?

@@ -790,11 +790,6 @@ export type ObjectUpdate = {
   objectId: Scalars['ID']['input'];
 };
 
-export type PageCount = {
-  __typename?: 'PageCount';
-  count?: Maybe<Scalars['Int']['output']>;
-};
-
 export type PageInfo = {
   __typename?: 'PageInfo';
   hasNext?: Maybe<Scalars['Boolean']['output']>;
@@ -803,7 +798,14 @@ export type PageInfo = {
   previous?: Maybe<Scalars['String']['output']>;
 };
 
-export type PageInfoWithCount = PageCount | PageInfo;
+export type PageInfoWithCount = PageInfo & {
+  __typename?: 'PageInfoWithCount';
+  count?: Maybe<Scalars['Int']['output']>;
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
 
 export type Point = {
   __typename?: 'Point';
