@@ -10,6 +10,6 @@ export default /* GraphQL */ `
     description: String
     version: String!
     defaultConfThreshold: Float
-    categories: [Category!]
+    categories: [Category!]!
   }
 `;
