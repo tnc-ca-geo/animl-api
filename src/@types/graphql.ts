@@ -381,6 +381,13 @@ export enum Format {
   Csv = 'csv'
 }
 
+export type IPageInfo = {
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
+
 export type Image = {
   __typename?: 'Image';
   _id: Scalars['ID']['output'];
@@ -445,7 +452,7 @@ export type ImageError = {
 export type ImageErrorsConnection = {
   __typename?: 'ImageErrorsConnection';
   errors: Array<Maybe<ImageError>>;
-  pageInfo?: Maybe<PageInfo>;
+  pageInfo?: Maybe<PageInfoWithCount>;
 };
 
 export type ImageErrorsFilterInput = {
@@ -790,8 +797,17 @@ export type ObjectUpdate = {
   objectId: Scalars['ID']['input'];
 };
 
-export type PageInfo = {
+export type PageInfo = IPageInfo & {
   __typename?: 'PageInfo';
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
+
+export type PageInfoWithCount = IPageInfo & {
+  __typename?: 'PageInfoWithCount';
+  count?: Maybe<Scalars['Int']['output']>;
   hasNext?: Maybe<Scalars['Boolean']['output']>;
   hasPrevious?: Maybe<Scalars['Boolean']['output']>;
   next?: Maybe<Scalars['String']['output']>;
@@ -1047,6 +1063,7 @@ export type Task = {
 
 export type TasksPayload = {
   __typename?: 'TasksPayload';
+  pageInfo: PageInfo;
   tasks: Array<Maybe<Task>>;
 };
 
