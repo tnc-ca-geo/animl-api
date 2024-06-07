@@ -396,7 +396,7 @@ export type Image = {
   batchId?: Maybe<Scalars['String']['output']>;
   bucket: Scalars['String']['output'];
   cameraId: Scalars['String']['output'];
-  comments: Array<ImageComment>;
+  comments?: Maybe<Array<Maybe<ImageComment>>>;
   dateAdded: Scalars['Date']['output'];
   dateTimeOriginal: Scalars['Date']['output'];
   deploymentId: Scalars['ID']['output'];
