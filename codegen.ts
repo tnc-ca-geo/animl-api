@@ -21,7 +21,7 @@ const config: CodegenConfig = {
         scalars: {
           ID: {
             input: 'string',
-            output: 'mongoose.Types.ObjectId',
+            output: 'mongoose.Types.ObjectId | string',
           },
         },
       },
