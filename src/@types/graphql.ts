@@ -381,6 +381,13 @@ export enum Format {
   Csv = 'csv'
 }
 
+export type IPageInfo = {
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
+
 export type Image = {
   __typename?: 'Image';
   _id: Scalars['ID']['output'];
@@ -790,7 +797,7 @@ export type ObjectUpdate = {
   objectId: Scalars['ID']['input'];
 };
 
-export type PageInfo = {
+export type PageInfo = IPageInfo & {
   __typename?: 'PageInfo';
   hasNext?: Maybe<Scalars['Boolean']['output']>;
   hasPrevious?: Maybe<Scalars['Boolean']['output']>;
@@ -798,7 +805,7 @@ export type PageInfo = {
   previous?: Maybe<Scalars['String']['output']>;
 };
 
-export type PageInfoWithCount = PageInfo & {
+export type PageInfoWithCount = IPageInfo & {
   __typename?: 'PageInfoWithCount';
   count?: Maybe<Scalars['Int']['output']>;
   hasNext?: Maybe<Scalars['Boolean']['output']>;
