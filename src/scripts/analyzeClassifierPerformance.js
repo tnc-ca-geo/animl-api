@@ -1,22 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-// import { InternalServerError } from '../api/errors.js';
 import { DateTime } from 'luxon';
 import appRoot from 'app-root-path';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
 import { getConfig } from '../../.build/config/config.js';
+import { analysisConfig } from './analysisConfig.js';
 import Image from '../../.build/api/db/schemas/Image.js';
+import { ProjectModel } from '../../.build/api/db/models/Project.js';
 
+// Command to run this script:
 // STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformance.js
 
-const ANALYSIS_DIR = '/analysis';
-const OPERATION = 'X811494B-false-negative-rodents';
-const CAMERA_ID = 'X811494B';
-const START_DATE = '2023-4-26';
-const END_DATE = '2024-5-29';
-const TARGET_CLASS = 'rodent';
-const VALIDATION_CLASSES = ['rodent', 'mouse', 'rat'];
-const ML_MODEL = 'mirav2';
+const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
 
 async function createLogFile(_ids, operation) {
   const dt = DateTime.now().setZone('utc').toFormat("yyyy-LL-dd'T'HHmm'Z'");
@@ -49,14 +44,14 @@ async function createLogFile(_ids, operation) {
 // would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
 // However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
 
-const basePipeline = [
+const buildBasePipeline = (cameraId, startDate, endDate) => [
   // return reviewed images for a camera between two dates
   {
     $match: {
-      cameraId: CAMERA_ID,
+      cameraId: cameraId,
       dateAdded: {
-        $gt: new Date(START_DATE),
-        $lt: new Date(END_DATE),
+        $gt: new Date(startDate),
+        $lt: new Date(endDate),
       },
       reviewed: true,
     },
@@ -91,12 +86,14 @@ const basePipeline = [
   },
 ];
 
-async function getAllActuals() {
+async function getAllActuals(cameraId, tClass) {
+  const basePipeline = buildBasePipeline(cameraId, START_DATE, END_DATE);
   const pipeline = basePipeline.concat([
-    // all actual match (should be equal to TP + FN)
-    // NOTE: They are not adding up for X811494B. There are 7 that are neither TP nor FN.
-    // Upon further inspection, it appears because images can have more than one prediction,
-    // they can both have a TP and a FN prediction at the same tim.
+    // all actual match
+    // NOTE: in theory, all actuals should be equal to TP + FN, however,
+    // because images can have more than one prediction,
+    // they can both have a TP and a FN prediction at the same time, so at the image level,
+    // they are not mutually exclusive and thus may not add up perfectly
     {
       $match: {
         // has an object that is (a) locked,
@@ -107,7 +104,7 @@ async function getAllActuals() {
             $and: [
               {
                 locked: true,
-                'firstValidLabel.labelId': { $in: VALIDATION_CLASSES },
+                'firstValidLabel.labelId': { $in: tClass.validation_ids },
               },
             ],
           },
@@ -125,7 +122,8 @@ async function getAllActuals() {
   return res.map((item) => item._id);
 }
 
-async function truePositives() {
+async function truePositives(cameraId, tClass) {
+  const basePipeline = buildBasePipeline(cameraId, START_DATE, END_DATE);
   const pipeline = basePipeline.concat([
     // true positive match
     {
@@ -139,10 +137,10 @@ async function truePositives() {
             $and: [
               {
                 locked: true,
-                'firstValidLabel.labelId': { $in: VALIDATION_CLASSES },
+                'firstValidLabel.labelId': { $in: tClass.validation_ids },
                 labels: {
                   $elemMatch: {
-                    $and: [{ type: 'ml' }, { mlModel: ML_MODEL }, { labelId: TARGET_CLASS }],
+                    $and: [{ type: 'ml' }, { mlModel: ML_MODEL }, { labelId: tClass.predicted_id }],
                   },
                 },
               },
@@ -162,7 +160,8 @@ async function truePositives() {
   return res.map((item) => item._id);
 }
 
-async function falseNegatives() {
+async function falseNegatives(cameraId, tClass) {
+  const basePipeline = buildBasePipeline(cameraId, START_DATE, END_DATE);
   const pipeline = basePipeline.concat([
     // false negative match
     {
@@ -176,12 +175,16 @@ async function falseNegatives() {
             $and: [
               {
                 locked: true,
-                'firstValidLabel.labelId': { $in: VALIDATION_CLASSES },
+                'firstValidLabel.labelId': { $in: tClass.validation_ids },
                 labels: {
                   // none of the labels are ml-predicted rodent
                   $not: {
                     $elemMatch: {
-                      $and: [{ type: 'ml' }, { mlModel: ML_MODEL }, { labelId: TARGET_CLASS }],
+                      $and: [
+                        { type: 'ml' },
+                        { mlModel: ML_MODEL },
+                        { labelId: tClass.predicted_id },
+                      ],
                     },
                   },
                 },
@@ -202,7 +205,8 @@ async function falseNegatives() {
   return res.map((item) => item._id);
 }
 
-async function falsePositives() {
+async function falsePositives(cameraId, tClass) {
+  const basePipeline = buildBasePipeline(cameraId, START_DATE, END_DATE);
   const pipeline = basePipeline.concat([
     {
       $match: {
@@ -215,10 +219,10 @@ async function falsePositives() {
             $and: [
               {
                 locked: true,
-                'firstValidLabel.labelId': { $nin: VALIDATION_CLASSES },
+                'firstValidLabel.labelId': { $nin: tClass.validation_ids },
                 labels: {
                   $elemMatch: {
-                    $and: [{ type: 'ml' }, { mlModel: ML_MODEL }, { labelId: TARGET_CLASS }],
+                    $and: [{ type: 'ml' }, { mlModel: ML_MODEL }, { labelId: tClass.predicted_id }],
                   },
                 },
               },
@@ -239,43 +243,48 @@ async function falsePositives() {
 }
 
 async function analyze() {
+  console.log('Analyzing classifier performance...');
+  console.log('Getting config...');
   const config = await getConfig();
+  console.log('Connecting to db...');
   const dbClient = await connectToDatabase(config);
 
   try {
-    const allActuals = await getAllActuals();
-    console.log('all actual count: ', allActuals.length);
+    const project = await ProjectModel.queryById(PROJECT_ID);
+    const cameraConfigs = project.cameraConfigs;
 
-    const truePos = await truePositives();
-    console.log('true positive count: ', truePos.length);
+    // TODO: start csv?
 
-    const falseNeg = await falseNegatives();
-    console.log('false negative count: ', falseNeg.length);
+    for (const cameraConfig of cameraConfigs) {
+      console.log(`\nAnalyzing camera: ${cameraConfig._id}`);
 
-    const falsePos = await falsePositives();
-    console.log('false positive count: ', falsePos.length);
+      for (const dep of cameraConfig.deployments) {
+        if (dep.name === 'default') continue; // skip default deployments
 
-    // const mysteryIds = allActuals.filter((id) => !truePos.includes(id) && !falseNeg.includes(id));
-    const mysteryIds = [];
-    for (const id of truePos) {
-      if (!allActuals.includes(id)) {
-        console.log('true positive not in all actuals: ', id);
-        mysteryIds.push(id);
+        for (const tClass of TARGET_CLASSES) {
+          // get image-level counts
+          const allActuals = (await getAllActuals(cameraConfig._id, tClass)).length;
+          const TP = (await truePositives(cameraConfig._id, tClass)).length;
+          const FN = (await falseNegatives(cameraConfig._id, tClass)).length;
+          const FP = (await falsePositives(cameraConfig._id, tClass)).length;
+
+          // calculate precision, recall, and F1 score
+          const precision = TP / (TP + FP);
+          const recall = TP / (TP + FN);
+          const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
+
+          console.log(`${dep.name} - ${tClass.predicted_id} - all : ${allActuals}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - true positives : ${TP}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - false negatives : ${FN}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - false positives : ${FP}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - precision : ${precision}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - recall : ${recall}`);
+          console.log(`${dep.name} - ${tClass.predicted_id} - f1 : ${f1}`);
+
+          // TODO: write row to csv
+        }
       }
     }
-    for (const id of falseNeg) {
-      if (!allActuals.includes(id)) {
-        console.log('false negative not in all actuals: ', id);
-        mysteryIds.push(id);
-      }
-      if (truePos.includes(id)) {
-        console.log('false negative is ALSO a true positive: ', id);
-      }
-    }
-    console.log('mystery ids: ', mysteryIds);
-
-    // console.log('found _id: ', _ids);
-    // createLogFile(_ids, OPERATION);
 
     dbClient.connection.close();
     process.exit(0);
