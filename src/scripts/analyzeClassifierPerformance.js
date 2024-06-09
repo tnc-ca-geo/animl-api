@@ -9,6 +9,7 @@ import { analysisConfig, reportColumns } from './analysisConfig.js';
 import Image from '../../.build/api/db/schemas/Image.js';
 import { ProjectModel } from '../../.build/api/db/models/Project.js';
 import { stringify } from 'csv-stringify';
+import cliProgress from 'cli-progress';
 
 // Command to run this script:
 // STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformance.js
@@ -239,7 +240,9 @@ async function falsePositives(cameraId, tClass) {
 }
 
 async function analyze() {
-  console.log('Analyzing classifier performance...');
+  console.log(
+    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE}...`,
+  );
   console.log('Getting config...');
   const config = await getConfig();
   console.log('Connecting to db...');
@@ -248,6 +251,15 @@ async function analyze() {
   try {
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
+
+    // init progress bar
+    const depCount = cameraConfigs.reduce(
+      (acc, cameraConfig) => acc + (cameraConfig.deployments.length - 1), // subtract 1 to exclude default deployment
+      0,
+    );
+    console.log(`Total deployments: ${depCount}`);
+    const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    progress.start(depCount * TARGET_CLASSES.length, 0);
 
     // init reports
     const dt = DateTime.now().setZone('utc').toFormat("yyyy-LL-dd'T'HHmm'Z'");
@@ -265,33 +277,31 @@ async function analyze() {
     stringifier.on('error', (err) => console.error(err.message));
 
     for (const cameraConfig of cameraConfigs) {
-      if (cameraConfig._id !== 'X81210PH') continue;
-      console.log(`\nAnalyzing camera: ${cameraConfig._id}`);
+      // console.log(`\nAnalyzing camera: ${cameraConfig._id}`);
 
       for (const dep of cameraConfig.deployments) {
         if (dep.name === 'default') continue; // skip default deployments
-        if (dep.name !== 'Quail Valley') continue; // skip default deployments
 
         for (const tClass of TARGET_CLASSES) {
           // get image-level counts
           const allActuals = (await getAllActuals(cameraConfig._id, tClass)).length;
           const TP = (await truePositives(cameraConfig._id, tClass)).length;
-          const FN = (await falseNegatives(cameraConfig._id, tClass)).length;
           const FP = (await falsePositives(cameraConfig._id, tClass)).length;
+          const FN = (await falseNegatives(cameraConfig._id, tClass)).length;
 
           // calculate precision, recall, and F1 score
           const precision = TP / (TP + FP);
           const recall = TP / (TP + FN);
           const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
 
-          console.log('\n');
-          console.log(`${dep.name} - ${tClass.predicted_id} - all : ${allActuals}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - true positives : ${TP}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - false negatives : ${FN}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - false positives : ${FP}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - precision : ${precision}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - recall : ${recall}`);
-          console.log(`${dep.name} - ${tClass.predicted_id} - f1 : ${f1}`);
+          // console.log('\n');
+          // console.log(`${dep.name} - ${tClass.predicted_id} - all : ${allActuals}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - true positives : ${TP}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - false negatives : ${FN}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - false positives : ${FP}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - precision : ${precision}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - recall : ${recall}`);
+          // console.log(`${dep.name} - ${tClass.predicted_id} - f1 : ${f1}`);
 
           // write row to csv
           stringifier.write({
@@ -299,20 +309,24 @@ async function analyze() {
             deploymentName: dep.name,
             targetClass: tClass.predicted_id,
             validationClasses: tClass.validation_ids.join(', '),
-            falsePositives: FP,
+            allActuals: allActuals,
             truePositives: TP,
+            falsePositives: FP,
             falseNegatives: FN,
-            precision: Number.parseFloat(precision).toFixed(2),
-            recall: Number.parseFloat(recall).toFixed(2),
+            precision: Number.parseFloat(precision * 100).toFixed(2),
+            recall: Number.parseFloat(recall * 100).toFixed(2),
             f1: Number.parseFloat(f1).toFixed(2),
           });
+
+          progress.increment();
         }
       }
     }
     stringifier.end();
 
     await stream.pipeline(stringifier, writableStream);
-    console.log('Finished writing to csv');
+    progress.stop();
+    console.log(`\nAnalysis complete. Results written to ${csvFilename}`);
 
     dbClient.connection.close();
     process.exit(0);
