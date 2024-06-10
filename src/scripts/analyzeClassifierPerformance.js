@@ -244,6 +244,34 @@ async function analyze() {
         f1: Number.parseFloat(f1).toFixed(2),
       });
     }
+
+    // add rows for target class totals
+    for (const tClass of TARGET_CLASSES) {
+      const tClassRows = Object.values(data).filter((v) => v.targetClass === tClass.predicted_id);
+
+      const totalActuals = tClassRows.reduce((acc, v) => acc + v.allActuals, 0);
+      const totalTP = tClassRows.reduce((acc, v) => acc + v.truePositives, 0);
+      const totalFP = tClassRows.reduce((acc, v) => acc + v.falsePositives, 0);
+      const totalFN = tClassRows.reduce((acc, v) => acc + v.falseNegatives, 0);
+      const precision = totalTP / (totalTP + totalFP);
+      const recall = totalTP / (totalTP + totalFN);
+      const f1 = (2 * precision * recall) / (precision + recall);
+
+      // write row to csv
+      stringifier.write({
+        cameraId: 'total',
+        deploymentName: 'total',
+        targetClass: tClass.predicted_id,
+        validationClasses: tClass.validation_ids.join(', '),
+        allActuals: totalActuals,
+        truePositives: totalTP,
+        falsePositives: totalFP,
+        falseNegatives: totalFN,
+        precision: Number.parseFloat(precision * 100).toFixed(2),
+        recall: Number.parseFloat(recall * 100).toFixed(2),
+        f1: Number.parseFloat(f1).toFixed(2),
+      });
+    }
     stringifier.end();
 
     await stream.pipeline(stringifier, writableStream);
