@@ -6,6 +6,7 @@
     "sourceMap": true,
     "allowJs": true,
     "outDir": "./.build",
+    "experimentalDecorators": true
   },
   "include": [
     "./src/**/*"
