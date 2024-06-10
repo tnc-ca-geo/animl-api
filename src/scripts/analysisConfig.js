@@ -6,7 +6,7 @@ const analysisConfig = {
   ANALYSIS_DIR: '/analysis',
   PROJECT_ID: 'sci_biosecurity',
   START_DATE: '2023-4-28',
-  END_DATE: '2024-5-29',
+  END_DATE: '2023-4-29', //'2024-5-29',
   ML_MODEL: 'mirav2',
   TARGET_CLASSES: [
     {
@@ -18,6 +18,7 @@ const analysisConfig = {
     { predicted_id: 'fox', validation_ids: ['fox'] },
     { predicted_id: 'bird', validation_ids: ['bird', '731d97ef-aff7-4ffb-8f07-66a9f06dd686'] }, // scrub jay
   ],
+  MAX_SEQUENCE_DELTA: 3, // seconds
 };
 
 const reportColumns = [
