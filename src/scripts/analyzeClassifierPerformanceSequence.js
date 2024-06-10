@@ -11,13 +11,17 @@ import { ProjectModel } from '../../.build/api/db/models/Project.js';
 import { stringify } from 'csv-stringify';
 import cliProgress from 'cli-progress';
 
-// Command to run this script:
-// STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceSequence.js
-
-// Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
-// it will not work for projects using object detectors alone. So if using an object detector, a true positive
-// would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
-// However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+/*
+ * Script to analyze classifier performance at the sequence level
+ *
+ * Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
+ * it will not work for projects using object detectors alone. So if using an object detector, a true positive
+ * would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
+ * However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+ *
+ * command to run:
+ * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceSequence.js
+ */
 
 const {
   ANALYSIS_DIR,
@@ -86,11 +90,43 @@ const buildBasePipeline = (projectId, startDate, endDate) => [
   },
 ];
 
-function getDeployment(img, cameraConfigs) {
-  return cameraConfigs
-    .find((cc) => cc._id.toString() === img.cameraId.toString())
-    .deployments.find((dep) => dep._id.toString() === img.deploymentId.toString());
-}
+// ACTUAL - object must be:
+// (a) locked, (b) has a first valid label that validates the prediction/target class,
+// (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+const isActual = (obj, tClass) =>
+  obj.locked && tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+
+// TRUE POSITIVE - object must be:
+// (a) locked, (b) has an ml-predicted label of the target class, and
+// (c) has a first valid label that validates the prediction/target class,
+// (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+const isTruePositive = (obj, tClass) =>
+  obj.locked &&
+  obj.labels.some(
+    (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
+  ) &&
+  tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+
+// FALSE POSITIVE - object must be:
+// (a) locked, (b) has an ml-predicted label of the target class, and
+// (c) DOES NOT have a first valid label that validates the prediction/target class
+const isFalsePositive = (obj, tClass) =>
+  obj.locked &&
+  obj.labels.some(
+    (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
+  ) &&
+  !tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+
+// FALSE NEGATIVE - object must be:
+// (a) locked, (b) has a first valid label that validates the prediction/target class,
+// (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+// and (c) does NOT have an ml-predicted label of the target class
+const isFalseNegative = (obj, tClass) =>
+  obj.locked &&
+  tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId) &&
+  !obj.labels.some(
+    (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
+  );
 
 async function getCount(pipeline) {
   console.log('getting image count');
@@ -106,8 +142,35 @@ async function getCount(pipeline) {
   return count;
 }
 
-function processSequence(sequence, data) {
-  console.log(sequence);
+function processSequence(sequence, deployment, data) {
+  for (const tClass of TARGET_CLASSES) {
+    const key = `${deployment._id}_${tClass.predicted_id}`;
+    let hasActual = false;
+    let hasTruePositive = false;
+    let hasFalsePositive = false;
+
+    for (const img of sequence) {
+      for (const obj of img.objects) {
+        if (!hasActual) {
+          hasActual = isActual(obj, tClass);
+        }
+
+        if (!hasTruePositive) {
+          hasTruePositive = isTruePositive(obj, tClass);
+        }
+
+        if (!hasFalsePositive) {
+          hasFalsePositive = isFalsePositive(obj, tClass);
+        }
+      }
+    }
+
+    if (hasActual) data[key].allActuals++;
+    if (hasTruePositive) data[key].truePositives++;
+    if (hasActual && !hasTruePositive) data[key].falseNegatives++;
+    if (!hasActual && hasFalsePositive) data[key].falsePositives++;
+  }
+  return data;
 }
 
 // main function
@@ -124,7 +187,7 @@ async function analyze() {
     // set up data structure to hold results
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
-    const data = {};
+    let data = {};
     const deployments = [];
     cameraConfigs.forEach((cc) => {
       for (const dep of cc.deployments) {
@@ -167,9 +230,14 @@ async function analyze() {
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
+    const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    progress.start(imgCount, 0);
 
     // for each deployment, stream in images in chronological order
+    // group them into sequences,
+    // and process each sequence to count TPs, FPs, and FNs
     for (const dep of deployments) {
+      // if (dep.name !== 'Willows beach') continue;
       // create aggregation pipeline
       const depPipeline = structuredClone(aggPipeline);
       depPipeline[0].$match.deploymentId = dep._id;
@@ -180,7 +248,6 @@ async function analyze() {
       let processedCount = 0;
 
       for await (const img of Image.aggregate(depPipeline)) {
-        console.log(img.dateTimeOriginal);
         if (sequence.length === 0) {
           sequence.push(img);
           continue;
@@ -192,151 +259,82 @@ async function analyze() {
         const diff = lastImgDateAdded.diff(imgDateAdded, 'seconds').toObject();
         const delta = Math.abs(diff.seconds);
 
+        // if the delta between the last image and the current image is less than the max sequence delta,
         if (delta <= MAX_SEQUENCE_DELTA) {
           // image belongs to current sequence
           sequence.push(img);
         } else {
           // found a gap,
           // process images previously assigned to sequence and reset sequence
-          processSequence(sequence, data);
+          data = processSequence(sequence, dep, data);
           sequence = [img];
         }
         processedCount++;
 
         // we've reached the end of the deployment
         if (processedCount === depImageCount.length - 1) {
-          processSequence(sequence, data);
+          data = processSequence(sequence, dep, data);
         }
+
+        progress.increment();
       }
     }
 
-    // stream in images from MongoDB
-    // const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
-    // const imgCount = await getCount(aggPipeline);
-    // console.log('image count: ', imgCount);
-    // const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-    // progress.start(imgCount, 0);
+    progress.stop();
+    console.log(`\nAnalysis complete. Writing results to ${csvFilename}`);
 
-    // for await (const img of Image.aggregate(aggPipeline)) {
-    //   // skip default deployments
-    //   const imgDep = getDeployment(img, cameraConfigs);
-    //   if (imgDep.name === 'default') continue;
+    // write results to csv
+    for (const value of Object.values(data)) {
+      // calculate precision, recall, and F1 score
+      const TP = value.truePositives;
+      const FP = value.falsePositives;
+      const FN = value.falseNegatives;
+      const precision = TP / (TP + FP);
+      const recall = TP / (TP + FN);
+      const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
 
-    //   // iterate over objects and count up TPs, FPs, and FNs for all target classes
-    //   for (const obj of img.objects) {
-    //     for (const tClass of TARGET_CLASSES) {
-    //       const key = `${imgDep._id}_${tClass.predicted_id}`;
+      stringifier.write({
+        ...value,
+        allActuals: value.allActuals,
+        truePositives: TP,
+        falsePositives: FP,
+        falseNegatives: FN,
+        precision: Number.parseFloat(precision * 100).toFixed(2),
+        recall: Number.parseFloat(recall * 100).toFixed(2),
+        f1: Number.parseFloat(f1).toFixed(2),
+      });
+    }
 
-    //       // ACTUAL - object must be:
-    //       // (a) locked, (b) has a first valid label that validates the prediction/target class,
-    //       // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-    //       if (obj.locked && tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)) {
-    //         data[key].allActuals++;
-    //       }
+    // add rows for target class totals
+    for (const tClass of TARGET_CLASSES) {
+      const tClassRows = Object.values(data).filter((v) => v.targetClass === tClass.predicted_id);
 
-    //       // TRUE POSITIVE - object must be:
-    //       // (a) locked, (b) has an ml-predicted label of the target class, and
-    //       // (c) has a first valid label that validates the prediction/target class,
-    //       // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-    //       if (
-    //         obj.locked &&
-    //         obj.labels.some(
-    //           (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-    //         ) &&
-    //         tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)
-    //       ) {
-    //         data[key].truePositives++;
-    //       }
+      const totalActuals = tClassRows.reduce((acc, v) => acc + v.allActuals, 0);
+      const totalTP = tClassRows.reduce((acc, v) => acc + v.truePositives, 0);
+      const totalFP = tClassRows.reduce((acc, v) => acc + v.falsePositives, 0);
+      const totalFN = tClassRows.reduce((acc, v) => acc + v.falseNegatives, 0);
+      const precision = totalTP / (totalTP + totalFP);
+      const recall = totalTP / (totalTP + totalFN);
+      const f1 = (2 * precision * recall) / (precision + recall);
 
-    //       // FALSE POSITIVE - object must be:
-    //       // (a) locked, (b) has an ml-predicted label of the target class, and
-    //       // (c) DOES NOT have a first valid label that validates the prediction/target class
-    //       if (
-    //         obj.locked &&
-    //         obj.labels.some(
-    //           (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-    //         ) &&
-    //         !tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)
-    //       ) {
-    //         data[key].falsePositives++;
-    //       }
+      stringifier.write({
+        cameraId: 'total',
+        deploymentName: 'total',
+        targetClass: tClass.predicted_id,
+        validationClasses: tClass.validation_ids.join(', '),
+        allActuals: totalActuals,
+        truePositives: totalTP,
+        falsePositives: totalFP,
+        falseNegatives: totalFN,
+        precision: Number.parseFloat(precision * 100).toFixed(2),
+        recall: Number.parseFloat(recall * 100).toFixed(2),
+        f1: Number.parseFloat(f1).toFixed(2),
+      });
+    }
 
-    //       // FALSE NEGATIVE - object must be:
-    //       // (a) locked, (b) has a first valid label that validates the prediction/target class,
-    //       // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-    //       // and (c) does NOT have an ml-predicted label of the target class
-    //       if (
-    //         obj.locked &&
-    //         tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId) &&
-    //         !obj.labels.some(
-    //           (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-    //         )
-    //       ) {
-    //         data[key].falseNegatives++;
-    //       }
-    //     }
-    //   }
+    stringifier.end();
 
-    //   progress.increment();
-    // }
-
-    // progress.stop();
-    // console.log(`\nAnalysis complete. Writing results to ${csvFilename}`);
-
-    // // write results to csv
-    // for (const value of Object.values(data)) {
-    //   // calculate precision, recall, and F1 score
-    //   const TP = value.truePositives;
-    //   const FP = value.falsePositives;
-    //   const FN = value.falseNegatives;
-    //   const precision = TP / (TP + FP);
-    //   const recall = TP / (TP + FN);
-    //   const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
-
-    //   // write row to csv
-    //   stringifier.write({
-    //     ...value,
-    //     allActuals: value.allActuals,
-    //     truePositives: TP,
-    //     falsePositives: FP,
-    //     falseNegatives: FN,
-    //     precision: Number.parseFloat(precision * 100).toFixed(2),
-    //     recall: Number.parseFloat(recall * 100).toFixed(2),
-    //     f1: Number.parseFloat(f1).toFixed(2),
-    //   });
-    // }
-
-    // // add rows for target class totals
-    // for (const tClass of TARGET_CLASSES) {
-    //   const tClassRows = Object.values(data).filter((v) => v.targetClass === tClass.predicted_id);
-
-    //   const totalActuals = tClassRows.reduce((acc, v) => acc + v.allActuals, 0);
-    //   const totalTP = tClassRows.reduce((acc, v) => acc + v.truePositives, 0);
-    //   const totalFP = tClassRows.reduce((acc, v) => acc + v.falsePositives, 0);
-    //   const totalFN = tClassRows.reduce((acc, v) => acc + v.falseNegatives, 0);
-    //   const precision = totalTP / (totalTP + totalFP);
-    //   const recall = totalTP / (totalTP + totalFN);
-    //   const f1 = (2 * precision * recall) / (precision + recall);
-
-    //   // write row to csv
-    //   stringifier.write({
-    //     cameraId: 'total',
-    //     deploymentName: 'total',
-    //     targetClass: tClass.predicted_id,
-    //     validationClasses: tClass.validation_ids.join(', '),
-    //     allActuals: totalActuals,
-    //     truePositives: totalTP,
-    //     falsePositives: totalFP,
-    //     falseNegatives: totalFN,
-    //     precision: Number.parseFloat(precision * 100).toFixed(2),
-    //     recall: Number.parseFloat(recall * 100).toFixed(2),
-    //     f1: Number.parseFloat(f1).toFixed(2),
-    //   });
-    // }
-
-    // stringifier.end();
-
-    // await stream.pipeline(stringifier, writableStream);
+    await stream.pipeline(stringifier, writableStream);
 
     dbClient.connection.close();
     process.exit(0);
