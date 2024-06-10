@@ -6,7 +6,7 @@ const analysisConfig = {
   ANALYSIS_DIR: '/analysis',
   PROJECT_ID: 'sci_biosecurity',
   START_DATE: '2023-4-26',
-  END_DATE: '2024-5-29',
+  END_DATE: '2023-4-27', //'2024-5-29',
   ML_MODEL: 'mirav2',
   TARGET_CLASSES: [
     {

@@ -33,19 +33,16 @@ async function writeConfigToFile(filename, analysisPath, config) {
 
 // MongoDB Aggregation Pipeline to calculate
 // true positives (TP), false positives (FP), and false negatives (FN) for a given target class
-//
-// NOTE: this will count the number of images that contain at least one TP/FP/FN prediction, not the number of individual objects.
-//
-// also note that this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
+// Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
 // it will not work for projects using object detectors alone. So if using an object detector, a true positive
 // would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
 // However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
 
-const buildBasePipeline = (cameraId, startDate, endDate) => [
+const buildBasePipeline = (projectId, startDate, endDate) => [
   // return reviewed images for a camera between two dates
   {
     $match: {
-      cameraId: cameraId,
+      projectId: projectId,
       dateAdded: {
         $gt: new Date(startDate),
         $lt: new Date(endDate),
@@ -239,6 +236,23 @@ async function falsePositives(cameraId, tClass) {
   return res.map((item) => item._id);
 }
 
+async function getCount(pipeline) {
+  console.log('getting image count');
+  let count = null;
+  try {
+    pipeline = JSON.parse(JSON.stringify(pipeline));
+    pipeline.push({ $count: 'count' });
+
+    const res = await Image.aggregate(pipeline);
+    console.log('res: ', res);
+    count = res[0] ? res[0].count : 0;
+  } catch (err) {
+    console.log('error counting Image: ', err);
+  }
+  return count;
+}
+
+// main function
 async function analyze() {
   console.log(
     `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE}...`,
@@ -249,17 +263,31 @@ async function analyze() {
   const dbClient = await connectToDatabase(config);
 
   try {
+    // set up data structure to hold results
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
-
-    // init progress bar
-    const depCount = cameraConfigs.reduce(
-      (acc, cameraConfig) => acc + (cameraConfig.deployments.length - 1), // subtract 1 to exclude default deployment
-      0,
-    );
-    console.log(`Total deployments: ${depCount}`);
-    const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-    progress.start(depCount * TARGET_CLASSES.length, 0);
+    const data = {};
+    cameraConfigs.forEach((cc) => {
+      for (const dep of cc.deployments) {
+        if (dep.name === 'default') continue; // skip default deployments
+        for (const tClass of TARGET_CLASSES) {
+          data[`${dep._id}_${tClass.predicted_id}`] = {
+            cameraId: cc._id,
+            deploymentName: dep.name,
+            targetClass: tClass.predicted_id,
+            validationClasses: tClass.validation_ids.join(', '),
+            allActuals: 0,
+            truePositives: 0,
+            falsePositives: 0,
+            falseNegatives: 0,
+            precision: null,
+            recall: null,
+            f1: null,
+          };
+        }
+      }
+    });
+    console.log('Data: ', data);
 
     // init reports
     const dt = DateTime.now().setZone('utc').toFormat("yyyy-LL-dd'T'HHmm'Z'");
@@ -272,59 +300,75 @@ async function analyze() {
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
-    const writableStream = fs.createWriteStream(csvFilename);
-    const stringifier = stringify({ header: true, columns: reportColumns });
-    stringifier.on('error', (err) => console.error(err.message));
+    // const writableStream = fs.createWriteStream(csvFilename);
+    // const stringifier = stringify({ header: true, columns: reportColumns });
+    // stringifier.on('error', (err) => console.error(err.message));
 
-    for (const cameraConfig of cameraConfigs) {
-      // console.log(`\nAnalyzing camera: ${cameraConfig._id}`);
+    // stream in images from MongoDB
+    const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
+    const imgCount = await getCount(aggPipeline);
+    const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    progress.start(imgCount, 0);
 
-      for (const dep of cameraConfig.deployments) {
-        if (dep.name === 'default') continue; // skip default deployments
-
-        for (const tClass of TARGET_CLASSES) {
-          // get image-level counts
-          const allActuals = (await getAllActuals(cameraConfig._id, tClass)).length;
-          const TP = (await truePositives(cameraConfig._id, tClass)).length;
-          const FP = (await falsePositives(cameraConfig._id, tClass)).length;
-          const FN = (await falseNegatives(cameraConfig._id, tClass)).length;
-
-          // calculate precision, recall, and F1 score
-          const precision = TP / (TP + FP);
-          const recall = TP / (TP + FN);
-          const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
-
-          // console.log('\n');
-          // console.log(`${dep.name} - ${tClass.predicted_id} - all : ${allActuals}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - true positives : ${TP}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - false negatives : ${FN}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - false positives : ${FP}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - precision : ${precision}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - recall : ${recall}`);
-          // console.log(`${dep.name} - ${tClass.predicted_id} - f1 : ${f1}`);
-
-          // write row to csv
-          stringifier.write({
-            cameraId: cameraConfig._id,
-            deploymentName: dep.name,
-            targetClass: tClass.predicted_id,
-            validationClasses: tClass.validation_ids.join(', '),
-            allActuals: allActuals,
-            truePositives: TP,
-            falsePositives: FP,
-            falseNegatives: FN,
-            precision: Number.parseFloat(precision * 100).toFixed(2),
-            recall: Number.parseFloat(recall * 100).toFixed(2),
-            f1: Number.parseFloat(f1).toFixed(2),
-          });
-
-          progress.increment();
-        }
-      }
+    for await (const img of Image.aggregate(aggPipeline)) {
+      // skip default deployments
+      const imgDep = cameraConfigs
+        .find((cc) => cc._id.toString() === img.cameraId.toString())
+        .deployments.find((dep) => dep._id.toString() === img.deploymentId.toString());
+      if (imgDep.name === 'default') continue;
+      // TODO: iterate over objects to calculate metrics
+      progress.increment();
     }
-    stringifier.end();
 
-    await stream.pipeline(stringifier, writableStream);
+    // for (const cameraConfig of cameraConfigs) {
+    //   // console.log(`\nAnalyzing camera: ${cameraConfig._id}`);
+
+    //   for (const dep of cameraConfig.deployments) {
+    //     if (dep.name === 'default') continue; // skip default deployments
+
+    //     for (const tClass of TARGET_CLASSES) {
+    //       // get image-level counts
+    //       const allActuals = (await getAllActuals(cameraConfig._id, tClass)).length;
+    //       const TP = (await truePositives(cameraConfig._id, tClass)).length;
+    //       const FP = (await falsePositives(cameraConfig._id, tClass)).length;
+    //       const FN = (await falseNegatives(cameraConfig._id, tClass)).length;
+
+    //       // calculate precision, recall, and F1 score
+    //       const precision = TP / (TP + FP);
+    //       const recall = TP / (TP + FN);
+    //       const f1 = (2 * precision * recall) / (precision + recall); // harmonic mean
+
+    //       // console.log('\n');
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - all : ${allActuals}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - true positives : ${TP}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - false negatives : ${FN}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - false positives : ${FP}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - precision : ${precision}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - recall : ${recall}`);
+    //       // console.log(`${dep.name} - ${tClass.predicted_id} - f1 : ${f1}`);
+
+    //       // write row to csv
+    //       stringifier.write({
+    //         cameraId: cameraConfig._id,
+    //         deploymentName: dep.name,
+    //         targetClass: tClass.predicted_id,
+    //         validationClasses: tClass.validation_ids.join(', '),
+    //         allActuals: allActuals,
+    //         truePositives: TP,
+    //         falsePositives: FP,
+    //         falseNegatives: FN,
+    //         precision: Number.parseFloat(precision * 100).toFixed(2),
+    //         recall: Number.parseFloat(recall * 100).toFixed(2),
+    //         f1: Number.parseFloat(f1).toFixed(2),
+    //       });
+
+    //       progress.increment();
+    //     }
+    //   }
+    // }
+    // stringifier.end();
+
+    // await stream.pipeline(cursor, processImg, stringifier, writableStream);
     progress.stop();
     console.log(`\nAnalysis complete. Results written to ${csvFilename}`);
 
