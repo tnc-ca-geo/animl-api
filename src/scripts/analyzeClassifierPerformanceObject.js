@@ -11,13 +11,17 @@ import { ProjectModel } from '../../.build/api/db/models/Project.js';
 import { stringify } from 'csv-stringify';
 import cliProgress from 'cli-progress';
 
-// Command to run this script:
-// STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformance.js
-
-// Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
-// it will not work for projects using object detectors alone. So if using an object detector, a true positive
-// would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
-// However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+/*
+ * Script to analyze classifier performance at the object level
+ *
+ * Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
+ * it will not work for projects using object detectors alone. So if using an object detector, a true positive
+ * would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
+ * However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+ *
+ * command to run:
+ * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceObject.js
+ */
 
 const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
 
@@ -141,7 +145,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${START_DATE}--${END_DATE}_${dt}`;
+    const root = `${PROJECT_ID}_${START_DATE}--${END_DATE}_object-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);

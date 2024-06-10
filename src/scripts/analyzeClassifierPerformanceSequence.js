@@ -12,7 +12,7 @@ import { stringify } from 'csv-stringify';
 import cliProgress from 'cli-progress';
 
 /*
- * Script to analyze classifier performance at the sequence level
+ * Script to analyze classifier performance at the sequence level (bursts of images)
  *
  * Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
  * it will not work for projects using object detectors alone. So if using an object detector, a true positive
