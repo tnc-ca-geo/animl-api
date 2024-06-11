@@ -10,15 +10,15 @@ const AutomationRuleSchema = new Schema({
     type: {
       type: String,
       enum: ['image-added', 'label-added'],
-      required: true
+      required: true,
     },
-    label: { type: String }
+    label: { type: String },
   },
   action: {
     type: {
       type: String,
       enum: ['run-inference', 'send-alert'],
-      required: true
+      required: true,
     },
     alertRecipients: { type: [String] },
     mlModel: { type: String, ref: 'MLModel' },
@@ -26,10 +26,10 @@ const AutomationRuleSchema = new Schema({
       type: Map,
       of: new Schema({
         confThreshold: { type: Number },
-        disabled: { type: Boolean }
-      })
-    }
-  }
+        disabled: { type: Boolean },
+      }),
+    },
+  },
 });
 
 const FiltersSchema = new Schema({
@@ -42,14 +42,14 @@ const FiltersSchema = new Schema({
   addedEnd: { type: Date },
   reviewed: { type: Boolean },
   notReviewed: { type: Boolean },
-  custom: { type: String }
+  custom: { type: String },
 });
 
 const ViewSchema = new Schema({
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
-  editable: { type: Boolean }
+  editable: { type: Boolean },
 });
 
 const DeploymentSchema = new Schema({
@@ -58,23 +58,23 @@ const DeploymentSchema = new Schema({
   location: { type: LocationSchema },
   timezone: { type: String, required: true },
   startDate: { type: Date },
-  editable: { type: Boolean }
+  editable: { type: Boolean },
 });
 
 const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   name: { type: String, required: true },
   color: { type: String, required: true },
-  reviewerEnabled: { type: Boolean, required: true, default: true }
+  reviewerEnabled: { type: Boolean, required: true, default: true },
 });
 
 const CameraConfigSchema = new Schema({
-  _id: { type: String, required: true },  /* _id is serial number */
-  deployments: { type: [DeploymentSchema] }
+  _id: { type: String, required: true } /* _id is serial number */,
+  deployments: { type: [DeploymentSchema] },
 });
 
 const ProjectSchema = new Schema({
-  _id: { type: String, required: true },  /* _id is name in_snake_case */
+  _id: { type: String, required: true } /* _id is name in_snake_case */,
   name: { type: String, required: true },
   timezone: { type: String, default: 'America/Los_Angeles', required: true },
   description: { type: String },
@@ -82,15 +82,22 @@ const ProjectSchema = new Schema({
   cameraConfigs: { type: [CameraConfigSchema] },
   availableMLModels: { type: [{ type: String, ref: 'MLModel' }] },
   automationRules: { type: [AutomationRuleSchema] },
-  labels: { type: [ProjectLabelSchema], default: [{
-    _id: 'empty',
-    name: 'empty',
-    color: '#8D8D8D'
-  },{
-    _id: 'unknown',
-    name: 'unknown',
-    color: '#E93D82'
-  }], required: true }
+  labels: {
+    type: [ProjectLabelSchema],
+    default: [
+      {
+        _id: 'empty',
+        name: 'empty',
+        color: '#8D8D8D',
+      },
+      {
+        _id: 'unknown',
+        name: 'unknown',
+        color: '#E93D82',
+      },
+    ],
+    required: true,
+  },
 });
 
 export default mongoose.model('Project', ProjectSchema);

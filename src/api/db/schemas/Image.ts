@@ -1,9 +1,6 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
-import {
-  LocationSchema,
-  ObjectSchema
-} from './shared/index.js';
+import { LocationSchema, ObjectSchema } from './shared/index.js';
 
 const Schema = mongoose.Schema;
 
@@ -16,7 +13,7 @@ const Schema = mongoose.Schema;
 const ImageCommentSchema = new Schema({
   author: { type: String, required: true },
   created: { type: Date, default: Date.now, required: true },
-  comment: { type: String, required: true }
+  comment: { type: String, required: true },
 });
 
 const ImageSchema = new Schema({
@@ -43,7 +40,7 @@ const ImageSchema = new Schema({
   triggerSource: { type: String },
   reviewed: { type: Boolean },
   objects: { type: [ObjectSchema] },
-  comments: { type: [ImageCommentSchema] }
+  comments: { type: [ImageCommentSchema] },
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
