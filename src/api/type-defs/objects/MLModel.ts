@@ -1,5 +1,5 @@
 export default /* GraphQL */ `
-  type Categories {
+  type Category {
     _id: String!
     name: String!
     color: String!
@@ -10,6 +10,6 @@ export default /* GraphQL */ `
     description: String
     version: String!
     defaultConfThreshold: Float
-    categories: [Categories]
+    categories: [Category!]!
   }
 `;

@@ -106,8 +106,8 @@ export type CameraConfig = {
   deployments: Array<Deployment>;
 };
 
-export type Categories = {
-  __typename?: 'Categories';
+export type Category = {
+  __typename?: 'Category';
   _id: Scalars['String']['output'];
   color: Scalars['String']['output'];
   name: Scalars['String']['output'];
@@ -541,7 +541,7 @@ export type LocationInput = {
 export type MlModel = {
   __typename?: 'MLModel';
   _id: Scalars['String']['output'];
-  categories?: Maybe<Array<Maybe<Categories>>>;
+  categories: Array<Category>;
   defaultConfThreshold?: Maybe<Scalars['Float']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   version: Scalars['String']['output'];
