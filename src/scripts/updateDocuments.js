@@ -11,10 +11,10 @@ import { operations } from './operations.js';
 
 const property = {
   name: 'confirmation',
-  message: 'WARNING: are you sure you\'d like to perform this update?',
+  message: "WARNING: are you sure you'd like to perform this update?",
   validator: /y[es]*|n[o]?/,
   warning: 'Must respond yes or no',
-  default: 'no'
+  default: 'no',
 };
 
 async function createLogFile(collecton, _ids, operation) {
@@ -34,7 +34,7 @@ async function createLogFile(collecton, _ids, operation) {
       date: dt,
       db: db,
       modification: operation,
-      _ids
+      _ids,
     });
     await fs.writeFileSync(fileName, data, 'utf8');
   } catch (err) {
@@ -49,7 +49,6 @@ async function updateDocuments() {
   const dbClient = await connectToDatabase(config);
 
   try {
-
     // TODO: create backup of db with exportDb.js
     console.log(`Executing ${op}...`);
     const matchingImageIds = await operations[op].getIds();
@@ -64,7 +63,7 @@ async function updateDocuments() {
     prompt.start();
     const { confirmation } = await prompt.get(property);
     if (confirmation === 'yes' || confirmation === 'y') {
-      const res = await operations[op].update();
+      const res = await operations[op].update(config);
       console.log('res: ', res);
       if (res.nModified === matchCount) {
         await createLogFile('images', matchingImageIds, op);
@@ -79,7 +78,10 @@ async function updateDocuments() {
     process.exit(0);
   } catch (err) {
     dbClient.connection.close();
-    throw new InternalServerError('An error occured while updating documents: ' + (err instanceof Error ? err.message : String(err)));
+    throw new InternalServerError(
+      'An error occured while updating documents: ' +
+        (err instanceof Error ? err.message : String(err)),
+    );
   }
 }
 

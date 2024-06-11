@@ -1,12 +1,10 @@
 import jwt from 'jwt-simple';
 import { Config } from '../../config/config.js';
+import { type APIGatewayProxyEvent } from 'aws-lambda';
 
 const BEARER_TOKEN_PATTERN = /^Bearer [-_=.0-9a-zA-Z]+$/i;
 
-async function getUserInfo(
-  req: AWSLambda.APIGatewayProxyEvent,
-  config: Config,
-): Promise<User | null> {
+async function getUserInfo(req: APIGatewayProxyEvent, config: Config): Promise<User | null> {
   const token = req.headers.Authorization || req.headers.authorization;
   const api_key = req.headers['x-api-key'];
 

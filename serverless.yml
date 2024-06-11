@@ -3,8 +3,8 @@ app: animl
 service: animl-api
 
 plugins:
-  - serverless-offline
   - serverless-plugin-typescript
+  - serverless-offline
 
 custom:
   serverlessPluginTypescript:
