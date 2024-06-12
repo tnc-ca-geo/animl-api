@@ -12,18 +12,27 @@ import { stringify } from 'csv-stringify';
 import cliProgress from 'cli-progress';
 
 /*
- * Script to analyze classifier performance at the object level
+ * Script to analyze ML model performance at the object level
  *
- * Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
- * it will not work for projects using object detectors alone. So if using an object detector, a true positive
- * would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
- * However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+ * NOTE: you can use this script to analyze the performance of MegaDetector independently,
+ * or of a classifier that's been paired with an object detector in an inference pipeline.
+ * Keep in mind that if assessing the latter, a true positive would mean that
+ * (a) the object detector correctly identified the object, and (b) the classifier correctly identified the class.
+ * So a false negative _could_ mean that the object detector correctly identified the object,
+ * but the classifier incorrectly identified the class.
  *
- * command to run:
+ * The reason that's worth noting is because at the moment it doesn't support evaluating the performance
+ * of a classifier independently of an object detector.
+ *
+ * command to run script:
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceObject.js
  */
 
 const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
+
+if (ML_MODEL.includes('megadetector')) {
+  TARGET_CLASSES.find((tc) => tc.predicted_id === '1').validation_ids = [];
+}
 
 async function writeConfigToFile(filename, analysisPath, config) {
   const jsonFilename = path.join(analysisPath, `${filename}_config.json`);
@@ -46,7 +55,7 @@ const buildBasePipeline = (projectId, startDate, endDate) => [
     $match: {
       projectId: projectId,
       dateAdded: {
-        $gt: new Date(startDate),
+        $gte: new Date(startDate),
         $lt: new Date(endDate),
       },
       reviewed: true,
@@ -94,12 +103,27 @@ async function getCount(pipeline) {
   try {
     const pipelineCopy = structuredClone(pipeline);
     pipelineCopy.push({ $count: 'count' });
+    // console.log('pipelineCopy: ', JSON.stringify(pipelineCopy, null, 2));
     const res = await Image.aggregate(pipelineCopy);
     count = res[0] ? res[0].count : 0;
   } catch (err) {
     console.log('error counting Image: ', err);
   }
   return count;
+}
+
+function FVLValidatesPrediction(obj, tClass) {
+  // if no firstValidLabel, all labels have been invalidated, so return false
+  if (obj.firstValidLabel.length === 0) return false;
+  const fvl = obj.firstValidLabel[0]?.labelId;
+  // if the ml model is megadetector and the target class is '1' (animal),
+  // any firstValidLabel that is not is a person or vehicle or 'empty'
+  // would validate the prediction
+  if (ML_MODEL.includes('megadetector') && tClass.predicted_id === '1') {
+    return fvl !== '2' && fvl !== '3' && fvl !== 'empty';
+  } else {
+    return tClass.validation_ids.includes(fvl);
+  }
 }
 
 // main function
@@ -145,7 +169,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${START_DATE}--${END_DATE}_object-level_${dt}`;
+    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_object-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
@@ -173,8 +197,11 @@ async function analyze() {
           // ACTUAL - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
           // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-          if (obj.locked && tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)) {
+          if (obj.locked && FVLValidatesPrediction(obj, tClass)) {
             data[key].allActuals++;
+            // console.log(
+            //   `actual ${tClass.predicted_id} on image ${img._id}: ${JSON.stringify(obj, null, 2)}`,
+            // );
           }
 
           // TRUE POSITIVE - object must be:
@@ -186,9 +213,12 @@ async function analyze() {
             obj.labels.some(
               (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
             ) &&
-            tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)
+            FVLValidatesPrediction(obj, tClass)
           ) {
             data[key].truePositives++;
+            // console.log(
+            //   `TP ${tClass.predicted_id} on image ${img._id}: ${JSON.stringify(obj, null, 2)}`,
+            // );
           }
 
           // FALSE POSITIVE - object must be:
@@ -199,9 +229,12 @@ async function analyze() {
             obj.labels.some(
               (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
             ) &&
-            !tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId)
+            !FVLValidatesPrediction(obj, tClass)
           ) {
             data[key].falsePositives++;
+            // console.log(
+            //   `FP ${tClass.predicted_id} on image ${img._id}: ${JSON.stringify(obj, null, 2)}`,
+            // );
           }
 
           // FALSE NEGATIVE - object must be:
@@ -210,12 +243,15 @@ async function analyze() {
           // and (c) does NOT have an ml-predicted label of the target class
           if (
             obj.locked &&
-            tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId) &&
+            FVLValidatesPrediction(obj, tClass) &&
             !obj.labels.some(
               (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
             )
           ) {
             data[key].falseNegatives++;
+            // console.log(
+            //   `FN ${tClass.predicted_id} on image ${img._id}: ${JSON.stringify(obj, null, 2)}`,
+            // );
           }
         }
       }

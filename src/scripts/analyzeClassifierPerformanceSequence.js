@@ -54,7 +54,7 @@ const buildBasePipeline = (projectId, startDate, endDate) => [
     $match: {
       projectId: projectId,
       dateAdded: {
-        $gt: new Date(startDate),
+        $gte: new Date(startDate),
         $lt: new Date(endDate),
       },
       reviewed: true,
@@ -218,7 +218,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${START_DATE}--${END_DATE}_sequence-level_${dt}`;
+    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_sequence-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
