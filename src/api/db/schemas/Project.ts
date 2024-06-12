@@ -101,3 +101,5 @@ const ProjectSchema = new Schema({
 });
 
 export default mongoose.model('Project', ProjectSchema);
+
+export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;

@@ -41,3 +41,5 @@ const MLModelSchema = new Schema({
 });
 
 export default mongoose.model('MLModel', MLModelSchema);
+
+export type MLModelSchema = mongoose.InferSchemaType<typeof MLModelSchema>;

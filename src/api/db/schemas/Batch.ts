@@ -27,3 +27,5 @@ const BatchSchema = new Schema({
 BatchSchema.plugin(MongoPaging.mongoosePlugin);
 
 export default mongoose.model('Batch', BatchSchema);
+
+export type BatchSchema = mongoose.InferSchemaType<typeof BatchSchema>;

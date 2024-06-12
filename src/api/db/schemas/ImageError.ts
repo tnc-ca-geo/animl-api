@@ -13,3 +13,5 @@ const ImageErrorSchema = new Schema({
 });
 
 export default mongoose.model('ImageError', ImageErrorSchema);
+
+export type ImageErrorSchema = mongoose.InferSchemaType<typeof ImageErrorSchema>;
