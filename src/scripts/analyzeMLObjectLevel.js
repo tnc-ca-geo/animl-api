@@ -24,11 +24,27 @@ import cliProgress from 'cli-progress';
  * The reason that's worth noting is because at the moment it doesn't support evaluating the performance
  * of a classifier independently of an object detector.
  *
+ * ALSO NOTE: it is assumed that the model being analyzed was used for the entire duration of the date range.
+ * This script, and Animl in general, doesn't know when a model was deployed, renamed, or automation rules applied,
+ * and we currently do not store inference _request_ data at the image level (though we should)
+ * so it's up to the user to ensure the model was used for the entire date range.
+ *
+ * If Animl never requested inference for the model being analyzed for some image(s) in the date range,
+ * but there are validating labels in those images, those images will be counted as false negatives,
+ * which will significantly skew the results (model will appear to to have worse recall than it actually does).
+ *
  * command to run script:
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLObjectLevel.js
  */
 
-const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
+const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
+
+const TARGET_CLASSES = analysisConfig.TARGET_CLASSES.map((tc) => ({
+  predicted_id: tc.predicted.split(':')[1],
+  validation_ids: tc.validation.map((v) => v.split(':')[1]),
+  predicted_name: tc.predicted.split(':')[0],
+  validation_names: tc.validation.map((v) => v.split(':')[0]),
+}));
 
 async function writeConfigToFile(filename, analysisPath, config) {
   const jsonFilename = path.join(analysisPath, `${filename}_config.json`);
@@ -144,8 +160,8 @@ async function analyze() {
           data[`${dep._id}_${tClass.predicted_id}`] = {
             cameraId: cc._id,
             deploymentName: dep.name,
-            targetClass: tClass.predicted_id,
-            validationClasses: tClass.validation_ids.join(', '),
+            targetClass: tClass.predicted_name,
+            validationClasses: tClass.validation_names.join(', '),
             allActuals: 0,
             truePositives: 0,
             falsePositives: 0,
@@ -283,7 +299,7 @@ async function analyze() {
 
     // add rows for target class totals
     for (const tClass of TARGET_CLASSES) {
-      const tClassRows = Object.values(data).filter((v) => v.targetClass === tClass.predicted_id);
+      const tClassRows = Object.values(data).filter((v) => v.targetClass === tClass.predicted_name);
 
       const totalActuals = tClassRows.reduce((acc, v) => acc + v.allActuals, 0);
       const totalTP = tClassRows.reduce((acc, v) => acc + v.truePositives, 0);
@@ -297,8 +313,8 @@ async function analyze() {
       stringifier.write({
         cameraId: 'total',
         deploymentName: 'total',
-        targetClass: tClass.predicted_id,
-        validationClasses: tClass.validation_ids.join(', '),
+        targetClass: tClass.predicted_name,
+        validationClasses: tClass.validation_names.join(', '),
         allActuals: totalActuals,
         truePositives: totalTP,
         falsePositives: totalFP,
