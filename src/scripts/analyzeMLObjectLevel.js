@@ -25,7 +25,7 @@ import cliProgress from 'cli-progress';
  * of a classifier independently of an object detector.
  *
  * command to run script:
- * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceObject.js
+ * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLObjectLevel.js
  */
 
 const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
