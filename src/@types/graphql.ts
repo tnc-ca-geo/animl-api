@@ -122,7 +122,7 @@ export type ClearImageErrorsInput = {
 export type CloseUploadInput = {
   batchId: Scalars['String']['input'];
   multipartUploadId: Scalars['String']['input'];
-  parts: Array<InputMaybe<CloseUploadPart>>;
+  parts: Array<CloseUploadPart>;
 };
 
 export type CloseUploadPart = {
