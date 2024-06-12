@@ -12,15 +12,20 @@ import { stringify } from 'csv-stringify';
 import cliProgress from 'cli-progress';
 
 /*
- * Script to analyze classifier performance at the sequence level (bursts of images)
+ * Script to analyze ML model performance at the sequence (bursts of images) level
  *
- * Note: this is only relevant to Projects using classifiers (or object detectors paired with classifiers)
- * it will not work for projects using object detectors alone. So if using an object detector, a true positive
- * would mean that the object detector correctly identified the object, and the classifier correctly identified the class.
- * However, a false negative COULD mean that the object detector correctly identified the object, but the classifier incorrectly identified the class.
+ * NOTE: you can use this script to analyze the performance of MegaDetector independently,
+ * or of a classifier that's been paired with an object detector in an inference pipeline.
+ * Keep in mind that if assessing the latter, a true positive would mean that
+ * (a) the object detector correctly identified the object, and (b) the classifier correctly identified the class.
+ * So a false negative _could_ mean that the object detector correctly identified the object,
+ * but the classifier incorrectly identified the class.
  *
- * command to run:
- * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeClassifierPerformanceSequence.js
+ * The reason that's worth noting is because at the moment it doesn't support evaluating the performance
+ * of a classifier independently of an object detector.
+ *
+ * command to run script:
+ * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLSequenceLevel.js
  */
 
 const {
@@ -90,11 +95,27 @@ const buildBasePipeline = (projectId, startDate, endDate) => [
   },
 ];
 
+// Does the firstValidLabel validate the prediction
+// e.g., for a "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]
+// would validate the prediction as being a true positive
+function FVLValidatesPrediction(obj, tClass) {
+  // if no firstValidLabel, all labels have been invalidated, so return false
+  if (obj.firstValidLabel.length === 0) return false;
+  const fvl = obj.firstValidLabel[0]?.labelId;
+  // if the ml model is megadetector and the target class is '1' (animal),
+  // any firstValidLabel that is not is a 'person' or 'vehicle' or 'empty'
+  // would validate the prediction
+  if (ML_MODEL.includes('megadetector') && tClass.predicted_id === '1') {
+    return fvl !== '2' && fvl !== '3' && fvl !== 'empty';
+  } else {
+    return tClass.validation_ids.includes(fvl);
+  }
+}
+
 // ACTUAL - object must be:
 // (a) locked, (b) has a first valid label that validates the prediction/target class,
 // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-const isActual = (obj, tClass) =>
-  obj.locked && tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+const isActual = (obj, tClass) => obj.locked && FVLValidatesPrediction(obj, tClass);
 
 // TRUE POSITIVE - object must be:
 // (a) locked, (b) has an ml-predicted label of the target class, and
@@ -105,7 +126,7 @@ const isTruePositive = (obj, tClass) =>
   obj.labels.some(
     (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
   ) &&
-  tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+  FVLValidatesPrediction(obj, tClass);
 
 // FALSE POSITIVE - object must be:
 // (a) locked, (b) has an ml-predicted label of the target class, and
@@ -115,18 +136,18 @@ const isFalsePositive = (obj, tClass) =>
   obj.labels.some(
     (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
   ) &&
-  !tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId);
+  !FVLValidatesPrediction(obj, tClass);
 
 // FALSE NEGATIVE - object must be:
-// (a) locked, (b) has a first valid label that validates the prediction/target class,
+// (a) locked, (b) does NOT have an ml-predicted label of the target class, and
+// (c) has a first valid label that validates the prediction/target class,
 // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-// and (c) does NOT have an ml-predicted label of the target class
 const isFalseNegative = (obj, tClass) =>
   obj.locked &&
-  tClass.validation_ids.includes(obj.firstValidLabel[0]?.labelId) &&
   !obj.labels.some(
     (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-  );
+  ) &&
+  FVLValidatesPrediction(obj, tClass);
 
 async function getCount(pipeline) {
   console.log('getting image count');
