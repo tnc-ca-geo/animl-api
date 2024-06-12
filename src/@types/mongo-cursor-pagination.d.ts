@@ -8,6 +8,7 @@ declare module 'mongo-cursor-pagination' {
     next: string;
     previous: string;
   };
+
   export interface AggregationOutput<T> {
     metadata: {
       total: number;
