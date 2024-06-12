@@ -31,3 +31,11 @@ export class BaseAuthedModel {
 }
 
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
+
+export type Pagination<T = {}> = T & {
+  paginatedField?: string;
+  sortAscending?: boolean;
+  limit?: number;
+  next?: string;
+  previous?: string;
+};
