@@ -102,10 +102,8 @@ export class ImageErrorModel {
    */
   static async clearErrors(input: { batch: string }) {
     try {
-      await await retry(
-        async () => {
-          return await ImageError.deleteMany({ batch: input.batch });
-        },
+      await retry(
+        () => ImageError.deleteMany({ batch: input.batch }),
         { retries: 2 },
       );
 
