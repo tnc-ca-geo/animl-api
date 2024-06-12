@@ -147,16 +147,16 @@ const isFalsePositive = (obj, tClass) =>
   ) &&
   !FVLValidatesPrediction(obj, tClass);
 
-// FALSE NEGATIVE - object must be:
-// (a) locked, (b) does NOT have an ml-predicted label of the target class, and
-// (c) has a first valid label that validates the prediction/target class,
-// (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
-const isFalseNegative = (obj, tClass) =>
-  obj.locked &&
-  !obj.labels.some(
-    (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-  ) &&
-  FVLValidatesPrediction(obj, tClass);
+// // FALSE NEGATIVE - object must be:
+// // (a) locked, (b) does NOT have an ml-predicted label of the target class, and
+// // (c) has a first valid label that validates the prediction/target class,
+// // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+// const isFalseNegative = (obj, tClass) =>
+//   obj.locked &&
+//   !obj.labels.some(
+//     (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
+//   ) &&
+//   FVLValidatesPrediction(obj, tClass);
 
 async function getCount(pipeline) {
   console.log('getting image count');
