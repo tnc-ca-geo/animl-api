@@ -3,13 +3,13 @@ const Schema = mongoose.Schema;
 
 const PointSchema = new Schema({
   type: { type: String, enum: ['Point'], required: true },
-  coordinates: { type: [Number], required: true }
+  coordinates: { type: [Number], required: true },
 });
 
 const LocationSchema = new Schema({
   geometry: { type: PointSchema, required: true },
   altitude: { type: String },
-  name: { type: String }
+  name: { type: String },
   // azimuth: { type: Number },
 });
 
@@ -22,7 +22,7 @@ const LocationSchema = new Schema({
 const ValidationSchema = new Schema({
   validated: { type: Boolean, default: false, required: true },
   validationDate: { type: Date, default: Date.now, required: true },
-  userId: { type: String }
+  userId: { type: String },
 });
 
 /*
@@ -40,7 +40,7 @@ const LabelSchema = new Schema({
   validation: { type: ValidationSchema },
   mlModel: { type: 'String', ref: 'Model' }, // if type === 'ml'
   mlModelVersion: { type: 'String' },
-  userId: { type: String } // if type === 'manual'
+  userId: { type: String }, // if type === 'manual'
 });
 
 /*
@@ -55,12 +55,7 @@ const LabelSchema = new Schema({
 const ObjectSchema = new Schema({
   bbox: { type: [Number], required: true },
   locked: { type: Boolean, default: false, required: true },
-  labels: { type: [LabelSchema] }
+  labels: { type: [LabelSchema] },
 });
 
-export {
-  PointSchema,
-  LocationSchema,
-  LabelSchema,
-  ObjectSchema
-};
+export { PointSchema, LocationSchema, LabelSchema, ObjectSchema };

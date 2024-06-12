@@ -25,7 +25,7 @@ const ImageMetadataSchema = new Schema({
   imageHeight: { type: Number },
   imageBytes: { type: Number },
   mimeType: { type: String },
-  model: { type: String }
+  model: { type: String },
 });
 
 /*
@@ -38,7 +38,7 @@ const ImageAttemptSchema = new Schema({
   projectId: { type: String, required: true, ref: 'Project' },
   batch: { type: String },
   created: { type: Date, default: Date.now, required: true },
-  metadata: { type: ImageMetadataSchema }
+  metadata: { type: ImageMetadataSchema },
 });
 
 export default mongoose.model('ImageAttempt', ImageAttemptSchema);

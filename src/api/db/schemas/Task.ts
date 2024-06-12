@@ -9,24 +9,24 @@ const TaskSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum : [
+    enum: [
       'GetStats',
       'ExportAnnotations',
       'ExportImageErrors',
       'CreateDeployment',
       'UpdateDeployment',
-      'DeleteDeployment'
-    ]
+      'DeleteDeployment',
+    ],
   },
   status: {
     type: String,
     required: true,
-    enum : ['SUBMITTED', 'RUNNING', 'FAIL', 'COMPLETE'],
-    default: 'SUBMITTED'
+    enum: ['SUBMITTED', 'RUNNING', 'FAIL', 'COMPLETE'],
+    default: 'SUBMITTED',
   },
   created: { type: Date, default: Date.now, required: true },
   updated: { type: Date, default: Date.now, required: true },
-  output: { type: Object }
+  output: { type: Object },
 });
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
