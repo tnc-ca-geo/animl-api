@@ -30,10 +30,6 @@ import cliProgress from 'cli-progress';
 
 const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, TARGET_CLASSES } = analysisConfig;
 
-if (ML_MODEL.includes('megadetector')) {
-  TARGET_CLASSES.find((tc) => tc.predicted_id === '1').validation_ids = [];
-}
-
 async function writeConfigToFile(filename, analysisPath, config) {
   const jsonFilename = path.join(analysisPath, `${filename}_config.json`);
 
