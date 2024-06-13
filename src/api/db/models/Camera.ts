@@ -1,24 +1,26 @@
 import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
-import WirelessCamera from '../schemas/WirelessCamera.js';
+import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
 import { hasRole, idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
-import { BaseAuthedModel, MethodParams, ModelWithEnforcedIds } from './utils-model.js';
+import { BaseAuthedModel, MethodParams } from './utils-model.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
+import { ProjectSchema } from '../schemas/Project.js';
 
 export class CameraModel {
-  static async getWirelessCameras(input: gql.QueryWirelessCamerasArgs['input'], context: Context) {
+  static async getWirelessCameras(
+    input: gql.QueryWirelessCamerasArgs['input'],
+    context: Context,
+  ): Promise<WirelessCameraSchema[]> {
     const query: Record<string, any> = input?._ids ? { _id: { $in: input._ids } } : {};
     // if user has curr_project, limit returned cameras to those that
     // have at one point been associated with curr_project
     const projectId = context.user['curr_project'];
     if (projectId) query['projRegistrations.projectId'] = projectId;
     try {
-      const wirelessCameras = await WirelessCamera.find<
-        ModelWithEnforcedIds<typeof WirelessCamera>
-      >(query);
+      const wirelessCameras = await WirelessCamera.find(query);
       console.log('getWirelessCameras - found wirelessCameras: ', JSON.stringify(wirelessCameras));
       return wirelessCameras;
     } catch (err) {
@@ -35,7 +37,7 @@ export class CameraModel {
       model?: string;
     },
     context: Context,
-  ) {
+  ): Promise<{ camera: WirelessCameraSchema; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.createWirelessCamera - input: ', input);
     const successfulOps: OperationMetadata[] = [];
     const projectId = input.projectId || 'default_project';
@@ -78,7 +80,10 @@ export class CameraModel {
     }
   }
 
-  static async registerCamera(input: { cameraId: string; make?: string }, context: Context) {
+  static async registerCamera(
+    input: { cameraId: string; make?: string },
+    context: Context,
+  ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.registerCamera - context: ', context);
 
     const successfulOps: OperationMetadata[] = [];
@@ -149,7 +154,10 @@ export class CameraModel {
     }
   }
 
-  static async unregisterCamera(input: { cameraId: string }, context: Context) {
+  static async unregisterCamera(
+    input: { cameraId: string },
+    context: Context,
+  ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project?: ProjectSchema }> {
     const successfulOps: OperationMetadata[] = [];
     const projectId = context.user['curr_project'];
 
