@@ -1,7 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
 import { Context } from '../../handler.js';
 
 /**
@@ -15,7 +15,7 @@ export class UserModel {
    * @param {string} input.name Project Name
    * @param {object} context
    */
-  static async createGroups(input: CreateGroupsInput, context: Context) {
+  static async createGroups(input: CreateGroupsInput, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -42,7 +42,7 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async create(input: CreateUserInput, context: Context) {
+  static async create(input: CreateUserInput, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -60,6 +60,8 @@ export class UserModel {
         },
         context,
       );
+
+      return { isOk: true };
     } catch (err) {
       if (err instanceof Cognito.UserNotFoundException) {
         try {
@@ -109,7 +111,7 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async update(input: UpdateUserInput, context: Context) {
+  static async update(input: UpdateUserInput, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
