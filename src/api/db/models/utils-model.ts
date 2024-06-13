@@ -31,3 +31,7 @@ export class BaseAuthedModel {
 }
 
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
+
+export interface GenericOutput {
+  isOk: boolean;
+}
