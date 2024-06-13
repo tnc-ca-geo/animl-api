@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import { User } from '../../auth/authorization.js';
 import { AuthenticationError, ForbiddenError } from '../../errors.js';
 import { hasRole } from './utils.js';
