@@ -12,7 +12,7 @@ import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericOutput, MethodParams, roleCheck } from './utils-model.js';
 import { ImageErrorModel } from './ImageError.js';
 import { Context } from '../../handler.js';
 
@@ -341,10 +341,6 @@ interface CreateUploadOutput {
   multipartUploadId?: string;
   url?: string;
   urls?: string[];
-}
-
-interface GenericOutput {
-  isOk: boolean;
 }
 
 interface BatchSchemaWithErrors extends BatchSchema {
