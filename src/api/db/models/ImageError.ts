@@ -1,13 +1,15 @@
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { TaskModel } from './Task.js';
 import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
-import MongoPaging from 'mongo-cursor-pagination';
-import ImageError from '../schemas/ImageError.js';
+import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
+import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import retry from 'async-retry';
 import { hasRole } from './utils.js';
-import { BaseAuthedModel, MethodParams, Pagination } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, Pagination } from './utils-model.js';
 import { Context } from '../../handler.js';
 import { ExportErrorsInput } from '../../../@types/graphql.js';
+import { HydratedDocument } from 'mongoose';
+import { TaskSchema } from '../schemas/Task.js';
 
 /**
  * ImageErrors are errors that are generated when a single image upload
@@ -21,7 +23,7 @@ export class ImageErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async countImageErrors(input: { batch: string }) {
+  static async countImageErrors(input: { batch: string }): Promise<number> {
     const res = await ImageError.aggregate([
       { $match: { batch: input.batch } },
       { $count: 'count' },
@@ -42,7 +44,9 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {String} input.filters.batch
    */
-  static async queryByFilter(input: Pagination<{ filters: { batch: string } }>) {
+  static async queryByFilter(
+    input: Pagination<{ filters: { batch: string } }>,
+  ): Promise<AggregationOutput<ImageErrorSchema>> {
     try {
       return await MongoPaging.aggregate(ImageError.collection, {
         aggregation: [{ $match: { batch: input.filters.batch } }],
@@ -66,7 +70,11 @@ export class ImageErrorModel {
    * @param {String} input.batch
    * @param {String} input.error
    */
-  static async createError(input: { image: string; batch: string; error: string }) {
+  static async createError(input: {
+    image: string;
+    batch: string;
+    error: string;
+  }): Promise<Pick<ImageErrorSchema, '_id' | 'image' | 'batch' | 'error' | 'created'>> {
     try {
       const imageerr = await retry(
         async () => {
@@ -100,12 +108,9 @@ export class ImageErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async clearErrors(input: { batch: string }) {
+  static async clearErrors(input: { batch: string }): Promise<GenericResponse> {
     try {
-      await retry(
-        () => ImageError.deleteMany({ batch: input.batch }),
-        { retries: 2 },
-      );
+      await retry(() => ImageError.deleteMany({ batch: input.batch }), { retries: 2 });
 
       return { isOk: true };
     } catch (err) {
@@ -121,7 +126,10 @@ export class ImageErrorModel {
    * @param {Object} input.filters
    * @param {Object} context
    */
-  static async exportErrorsTask(input: ExportErrorsInput, context: Context) {
+  static async exportErrorsTask(
+    input: ExportErrorsInput,
+    context: Context,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {

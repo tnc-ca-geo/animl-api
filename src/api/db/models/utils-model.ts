@@ -39,3 +39,7 @@ export type Pagination<T = {}> = T & {
   next?: string;
   previous?: string;
 };
+
+export interface GenericResponse {
+  isOk: boolean;
+}
