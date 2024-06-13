@@ -2,8 +2,12 @@ declare module 'mongo-cursor-pagination' {
   import { Collection } from 'mongoose';
 
   type Maybe<T> = T | null;
-  
-  export type AggregationInput<T = {}> = T & {
+
+  export type AggregationInput = {
+    aggregation: Array<{
+      $match: Record<string, any>;
+      $set?: Record<string, any>;
+    }>;
     paginatedField?: Maybe<string>;
     sortAscending?: Maybe<boolean>;
     limit?: Maybe<number>;
