@@ -1,5 +1,5 @@
 declare module 'mongo-cursor-pagination' {
-  import { Collection } from 'mongoose';
+  import { Model } from 'mongoose';
 
   export type AggregationInput = {
     aggregation: Array<{
@@ -17,12 +17,15 @@ declare module 'mongo-cursor-pagination' {
       total: number;
       page: number;
     }[];
-    data: T[];
+    results: T[];
   }
 
   const defaultExport: {
     mongoosePlugin: any;
-    aggregate: <T extends Collection>(model: T, input: AggregationInput) => AggregationOutput<T>;
+    aggregate: <T extends Model>(
+      model: T['schema'],
+      input: AggregationInput,
+    ) => AggregationOutput<T>;
   };
   export default defaultExport;
 }
