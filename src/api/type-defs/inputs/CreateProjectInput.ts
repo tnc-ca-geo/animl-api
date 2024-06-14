@@ -3,6 +3,6 @@ export default /* GraphQL */ `
     name: String!
     description: String!
     timezone: String!
-    availableMLModels: [String]!
+    availableMLModels: [String!]!
   }
 `;
