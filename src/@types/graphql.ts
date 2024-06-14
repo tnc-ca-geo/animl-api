@@ -199,7 +199,7 @@ export type CreateObjectsInput = {
 };
 
 export type CreateProjectInput = {
-  availableMLModels: Array<InputMaybe<Scalars['String']['input']>>;
+  availableMLModels: Array<Scalars['String']['input']>;
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
   timezone: Scalars['String']['input'];
@@ -1061,7 +1061,7 @@ export type UnregisterCameraPayload = {
 };
 
 export type UpdateAutomationRulesInput = {
-  automationRules?: InputMaybe<Array<InputMaybe<AutomationRuleInput>>>;
+  automationRules: Array<AutomationRuleInput>;
 };
 
 export type UpdateAutomationRulesPayload = {
