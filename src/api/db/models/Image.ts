@@ -9,10 +9,10 @@ import GraphQLError, {
   NotFoundError,
   AuthenticationError,
 } from '../../errors.js';
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
-import Image from '../schemas/Image.js';
+import Image, { ImageSchema } from '../schemas/Image.js';
 import Project from '../schemas/Project.js';
 import ImageError from '../schemas/ImageError.js';
 import ImageAttempt from '../schemas/ImageAttempt.js';
@@ -45,18 +45,20 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
+import { Context } from '../../handler.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
-  static async countImages(input, context) {
-    const pipeline = buildPipeline(input.filters, context.user['curr_project']);
+  static async countImages(input: { filters: FiltersInput }, context: Context): Promise<number> {
+    const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels, context) {
+  static async countImagesByLabel(labels: string[], context: Context) {
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -67,9 +69,9 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async queryById(_id, context) {
+  static async queryById(_id: string, context: Context): Promise<HydratedDocument<ImageSchema>> {
     const query = !context.user['is_superuser']
-      ? { _id, projectId: context.user['curr_project'] }
+      ? { _id, projectId: context.user['curr_project']! }
       : { _id };
     try {
       const image = await Image.findOne(query);
@@ -77,19 +79,19 @@ export class ImageModel {
 
       const epipeline = [];
       epipeline.push({ $match: { image: image._id } });
-      image.errors = await ImageError.aggregate(epipeline);
+      image.errors = (await ImageError.aggregate(epipeline)) as any; // TODO: Verify that aggregation is a properly formatted error
 
       return image;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async queryByFilter(input, context) {
+  static async queryByFilter(input: Pagination<{ filters: FiltersSchema }>, context: Context): Promise<{}> {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
-        aggregation: buildPipeline(input.filters, context.user['curr_project']),
+        aggregation: buildPipeline(input.filters, context.user['curr_project']!),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
@@ -100,25 +102,19 @@ export class ImageModel {
       return result;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteImages(input, context) {
+  static async deleteImages(input: { imageIds: string[] }, context: Context) {
     try {
       const res = await Promise.allSettled(
-        input.imageIds.map((imageId) => {
-          return this.deleteImage({ imageId }, context);
-        }),
+        input.imageIds.map((imageId) => this.deleteImage({ imageId }, context)),
       );
 
       const errors = res
-        .filter((r) => {
-          return r.status === 'rejected';
-        })
-        .map((r) => {
-          return r.reason;
-        }); // Will always be a GraphQLError
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason); // Will always be a GraphQLError
 
       return {
         isOk: !errors.length,
@@ -126,11 +122,11 @@ export class ImageModel {
       };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteImage(input, context) {
+  static async deleteImage(input: { imageId: string }, context: Context) {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -155,13 +151,13 @@ export class ImageModel {
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createImage(input, context) {
+  static async createImage(input: { md: ImageMetadata }, context: Context) {
     const successfulOps = [];
-    const errors = [];
+    const errors: Array<Error | HydratedDocument<ImageErrorSchema>> = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
@@ -176,6 +172,7 @@ export class ImageModel {
         if (md.batchId) {
           // if it's from a batch, find the batch record, and use its projectId
           const batch = await Batch.findOne({ _id: md.batchId });
+          if (!batch) throw new NotFoundError('Batch not found');
           projectId = batch.projectId;
 
           // also override the serial number if that flag was set
@@ -210,7 +207,7 @@ export class ImageModel {
         // check for errors passed in from animl-ingest (e.g. corrupted image file)
         if (input.md.errors) {
           input.md.errors
-            .filter((err) => typeof err === 'string')
+            .filter((err): err is string => typeof err === 'string')
             .forEach((err) => errors.push(new Error(err)));
         }
 
@@ -225,7 +222,7 @@ export class ImageModel {
         }
 
         // test image size
-        if (md.imageBytes >= 4 * 1000000) {
+        if (md.imageBytes! >= 4 * 1000000) {
           errors.push(new Error('Image Size Exceed 4mb'));
         }
 
@@ -239,7 +236,7 @@ export class ImageModel {
               {
                 projectId,
                 cameraId,
-                make: md.make,
+                make: md.make!,
                 ...(md.model && { model: md.model }),
               },
               context,
@@ -251,10 +248,11 @@ export class ImageModel {
           const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
           console.log('project associated with image: ', project);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          if (!camConfig) throw new NotFoundError('Camera Config not found');
           console.log('camConfig associated with image: ', camConfig);
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
-          md.deploymentId = deployment._id;
+          md.deploymentId = deployment._id!.toString();
           md.timezone = deployment.timezone;
           md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, {
             keepLocalTime: true,
@@ -276,7 +274,7 @@ export class ImageModel {
         console.error('Image Creation Error', err);
 
         // add any errors to the error array so that we can create ImageErrors for them
-        errors.push(err);
+        errors.push(err as Error);
 
         // reverse successful operations
         for (const op of successfulOps) {
@@ -290,7 +288,7 @@ export class ImageModel {
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter(
               (camConfig) => !idMatch(camConfig._id, op.info.cameraId),
-            );
+            ) as typeof proj.cameraConfigs;
             proj.save();
           }
         }
@@ -300,25 +298,26 @@ export class ImageModel {
       if (errors.length) {
         console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
-          errors[i] = new ImageError({
+          const err = new ImageError({
             image: md.imageId,
             batch: md.batchId,
             path: md.path || md.fileName,
-            error: errors[i].message,
+            error: (errors[i] as Error).message,
           });
+          errors[i] = err;
           console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
-          await errors[i].save();
+          await err.save();
         }
       }
 
       // return imageAttempt
-      imageAttempt.errors = errors;
+      imageAttempt.errors = errors as any as mongoose.Error.ValidationError;
       return imageAttempt;
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
 
-      const msg = err.message.toLowerCase();
+      const msg = (err as Error).message.toLowerCase();
       const imageError = new ImageError({
         image: md.imageId,
         batch: md.batchId,
@@ -330,48 +329,47 @@ export class ImageModel {
       if (err instanceof GraphQLError) {
         throw err;
       } else if (msg.includes('duplicate')) {
-        throw new DuplicateImageError(err);
+        throw new DuplicateImageError(err as string);
       } else if (msg.includes('validation')) {
-        throw new DBValidationError(err);
+        throw new DBValidationError(err as string);
       } else {
-        throw new InternalServerError(err);
+        throw new InternalServerError(err as string);
       }
     }
   }
 
-  static async deleteComment(input, context) {
+  static async deleteComment(input: { imageId: string; id: string }, context: Context) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => {
-        return idMatch(c._id, input.id);
-      })[0];
+      const comment = image.comments?.find((c) => idMatch(c._id!, input.id));
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
         throw new ForbiddenError('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => {
-        return !idMatch(c._id, input.id);
-      });
+      image.comments = image.comments.filter(
+        (c) => !idMatch(c._id!, input.id),
+      ) as typeof image.comments;
 
       await image.save();
 
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateComment(input, context) {
+  static async updateComment(
+    input: { imageId: string; id: string; comment: string },
+    context: Context,
+  ) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => {
-        return idMatch(c._id, input.id);
-      })[0];
+      const comment = image.comments?.find((c) => idMatch(c._id!, input.id));
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -385,15 +383,15 @@ export class ImageModel {
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createComment(input, context) {
+  static async createComment(input: { imageId: string; comment: string }, context: Context) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      if (!image.comments) image.comments = [];
+      if (!image.comments) image.comments = [] as typeof image.comments;
       image.comments.push({
         author: context.user['cognito:username'],
         comment: input.comment,
@@ -403,20 +401,35 @@ export class ImageModel {
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createObjects(input, context) {
+  static async createObjects(
+    input: { objects: Array<{ imageId: string; object: ObjectSchema }> },
+    context: Context,
+  ) {
     console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
-    const operation = async ({ objects }) => {
-      return await retry(
+
+    try {
+      // find image, create label record
+      const project = await ProjectModel.queryById(context.user['curr_project']!);
+
+      for (const labelInput of input.objects) {
+        const image = await ImageModel.queryById(labelInput.imageId, context);
+
+        labelInput.object.labels = labelInput.object.labels.map((label) =>
+          reviewerLabelRecord(project, image, label),
+        );
+      }
+
+      const res = await retry(
         async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying createObjects operation! Try #: ${attempt}`);
           }
           // find images, add objects, and bulk write
-          const operations = objects.map(({ imageId, object }) => ({
+          const operations = input.objects.map(({ imageId, object }) => ({
             updateOne: {
               filter: { _id: imageId },
               update: { $push: { objects: object } },
@@ -427,25 +440,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      // find image, create label record
-      const project = await ProjectModel.queryById(context.user['curr_project']);
-
-      for (let oid = 0; oid < input.objects.length; oid++) {
-        const image = await ImageModel.queryById(input.objects[oid].imageId, context);
-
-        for (let lid = 0; lid < (input.objects[oid].labels || []).length; lid++) {
-          input.objects[oid].labels[lid] = reviewerLabelRecord(
-            project,
-            image,
-            input.objects[oid].labels[lid],
-          );
-        }
-      }
-
-      const res = await operation(input);
       console.log(
         'ImageModel.createObjects - Image.bulkWrite() res: ',
         JSON.stringify(res.getRawResponse()),
@@ -455,23 +449,26 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateObjects(input) {
+  static async updateObjects(input: {
+    updates: Array<{ imageId: string; objectId: string; diffs: any }>;
+  }) {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
-    const operation = async ({ updates }) => {
-      return await retry(
+
+    try {
+      const res = await retry(
         async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateObjects operation! Try #: ${attempt}`);
           }
 
           const operations = [];
-          for (const update of updates) {
+          for (const update of input.updates) {
             const { imageId, objectId, diffs } = update;
-            const overrides = {};
+            const overrides: Record<string, unknown> = {};
             for (const [key, newVal] of Object.entries(diffs)) {
               overrides[`objects.$[obj].${key}`] = newVal;
             }
@@ -489,10 +486,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const res = await operation(input);
       console.log(
         'ImageModel.updateObjects - Image.bulkWrite() res: ',
         JSON.stringify(res.getRawResponse()),
@@ -502,17 +495,17 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteObjects(input) {
+  static async deleteObjects(input: { objects: { imageId: string; objectId: string }[] }) {
     console.log('ImageModel.deleteObjects - input: ', JSON.stringify(input));
-    const operation = async ({ objects }) => {
-      return await retry(
+    try {
+      const res = await retry(
         async () => {
           // find images, remove objects, and bulk write
-          const operations = objects.map(({ imageId, objectId }) => ({
+          const operations = input.objects.map(({ imageId, objectId }) => ({
             updateOne: {
               filter: { _id: imageId },
               update: { $pull: { objects: { _id: objectId } } },
@@ -523,10 +516,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const res = await operation(input);
       console.log(
         'ImageModel.deleteObjects - Image.bulkWrite() res: ',
         JSON.stringify(res.getRawResponse()),
@@ -536,7 +525,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -547,146 +536,83 @@ export class ImageModel {
    * @param {object} input
    * @param {object} context
    */
-  static async createInternalLabels(input, context) {
+  static async createInternalLabels(input: ImageCreateInternalLabelsInput, context: Context) {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
-    const operation = async ({ label }) => {
-      return await retry(
-        async () => {
-          console.log('ImageModel.createInternalLabels - creating label: ', JSON.stringify(label));
 
-          label.type = 'ml';
-
-          // find image, create label record
-          const image = await ImageModel.queryById(label.imageId, context);
-          if (isLabelDupe(image, label)) throw new DuplicateLabelError();
-
-          const project = await ProjectModel.queryById(image.projectId);
-          const labelRecord = createLabelRecord(label, label.mlModel);
-
-          const model = await MLModelModel.queryById(labelRecord.mlModel);
-          const cats = model.categories.filter((cat) => {
-            return idMatch(cat._id, labelRecord.labelId);
-          });
-
-          if (cats.length !== 1)
-            throw new DBValidationError(
-              'Models should always produce labels tracked in MLModels.categories',
+    try {
+      for (const label of input.labels) {
+        const res = await retry(
+          async () => {
+            console.log(
+              'ImageModel.createInternalLabels - creating label: ',
+              JSON.stringify(label),
             );
-          const modelLabel = cats[0];
 
-          // Check if Label Exists on Project and if not, add it
-          if (
-            !project.labels.some((l) => {
-              return l.name.toLowerCase() === modelLabel.name.toLowerCase();
-            })
-          ) {
-            await Project.findOneAndUpdate(
-              {
-                _id: image.projectId,
-              },
-              [
-                { $addFields: { labelIds: '$labels._id' } },
+            label.type = 'ml';
+
+            // find image, create label record
+            const image = await ImageModel.queryById(label.imageId, context);
+            if (isLabelDupe(image, label)) throw new DuplicateLabelError();
+
+            const project = await ProjectModel.queryById(image.projectId);
+            const labelRecord = createLabelRecord(label, label.mlModel!);
+
+            const model = await MLModelModel.queryById(labelRecord.mlModel!);
+            const cats = model.categories.filter((cat) => {
+              return idMatch(cat._id, labelRecord.labelId);
+            });
+
+            if (cats.length !== 1)
+              throw new DBValidationError(
+                'Models should always produce labels tracked in MLModels.categories',
+              );
+            const modelLabel = cats[0];
+
+            // Check if Label Exists on Project and if not, add it
+            if (
+              !project.labels.some((l) => {
+                return l.name.toLowerCase() === modelLabel.name.toLowerCase();
+              })
+            ) {
+              await Project.findOneAndUpdate(
                 {
-                  $set: {
-                    labels: {
-                      $cond: {
-                        if: { $in: [labelRecord.labelId, '$labelIds'] },
-                        then: '$labels',
-                        else: {
-                          $concatArrays: [
-                            '$labels',
-                            [
-                              {
-                                _id: labelRecord.labelId,
-                                name: modelLabel.name,
-                                color: modelLabel.color,
-                              },
+                  _id: image.projectId,
+                },
+                [
+                  { $addFields: { labelIds: '$labels._id' } },
+                  {
+                    $set: {
+                      labels: {
+                        $cond: {
+                          if: { $in: [labelRecord.labelId, '$labelIds'] },
+                          then: '$labels',
+                          else: {
+                            $concatArrays: [
+                              '$labels',
+                              [
+                                {
+                                  _id: labelRecord.labelId,
+                                  name: modelLabel.name,
+                                  color: modelLabel.color,
+                                },
+                              ],
                             ],
-                          ],
+                          },
                         },
                       },
                     },
                   },
-                },
-              ],
-              { returnDocument: 'after' },
-            );
-          } else {
-            // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
-            const [label] = project.labels.filter((l) => {
-              return l.name.toLowerCase() === modelLabel.name.toLowerCase();
-            });
-            labelRecord.labelId = label._id;
-          }
-
-          let objExists = false;
-          for (const object of image.objects) {
-            if (_.isEqual(object.bbox, label.bbox)) {
-              object.labels.unshift(labelRecord);
-              objExists = true;
-              break;
+                ],
+                { returnDocument: 'after' },
+              );
+            } else {
+              // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
+              const [label] = project.labels.filter((l) => {
+                return l.name.toLowerCase() === modelLabel.name.toLowerCase();
+              });
+              labelRecord.labelId = label._id;
             }
-          }
-          if (!objExists) {
-            image.objects.unshift({
-              bbox: labelRecord.bbox,
-              locked: false,
-              labels: [labelRecord],
-            });
-          }
 
-          // set image as unreviewed due to new labels
-          image.reviewed = false;
-
-          await image.save();
-          return { image, newLabel: labelRecord };
-        },
-        { retries: 2 },
-      );
-    };
-
-    try {
-      for (const label of input.labels) {
-        const res = await operation({ label });
-        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
-        if (label.mlModel) {
-          await handleEvent(
-            {
-              event: 'label-added',
-              label: res.newLabel,
-              image: res.image,
-            },
-            context,
-          );
-        }
-      }
-      return { ok: true };
-    } catch (err) {
-      console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
-    }
-  }
-
-  static async createLabels(input, context) {
-    console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
-    const operation = async ({ label }) => {
-      return await retry(
-        async () => {
-          console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
-
-          // find image, create label record
-          const image = await ImageModel.queryById(label.imageId, context);
-          const project = await ProjectModel.queryById(image.projectId);
-          const labelRecord = reviewerLabelRecord(project, image, label);
-
-          // if label.objectId was specified, find object and save label to it
-          // else try to match to existing object bbox and merge label into that
-          // else add new object
-          if (label.objectId) {
-            const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
-            object.labels.unshift(labelRecord);
-          } else {
             let objExists = false;
             for (const object of image.objects) {
               if (_.isEqual(object.bbox, label.bbox)) {
@@ -702,18 +628,81 @@ export class ImageModel {
                 labels: [labelRecord],
               });
             }
-          }
 
-          await image.save();
-          return { image, newLabel: labelRecord };
-        },
-        { retries: 2 },
-      );
-    };
+            // set image as unreviewed due to new labels
+            image.reviewed = false;
+
+            await image.save();
+            return { image, newLabel: labelRecord };
+          },
+          { retries: 2 },
+        );
+        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
+        if (label.mlModel) {
+          await handleEvent(
+            {
+              event: 'label-added',
+              label: res.newLabel,
+              image: res.image,
+            },
+            context,
+          );
+        }
+      }
+      return { ok: true };
+    } catch (err) {
+      console.log(`Image.createInternalLabels() ERROR on image ${input.labels[0].imageId}: ${err}`);
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async createLabels(
+    input: ImageCreateLabelsInput<{ objectId: string; imageId: string }>,
+    context: Context,
+  ) {
+    console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
     try {
       for (const label of input.labels) {
-        const res = await operation({ label });
+        const res = await retry(
+          async () => {
+            console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
+
+            // find image, create label record
+            const image = await ImageModel.queryById(label.imageId, context);
+            const project = await ProjectModel.queryById(image.projectId);
+            const labelRecord = reviewerLabelRecord(project, image, label);
+
+            // if label.objectId was specified, find object and save label to it
+            // else try to match to existing object bbox and merge label into that
+            // else add new object
+            if (label.objectId) {
+              const object = image.objects.find((obj) => idMatch(obj._id!, label.objectId));
+              object?.labels.unshift(labelRecord);
+            } else {
+              let objExists = false;
+              for (const object of image.objects) {
+                if (_.isEqual(object.bbox, label.bbox)) {
+                  object.labels.unshift(labelRecord);
+                  objExists = true;
+                  break;
+                }
+              }
+              if (!objExists) {
+                image.objects.unshift({
+                  bbox: labelRecord.bbox,
+                  locked: false,
+                  labels: [labelRecord],
+                });
+              }
+            }
+
+            await image.save();
+            return { image, newLabel: labelRecord };
+          },
+          { retries: 2 },
+        );
         console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(
@@ -732,19 +721,19 @@ export class ImageModel {
     } catch (err) {
       console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateLabels(input) {
+  static async updateLabels(input: { updates: Array<Label> }) {
     console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
-    const operation = async ({ updates }) => {
-      return await retry(
+    try {
+      const res = await await retry(
         async () => {
           const operations = [];
-          for (const update of updates) {
+          for (const update of input.updates) {
             const { imageId, objectId, labelId, diffs } = update;
-            const overrides = {};
+            const overrides: Record<string, any> = {};
             for (const [key, newVal] of Object.entries(diffs)) {
               overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
             }
@@ -764,10 +753,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const res = await operation(input);
       console.log(
         'ImageModel.updateLabels - Image.bulkWrite() res: ',
         JSON.stringify(res.getRawResponse()),
@@ -777,7 +762,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -791,17 +776,13 @@ export class ImageModel {
    * @param {string} input.labelId - Label to remove
    * @param {object} context
    */
-  static async deleteAnyLabels(input, context) {
+  static async deleteAnyLabels(input: { labelId: string }, context: Context) {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
-      projectId: context.user['curr_project'],
+      projectId: context.user['curr_project']!,
     });
 
-    return await Promise.all(
-      images.map((image) => {
-        return ImageModel.deleteAnyLabel(image, input.labelId);
-      }),
-    );
+    return Promise.all(images.map((image) => ImageModel.deleteAnyLabel(image, input.labelId)));
   }
 
   /**
@@ -810,8 +791,9 @@ export class ImageModel {
    * @param {object} image
    * @param {string} labelId
    */
-  static async deleteAnyLabel(image, labelId) {
-    function removeLabels(obj) {
+
+  static async deleteAnyLabel(image: HydratedDocument<ImageSchema>, labelId: string) {
+    function removeLabels(obj: ImageSchema['objects'][0]) {
       for (let lid = 0; lid < (obj.labels || []).length; lid++) {
         if (idMatch(obj.labels[lid].labelId, labelId)) {
           obj.labels.splice(lid, 1);
@@ -819,14 +801,15 @@ export class ImageModel {
       }
     }
 
-    for (let oid = 0; oid < (image.objects || []).length; oid++) {
-      const object = image.objects[oid];
+    for (const object of image.objects) {
       const firstValidLabel =
         object.labels?.find((lbl) => lbl.validation && lbl.validation.validated) || null;
 
       if (object.labels.length === 1 && idMatch(object.labels[0].labelId, labelId)) {
         // the object only has one label and it's the one we're removing, so delete object
-        image.objects = image.objects.filter((obj) => !idMatch(obj._id, image.objects[oid]._id));
+        image.objects = image.objects.filter(
+          (obj) => !idMatch(obj._id!, object._id!),
+        ) as typeof image.objects;
       } else if (object.locked && firstValidLabel && idMatch(firstValidLabel.labelId, labelId)) {
         // the object is locked and the first validated label is one of the labels we're removing,
         // so delete label(s) and unlock the object
@@ -843,12 +826,15 @@ export class ImageModel {
     return image;
   }
 
-  static async deleteLabels(input) {
+  static async deleteLabels(input: {
+    labels: Array<{ imageId: string; objectId: string; labelId: string }>;
+  }) {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
-    const operation = async ({ labels }) => {
-      return await retry(
+
+    try {
+      const res = await retry(
         async () => {
-          const operations = labels.map(({ imageId, objectId, labelId }) => ({
+          const operations = input.labels.map(({ imageId, objectId, labelId }) => ({
             updateOne: {
               filter: { _id: imageId },
               update: { $pull: { 'objects.$[obj].labels': { _id: new ObjectId(labelId) } } },
@@ -860,10 +846,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const res = await operation(input);
       console.log(
         'ImageModel.deleteLabels - Image.bulkWrite() res: ',
         JSON.stringify(res.getRawResponse()),
@@ -873,16 +855,16 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async getStatsTask(input, context) {
+  static async getStatsTask(input: any, context: Context) {
     try {
       return await TaskModel.create(
         {
           type: 'GetStats',
-          projectId: context.user['curr_project'],
+          projectId: context.user['curr_project']!,
           user: context.user['cognito:username'],
           config: input,
         },
@@ -890,16 +872,16 @@ export class ImageModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async exportAnnotationsTask(input, context) {
+  static async exportAnnotationsTask(input: { filters: any; format: string }, context: Context) {
     try {
       return TaskModel.create(
         {
           type: 'ExportAnnotations',
-          projectId: context.user['curr_project'],
+          projectId: context.user['curr_project']!,
           user: context.user['cognito:username'],
           config: {
             filters: input.filters,
@@ -910,7 +892,7 @@ export class ImageModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -920,9 +902,9 @@ export class ImageModel {
    *
    * @param {Array<string>} imageIds - An array of image IDs to update.
    */
-  static async updateReviewStatus(imageIds) {
-    const operation = async () => {
-      return await retry(
+  static async updateReviewStatus(imageIds: string[]) {
+    try {
+      const res = await retry(
         async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateReviewStatus operation! Try #: ${attempt}`);
@@ -949,10 +931,6 @@ export class ImageModel {
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const res = await operation();
       if (res.ok) {
         console.log(
           'ImageModel.updateReviewStatus - Image.bulkWrite() res: ',
@@ -962,100 +940,106 @@ export class ImageModel {
       return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 }
-
-export default class AuthedImageModel {
-  constructor(user) {
-    if (!user) throw new AuthenticationError('Authentication failed');
-    this.user = user;
+export default class AuthedImageModel extends BaseAuthedModel {
+  async countImages(...args: MethodParams<typeof ImageModel.countImages>) {
+    return await ImageModel.countImages(...args);
   }
 
-  async countImages(input, context) {
-    return await ImageModel.countImages(input, context);
+  async queryById(...args: MethodParams<typeof ImageModel.queryById>) {
+    return await ImageModel.queryById(...args);
   }
 
-  async queryById(_id, context) {
-    return await ImageModel.queryById(_id, context);
+  async queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
+    return await ImageModel.queryByFilter(...args);
   }
 
-  async queryByFilter(input, context) {
-    return await ImageModel.queryByFilter(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async createComment(...args: MethodParams<typeof ImageModel.createComment>) {
+    return await ImageModel.createComment(...args);
   }
 
-  async createComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createComment(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
+    return await ImageModel.updateComment(...args);
   }
 
-  async updateComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateComment(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
+    return await ImageModel.deleteComment(...args);
   }
 
-  async deleteComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteComment(input, context);
+  @roleCheck(DELETE_IMAGES_ROLES)
+  async deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
+    return await ImageModel.deleteImage(...args);
   }
 
-  async deleteImage(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteImage(input, context);
+  @roleCheck(DELETE_IMAGES_ROLES)
+  async deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
+    return await ImageModel.deleteImages(...args);
   }
 
-  async deleteImages(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteImages(input, context);
+  @roleCheck(WRITE_IMAGES_ROLES)
+  async createImage(...args: MethodParams<typeof ImageModel.createImage>) {
+    return await ImageModel.createImage(...args);
   }
 
-  async createImage(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createImage(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
+    return await ImageModel.createObjects(...args);
   }
 
-  async createObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createObjects(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
+    return await ImageModel.updateObjects(...args);
   }
 
-  async updateObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateObjects(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
+    return await ImageModel.deleteObjects(...args);
   }
 
-  async deleteObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteObjects(input, context);
-  }
-
-  async createInternalLabels(input, context) {
+  async createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
-    return await ImageModel.createInternalLabels(input, context);
+    return await ImageModel.createInternalLabels(...args);
   }
 
-  async createLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
+    return await ImageModel.createLabels(...args);
   }
 
-  async updateLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
+    return await ImageModel.updateLabels(...args);
   }
 
-  async deleteLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
+    return await ImageModel.deleteLabels(...args);
   }
 
-  async getStats(input, context) {
-    return await ImageModel.getStatsTask(input, context);
+  async getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
+    return await ImageModel.getStatsTask(...args);
   }
 
-  async exportAnnotations(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageModel.exportAnnotationsTask(input, context);
+  @roleCheck(EXPORT_DATA_ROLES)
+  async exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
+    return await ImageModel.exportAnnotationsTask(...args);
   }
+}
+
+interface FiltersInput {
+  createdStart: Date;
+  createdEnd: Date;
+  addedStart: Date;
+  addedEnd: Date;
+  cameras: string[];
+  deployments: string[];
+  labels?: string[];
+  reviewed: boolean;
+  custom: string;
 }

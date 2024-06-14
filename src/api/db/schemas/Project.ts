@@ -102,4 +102,7 @@ const ProjectSchema = new Schema({
 
 export default mongoose.model('Project', ProjectSchema);
 
+export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
+export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
+export type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
