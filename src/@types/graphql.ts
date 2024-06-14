@@ -94,7 +94,7 @@ export type BatchPayload = {
 
 export type BatchesConnection = {
   __typename?: 'BatchesConnection';
-  batches: Array<Maybe<Batch>>;
+  batches: Array<Batch>;
   pageInfo?: Maybe<PageInfo>;
 };
 
@@ -170,7 +170,7 @@ export type CreateInternalLabelInput = {
 };
 
 export type CreateInternalLabelsInput = {
-  labels: Array<InputMaybe<CreateInternalLabelInput>>;
+  labels: Array<CreateInternalLabelInput>;
 };
 
 export type CreateLabelInput = {
@@ -186,7 +186,7 @@ export type CreateLabelInput = {
 };
 
 export type CreateLabelsInput = {
-  labels: Array<InputMaybe<CreateLabelInput>>;
+  labels: Array<CreateLabelInput>;
 };
 
 export type CreateObjectInput = {
@@ -195,11 +195,11 @@ export type CreateObjectInput = {
 };
 
 export type CreateObjectsInput = {
-  objects: Array<InputMaybe<CreateObjectInput>>;
+  objects: Array<CreateObjectInput>;
 };
 
 export type CreateProjectInput = {
-  availableMLModels: Array<InputMaybe<Scalars['String']['input']>>;
+  availableMLModels: Array<Scalars['String']['input']>;
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
   timezone: Scalars['String']['input'];
@@ -263,7 +263,7 @@ export type DeleteLabelInput = {
 };
 
 export type DeleteLabelsInput = {
-  labels: Array<InputMaybe<DeleteLabelInput>>;
+  labels: Array<DeleteLabelInput>;
 };
 
 export type DeleteObjectInput = {
@@ -272,7 +272,7 @@ export type DeleteObjectInput = {
 };
 
 export type DeleteObjectsInput = {
-  objects: Array<InputMaybe<DeleteObjectInput>>;
+  objects: Array<DeleteObjectInput>;
 };
 
 export type DeleteProjectLabelInput = {
@@ -444,7 +444,7 @@ export type ImageError = {
 
 export type ImageErrorsConnection = {
   __typename?: 'ImageErrorsConnection';
-  errors: Array<Maybe<ImageError>>;
+  errors: Array<ImageError>;
   pageInfo?: Maybe<PageInfo>;
 };
 
@@ -474,7 +474,7 @@ export type ImageMetadata = {
 
 export type ImagesConnection = {
   __typename?: 'ImagesConnection';
-  images: Array<Maybe<Image>>;
+  images: Array<Image>;
   pageInfo?: Maybe<PageInfo>;
 };
 
@@ -1047,7 +1047,7 @@ export type Task = {
 
 export type TasksPayload = {
   __typename?: 'TasksPayload';
-  tasks: Array<Maybe<Task>>;
+  tasks: Array<Task>;
 };
 
 export type UnregisterCameraInput = {
@@ -1094,11 +1094,11 @@ export type UpdateImageCommentInput = {
 };
 
 export type UpdateLabelsInput = {
-  updates: Array<InputMaybe<LabelUpdate>>;
+  updates: Array<LabelUpdate>;
 };
 
 export type UpdateObjectsInput = {
-  updates: Array<InputMaybe<ObjectUpdate>>;
+  updates: Array<ObjectUpdate>;
 };
 
 export type UpdateProjectInput = {
@@ -1133,7 +1133,7 @@ export type User = {
   created: Scalars['String']['output'];
   email: Scalars['String']['output'];
   enabled: Scalars['Boolean']['output'];
-  roles: Array<Maybe<UserRole>>;
+  roles: Array<UserRole>;
   status: Scalars['String']['output'];
   updated: Scalars['String']['output'];
   username: Scalars['String']['output'];
@@ -1147,7 +1147,7 @@ export enum UserRole {
 
 export type UsersPayload = {
   __typename?: 'UsersPayload';
-  users: Array<Maybe<User>>;
+  users: Array<User>;
 };
 
 export type Validation = {

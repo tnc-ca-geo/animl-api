@@ -5,6 +5,6 @@ export default /* GraphQL */ `
   }
 
   input DeleteObjectsInput {
-    objects: [DeleteObjectInput]!
+    objects: [DeleteObjectInput!]!
   }
 `;

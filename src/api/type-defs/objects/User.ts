@@ -6,7 +6,7 @@ export default /* GraphQL */ `
   }
 
   type User {
-    roles: [UserRole]!
+    roles: [UserRole!]!
     username: String!
     email: String!
     created: String!

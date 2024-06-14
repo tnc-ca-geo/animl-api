@@ -1,6 +1,6 @@
 export default /* GraphQL */ `
   type BatchesConnection {
     pageInfo: PageInfo
-    batches: [Batch]!
+    batches: [Batch!]!
   }
 `;
