@@ -1,5 +1,5 @@
 declare module 'mongo-cursor-pagination' {
-  import { Collection } from 'mongoose';
+  import { Model } from 'mongoose';
 
   type Maybe<T> = T | null;
 
@@ -14,14 +14,12 @@ declare module 'mongo-cursor-pagination' {
     next?: Maybe<string>;
     previous?: Maybe<string>;
   };
-
   export interface AggregationOutput<T> {
     metadata: Array<{
       total: number;
       page: number;
     }>;
     results: T[];
-    data: T[];
   }
 
   const defaultExport: {
