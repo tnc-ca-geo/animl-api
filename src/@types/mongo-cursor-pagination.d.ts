@@ -24,10 +24,10 @@ declare module 'mongo-cursor-pagination' {
 
   const defaultExport: {
     mongoosePlugin: any;
-    aggregate: <T extends Collection, Output = AggregationOutput<T>>(
-      model: T,
+    aggregate: <T extends Model>(
+      model: T['schema'],
       input: AggregationInput,
-    ) => Output;
+    ) => AggregationOutput<T>;
   };
   export default defaultExport;
 }

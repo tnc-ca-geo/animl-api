@@ -12,7 +12,7 @@ import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
 import BatchError from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericOutput, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
 import { ImageErrorModel } from './ImageError.js';
 import { Context } from '../../handler.js';
 
@@ -35,10 +35,7 @@ export class BatchModel {
         });
       }
 
-      const result = await MongoPaging.aggregate<
-        typeof Batch.collection,
-        AggregationOutput<BatchSchema>
-      >(Batch.collection, {
+      const result = await MongoPaging.aggregate(Batch.collection, {
         aggregation: pipeline,
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -125,7 +122,7 @@ export class BatchModel {
     return batch;
   }
 
-  static async stopBatch(input: gql.StopBatchInput): Promise<GenericOutput> {
+  static async stopBatch(input: gql.StopBatchInput): Promise<GenericResponse> {
     try {
       const batch = await retry(
         (bail, attempt) => {
@@ -161,7 +158,7 @@ export class BatchModel {
     }
   }
 
-  static async redriveBatch(input: gql.RedriveBatchInput): Promise<GenericOutput> {
+  static async redriveBatch(input: gql.RedriveBatchInput): Promise<GenericResponse> {
     try {
       await retry(
         async (bail, attempt) => {
@@ -214,7 +211,7 @@ export class BatchModel {
     }
   }
 
-  static async closeUpload(input: gql.CloseUploadInput): Promise<GenericOutput> {
+  static async closeUpload(input: gql.CloseUploadInput): Promise<GenericResponse> {
     try {
       const s3 = new S3.S3Client();
       await s3.send(
