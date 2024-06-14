@@ -10,7 +10,7 @@ import { DateTime } from 'luxon';
 import type * as gql from '../../../@types/graphql.js';
 import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
-import BatchError from '../schemas/BatchError.js';
+import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
 import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
 import { ImageErrorModel } from './ImageError.js';
@@ -20,7 +20,7 @@ export class BatchModel {
   static async queryByFilter(
     input: gql.QueryBatchesInput,
     context: Context,
-  ): Promise<AggregationOutput<BatchSchema>> {
+  ): Promise<AggregationOutput<BatchSchemaWithErrors>> {
     try {
       const pipeline: Record<'$match', Record<string, any>>[] = [
         { $match: { user: context.user.sub } },
@@ -35,7 +35,7 @@ export class BatchModel {
         });
       }
 
-      const result = await MongoPaging.aggregate(Batch.collection, {
+      const result = await MongoPaging.aggregate<BatchSchemaWithErrors>(Batch.collection, {
         aggregation: pipeline,
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -55,10 +55,10 @@ export class BatchModel {
     }
   }
 
-  static async queryById(_id: string): Promise<mongoose.HydratedDocument<BatchSchema>> {
+  static async queryById(_id: string): Promise<mongoose.HydratedDocument<BatchSchemaWithErrors>> {
     const query = { _id };
     try {
-      const batch = await Batch.findOne(query);
+      const batch = await Batch.findOne<mongoose.HydratedDocument<BatchSchemaWithErrors>>(query);
       if (!batch) throw new NotFoundError('Batch not found');
 
       BatchModel.augmentBatch(batch as Omit<BatchSchema, 'errors'>); // Avoid conflict with errors type in BatchWithErrors
@@ -233,7 +233,7 @@ export class BatchModel {
   static async createUpload(
     input: gql.CreateUploadInput,
     context: Context,
-  ): Promise<CreateUploadOutput> {
+  ): Promise<gql.CreateUploadPayload> {
     try {
       const id = `batch-${randomUUID()}`;
       const batch = await retry(
@@ -259,7 +259,7 @@ export class BatchModel {
 
       const s3 = new S3.S3Client();
 
-      const res: CreateUploadOutput = {
+      const res: gql.CreateUploadPayload = {
         batch: batch._id,
         user: context.user.sub,
       };
@@ -332,16 +332,8 @@ export default class AuthedBatchModel extends BaseAuthedModel {
   }
 }
 
-interface CreateUploadOutput {
-  batch: string;
-  user: string;
-  multipartUploadId?: string;
-  url?: string;
-  urls?: string[];
-}
-
 interface BatchSchemaWithErrors extends BatchSchema {
-  errors?: any[];
+  errors?: BatchErrorSchema[];
   imageErrors?: number;
   remaining?: number | null;
   dead?: number | null;
