@@ -3,6 +3,7 @@ import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
 import { Context } from '../../handler.js';
+import * as gql from '../../../@types/graphql.js';
 
 /**
  * Users are managed in AWS Cognito but as the APIs are designed to be similiar
@@ -15,7 +16,7 @@ export class UserModel {
    * @param {string} input.name Project Name
    * @param {object} context
    */
-  static async createGroups(input: CreateGroupsInput, context: Context): Promise<GenericResponse> {
+  static async createGroups(input: { name: string }, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -42,7 +43,7 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async create(input: CreateUserInput, context: Context): Promise<GenericResponse> {
+  static async create(input: gql.CreateUserInput, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -111,7 +112,7 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async update(input: UpdateUserInput, context: Context): Promise<GenericResponse> {
+  static async update(input: gql.UpdateUserInput, context: Context): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -129,7 +130,7 @@ export class UserModel {
         })
         .map((group) => group.GroupName!.split('/').pop()!.split('_')[1]);
 
-      for (const role of ['manager', 'observer', 'member']) {
+      for (const role of ['manager', 'observer', 'member'] as gql.UserRole[]) {
         if (input.roles.includes(role) && roles.includes(role)) {
           // If the Role is already present, ignore it and continue
           continue;
@@ -168,14 +169,17 @@ export class UserModel {
    * @param {string} input.filter Filter usernames by string
    * @param {object} context
    */
-  static async list(input: ListUsersInput, context: Context): Promise<{ users: CognitoUser[] }> {
+  static async list(
+    input: gql.QueryUsersInput,
+    context: Context,
+  ): Promise<{ users: CognitoUser[] }> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
       const users = (
         await Promise.all(
-          ['manager', 'observer', 'member'].map(async (role) => {
-            const list = [];
+          (['manager', 'observer', 'member'] as gql.UserRole[]).map(async (role) => {
+            const usersList = [];
             let res: Cognito.ListUsersInGroupCommandOutput;
             do {
               res = await cognito.send(
@@ -186,13 +190,10 @@ export class UserModel {
                 }),
               );
 
-              list.push(...(res.Users || []));
+              usersList.push(...(res.Users || []));
             } while (res.NextToken);
 
-            return list.map((user): UserWithRole => {
-              (user as UserWithRole).role = role;
-              return user as UserWithRole;
-            });
+            return usersList.map((user) => ({ ...user, role }));
           }),
         )
       )
@@ -258,20 +259,4 @@ interface CognitoUser {
   updated: Date | undefined;
   enabled: boolean | undefined;
   status: Cognito.UserStatusType | undefined;
-}
-
-interface CreateGroupsInput {
-  name: string;
-}
-
-interface CreateUserInput {
-  username: string;
-  roles: string[];
-}
-interface UpdateUserInput {
-  username: string;
-  roles: string[];
-}
-interface ListUsersInput {
-  filter?: string;
 }
