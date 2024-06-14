@@ -226,7 +226,7 @@ export type CreateUploadPayload = {
 };
 
 export type CreateUserInput = {
-  roles: Array<InputMaybe<UserRole>>;
+  roles: Array<UserRole>;
   username: Scalars['String']['input'];
 };
 
@@ -1114,7 +1114,7 @@ export type UpdateProjectLabelInput = {
 };
 
 export type UpdateUserInput = {
-  roles: Array<InputMaybe<UserRole>>;
+  roles: Array<UserRole>;
   username: Scalars['String']['input'];
 };
 
