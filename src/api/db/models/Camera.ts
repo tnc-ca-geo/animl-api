@@ -87,7 +87,7 @@ export class CameraModel {
     console.log('CameraModel.registerCamera - context: ', context);
 
     const successfulOps: OperationMetadata[] = [];
-    const projectId = context.user['curr_project'];
+    const projectId = context.user['curr_project']!;
     const cameraId = input.cameraId.toString();
 
     try {

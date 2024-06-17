@@ -1,8 +1,4 @@
-import mongoose, {
-  HydratedArraySubdocument,
-  HydratedDocument,
-  HydratedSingleSubdocument,
-} from 'mongoose';
+import mongoose, { HydratedDocument, HydratedSingleSubdocument } from 'mongoose';
 import { TaskModel } from './Task.js';
 import GraphQLError, {
   AuthenticationError,
@@ -652,7 +648,7 @@ export class ProjectModel {
               project.labels.some((l) => l._id === label),
             ),
           },
-        } as mongoose.Types.Subdocument<mongoose.Types.ObjectId> & ViewSchema;
+        };
       });
       project.views = views as typeof project.views;
 
