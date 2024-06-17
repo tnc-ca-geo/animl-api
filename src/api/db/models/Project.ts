@@ -433,7 +433,7 @@ export class ProjectModel {
   static async createDeployment(
     input: gql.CreateDeploymentInput,
     context: Context,
-  ): Promise<HydratedDocument<CameraConfigSchema>> {
+  ): Promise<HydratedSingleSubdocument<CameraConfigSchema>> {
     try {
       const { cameraId, deployment } = input;
       const { project, camConfig } = await retry(
