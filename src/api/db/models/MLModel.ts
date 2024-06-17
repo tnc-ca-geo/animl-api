@@ -6,7 +6,7 @@ import { HydratedDocument } from 'mongoose';
 
 export class MLModelModel {
   static async queryById(_id: string): Promise<HydratedDocument<MLModelSchema>> {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     try {
       const model = await MLModel.findOne(query);
       if (!model) throw new NotFoundError('Model not found');
