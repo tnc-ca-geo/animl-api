@@ -1,22 +1,24 @@
 declare module 'mongo-cursor-pagination' {
   import { Model } from 'mongoose';
 
+  type Maybe<T> = T | null;
+
   export type AggregationInput = {
     aggregation: Array<{
       $match: Record<string, any>;
       $set?: Record<string, any>;
     }>;
-    paginatedField?: string;
-    sortAscending?: boolean;
-    limit?: number;
-    next?: string;
-    previous?: string;
+    paginatedField?: Maybe<string>;
+    sortAscending?: Maybe<boolean>;
+    limit?: Maybe<number>;
+    next?: Maybe<string>;
+    previous?: Maybe<string>;
   };
   export interface AggregationOutput<T> {
-    metadata: {
+    metadata: Array<{
       total: number;
       page: number;
-    }[];
+    }>;
     results: T[];
   }
 
