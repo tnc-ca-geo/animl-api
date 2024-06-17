@@ -13,11 +13,17 @@ import GraphQLError, {
   DBValidationError,
 } from '../../errors.js';
 import { DateTime } from 'luxon';
-import Project, { ProjectSchema, ViewSchema } from '../schemas/Project.js';
+import Project, {
+  AutomationRuleSchema,
+  CameraConfigSchema,
+  ProjectLabelSchema,
+  ProjectSchema,
+  ViewSchema,
+} from '../schemas/Project.js';
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
 import Image, { ImageSchema } from '../schemas/Image.js';
-import { sortDeps, hasRole, idMatch } from './utils.js';
+import { sortDeps, idMatch } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -52,7 +58,7 @@ export class ProjectModel {
   static async getProjects(
     input: gql.QueryProjectsInput,
     context: Context,
-  ): Promise<HydratedProject[]> {
+  ): Promise<HydratedDocument<ProjectSchema>[]> {
     console.log('Project.getProjects - input: ', input);
     let query = {};
     if (context.user['is_superuser']) {
@@ -75,7 +81,7 @@ export class ProjectModel {
   static async createProject(
     input: gql.CreateProjectInput,
     context: Context,
-  ): Promise<HydratedProject> {
+  ): Promise<HydratedDocument<ProjectSchema>> {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
@@ -144,7 +150,7 @@ export class ProjectModel {
   static async updateProject(
     input: gql.UpdateProjectInput,
     context: Context,
-  ): Promise<HydratedProject> {
+  ): Promise<HydratedDocument<ProjectSchema>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -162,7 +168,7 @@ export class ProjectModel {
   static async createCameraConfig(
     input: { projectId: string; cameraId: string },
     context: Context,
-  ): Promise<HydratedProject> {
+  ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
     const { projectId, cameraId } = input;
     try {
@@ -227,7 +233,7 @@ export class ProjectModel {
   }
 
   static async createView(
-    input: ViewSchema,
+    input: gql.CreateViewInput,
     context: Context,
   ): Promise<HydratedSingleSubdocument<ViewSchema>> {
     try {
@@ -290,7 +296,10 @@ export class ProjectModel {
     }
   }
 
-  static async deleteView(input: gql.DeleteViewInput, context: Context): Promise<HydratedProject> {
+  static async deleteView(
+    input: gql.DeleteViewInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>> {
     try {
       return await retry(
         async (bail) => {
@@ -321,7 +330,7 @@ export class ProjectModel {
   static async updateAutomationRules(
     { automationRules }: gql.UpdateAutomationRulesInput,
     context: Context,
-  ): Promise<HydratedProject['automationRules']> {
+  ): Promise<mongoose.Types.DocumentArray<AutomationRuleSchema>> {
     try {
       return await retry(
         async () => {
@@ -330,7 +339,8 @@ export class ProjectModel {
             { _ids: [context.user['curr_project']!] },
             context,
           );
-          project.automationRules = automationRules as HydratedProject['automationRules'];
+          project.automationRules =
+            automationRules as mongoose.Types.DocumentArray<AutomationRuleSchema>;
           await project.save();
           return project.automationRules;
         },
@@ -347,7 +357,7 @@ export class ProjectModel {
     camConfig,
   }: {
     projId: string;
-    camConfig: HydratedCameraConfig;
+    camConfig: HydratedDocument<CameraConfigSchema>;
   }) {
     try {
       await retry(
@@ -427,7 +437,7 @@ export class ProjectModel {
   static async createDeployment(
     input: gql.CreateDeploymentInput,
     context: Context,
-  ): Promise<HydratedCameraConfig> {
+  ): Promise<HydratedDocument<CameraConfigSchema>> {
     try {
       const { cameraId, deployment } = input;
       const { project, camConfig } = await retry(
@@ -481,7 +491,7 @@ export class ProjectModel {
   static async updateDeployment(
     input: gql.UpdateDeploymentInput,
     context: Context,
-  ): Promise<HydratedCameraConfig> {
+  ): Promise<HydratedDocument<CameraConfigSchema>> {
     const { cameraId, deploymentId, diffs } = input;
     try {
       const { project, camConfig } = await retry(
@@ -541,7 +551,7 @@ export class ProjectModel {
   static async deleteDeployment(
     { cameraId, deploymentId }: gql.DeleteDeploymentInput,
     context: Context,
-  ): Promise<HydratedCameraConfig> {
+  ): Promise<HydratedDocument<CameraConfigSchema>> {
     try {
       const { project, camConfig } = await retry(
         async () => {
@@ -576,7 +586,7 @@ export class ProjectModel {
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Context,
-  ): Promise<HydratedProject['labels'][0]> {
+  ): Promise<HydratedDocument<gql.ProjectLabel>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -658,7 +668,7 @@ export class ProjectModel {
   static async updateLabel(
     input: gql.UpdateProjectLabelInput,
     context: Context,
-  ): Promise<HydratedProject['labels'][0]> {
+  ): Promise<HydratedDocument<ProjectLabelSchema>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -741,6 +751,3 @@ export default class AuthedProjectModel extends BaseAuthedModel {
     return ProjectModel.deleteDeploymentTask(...args);
   }
 }
-
-type HydratedProject = HydratedDocument<ProjectSchema>;
-type HydratedCameraConfig = HydratedProject['cameraConfigs'][0];
