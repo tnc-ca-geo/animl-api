@@ -82,7 +82,7 @@ export class ImageModel {
       return image;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -100,7 +100,7 @@ export class ImageModel {
       return result;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -126,7 +126,7 @@ export class ImageModel {
       };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -155,7 +155,7 @@ export class ImageModel {
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -334,7 +334,7 @@ export class ImageModel {
       } else if (msg.includes('validation')) {
         throw new DBValidationError(err);
       } else {
-        throw new InternalServerError(err);
+        throw new InternalServerError(err as string);
       }
     }
   }
@@ -361,7 +361,7 @@ export class ImageModel {
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -385,7 +385,7 @@ export class ImageModel {
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -403,7 +403,7 @@ export class ImageModel {
       return { comments: image.comments };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -455,7 +455,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -502,7 +502,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -536,7 +536,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -664,7 +664,7 @@ export class ImageModel {
     } catch (err) {
       console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -732,7 +732,7 @@ export class ImageModel {
     } catch (err) {
       console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -777,7 +777,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -873,7 +873,7 @@ export class ImageModel {
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -890,7 +890,7 @@ export class ImageModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -910,7 +910,7 @@ export class ImageModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
@@ -962,7 +962,7 @@ export class ImageModel {
       return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 }
