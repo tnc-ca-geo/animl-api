@@ -7,7 +7,6 @@ import GraphQLError, {
   DuplicateLabelError,
   DBValidationError,
   NotFoundError,
-  AuthenticationError,
 } from '../../errors.js';
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
@@ -29,7 +28,6 @@ import {
   EXPORT_DATA_ROLES,
 } from '../../auth/roles.js';
 import {
-  hasRole,
   buildPipeline,
   buildLabelPipeline,
   mapImgToDep,
@@ -45,18 +43,20 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { Context } from '../../handler.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
-  static async countImages(input, context) {
+  static async countImages(input, context: Context) {
     const pipeline = buildPipeline(input.filters, context.user['curr_project']);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels, context) {
+  static async countImagesByLabel(labels, context: Context) {
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -67,7 +67,7 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async queryById(_id, context) {
+  static async queryById(_id, context: Context) {
     const query = !context.user['is_superuser']
       ? { _id, projectId: context.user['curr_project'] }
       : { _id };
@@ -86,7 +86,7 @@ export class ImageModel {
     }
   }
 
-  static async queryByFilter(input, context) {
+  static async queryByFilter(input, context: Context) {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
         aggregation: buildPipeline(input.filters, context.user['curr_project']),
@@ -104,7 +104,7 @@ export class ImageModel {
     }
   }
 
-  static async deleteImages(input, context) {
+  static async deleteImages(input, context: Context) {
     try {
       const res = await Promise.allSettled(
         input.imageIds.map((imageId) => {
@@ -130,7 +130,7 @@ export class ImageModel {
     }
   }
 
-  static async deleteImage(input, context) {
+  static async deleteImage(input, context: Context) {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -159,7 +159,7 @@ export class ImageModel {
     }
   }
 
-  static async createImage(input, context) {
+  static async createImage(input, context: Context) {
     const successfulOps = [];
     const errors = [];
     const md = sanitizeMetadata(input.md);
@@ -339,7 +339,7 @@ export class ImageModel {
     }
   }
 
-  static async deleteComment(input, context) {
+  static async deleteComment(input, context: Context) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
@@ -365,7 +365,7 @@ export class ImageModel {
     }
   }
 
-  static async updateComment(input, context) {
+  static async updateComment(input, context: Context) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
@@ -389,7 +389,7 @@ export class ImageModel {
     }
   }
 
-  static async createComment(input, context) {
+  static async createComment(input, context: Context) {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
@@ -407,7 +407,7 @@ export class ImageModel {
     }
   }
 
-  static async createObjects(input, context) {
+  static async createObjects(input, context: Context) {
     console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
     const operation = async ({ objects }) => {
       return await retry(
@@ -547,7 +547,7 @@ export class ImageModel {
    * @param {object} input
    * @param {object} context
    */
-  static async createInternalLabels(input, context) {
+  static async createInternalLabels(input, context: Context) {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
     const operation = async ({ label }) => {
       return await retry(
@@ -668,7 +668,7 @@ export class ImageModel {
     }
   }
 
-  static async createLabels(input, context) {
+  static async createLabels(input, context: Context) {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
     const operation = async ({ label }) => {
       return await retry(
@@ -791,7 +791,7 @@ export class ImageModel {
    * @param {string} input.labelId - Label to remove
    * @param {object} context
    */
-  static async deleteAnyLabels(input, context) {
+  static async deleteAnyLabels(input, context: Context) {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
       projectId: context.user['curr_project'],
@@ -877,7 +877,7 @@ export class ImageModel {
     }
   }
 
-  static async getStatsTask(input, context) {
+  static async getStatsTask(input, context: Context) {
     try {
       return await TaskModel.create(
         {
@@ -894,7 +894,7 @@ export class ImageModel {
     }
   }
 
-  static async exportAnnotationsTask(input, context) {
+  static async exportAnnotationsTask(input, context: Context) {
     try {
       return TaskModel.create(
         {
@@ -967,95 +967,90 @@ export class ImageModel {
   }
 }
 
-export default class AuthedImageModel {
-  constructor(user) {
-    if (!user) throw new AuthenticationError('Authentication failed');
-    this.user = user;
+export default class AuthedImageModel extends BaseAuthedModel {
+  async countImages(...args: MethodParams<typeof ImageModel.countImages>) {
+    return await ImageModel.countImages(...args);
   }
 
-  async countImages(input, context) {
-    return await ImageModel.countImages(input, context);
+  async queryById(...args: MethodParams<typeof ImageModel.queryById>) {
+    return await ImageModel.queryById(...args);
   }
 
-  async queryById(_id, context) {
-    return await ImageModel.queryById(_id, context);
+  async queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
+    return await ImageModel.queryByFilter(...args);
   }
 
-  async queryByFilter(input, context) {
-    return await ImageModel.queryByFilter(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async createComment(...args: MethodParams<typeof ImageModel.createComment>) {
+    return await ImageModel.createComment(...args);
   }
 
-  async createComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createComment(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
+    return await ImageModel.updateComment(...args);
   }
 
-  async updateComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateComment(input, context);
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  async deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
+    return await ImageModel.deleteComment(...args);
   }
 
-  async deleteComment(input, context) {
-    if (!hasRole(this.user, WRITE_COMMENTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteComment(input, context);
+  @roleCheck(DELETE_IMAGES_ROLES)
+  async deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
+    return await ImageModel.deleteImage(...args);
   }
 
-  async deleteImage(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteImage(input, context);
+  @roleCheck(DELETE_IMAGES_ROLES)
+  async deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
+    return await ImageModel.deleteImages(...args);
   }
 
-  async deleteImages(input, context) {
-    if (!hasRole(this.user, DELETE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteImages(input, context);
+  @roleCheck(WRITE_IMAGES_ROLES)
+  async createImage(...args: MethodParams<typeof ImageModel.createImage>) {
+    return await ImageModel.createImage(...args);
   }
 
-  async createImage(input, context) {
-    if (!hasRole(this.user, WRITE_IMAGES_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createImage(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
+    return await ImageModel.createObjects(...args);
   }
 
-  async createObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createObjects(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
+    return await ImageModel.updateObjects(...args);
   }
 
-  async updateObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateObjects(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
+    return await ImageModel.deleteObjects(...args);
   }
 
-  async deleteObjects(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteObjects(input, context);
-  }
-
-  async createInternalLabels(input, context) {
+  async createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
-    return await ImageModel.createInternalLabels(input, context);
+    return await ImageModel.createInternalLabels(...args);
   }
 
-  async createLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.createLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
+    return await ImageModel.createLabels(...args);
   }
 
-  async updateLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.updateLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
+    return await ImageModel.updateLabels(...args);
   }
 
-  async deleteLabels(input, context) {
-    if (!hasRole(this.user, WRITE_OBJECTS_ROLES)) throw new ForbiddenError();
-    return await ImageModel.deleteLabels(input, context);
+  @roleCheck(WRITE_OBJECTS_ROLES)
+  async deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
+    return await ImageModel.deleteLabels(...args);
   }
 
-  async getStats(input, context) {
-    return await ImageModel.getStatsTask(input, context);
+  async getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
+    return await ImageModel.getStatsTask(...args);
   }
 
-  async exportAnnotations(input, context) {
-    if (!hasRole(this.user, EXPORT_DATA_ROLES)) throw new ForbiddenError();
-    return await ImageModel.exportAnnotationsTask(input, context);
+  @roleCheck(EXPORT_DATA_ROLES)
+  async exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
+    return await ImageModel.exportAnnotationsTask(...args);
   }
 }
