@@ -7,6 +7,6 @@ export default /* GraphQL */ `
   input CloseUploadInput {
     batchId: String!
     multipartUploadId: String!
-    parts: [CloseUploadPart]!
+    parts: [CloseUploadPart!]!
   }
 `;
