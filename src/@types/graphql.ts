@@ -170,7 +170,7 @@ export type CreateInternalLabelInput = {
 };
 
 export type CreateInternalLabelsInput = {
-  labels: Array<InputMaybe<CreateInternalLabelInput>>;
+  labels: Array<CreateInternalLabelInput>;
 };
 
 export type CreateLabelInput = {
@@ -358,8 +358,8 @@ export type Filters = {
   createdEnd?: Maybe<Scalars['Date']['output']>;
   createdStart?: Maybe<Scalars['Date']['output']>;
   custom?: Maybe<Scalars['String']['output']>;
-  deployments?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  labels?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  deployments?: Maybe<Array<Scalars['String']['output']>>;
+  labels?: Maybe<Array<Scalars['String']['output']>>;
   notReviewed?: Maybe<Scalars['Boolean']['output']>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
 };

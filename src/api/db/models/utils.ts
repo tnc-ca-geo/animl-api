@@ -4,16 +4,18 @@ import { isFilterValid } from 'mongodb-query-parser';
 import mongoose, { HydratedDocument, PipelineStage } from 'mongoose';
 import { Config } from '../../../config/config.js';
 import { User } from '../../auth/authorization.js';
-import { DuplicateLabelError, ForbiddenError, NotFoundError } from '../../errors.js';
-import Image, { ImageSchema } from '../schemas/Image.js';
-import ImageAttempt, { ImageMetadataSchema } from '../schemas/ImageAttempt.js';
 import {
-  CameraConfigSchema,
-  DeploymentSchema,
-  FiltersSchema,
-  ProjectSchema,
-} from '../schemas/Project.js';
+  AuthenticationError,
+  DuplicateLabelError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../errors.js';
+import Image, { ImageSchema } from '../schemas/Image.js';
+import ImageAttempt from '../schemas/ImageAttempt.js';
+import { CameraConfigSchema, DeploymentSchema, ProjectSchema } from '../schemas/Project.js';
+import { LabelSchema } from '../schemas/shared/index.js';
 import { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
+import type * as gql from '../../../@types/graphql.js';
 
 // TODO: this file is getting unwieldy, break up
 
@@ -133,7 +135,7 @@ export function buildPipeline(
     reviewed,
     notReviewed,
     custom,
-  }: FiltersSchema,
+  }: gql.Filters,
   projectId?: string,
 ): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
@@ -422,7 +424,7 @@ export function createImageRecord(md: ImageMetadata) {
   });
 }
 
-export function isLabelDupe(image: ImageSchema, newLabel: LabelSchema) {
+export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord) {
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -452,8 +454,8 @@ export function isLabelDupe(image: ImageSchema, newLabel: LabelSchema) {
 export function reviewerLabelRecord(
   project: ProjectSchema,
   image: ImageSchema,
-  label: LabelSchema,
-): WithId<LabelSchema> {
+  label: HydratedDocument<LabelSchema>,
+) {
   label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId!);
 
@@ -478,12 +480,14 @@ export function reviewerLabelRecord(
 }
 
 // TODO: accommodate users as label authors as well as models
-export function createLabelRecord<T extends HydratedDocument<LabelSchema>>(
-  input: T,
+export function createLabelRecord(
+  input:
+    | HydratedDocument<LabelSchema>
+    | (gql.CreateInternalLabelInput & { _id: undefined; type: undefined; validation: undefined }),
   authorId: string,
-): T {
+): LabelRecord {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
-  const label = {
+  return {
     ...(_id && { _id }),
     type,
     labelId,
@@ -495,7 +499,6 @@ export function createLabelRecord<T extends HydratedDocument<LabelSchema>>(
     ...(authorId && type === 'manual' && { userId: authorId }),
     ...(authorId && type === 'manual' && { validation }),
   };
-  return label;
 }
 
 // TODO: consider calling this isAuthorized() ?
@@ -508,7 +511,7 @@ export function hasRole(user: User, targetRoles: string[] = []) {
 
 // TODO: accommodate user-created deployments with no startDate?
 export function findDeployment(
-  img: Pick<ImageMetadata, 'dateTimeOriginal'>,
+  img: ImageMetadata,
   camConfig: CameraConfigSchema,
   projTimeZone: string,
 ) {
@@ -540,7 +543,7 @@ export function findDeployment(
   // get associated with that more recent deployment
 
   let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
-    ? DateTime.fromISO((img.dateTimeOriginal as Date).toString())
+    ? DateTime.fromISO(img.dateTimeOriginal.toString())
     : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
@@ -564,7 +567,7 @@ export function findDeployment(
 }
 
 export function mapImgToDep(
-  img: Pick<ImageMetadata, 'dateTimeOriginal'>,
+  img: ImageMetadata,
   camConfig: CameraConfigSchema,
   projTimeZone: string,
 ) {
@@ -578,13 +581,16 @@ export function mapImgToDep(
     : findDeployment(img, camConfig, projTimeZone)!;
 }
 
-export function sortDeps<T extends DeploymentSchema[]>(deps: T): T {
-  return deps.toSorted((a, b) => {
-    if (a.name === 'default') return -1;
-    const aStart = a.startDate!;
-    const bStart = b.startDate!;
-    return aStart.diff(bStart).as('milliseconds');
-  }) as T;
+export function sortDeps(deps: DeploymentSchema[]): DeploymentSchema[] {
+  return deps.toSorted((a, b) =>
+    a.name === 'default'
+      ? // Default first
+        -1
+      : // Otherwise, order by date
+        DateTime.fromJSDate(a.startDate!)
+          .diff(DateTime.fromJSDate(b.startDate!))
+          .as('milliseconds'),
+  );
 }
 
 export function findActiveProjReg(camera: WirelessCameraSchema) {
@@ -609,10 +615,53 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
+/**
+ * Decorator to check if user has role before calling underlying method
+ * @param roles
+ * @returns
+ */
+export function roleCheck(roles: string[]) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function (...args: any[]) {
+      if (!hasRole((this as BaseAuthedModel).user, roles)) {
+        throw new ForbiddenError();
+      }
+      return originalMethod.apply(this, args);
+    };
+
+    return descriptor;
+  };
+}
+
+export class BaseAuthedModel {
+  user: User;
+  constructor(user: User | null) {
+    if (!user) throw new AuthenticationError('Authentication failed');
+    this.user = user;
+  }
+}
+
+export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
+
+export type Pagination<T = {}> = T & {
+  paginatedField?: string;
+  sortAscending?: boolean;
+  limit?: number;
+  next?: string;
+  previous?: string;
+};
+
+export interface GenericResponse {
+  isOk: boolean;
+}
+
 // NOTE: This interface was reverse-engineered by looking at the properties that were
 // accessed on this object within this file. It is not authoratative and may be incomplete.
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
+  dateTimeOriginal: Date;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId
@@ -631,6 +680,26 @@ export interface ImageMetadata {
 
   hash: string;
   errors?: Array<Error | string>;
+
+  batchId: string;
+  fileTypeExtension: string;
+  timezone: string;
+  make: string;
+  model?: string;
+  path?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageBytes?: number;
 }
-export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
-export type WithId<BaseType, IdType = string> = BaseType & { _id: IdType };
+export interface LabelRecord {
+  _id?: mongoose.Types.ObjectId;
+  type?: string;
+  labelId: string;
+  conf?: Maybe<number>;
+  bbox: number[];
+  labeledDate: DateTime;
+  mlModel?: string;
+  mlModelVersion?: Maybe<string>;
+  userId?: string;
+  validation?: Maybe<{ validated: boolean }>;
+}
