@@ -163,7 +163,7 @@ export type CreateImagePayload = {
 export type CreateInternalLabelInput = {
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
-  imageId?: InputMaybe<Scalars['ID']['input']>;
+  imageId: Scalars['ID']['input'];
   labelId: Scalars['String']['input'];
   mlModel: Scalars['String']['input'];
   mlModelVersion: Scalars['String']['input'];
@@ -177,9 +177,10 @@ export type CreateLabelInput = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
-  imageId?: InputMaybe<Scalars['ID']['input']>;
+  imageId: Scalars['ID']['input'];
   labelId: Scalars['String']['input'];
   labeledDate?: InputMaybe<Scalars['Date']['input']>;
+  mlModel?: InputMaybe<Scalars['String']['input']>;
   objectId?: InputMaybe<Scalars['ID']['input']>;
   userId?: InputMaybe<Scalars['ID']['input']>;
   validation?: InputMaybe<ValidationInput>;
@@ -192,6 +193,7 @@ export type CreateLabelsInput = {
 export type CreateObjectInput = {
   imageId: Scalars['ID']['input'];
   object: ObjectInput;
+  labels: Array<CreateLabelInput>;
 };
 
 export type CreateObjectsInput = {

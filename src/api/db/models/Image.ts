@@ -12,6 +12,7 @@ import { BulkWriteResult } from 'mongodb';
 import mongoose, { HydratedDocument } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
+import { ObjectSchema } from '../schemas/shared/index.js';
 import Image, { ImageCommentSchema, ImageSchema } from '../schemas/Image.js';
 import Project from '../schemas/Project.js';
 import ImageError from '../schemas/ImageError.js';
@@ -58,7 +59,7 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels, context: Context): Promise<> {
+  static async countImagesByLabel(labels: string[], context: Context): Promise<number> {
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -121,12 +122,8 @@ export class ImageModel {
       );
 
       const errors = res
-        .filter((r) => {
-          return r.status === 'rejected';
-        })
-        .map((r) => {
-          return r.reason;
-        }); // Will always be a GraphQLError
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map((r) => r.reason); // Will always be a GraphQLError
 
       return {
         isOk: !errors.length,
@@ -368,7 +365,7 @@ export class ImageModel {
 
       image.comments = image.comments.filter((c) => {
         return !idMatch(c._id, input.id);
-      });
+      }) as mongoose.Types.DocumentArray<ImageCommentSchema>;
 
       await image.save();
 
@@ -438,15 +435,11 @@ export class ImageModel {
       // find image, create label record
       const project = await ProjectModel.queryById(context.user['curr_project']);
 
-      for (let oid = 0; oid < input.objects.length; oid++) {
-        const image = await ImageModel.queryById(input.objects[oid].imageId, context);
+      for (const o of input.objects) {
+        const image = await ImageModel.queryById(o.imageId, context);
 
-        for (let lid = 0; lid < (input.objects[oid].labels || []).length; lid++) {
-          input.objects[oid].labels[lid] = reviewerLabelRecord(
-            project,
-            image,
-            input.objects[oid].labels[lid],
-          );
+        for (let lid = 0; lid < (o.labels || []).length; lid++) {
+          o.labels[lid] = reviewerLabelRecord(project, image, o.labels[lid]);
         }
       }
 
@@ -493,7 +486,7 @@ export class ImageModel {
           const operations = [];
           for (const update of input.updates) {
             const { imageId, objectId, diffs } = update;
-            const overrides = {};
+            const overrides: Record<string, any> = {};
             for (const [key, newVal] of Object.entries(diffs)) {
               overrides[`objects.$[obj].${key}`] = newVal;
             }
@@ -565,8 +558,7 @@ export class ImageModel {
   static async createInternalLabels(
     input: gql.CreateInternalLabelsInput,
     context: Context,
-  ): Promise<{ ok: boolean }> {
-    // TODO: Should this be `isOk` instead of `ok`?
+  ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
 
     try {
@@ -578,7 +570,7 @@ export class ImageModel {
               JSON.stringify(label),
             );
 
-            label.type = 'ml';
+            (label as any).type = 'ml';
 
             // find image, create label record
             const image = await ImageModel.queryById(label.imageId, context);
@@ -681,7 +673,11 @@ export class ImageModel {
       }
       return { ok: true };
     } catch (err) {
-      console.log(`Image.createInternalLabels() ERROR on image ${input.imageId}: ${err}`);
+      console.log(
+        `Image.createInternalLabels() ERROR on image ${input.labels
+          .map((l) => l.imageId)
+          .join(', ')}: ${err}`,
+      );
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -690,7 +686,7 @@ export class ImageModel {
   static async createLabels(
     input: gql.CreateLabelsInput,
     context: Context,
-  ): Promise<GenericResponse> {
+  ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
     try {
@@ -709,7 +705,7 @@ export class ImageModel {
             // else add new object
             if (label.objectId) {
               const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
-              object.labels.unshift(labelRecord);
+              object?.labels.unshift(labelRecord);
             } else {
               let objExists = false;
               for (const object of image.objects) {
@@ -735,6 +731,7 @@ export class ImageModel {
         );
         console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
+          // TODO: Verify this
           await handleEvent(
             {
               event: 'label-added',
@@ -749,7 +746,11 @@ export class ImageModel {
       await this.updateReviewStatus(imageIds);
       return { ok: true };
     } catch (err) {
-      console.log(`Image.createLabels() ERROR on image ${input.imageId}: ${err}`);
+      console.log(
+        `Image.createLabels() ERROR on images ${input.labels
+          .map((l) => l.imageId)
+          .join(', ')}: ${err}`,
+      );
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -764,7 +765,7 @@ export class ImageModel {
           const operations = [];
           for (const update of input.updates) {
             const { imageId, objectId, labelId, diffs } = update;
-            const overrides = {};
+            const overrides: Record<string, any> = {};
             for (const [key, newVal] of Object.entries(diffs)) {
               overrides[`objects.$[obj].labels.$[lbl].${key}`] = newVal;
             }
@@ -807,10 +808,13 @@ export class ImageModel {
    * @param {string} input.labelId - Label to remove
    * @param {object} context
    */
-  static async deleteAnyLabels(input: { labelId: string }, context: Context): Promise<> {
+  static async deleteAnyLabels(
+    input: { labelId: string },
+    context: Context,
+  ): Promise<HydratedDocument<ImageSchema>[]> {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
-      projectId: context.user['curr_project'],
+      projectId: context.user['curr_project']!,
     });
 
     return await Promise.all(
@@ -826,8 +830,11 @@ export class ImageModel {
    * @param {object} image
    * @param {string} labelId
    */
-  static async deleteAnyLabel(image: HydratedDocument<ImageSchema>, labelId: string): Promise<> {
-    function removeLabels(obj) {
+  static async deleteAnyLabel(
+    image: HydratedDocument<ImageSchema>,
+    labelId: string,
+  ): Promise<HydratedDocument<ImageSchema>> {
+    function removeLabels(obj: ObjectSchema) {
       for (let lid = 0; lid < (obj.labels || []).length; lid++) {
         if (idMatch(obj.labels[lid].labelId, labelId)) {
           obj.labels.splice(lid, 1);
@@ -842,7 +849,9 @@ export class ImageModel {
 
       if (object.labels.length === 1 && idMatch(object.labels[0].labelId, labelId)) {
         // the object only has one label and it's the one we're removing, so delete object
-        image.objects = image.objects.filter((obj) => !idMatch(obj._id, image.objects[oid]._id));
+        image.objects = image.objects.filter(
+          (obj) => !idMatch(obj._id, image.objects[oid]._id),
+        ) as mongoose.Types.DocumentArray<ObjectSchema>;
       } else if (object.locked && firstValidLabel && idMatch(firstValidLabel.labelId, labelId)) {
         // the object is locked and the first validated label is one of the labels we're removing,
         // so delete label(s) and unlock the object
@@ -1068,4 +1077,8 @@ export default class AuthedImageModel extends BaseAuthedModel {
   async exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
     return await ImageModel.exportAnnotationsTask(...args);
   }
+}
+
+interface AlternativeGenericResponse {
+  ok: boolean;
 }
