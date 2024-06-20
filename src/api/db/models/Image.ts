@@ -45,7 +45,7 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 
@@ -383,8 +383,8 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => {
-        return idMatch(c._id, input.id);
+      const comment = (image.comments || []).filter((c: HydratedDocument<ImageCommentSchema>) => {
+        return idMatch(c._id!, input.id);
       })[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
@@ -704,7 +704,7 @@ export class ImageModel {
             // else try to match to existing object bbox and merge label into that
             // else add new object
             if (label.objectId) {
-              const object = image.objects.find((obj) => idMatch(obj._id, label.objectId));
+              const object = image.objects.find((obj) => idMatch(obj._id!, label.objectId!));
               object?.labels.unshift(labelRecord);
             } else {
               let objExists = false;
@@ -850,7 +850,7 @@ export class ImageModel {
       if (object.labels.length === 1 && idMatch(object.labels[0].labelId, labelId)) {
         // the object only has one label and it's the one we're removing, so delete object
         image.objects = image.objects.filter(
-          (obj) => !idMatch(obj._id, image.objects[oid]._id),
+          (obj) => !idMatch(obj._id!, image.objects[oid]._id!),
         ) as mongoose.Types.DocumentArray<ObjectSchema>;
       } else if (object.locked && firstValidLabel && idMatch(firstValidLabel.labelId, labelId)) {
         // the object is locked and the first validated label is one of the labels we're removing,

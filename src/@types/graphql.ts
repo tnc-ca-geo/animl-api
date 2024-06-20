@@ -193,7 +193,6 @@ export type CreateLabelsInput = {
 export type CreateObjectInput = {
   imageId: Scalars['ID']['input'];
   object: ObjectInput;
-  labels: Array<CreateLabelInput>;
 };
 
 export type CreateObjectsInput = {
