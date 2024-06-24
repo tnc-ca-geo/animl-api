@@ -781,7 +781,7 @@ export type ObjectDiffsInput = {
 export type ObjectInput = {
   _id: Scalars['ID']['input'];
   bbox?: InputMaybe<Array<Scalars['Float']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<CreateLabelInput>>>;
+  labels?: InputMaybe<Array<CreateLabelInput>>;
   locked: Scalars['Boolean']['input'];
 };
 

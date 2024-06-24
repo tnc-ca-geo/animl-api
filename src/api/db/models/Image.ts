@@ -14,8 +14,8 @@ import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
 import Image, { ImageCommentSchema, ImageSchema } from '../schemas/Image.js';
-import Project from '../schemas/Project.js';
-import ImageError from '../schemas/ImageError.js';
+import Project, { CameraConfigSchema } from '../schemas/Project.js';
+import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import ImageAttempt, { ImageAttemptSchema } from '../schemas/ImageAttempt.js';
 import WirelessCamera from '../schemas/WirelessCamera.js';
 import Batch from '../schemas/Batch.js';
@@ -48,6 +48,7 @@ import retry from 'async-retry';
 import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
+import { DateTime } from 'luxon';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -72,7 +73,7 @@ export class ImageModel {
 
   static async queryById(_id: string, context: Context): Promise<HydratedDocument<ImageSchema>> {
     const query = !context.user['is_superuser']
-      ? { _id, projectId: context.user['curr_project'] }
+      ? { _id, projectId: context.user['curr_project']! }
       : { _id };
     try {
       const image = await Image.findOne(query);
@@ -80,7 +81,7 @@ export class ImageModel {
 
       const epipeline = [];
       epipeline.push({ $match: { image: image._id } });
-      image.errors = await ImageError.aggregate(epipeline);
+      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF
 
       return image;
     } catch (err) {
@@ -184,12 +185,12 @@ export class ImageModel {
         if (md.batchId) {
           // if it's from a batch, find the batch record, and use its projectId
           const batch = await Batch.findOne({ _id: md.batchId });
-          projectId = batch.projectId;
+          projectId = batch!.projectId;
 
           // also override the serial number if that flag was set
-          if (batch.overrideSerial) {
-            md.serialNumber = batch.overrideSerial;
-            cameraId = batch.overrideSerial;
+          if (batch!.overrideSerial) {
+            md.serialNumber = batch!.overrideSerial;
+            cameraId = batch!.overrideSerial;
           }
         } else {
           // else find wireless camera record and associated project Id
@@ -265,11 +266,14 @@ export class ImageModel {
           console.log('camConfig associated with image: ', camConfig);
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
-          md.deploymentId = deployment._id;
+          md.deploymentId = deployment._id!;
           md.timezone = deployment.timezone;
-          md.dateTimeOriginal = md.dateTimeOriginal.setZone(deployment.timezone, {
-            keepLocalTime: true,
-          });
+          md.dateTimeOriginal = (md.dateTimeOriginal as DateTime<true>).setZone(
+            deployment.timezone,
+            {
+              keepLocalTime: true,
+            },
+          );
 
           const image = await retry(
             async (bail, attempt) => {
@@ -287,7 +291,7 @@ export class ImageModel {
         console.error('Image Creation Error', err);
 
         // add any errors to the error array so that we can create ImageErrors for them
-        errors.push(err);
+        errors.push(err as Error);
 
         // reverse successful operations
         for (const op of successfulOps) {
@@ -301,7 +305,7 @@ export class ImageModel {
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter(
               (camConfig) => !idMatch(camConfig._id, op.info.cameraId),
-            );
+            ) as mongoose.Types.DocumentArray<CameraConfigSchema>;
             proj.save();
           }
         }
@@ -311,14 +315,15 @@ export class ImageModel {
       if (errors.length) {
         console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
-          errors[i] = new ImageError({
+          const err = new ImageError({
             image: md.imageId,
             batch: md.batchId,
             path: md.path || md.fileName,
             error: errors[i].message,
           });
-          console.log(`creating ImageErrors for: ${JSON.stringify(errors[i])}`);
-          await errors[i].save();
+          console.log(`creating ImageErrors for: ${JSON.stringify(err)}`);
+          await err.save();
+          errors[i] = err as any as Error; // Hack to get around TypeScript's type checking
         }
       }
 
@@ -437,10 +442,7 @@ export class ImageModel {
 
         o.object.labels = o.object.labels?.map((label) =>
           reviewerLabelRecord(project, image, label),
-        );
-        // for (let lid = 0; lid < (o.labels || []).length; lid++) {
-        //   o.labels[lid] = reviewerLabelRecord(project, image, o.labels[lid]);
-        // }
+        ) as gql.CreateLabelInput[];
       }
 
       const res = await retry(
@@ -580,7 +582,7 @@ export class ImageModel {
             const project = await ProjectModel.queryById(image.projectId);
             const labelRecord = createLabelRecord(label, label.mlModel);
 
-            const model = await MLModelModel.queryById(labelRecord.mlModel);
+            const model = await MLModelModel.queryById(labelRecord.mlModel!);
             const cats = model.categories.filter((cat) => {
               return idMatch(cat._id, labelRecord.labelId);
             });
