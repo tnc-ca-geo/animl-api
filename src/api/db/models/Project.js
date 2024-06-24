@@ -22,7 +22,7 @@ const MAX_LABEL_DELETE = 500;
 
 export class ProjectModel {
   static async queryById(_id) {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     try {
       const project = await Project.findOne(query);
       if (!project) throw new NotFoundError('Project not found');

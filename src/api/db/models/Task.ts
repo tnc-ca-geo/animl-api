@@ -43,7 +43,7 @@ export class TaskModel {
   }
 
   static async queryById(_id: string, context: Context): Promise<HydratedDocument<TaskSchema>> {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
 

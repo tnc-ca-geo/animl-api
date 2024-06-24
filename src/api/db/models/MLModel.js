@@ -4,7 +4,7 @@ import retry from 'async-retry';
 
 export class MLModelModel {
   static async queryById(_id) {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     try {
       const model = await MLModel.findOne(query);
       if (!model) throw new NotFoundError('Model not found');
