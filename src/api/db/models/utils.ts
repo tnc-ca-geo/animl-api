@@ -250,17 +250,17 @@ export function buildPipeline(
   return pipeline;
 }
 
-export function sanitizeMetadata<T>(md: T): T {
-  const sanitized: Record<any, any> = {};
+export function sanitizeMetadata(md: ImageMetadata): ImageMetadata {
+  const sanitized: Partial<ImageMetadata> = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
   // else camel case
   for (const key in md) {
     // eslint-disable-next-line eqeqeq
-    const newKey = !(key.charAt(1) == key.charAt(1).toUpperCase())
+    const newKey: keyof ImageMetadata = !(key.charAt(1) == key.charAt(1).toUpperCase())
       ? key.charAt(0).toLowerCase() + key.slice(1)
       : key;
-    sanitized[newKey as keyof ImageMetadata] = md[key as keyof T];
+    sanitized[newKey] = md[key];
   }
 
   // TODO: I don't love that this is here. We can't parse the dateTimeOriginal
@@ -424,7 +424,7 @@ export function createImageRecord(md: ImageMetadata) {
   });
 }
 
-export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord) {
+export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord): boolean {
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -454,8 +454,8 @@ export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord) {
 export function reviewerLabelRecord(
   project: ProjectSchema,
   image: ImageSchema,
-  label: HydratedDocument<LabelSchema>,
-) {
+  label: HydratedDocument<LabelSchema> | gql.CreateLabelInput,
+): LabelRecord {
   label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId!);
 

@@ -53,7 +53,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
   static async countImages(input: gql.QueryImagesCountInput, context: Context): Promise<number> {
-    const pipeline = buildPipeline(input.filters, context.user['curr_project']);
+    const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
@@ -95,7 +95,7 @@ export class ImageModel {
   ): Promise<AggregationOutput<ImageSchema>> {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
-        aggregation: buildPipeline(input.filters, context.user['curr_project']),
+        aggregation: buildPipeline(input.filters, context.user['curr_project']!),
         limit: input.limit,
         paginatedField: input.paginatedField,
         sortAscending: input.sortAscending,
@@ -168,8 +168,8 @@ export class ImageModel {
     input: gql.CreateImageInput,
     context: Context,
   ): Promise<HydratedDocument<ImageAttemptSchema>> {
-    const successfulOps = [];
-    const errors = [];
+    const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
+    const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
@@ -217,9 +217,11 @@ export class ImageModel {
       try {
         // check for errors passed in from animl-ingest (e.g. corrupted image file)
         if (input.md.errors) {
-          input.md.errors
-            .filter((err) => typeof err === 'string')
-            .forEach((err) => errors.push(new Error(err)));
+          errors.push(
+            ...input.md.errors
+              .filter((err: any): err is string => typeof err === 'string')
+              .map((err: string) => new Error(err)),
+          );
         }
 
         // test serial number
@@ -233,7 +235,7 @@ export class ImageModel {
         }
 
         // test image size
-        if (md.imageBytes >= 4 * 1000000) {
+        if (md.imageBytes! >= 4 * 1000000) {
           errors.push(new Error('Image Size Exceed 4mb'));
         }
 
@@ -259,6 +261,7 @@ export class ImageModel {
           const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
           console.log('project associated with image: ', project);
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          if (!camConfig) throw new Error('Camera Config not found');
           console.log('camConfig associated with image: ', camConfig);
           const deployment = mapImgToDep(md, camConfig, project.timezone);
 
@@ -319,14 +322,12 @@ export class ImageModel {
         }
       }
 
-      // return imageAttempt
-      imageAttempt.errors = errors;
       return imageAttempt;
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
 
-      const msg = err.message.toLowerCase();
+      const msg = (err as Error).message.toLowerCase();
       const imageError = new ImageError({
         image: md.imageId,
         batch: md.batchId,
@@ -354,18 +355,16 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c) => {
-        return idMatch(c._id, input.id);
-      })[0];
+      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
         throw new ForbiddenError('Can only edit your own comments');
       }
 
-      image.comments = image.comments.filter((c) => {
-        return !idMatch(c._id, input.id);
-      }) as mongoose.Types.DocumentArray<ImageCommentSchema>;
+      image.comments = image.comments.filter(
+        (c) => !idMatch(c._id!, input.id),
+      ) as mongoose.Types.DocumentArray<ImageCommentSchema>;
 
       await image.save();
 
@@ -383,9 +382,7 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const comment = (image.comments || []).filter((c: HydratedDocument<ImageCommentSchema>) => {
-        return idMatch(c._id!, input.id);
-      })[0];
+      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
@@ -438,9 +435,12 @@ export class ImageModel {
       for (const o of input.objects) {
         const image = await ImageModel.queryById(o.imageId, context);
 
-        for (let lid = 0; lid < (o.labels || []).length; lid++) {
-          o.labels[lid] = reviewerLabelRecord(project, image, o.labels[lid]);
-        }
+        o.object.labels = o.object.labels?.map((label) =>
+          reviewerLabelRecord(project, image, label),
+        );
+        // for (let lid = 0; lid < (o.labels || []).length; lid++) {
+        //   o.labels[lid] = reviewerLabelRecord(project, image, o.labels[lid]);
+        // }
       }
 
       const res = await retry(
@@ -574,6 +574,7 @@ export class ImageModel {
 
             // find image, create label record
             const image = await ImageModel.queryById(label.imageId, context);
+            // TODO: Pair with Natty on the shape of the label
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
             const project = await ProjectModel.queryById(image.projectId);

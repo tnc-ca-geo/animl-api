@@ -373,7 +373,7 @@ export type FiltersInput = {
   createdStart?: InputMaybe<Scalars['Date']['input']>;
   custom?: InputMaybe<Scalars['String']['input']>;
   deployments?: InputMaybe<Array<Scalars['String']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  labels?: InputMaybe<Array<Scalars['String']['input']>>;
   reviewed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
