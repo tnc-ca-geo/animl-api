@@ -11,6 +11,6 @@ export default /* GraphQL */ `
   }
 
   input UpdateObjectsInput {
-    updates: [ObjectUpdate]!
+    updates: [ObjectUpdate!]!
   }
 `;
