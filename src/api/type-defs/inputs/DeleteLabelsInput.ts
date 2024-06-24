@@ -6,6 +6,6 @@ export default /* GraphQL */ `
   }
 
   input DeleteLabelsInput {
-    labels: [DeleteLabelInput]!
+    labels: [DeleteLabelInput!]!
   }
 `;

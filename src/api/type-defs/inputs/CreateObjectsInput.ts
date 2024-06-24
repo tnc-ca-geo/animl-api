@@ -12,6 +12,6 @@ export default /* GraphQL */ `
   }
 
   input CreateObjectsInput {
-    objects: [CreateObjectInput]!
+    objects: [CreateObjectInput!]!
   }
 `;
