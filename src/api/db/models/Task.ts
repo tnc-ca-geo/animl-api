@@ -1,8 +1,7 @@
-import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
+import { NotFoundError } from '../../errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
-import { hasRole } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
 import { Context } from '../../handler.js';
@@ -54,10 +53,7 @@ export class TaskModel {
     return task;
   }
 
-  static async create<T>(
-    input: TaskInput<T>,
-    context: Context,
-  ): Promise<HydratedDocument<TaskSchema>> {
+  static async create(input: TaskInput, context: Context): Promise<HydratedDocument<TaskSchema>> {
     const task = new Task({
       user: input.user,
       projectId: input.projectId,
@@ -106,6 +102,6 @@ export default class AuthedTaskModel extends BaseAuthedModel {
   }
 }
 
-export interface TaskInput<T> extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
-  config: T;
+export interface TaskInput extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
+  config: any;
 }
