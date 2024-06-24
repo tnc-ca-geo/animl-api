@@ -12,7 +12,7 @@ import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
 import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
 import { Context } from '../../handler.js';
 

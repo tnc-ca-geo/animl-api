@@ -2,9 +2,8 @@ import GraphQLError, { InternalServerError, CameraRegistrationError } from '../.
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
-import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import { ProjectSchema } from '../schemas/Project.js';
