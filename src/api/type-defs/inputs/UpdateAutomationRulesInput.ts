@@ -20,6 +20,6 @@ export default /* GraphQL */ `
   }
 
   input UpdateAutomationRulesInput {
-    automationRules: [AutomationRuleInput]
+    automationRules: [AutomationRuleInput!]!
   }
 `;
