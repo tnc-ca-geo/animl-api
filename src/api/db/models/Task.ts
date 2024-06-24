@@ -1,6 +1,6 @@
 import { NotFoundError, ForbiddenError, AuthenticationError } from '../../errors.js';
 import SQS from '@aws-sdk/client-sqs';
-import MongoPaging from 'mongo-cursor-pagination';
+import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
 import { hasRole } from './utils.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
@@ -25,7 +25,10 @@ export class TaskModel {
    * @param {String} input.previous
    * @param {Object} context
    */
-  static async queryByFilter(input: gql.QueryTasksInput, context: Context) {
+  static async queryByFilter(
+    input: gql.QueryTasksInput,
+    context: Context,
+  ): Promise<AggregationOutput<TaskSchema>> {
     return await MongoPaging.aggregate(Task.collection, {
       aggregation: [
         { $match: { projectId: context.user['curr_project'] } },
@@ -39,7 +42,7 @@ export class TaskModel {
     });
   }
 
-  static async queryById(_id: string, context: Context) {
+  static async queryById(_id: string, context: Context): Promise<HydratedDocument<TaskSchema>> {
     const query = { _id };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
@@ -51,7 +54,10 @@ export class TaskModel {
     return task;
   }
 
-  static async create<T>(input: TaskInput<T>, context: Context) {
+  static async create<T>(
+    input: TaskInput<T>,
+    context: Context,
+  ): Promise<HydratedDocument<TaskSchema>> {
     const task = new Task({
       user: input.user,
       projectId: input.projectId,
