@@ -12,6 +12,6 @@ export default /* GraphQL */ `
   }
 
   input UpdateLabelsInput {
-    updates: [LabelUpdate]!
+    updates: [LabelUpdate!]!
   }
 `;

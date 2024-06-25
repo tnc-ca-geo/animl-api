@@ -2,23 +2,69 @@ import Image from '../api/db/schemas/Image.js';
 import { isImageReviewed } from '../api/db/models/utils.js';
 import Mongoose from 'mongoose';
 import { DateTime } from 'luxon';
+import fetch from 'node-fetch';
+import sharp from 'sharp';
+import { buildImgUrl } from '../api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
 
 const operations = {
+  'add-image-dimensions': {
+    getIds: async () =>
+      await Image.find({
+        // projectId: 'wolf_data',
+        imageWidth: { $exists: false },
+      }).select('_id'),
+    update: async (config) => {
+      console.log('Adding image dimensions to all images...');
+
+      const _getImageSize = async (image, config) => {
+        const url = 'http://' + buildImgUrl(image, config);
+        try {
+          const res = await fetch(url);
+          const body = await res.arrayBuffer();
+          const imgBuffer = Buffer.from(body, 'binary');
+          const sharpMetadata = await sharp(imgBuffer).metadata();
+          // console.log('sharpMetadata', sharpMetadata);
+          return { width: sharpMetadata.width, height: sharpMetadata.height };
+        } catch (err) {
+          throw new Error(err);
+        }
+      };
+
+      const imgs = await Image.find({
+        // projectId: 'wolf_data',
+        imageWidth: { $exists: false },
+      });
+      try {
+        const res = { nModified: 0 };
+        for (const img of imgs) {
+          const { width, height } = await _getImageSize(img, config);
+          img.imageHeight = height;
+          img.imageWidth = width;
+          await img.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+  },
 
   'change-label-id': {
-    getIds: async () => (
+    getIds: async () =>
       await Image.find({
         projectId: 'lord_howe_island',
-        'objects.labels.labelId': '0'
-      }).select('_id')
-    ),
+        'objects.labels.labelId': '0',
+      }).select('_id'),
     update: async () => {
-      console.log('changing labelId for "empty" labels from "0" to "empty" on lord_howe_island images');
+      console.log(
+        'changing labelId for "empty" labels from "0" to "empty" on lord_howe_island images',
+      );
       const imgs = await Image.find({
         projectId: 'lord_howe_island',
-        'objects.labels.labelId': '0'
+        'objects.labels.labelId': '0',
       });
       try {
         const res = { nModified: 0 };
@@ -37,25 +83,20 @@ const operations = {
       } catch (err) {
         console.log(err);
       }
-
-    }
+    },
   },
 
   'add-timezone-field': {
-    getIds: async () => (
-      await Image.find({}).select('_id')
-    ),
+    getIds: async () => await Image.find({}).select('_id'),
     update: async () => {
       console.log('adding timezone field to all images');
       const tz = 'America/Los_Angeles';
-      return await Image.updateMany({}, { $set: { 'timezone': tz } });
-    }
+      return await Image.updateMany({}, { $set: { timezone: tz } });
+    },
   },
 
   'shift-dto': {
-    getIds: async () => (
-      await Image.find({}).select('_id')
-    ),
+    getIds: async () => await Image.find({}).select('_id'),
     update: async () => {
       console.log('shifting all dateTimeOriginal fields from UTC+0 to America/Los_Angeles time');
       const operations = [];
@@ -72,8 +113,8 @@ const operations = {
           const op = {
             updateOne: {
               filter: { _id: img._id },
-              update: { dateTimeOriginal: newDT }
-            }
+              update: { dateTimeOriginal: newDT },
+            },
           };
           operations.push(op);
         }
@@ -86,39 +127,31 @@ const operations = {
       } catch (err) {
         console.log(err);
       }
-    }
+    },
   },
 
   'remove-objects-w-no-labels': {
-    getIds: async () => (
-      await Image.find({ 'objects.labels': { $size: 0 } }).select('_id')
-    ),
+    getIds: async () => await Image.find({ 'objects.labels': { $size: 0 } }).select('_id'),
     update: async () => {
       console.log('Removing objects with empty labels arrays...');
-      return await Image.updateMany(
-        {},
-        { $pull: { objects: { labels: { $size: 0 } } } }
-      );
-    }
+      return await Image.updateMany({}, { $pull: { objects: { labels: { $size: 0 } } } });
+    },
   },
 
   'pair-all-images-with-project': {
-    getIds: async () => (
-      await Image.find({}).select('_id')
-    ),
+    getIds: async () => await Image.find({}).select('_id'),
     update: async () => {
       console.log('Associating all images with sci_biosecurity project...');
       return await Image.updateMany({}, { projectId: 'sci_biosecurity' });
-    }
+    },
   },
 
   'update-labels-to-new-schema': {
-    getIds: async () => (
+    getIds: async () =>
       await Image.find({
         // 'projectId': 'sci_biosecurity',
-        'objects.labels.type': 'ml'
-      }).select('_id')
-    ),
+        'objects.labels.type': 'ml',
+      }).select('_id'),
     update: async () => {
       console.log('Updatind labels w/ new mlModel and mlModelVersion fields...');
       // TODO: these must be modified to match the model Ids in your target db
@@ -131,90 +164,96 @@ const operations = {
           {
             mlModel: {
               $switch: {
-                branches: [{
-                  case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                  then: 'megadetector'
-                }, {
-                  case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                  then: 'mira'
-                }],
-                default: '$$REMOVE'
-              }
-            }
+                branches: [
+                  {
+                    case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                    then: 'megadetector',
+                  },
+                  {
+                    case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                    then: 'mira',
+                  },
+                ],
+                default: '$$REMOVE',
+              },
+            },
           },
           {
             mlModelVersion: {
               $switch: {
-                branches: [{
-                  case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
-                  then: 'v4.1'
-                }, {
-                  case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
-                  then: 'v1.0'
-                }],
-                default: '$$REMOVE'
-              }
-            }
-          }
-        ]
+                branches: [
+                  {
+                    case: { $eq: ['$$lbl.modelId', ObjectId(megadetectorId)] },
+                    then: 'v4.1',
+                  },
+                  {
+                    case: { $eq: ['$$lbl.modelId', ObjectId(miraId)] },
+                    then: 'v1.0',
+                  },
+                ],
+                default: '$$REMOVE',
+              },
+            },
+          },
+        ],
       };
 
       // updateMany with aggregation pipeline
       return await Image.updateMany(
         {
           // 'project': 'sci_biosecurity',
-          'objects.labels.type': 'ml'
+          'objects.labels.type': 'ml',
         },
         [
           {
             $set: {
-              'objects': {
+              objects: {
                 $map: {
                   input: '$objects',
                   as: 'obj',
                   in: {
                     // TODO AUTH - DOUBLE CHECK THIS IS WORKING.
                     // PREVIOUSLY I WIPED OUT object._id, object.locked, and object.bbox!!
-                    '_id': '$$obj._id',
-                    'locked': '$$obj.locked',
-                    'bbox': '$$obj.bbox',
-                    'labels': {
+                    _id: '$$obj._id',
+                    locked: '$$obj.locked',
+                    bbox: '$$obj.bbox',
+                    labels: {
                       $map: {
                         input: '$$obj.labels',
                         as: 'lbl',
-                        in: mergeExpression
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        in: mergeExpression,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
-          { $unset: ['objects.labels.modelId'] }
-        ]
+          { $unset: ['objects.labels.modelId'] },
+        ],
       );
-    }
+    },
   },
 
   'update-image-schema': {
-    getIds: async () => (
-      await Image.find({}).select('_id')
-    ),
+    getIds: async () => await Image.find({}).select('_id'),
     update: async () => {
       console.log('Updating all images with new property keys...');
-      return await Image.updateMany({}, {
-        $rename: {
-          'cameraSn': 'cameraId',
-          'deployment': 'deploymentId'
-        }
-      }, { strict: false });
-    }
+      return await Image.updateMany(
+        {},
+        {
+          $rename: {
+            cameraSn: 'cameraId',
+            deployment: 'deploymentId',
+          },
+        },
+        { strict: false },
+      );
+    },
   },
 
   'add-reviewed-field-to-images': {
-    getIds: async () => (
-      await Image.find().select('_id')
-    ),
+    getIds: async () => await Image.find().select('_id'),
     update: async () => {
       console.log('Adding reviewed field to all images...');
 
@@ -231,8 +270,8 @@ const operations = {
           operations.push({
             updateOne: {
               filter: { _id: image._id },
-              update: { $set: { reviewed: isImageReviewed(image) } }
-            }
+              update: { $set: { reviewed: isImageReviewed(image) } },
+            },
           });
         }
         await Image.bulkWrite(operations);
@@ -241,10 +280,8 @@ const operations = {
         console.log('Done: ', doneCount);
       }
       return { nModified: doneCount };
-    }
-  }
+    },
+  },
 };
 
-export {
-  operations
-};
+export { operations };

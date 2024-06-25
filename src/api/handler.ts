@@ -38,7 +38,6 @@ const corsMiddleware = async () => {
     return Promise.resolve();
   };
 };
-const OFFLINE_MODE = process.env.IS_OFFLINE === 'true';
 
 // Context comes from API Gateway event
 const context = async ({ event, context }: ContextInput): Promise<Context> => {
@@ -71,17 +70,12 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
 };
 
 const apolloserver = new ApolloServer({
-  includeStacktraceInErrorResponses: OFFLINE_MODE || process.env.STAGE === 'dev',
+  includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
   status400ForVariableCoercionErrors: true,
   typeDefs,
   resolvers,
-  csrfPrevention: false,
+  csrfPrevention: true,
   cache: 'bounded',
-  introspection: OFFLINE_MODE,
-  formatError: (error) => {
-    console.error(error);
-    return error;
-  },
 });
 
 export const server = startServerAndCreateLambdaHandler(

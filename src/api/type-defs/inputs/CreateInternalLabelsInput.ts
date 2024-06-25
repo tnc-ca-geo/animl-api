@@ -9,6 +9,6 @@ export default /* GraphQL */ `
   }
 
   input CreateInternalLabelsInput {
-    labels: [CreateInternalLabelInput]!
+    labels: [CreateInternalLabelInput!]!
   }
 `;

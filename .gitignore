@@ -18,3 +18,6 @@ dist
 
 # Database backups
 backups
+
+# anaysis output
+analysis
