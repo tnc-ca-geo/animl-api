@@ -1079,7 +1079,7 @@ export type UnregisterCameraPayload = {
 };
 
 export type UpdateAutomationRulesInput = {
-  automationRules?: InputMaybe<Array<InputMaybe<AutomationRuleInput>>>;
+  automationRules: Array<AutomationRuleInput>;
 };
 
 export type UpdateAutomationRulesPayload = {
