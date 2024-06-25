@@ -139,7 +139,7 @@ export class ImageErrorModel {
       return await TaskModel.create(
         {
           type: 'ExportImageErrors',
-          projectId: context.user['curr_project']!,
+          projectId: context.user['curr_project'],
           user: context.user.sub,
           config: {
             filters: input.filters,
