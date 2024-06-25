@@ -165,7 +165,7 @@ export type CreateImagePayload = {
 export type CreateInternalLabelInput = {
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
-  imageId?: InputMaybe<Scalars['ID']['input']>;
+  imageId: Scalars['ID']['input'];
   labelId: Scalars['String']['input'];
   mlModel: Scalars['String']['input'];
   mlModelVersion: Scalars['String']['input'];
@@ -179,9 +179,10 @@ export type CreateLabelInput = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
-  imageId?: InputMaybe<Scalars['ID']['input']>;
+  imageId: Scalars['ID']['input'];
   labelId: Scalars['String']['input'];
   labeledDate?: InputMaybe<Scalars['Date']['input']>;
+  mlModel?: InputMaybe<Scalars['String']['input']>;
   objectId?: InputMaybe<Scalars['ID']['input']>;
   userId?: InputMaybe<Scalars['ID']['input']>;
   validation?: InputMaybe<ValidationInput>;
@@ -360,8 +361,8 @@ export type Filters = {
   createdEnd?: Maybe<Scalars['Date']['output']>;
   createdStart?: Maybe<Scalars['Date']['output']>;
   custom?: Maybe<Scalars['String']['output']>;
-  deployments?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  labels?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  deployments?: Maybe<Array<Scalars['String']['output']>>;
+  labels?: Maybe<Array<Scalars['String']['output']>>;
   notReviewed?: Maybe<Scalars['Boolean']['output']>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
 };
@@ -374,7 +375,7 @@ export type FiltersInput = {
   createdStart?: InputMaybe<Scalars['Date']['input']>;
   custom?: InputMaybe<Scalars['String']['input']>;
   deployments?: InputMaybe<Array<Scalars['String']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  labels?: InputMaybe<Array<Scalars['String']['input']>>;
   reviewed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -789,7 +790,7 @@ export type ObjectDiffsInput = {
 export type ObjectInput = {
   _id: Scalars['ID']['input'];
   bbox?: InputMaybe<Array<Scalars['Float']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<CreateLabelInput>>>;
+  labels?: InputMaybe<Array<CreateLabelInput>>;
   locked: Scalars['Boolean']['input'];
 };
 
