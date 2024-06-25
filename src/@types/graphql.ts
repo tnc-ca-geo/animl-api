@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -7,7 +9,7 @@ export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> =
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
+  ID: { input: string; output: mongoose.Types.ObjectId | string; }
   String: { input: string; output: string; }
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
@@ -380,6 +382,13 @@ export enum Format {
   Coco = 'coco',
   Csv = 'csv'
 }
+
+export type IPageInfo = {
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
 
 export type Image = {
   __typename?: 'Image';
@@ -790,8 +799,17 @@ export type ObjectUpdate = {
   objectId: Scalars['ID']['input'];
 };
 
-export type PageInfo = {
+export type PageInfo = IPageInfo & {
   __typename?: 'PageInfo';
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  next?: Maybe<Scalars['String']['output']>;
+  previous?: Maybe<Scalars['String']['output']>;
+};
+
+export type PageInfoWithCount = IPageInfo & {
+  __typename?: 'PageInfoWithCount';
+  count?: Maybe<Scalars['Int']['output']>;
   hasNext?: Maybe<Scalars['Boolean']['output']>;
   hasPrevious?: Maybe<Scalars['Boolean']['output']>;
   next?: Maybe<Scalars['String']['output']>;

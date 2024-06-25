@@ -7,8 +7,7 @@ export default {
     { input }: gql.MutationCreateBatchErrorArgs,
     context: Context,
   ): Promise<gql.BatchError> => {
-    const error = await context.models.BatchError.createError(input);
-    return { ...error };
+    return context.models.BatchError.createError(input);
   },
 
   createImageError: async (
@@ -16,8 +15,7 @@ export default {
     { input }: gql.MutationCreateImageErrorArgs,
     context: Context,
   ): Promise<gql.ImageError> => {
-    const error = await context.models.ImageError.createError(input);
-    return { ...error };
+    return context.models.ImageError.createError(input);
   },
 
   clearImageErrors: async (
@@ -25,8 +23,7 @@ export default {
     { input }: gql.MutationClearImageErrorsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.ImageError.clearErrors(input);
-    return { ...res };
+    return context.models.ImageError.clearErrors(input);
   },
 
   clearBatchErrors: async (
@@ -34,8 +31,7 @@ export default {
     { input }: gql.MutationClearBatchErrorsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.BatchError.clearErrors(input);
-    return { ...res };
+    return context.models.BatchError.clearErrors(input);
   },
 
   createUpload: async (
@@ -43,8 +39,7 @@ export default {
     { input }: gql.MutationCreateUploadArgs,
     context: Context,
   ): Promise<gql.CreateUploadPayload> => {
-    const res = await context.models.Batch.createUpload(input, context);
-    return { ...res };
+    return context.models.Batch.createUpload(input, context);
   },
 
   closeUpload: async (
@@ -52,8 +47,7 @@ export default {
     { input }: gql.MutationCloseUploadArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Batch.closeUpload(input);
-    return { ...res };
+    return context.models.Batch.closeUpload(input);
   },
 
   createUser: async (
@@ -61,8 +55,7 @@ export default {
     { input }: gql.MutationCreateUserArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.User.createUser(input, context);
-    return { ...res };
+    return context.models.User.createUser(input, context);
   },
 
   updateUser: async (
@@ -70,8 +63,7 @@ export default {
     { input }: gql.MutationUpdateUserArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.User.updateUser(input, context);
-    return { ...res };
+    return context.models.User.updateUser(input, context);
   },
 
   updateBatch: async (
@@ -88,8 +80,7 @@ export default {
     { input }: gql.MutationRedriveBatchArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Batch.redriveBatch(input);
-    return { ...res };
+    return context.models.Batch.redriveBatch(input);
   },
 
   stopBatch: async (
@@ -97,8 +88,7 @@ export default {
     { input }: gql.MutationStopBatchArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Batch.stopBatch(input);
-    return { ...res };
+    return context.models.Batch.stopBatch(input);
   },
 
   deleteImageComment: async (
@@ -106,8 +96,7 @@ export default {
     { input }: gql.MutationDeleteImageCommentArgs,
     context: Context,
   ): Promise<gql.ImageCommentsPayload> => {
-    const res = await context.models.Image.deleteComment(input, context);
-    return { ...res };
+    return context.models.Image.deleteComment(input, context);
   },
 
   updateImageComment: async (
@@ -115,8 +104,7 @@ export default {
     { input }: gql.MutationUpdateImageCommentArgs,
     context: Context,
   ): Promise<gql.ImageCommentsPayload> => {
-    const res = await context.models.Image.updateComment(input, context);
-    return { ...res };
+    return context.models.Image.updateComment(input, context);
   },
 
   createImageComment: async (
@@ -124,8 +112,7 @@ export default {
     { input }: gql.MutationCreateImageCommentArgs,
     context: Context,
   ): Promise<gql.ImageCommentsPayload> => {
-    const res = await context.models.Image.createComment(input, context);
-    return { ...res };
+    return context.models.Image.createComment(input, context);
   },
 
   createImage: async (
@@ -142,8 +129,7 @@ export default {
     { input }: gql.MutationDeleteImagesArgs,
     context: Context,
   ): Promise<gql.StandardErrorPayload> => {
-    const res = await context.models.Image.deleteImages(input, context);
-    return { ...res };
+    return context.models.Image.deleteImages(input, context);
   },
 
   registerCamera: async (
@@ -151,8 +137,7 @@ export default {
     { input }: gql.MutationRegisterCameraArgs,
     context: Context,
   ): Promise<gql.RegisterCameraPayload> => {
-    const res = await context.models.Camera.registerCamera(input, context);
-    return { ...res };
+    return context.models.Camera.registerCamera(input, context);
   },
 
   unregisterCamera: async (
@@ -160,8 +145,7 @@ export default {
     { input }: gql.MutationUnregisterCameraArgs,
     context: Context,
   ): Promise<gql.UnregisterCameraPayload> => {
-    const res = await context.models.Camera.unregisterCamera(input, context);
-    return { ...res };
+    return context.models.Camera.unregisterCamera(input, context);
   },
 
   createProject: async (
@@ -205,8 +189,7 @@ export default {
     { input }: gql.MutationDeleteProjectLabelArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Project.deleteLabel(input, context);
-    return { ...res };
+    return context.models.Project.deleteLabel(input, context);
   },
 
   createView: async (
@@ -302,9 +285,7 @@ export default {
     context: Context,
   ): Promise<gql.StandardPayload> => {
     const res = await context.models.Image.createInternalLabels(input, context);
-    return {
-      isOk: res.ok,
-    };
+    return { isOk: res.ok };
   },
 
   createLabels: async (
