@@ -11,3 +11,5 @@ const BatchErrorSchema = new Schema({
 });
 
 export default mongoose.model('BatchError', BatchErrorSchema);
+
+export type BatchErrorSchema = mongoose.InferSchemaType<typeof BatchErrorSchema>;

@@ -1,24 +1,33 @@
 declare module 'mongo-cursor-pagination' {
-  import { Collection } from 'mongoose';
+  import { Model } from 'mongoose';
 
-  export type AggregationInput<T = {}> = T & {
-    paginatedField: string;
-    sortAscending: boolean;
-    limit: number;
-    next: string;
-    previous: string;
+  type Maybe<T> = T | null;
+
+  export type AggregationInput = {
+    aggregation: Array<{
+      $match: Record<string, any>;
+      $set?: Record<string, any>;
+    }>;
+    paginatedField?: Maybe<string>;
+    sortAscending?: Maybe<boolean>;
+    limit?: Maybe<number>;
+    next?: Maybe<string>;
+    previous?: Maybe<string>;
   };
   export interface AggregationOutput<T> {
-    metadata: {
+    metadata: Array<{
       total: number;
       page: number;
-    }[];
-    data: T[];
+    }>;
+    results: T[];
   }
 
   const defaultExport: {
     mongoosePlugin: any;
-    aggregate: <T extends Collection>(model: T, input: AggregationInput) => AggregationOutput<T>;
+    aggregate: <T extends Model>(
+      model: T['schema'],
+      input: AggregationInput,
+    ) => AggregationOutput<T>;
   };
   export default defaultExport;
 }

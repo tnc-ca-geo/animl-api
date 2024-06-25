@@ -17,3 +17,5 @@ const WirelessCameraSchema = new Schema(
 );
 
 export default mongoose.model('WirelessCameraSchema', WirelessCameraSchema);
+
+export type WirelessCameraSchema = mongoose.InferSchemaType<typeof WirelessCameraSchema>;

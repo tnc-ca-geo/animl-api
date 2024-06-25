@@ -18,6 +18,6 @@ export default /* GraphQL */ `
   }
 
   input CreateLabelsInput {
-    labels: [CreateLabelInput]!
+    labels: [CreateLabelInput!]!
   }
 `;

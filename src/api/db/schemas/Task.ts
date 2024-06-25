@@ -32,3 +32,5 @@ const TaskSchema = new Schema({
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
 
 export default mongoose.model('Task', TaskSchema);
+
+export type TaskSchema = mongoose.InferSchemaType<typeof TaskSchema>;
