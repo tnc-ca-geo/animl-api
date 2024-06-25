@@ -3,7 +3,7 @@ import SQS from '@aws-sdk/client-sqs';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { HydratedDocument } from 'mongoose';

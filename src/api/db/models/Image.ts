@@ -49,6 +49,7 @@ import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './uti
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { DateTime } from 'luxon';
+import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -905,7 +906,7 @@ export class ImageModel {
   static async getStatsTask(
     input: gql.QueryStatsInput,
     context: Context,
-  ): Promise<HydratedDocument<TaskModel>> {
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {
@@ -925,7 +926,7 @@ export class ImageModel {
   static async exportAnnotationsTask(
     input: gql.ExportInput,
     context: Context,
-  ): Promise<HydratedDocument<TaskModel>> {
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return TaskModel.create(
         {
@@ -995,90 +996,90 @@ export class ImageModel {
 }
 
 export default class AuthedImageModel extends BaseAuthedModel {
-  async countImages(...args: MethodParams<typeof ImageModel.countImages>) {
-    return await ImageModel.countImages(...args);
+  countImages(...args: MethodParams<typeof ImageModel.countImages>) {
+    return ImageModel.countImages(...args);
   }
 
-  async queryById(...args: MethodParams<typeof ImageModel.queryById>) {
-    return await ImageModel.queryById(...args);
+  queryById(...args: MethodParams<typeof ImageModel.queryById>) {
+    return ImageModel.queryById(...args);
   }
 
-  async queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
-    return await ImageModel.queryByFilter(...args);
-  }
-
-  @roleCheck(WRITE_COMMENTS_ROLES)
-  async createComment(...args: MethodParams<typeof ImageModel.createComment>) {
-    return await ImageModel.createComment(...args);
+  queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
+    return ImageModel.queryByFilter(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
-  async updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
-    return await ImageModel.updateComment(...args);
+  createComment(...args: MethodParams<typeof ImageModel.createComment>) {
+    return ImageModel.createComment(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
-  async deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
-    return await ImageModel.deleteComment(...args);
+  updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
+    return ImageModel.updateComment(...args);
+  }
+
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
+    return ImageModel.deleteComment(...args);
   }
 
   @roleCheck(DELETE_IMAGES_ROLES)
-  async deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
-    return await ImageModel.deleteImage(...args);
+  deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
+    return ImageModel.deleteImage(...args);
   }
 
   @roleCheck(DELETE_IMAGES_ROLES)
-  async deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
-    return await ImageModel.deleteImages(...args);
+  deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
+    return ImageModel.deleteImages(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
-  async createImage(...args: MethodParams<typeof ImageModel.createImage>) {
-    return await ImageModel.createImage(...args);
+  createImage(...args: MethodParams<typeof ImageModel.createImage>) {
+    return ImageModel.createImage(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
-    return await ImageModel.createObjects(...args);
+  createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
+    return ImageModel.createObjects(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
-    return await ImageModel.updateObjects(...args);
+  updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
+    return ImageModel.updateObjects(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
-    return await ImageModel.deleteObjects(...args);
+  deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
+    return ImageModel.deleteObjects(...args);
   }
 
-  async createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
+  createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
-    return await ImageModel.createInternalLabels(...args);
+    return ImageModel.createInternalLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
-    return await ImageModel.createLabels(...args);
+  createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
+    return ImageModel.createLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
-    return await ImageModel.updateLabels(...args);
+  updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
+    return ImageModel.updateLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
-    return await ImageModel.deleteLabels(...args);
+  deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
+    return ImageModel.deleteLabels(...args);
   }
 
-  async getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
-    return await ImageModel.getStatsTask(...args);
+  getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
+    return ImageModel.getStatsTask(...args);
   }
 
   @roleCheck(EXPORT_DATA_ROLES)
-  async exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
-    return await ImageModel.exportAnnotationsTask(...args);
+  exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
+    return ImageModel.exportAnnotationsTask(...args);
   }
 }
 

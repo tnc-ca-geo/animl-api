@@ -19,7 +19,14 @@ import Project, {
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
 import Image, { ImageSchema } from '../schemas/Image.js';
-import { sortDeps, idMatch } from './utils.js';
+import {
+  sortDeps,
+  idMatch,
+  BaseAuthedModel,
+  GenericResponse,
+  MethodParams,
+  roleCheck,
+} from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -28,7 +35,6 @@ import {
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES,
 } from '../../auth/roles.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
