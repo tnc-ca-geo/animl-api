@@ -170,7 +170,7 @@ export class UserModel {
    * @param {object} context
    */
   static async list(
-    input: gql.QueryUsersInput,
+    input: Maybe<gql.QueryUsersInput> | undefined,
     context: Context,
   ): Promise<{ users: CognitoUser[] }> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
@@ -207,7 +207,7 @@ export class UserModel {
           enabled: user.Enabled,
           status: user.UserStatus,
         }))
-        .filter((user) => !input.filter || user.username.includes(input.filter));
+        .filter((user) => !input?.filter || user.username.includes(input.filter));
 
       const roles = new Map<string, CognitoUser>();
       for (const { role, username, ...user } of users) {

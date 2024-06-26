@@ -58,7 +58,7 @@ export class ProjectModel {
   }
 
   static async getProjects(
-    input: gql.QueryProjectsInput,
+    input: Maybe<gql.QueryProjectsInput> | undefined,
     context: Context,
   ): Promise<HydratedDocument<ProjectSchema>[]> {
     console.log('Project.getProjects - input: ', input);

@@ -25,7 +25,7 @@ export class TaskModel {
    * @param {Object} context
    */
   static async queryByFilter(
-    input: gql.QueryTasksInput,
+    input: Maybe<gql.QueryTasksInput> | undefined,
     context: Context,
   ): Promise<AggregationOutput<TaskSchema>> {
     return await MongoPaging.aggregate(Task.collection, {
@@ -33,11 +33,11 @@ export class TaskModel {
         { $match: { projectId: context.user['curr_project'] } },
         { $match: { user: context.user.sub } },
       ],
-      limit: input.limit,
-      paginatedField: input.paginatedField,
-      sortAscending: input.sortAscending,
-      next: input.next,
-      previous: input.previous,
+      limit: input?.limit,
+      paginatedField: input?.paginatedField,
+      sortAscending: input?.sortAscending,
+      next: input?.next,
+      previous: input?.previous,
     });
   }
 
