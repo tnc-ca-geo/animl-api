@@ -8,10 +8,10 @@ export default /* GraphQL */ `
   type User {
     roles: [UserRole!]!
     username: String!
-    email: String!
-    created: String!
-    updated: String!
-    enabled: Boolean!
-    status: String!
+    email: String
+    created: Date
+    updated: Date
+    enabled: Boolean
+    status: String
   }
 `;

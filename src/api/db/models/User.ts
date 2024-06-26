@@ -250,13 +250,12 @@ export default class AuthedUserModel extends BaseAuthedModel {
   }
 }
 
-type UserWithRole = Cognito.UserType & { role: string };
 interface CognitoUser {
-  roles: string[];
+  roles: gql.UserRole[];
   username: string;
-  email: string | undefined;
-  created: Date | undefined;
-  updated: Date | undefined;
-  enabled: boolean | undefined;
-  status: Cognito.UserStatusType | undefined;
+  email?: string;
+  created?: Date;
+  updated?: Date;
+  enabled?: boolean;
+  status?: Cognito.UserStatusType;
 }
