@@ -445,7 +445,7 @@ export type ImageError = {
 export type ImageErrorsConnection = {
   __typename?: 'ImageErrorsConnection';
   errors: Array<ImageError>;
-  pageInfo?: Maybe<PageInfo>;
+  pageInfo: PageInfoWithCount;
 };
 
 export type ImageErrorsFilterInput = {
