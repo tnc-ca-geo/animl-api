@@ -20,6 +20,10 @@ declare module 'mongo-cursor-pagination' {
       page: number;
     }>;
     results: T[];
+    previous: Maybe<string>;
+    hasPrevious: boolean;
+    next: Maybe<string>;
+    hasNext: boolean;
   }
 
   const defaultExport: {
