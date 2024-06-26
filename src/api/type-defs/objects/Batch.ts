@@ -3,7 +3,7 @@ export default /* GraphQL */ `
     _id: String!
     projectId: String!
     created: Date
-    errors: [BatchError]
+    errors: [BatchError!]
     imageErrors: Int
     uploadComplete: Date
     ingestionComplete: Date
