@@ -24,6 +24,6 @@ export default /* GraphQL */ `
     batch: String
     created: Date!
     metadata: ImageMetadata
-    errors: [ImageError]
+    errors: [ImageError!]
   }
 `;

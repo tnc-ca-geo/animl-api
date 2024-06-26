@@ -27,9 +27,9 @@ export default /* GraphQL */ `
     timezone: String!
     description: String
     views: [View!]!
-    automationRules: [AutomationRule]
-    cameraConfigs: [CameraConfig]
-    labels: [ProjectLabel]
-    availableMLModels: [String]
+    automationRules: [AutomationRule!]
+    cameraConfigs: [CameraConfig!]
+    labels: [ProjectLabel!]
+    availableMLModels: [String!]
   }
 `;
