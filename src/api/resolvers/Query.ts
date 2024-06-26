@@ -97,7 +97,7 @@ export default {
     { input }: gql.QueryImageErrorsArgs,
     context: Context,
   ): Promise<gql.ImageErrorsConnection> => {
-    const count = await context.models.ImageError.countImageErrors(input);
+    const count = await context.models.ImageError.countImageErrors(input.filters);
     const response = await context.models.ImageError.queryByFilter(input);
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {
