@@ -2,7 +2,7 @@ export default /* GraphQL */ `
   type Validation {
     validated: Boolean!
     validationDate: Date!
-    userId: ID!
+    userId: ID
   }
 
   type Label {
