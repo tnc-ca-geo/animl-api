@@ -6,7 +6,7 @@ import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -42,7 +42,7 @@ export class TaskModel {
   }
 
   static async queryById(
-    _id: string,
+    _id: Types.ObjectId | string,
     context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     const query = { _id: { $eq: _id } };
@@ -83,7 +83,7 @@ export class TaskModel {
   }
 
   static async update(
-    input: Partial<TaskSchema> & { _id: gql.Scalars['ID']['input'] },
+    input: { _id: Types.ObjectId | string } & Partial<Omit<TaskSchema, '_id'>>,
     context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     const task = await this.queryById(input._id, context);
