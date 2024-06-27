@@ -12,6 +12,7 @@ import { DateTime } from 'luxon';
 import Project, {
   AutomationRuleSchema,
   CameraConfigSchema,
+  IAutomationRule,
   ProjectLabelSchema,
   ProjectSchema,
   ViewSchema,
@@ -342,7 +343,7 @@ export class ProjectModel {
             context,
           );
           project.automationRules =
-            automationRules as mongoose.Types.DocumentArray<AutomationRuleSchema>;
+            automationRules as any as mongoose.Types.DocumentArray<IAutomationRule>;
           await project.save();
           return project.automationRules;
         },

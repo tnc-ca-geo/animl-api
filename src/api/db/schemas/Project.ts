@@ -112,7 +112,7 @@ export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
 
 // Mongoose's automated TS tooling has issues with the action & event properties due to
 // their `type` properties, so we need to manually define the interface to help it along.
-interface IAutomationRule {
+export interface IAutomationRule {
   _id: mongoose.Types.ObjectId;
   name: string;
   event: { type: 'image-added' | 'label-added'; label: string };
