@@ -28,7 +28,7 @@ export class TaskModel {
     input: Maybe<gql.QueryTasksInput> | undefined,
     context: Context,
   ): Promise<AggregationOutput<TaskSchema>> {
-    return await MongoPaging.aggregate(Task.collection, {
+    return MongoPaging.aggregate(Task.collection, {
       aggregation: [
         { $match: { projectId: context.user['curr_project'] } },
         { $match: { user: context.user.sub } },
