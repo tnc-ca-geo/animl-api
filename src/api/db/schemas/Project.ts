@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
-const AutomationRuleSchema = new Schema({
+const AutomationRuleSchema = new Schema<IAutomationRule>({
   name: { type: String, required: true },
   event: {
     type: {
@@ -109,3 +109,17 @@ export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>
 export type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
 export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
+
+// Mongoose's automated TS tooling has issues with the action & event properties due to
+// their `type` properties, so we need to manually define the interface to help it along.
+interface IAutomationRule {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  event: { type: 'image-added' | 'label-added'; label: string };
+  action: {
+    type: 'run-inference' | 'send-alert';
+    alertRecipients: string[];
+    mlModel: string;
+    categoryConfig: Map<string, { confThreshold: number; disabled: boolean }>;
+  };
+}
