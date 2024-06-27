@@ -72,7 +72,10 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async queryById(_id: string, context: Context): Promise<HydratedDocument<ImageSchema>> {
+  static async queryById(
+    _id: string,
+    context: Context,
+  ): Promise<HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] }> {
     const query = !context.user['is_superuser']
       ? { _id, projectId: context.user['curr_project']! }
       : { _id };
@@ -82,9 +85,9 @@ export class ImageModel {
 
       const epipeline = [];
       epipeline.push({ $match: { image: image._id } });
-      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF
+      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF;
 
-      return image;
+      return image as HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -169,14 +172,14 @@ export class ImageModel {
   static async createImage(
     input: gql.CreateImageInput,
     context: Context,
-  ): Promise<HydratedDocument<ImageAttemptSchema>> {
+  ): Promise<HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] }> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
     let existingCam;
-    let imageAttempt;
+    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema>>;
 
     try {
       // 1. create ImageAttempt record
@@ -328,7 +331,7 @@ export class ImageModel {
         }
       }
 
-      return imageAttempt;
+      return imageAttempt as HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] };
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
