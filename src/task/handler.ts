@@ -9,7 +9,6 @@ import AnnotationsExport from './annotations.js';
 import { parseMessage } from './utils.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
-import { Types } from 'mongoose';
 import { User } from '../api/auth/authorization.js';
 
 async function handler(event: SQSEvent) {
