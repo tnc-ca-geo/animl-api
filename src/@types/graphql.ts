@@ -148,9 +148,9 @@ export type CreateImageCommentInput = {
 };
 
 export type CreateImageErrorInput = {
-  batch?: InputMaybe<Scalars['String']['input']>;
+  batch: Scalars['String']['input'];
   error: Scalars['String']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
+  image: Scalars['String']['input'];
 };
 
 export type CreateImageInput = {
@@ -1066,6 +1066,7 @@ export type Task = {
 
 export type TasksPayload = {
   __typename?: 'TasksPayload';
+  pageInfo: PageInfo;
   tasks: Array<Task>;
 };
 
@@ -1171,7 +1172,7 @@ export type UsersPayload = {
 
 export type Validation = {
   __typename?: 'Validation';
-  userId: Scalars['ID']['output'];
+  userId?: Maybe<Scalars['ID']['output']>;
   validated: Scalars['Boolean']['output'];
   validationDate: Scalars['Date']['output'];
 };
@@ -1184,9 +1185,9 @@ export type ValidationInput = {
 
 export type View = {
   __typename?: 'View';
-  _id: Scalars['String']['output'];
+  _id: Scalars['ID']['output'];
   description?: Maybe<Scalars['String']['output']>;
-  editable: Scalars['Boolean']['output'];
+  editable?: Maybe<Scalars['Boolean']['output']>;
   filters: Filters;
   name: Scalars['String']['output'];
 };
