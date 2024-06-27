@@ -26,7 +26,7 @@ export class TaskModel {
    */
   static async queryByFilter(
     input: Maybe<gql.QueryTasksInput> | undefined,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<TaskSchema>> {
     return MongoPaging.aggregate(Task.collection, {
       aggregation: [
@@ -41,7 +41,10 @@ export class TaskModel {
     });
   }
 
-  static async queryById(_id: string, context: Context): Promise<HydratedDocument<TaskSchema>> {
+  static async queryById(
+    _id: string,
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     const query = { _id: { $eq: _id } };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
@@ -53,7 +56,10 @@ export class TaskModel {
     return task;
   }
 
-  static async create(input: TaskInput, context: Context): Promise<HydratedDocument<TaskSchema>> {
+  static async create(
+    input: TaskInput<any>,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     const task = new Task({
       user: input.user,
       projectId: input.projectId,
@@ -78,7 +84,7 @@ export class TaskModel {
 
   static async update(
     input: Partial<TaskSchema> & { _id: gql.Scalars['ID']['input'] },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     const task = await this.queryById(input._id, context);
 
@@ -102,6 +108,6 @@ export default class AuthedTaskModel extends BaseAuthedModel {
   }
 }
 
-export interface TaskInput extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
-  config: any;
+export interface TaskInput<T> extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
+  config: T;
 }

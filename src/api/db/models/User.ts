@@ -16,7 +16,10 @@ export class UserModel {
    * @param {string} input.name Project Name
    * @param {object} context
    */
-  static async createGroups(input: { name: string }, context: Context): Promise<GenericResponse> {
+  static async createGroups(
+    input: { name: string },
+    context: Pick<Context, 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -43,7 +46,10 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async create(input: gql.CreateUserInput, context: Context): Promise<GenericResponse> {
+  static async create(
+    input: gql.CreateUserInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -112,7 +118,10 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async update(input: gql.UpdateUserInput, context: Context): Promise<GenericResponse> {
+  static async update(
+    input: gql.UpdateUserInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -171,7 +180,7 @@ export class UserModel {
    */
   static async list(
     input: Maybe<gql.QueryUsersInput> | undefined,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<{ users: CognitoUser[] }> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 

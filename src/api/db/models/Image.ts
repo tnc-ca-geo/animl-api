@@ -54,14 +54,20 @@ import { TaskSchema } from '../schemas/Task.js';
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
-  static async countImages(input: gql.QueryImagesCountInput, context: Context): Promise<number> {
+  static async countImages(
+    input: gql.QueryImagesCountInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<number> {
     const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels: string[], context: Context): Promise<number> {
+  static async countImagesByLabel(
+    labels: string[],
+    context: Pick<Context, 'user'>,
+  ): Promise<number> {
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -74,7 +80,7 @@ export class ImageModel {
 
   static async queryById(
     _id: string,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] }> {
     const query = !context.user['is_superuser']
       ? { _id, projectId: context.user['curr_project']! }
@@ -96,7 +102,7 @@ export class ImageModel {
 
   static async queryByFilter(
     input: gql.QueryImagesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<ImageSchema>> {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
@@ -117,7 +123,7 @@ export class ImageModel {
 
   static async deleteImages(
     input: gql.DeleteImagesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<GenericResponse & { errors: string[] }> {
     try {
       const res = await Promise.allSettled(
@@ -140,7 +146,10 @@ export class ImageModel {
     }
   }
 
-  static async deleteImage(input: { imageId: string }, context: Context): Promise<GenericResponse> {
+  static async deleteImage(
+    input: { imageId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<GenericResponse> {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -171,7 +180,7 @@ export class ImageModel {
 
   static async createImage(
     input: gql.CreateImageInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] }> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
@@ -359,7 +368,7 @@ export class ImageModel {
 
   static async deleteComment(
     input: gql.DeleteImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -386,7 +395,7 @@ export class ImageModel {
 
   static async updateComment(
     input: gql.UpdateImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -411,7 +420,7 @@ export class ImageModel {
 
   static async createComment(
     input: gql.CreateImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -433,7 +442,7 @@ export class ImageModel {
 
   static async createObjects(
     input: gql.CreateObjectsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
 
@@ -563,7 +572,7 @@ export class ImageModel {
    */
   static async createInternalLabels(
     input: gql.CreateInternalLabelsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
 
@@ -692,7 +701,7 @@ export class ImageModel {
 
   static async createLabels(
     input: gql.CreateLabelsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
@@ -817,7 +826,7 @@ export class ImageModel {
    */
   static async deleteAnyLabels(
     input: { labelId: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageSchema>[]> {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
@@ -908,7 +917,7 @@ export class ImageModel {
 
   static async getStatsTask(
     input: gql.QueryStatsInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
@@ -928,7 +937,7 @@ export class ImageModel {
 
   static async exportAnnotationsTask(
     input: gql.ExportInput,
-    context: Context,
+    context: Pick<Context, 'config' | 'user'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return TaskModel.create(

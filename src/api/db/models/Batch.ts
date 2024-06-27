@@ -19,7 +19,7 @@ import { Context } from '../../handler.js';
 export class BatchModel {
   static async queryByFilter(
     input: gql.QueryBatchesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<BatchSchemaWithErrors>> {
     try {
       const pipeline: Record<'$match', Record<string, any>>[] = [
@@ -232,7 +232,7 @@ export class BatchModel {
 
   static async createUpload(
     input: gql.CreateUploadInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<gql.CreateUploadPayload> {
     try {
       const id = `batch-${randomUUID()}`;

@@ -39,6 +39,7 @@ import {
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
+import { User } from '../../auth/authorization.js';
 
 // The max number of labeled images that can be deleted
 // when removin a label from a project
@@ -60,7 +61,7 @@ export class ProjectModel {
 
   static async getProjects(
     input: Maybe<gql.QueryProjectsInput> | undefined,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>[]> {
     console.log('Project.getProjects - input: ', input);
     let query = {};
@@ -83,7 +84,7 @@ export class ProjectModel {
 
   static async createProject(
     input: gql.CreateProjectInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
@@ -152,7 +153,7 @@ export class ProjectModel {
 
   static async updateProject(
     input: gql.UpdateProjectInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
@@ -170,7 +171,7 @@ export class ProjectModel {
 
   static async createCameraConfig(
     input: { projectId: string; cameraId: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
     const { projectId, cameraId } = input;
@@ -237,7 +238,7 @@ export class ProjectModel {
 
   static async createView(
     input: gql.CreateViewInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedSingleSubdocument<ViewSchema>> {
     try {
       return await retry(
@@ -269,7 +270,7 @@ export class ProjectModel {
 
   static async updateView(
     input: gql.UpdateViewInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedSingleSubdocument<ViewSchema>> {
     try {
       return await retry(
@@ -301,7 +302,7 @@ export class ProjectModel {
 
   static async deleteView(
     input: gql.DeleteViewInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     try {
       return await retry(
@@ -332,7 +333,7 @@ export class ProjectModel {
 
   static async updateAutomationRules(
     { automationRules }: gql.UpdateAutomationRulesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<mongoose.Types.DocumentArray<AutomationRuleSchema>> {
     try {
       return await retry(
@@ -418,7 +419,7 @@ export class ProjectModel {
 
   static async createDeploymentTask(
     input: gql.CreateDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
@@ -439,7 +440,7 @@ export class ProjectModel {
   // NOTE: this function is called by the task handler
   static async createDeployment(
     input: gql.CreateDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedSingleSubdocument<CameraConfigSchema>> {
     try {
       const { cameraId, deployment } = input;
@@ -472,7 +473,7 @@ export class ProjectModel {
 
   static async updateDeploymentTask(
     input: gql.UpdateDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
@@ -493,7 +494,7 @@ export class ProjectModel {
   // NOTE: this function is called by the task handler
   static async updateDeployment(
     input: gql.UpdateDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<CameraConfigSchema>> {
     const { cameraId, deploymentId, diffs } = input;
     try {
@@ -532,7 +533,7 @@ export class ProjectModel {
 
   static async deleteDeploymentTask(
     input: gql.DeleteDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
@@ -553,7 +554,7 @@ export class ProjectModel {
   // NOTE: this function is called by the task handler
   static async deleteDeployment(
     { cameraId, deploymentId }: gql.DeleteDeploymentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<CameraConfigSchema>> {
     try {
       const { project, camConfig } = await retry(
@@ -586,7 +587,7 @@ export class ProjectModel {
 
   static async createLabel(
     input: gql.CreateProjectLabelInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<gql.ProjectLabel>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
@@ -616,7 +617,7 @@ export class ProjectModel {
 
   static async deleteLabel(
     input: gql.DeleteProjectLabelInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<GenericResponse> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
@@ -668,7 +669,7 @@ export class ProjectModel {
 
   static async updateLabel(
     input: gql.UpdateProjectLabelInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectLabelSchema>> {
     try {
       const project = await this.queryById(context.user['curr_project']!);

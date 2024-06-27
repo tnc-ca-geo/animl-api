@@ -11,7 +11,7 @@ import { ProjectSchema } from '../schemas/Project.js';
 export class CameraModel {
   static async getWirelessCameras(
     input: gql.QueryWirelessCamerasArgs['input'],
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<WirelessCameraSchema[]> {
     const query: Record<string, any> = input?._ids ? { _id: { $in: input._ids } } : {};
     // if user has curr_project, limit returned cameras to those that
@@ -35,7 +35,7 @@ export class CameraModel {
       make?: string;
       model?: string;
     },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ camera: WirelessCameraSchema; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.createWirelessCamera - input: ', input);
     const successfulOps: OperationMetadata[] = [];
@@ -81,7 +81,7 @@ export class CameraModel {
 
   static async registerCamera(
     input: { cameraId: string; make?: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.registerCamera - context: ', context);
 
@@ -155,7 +155,7 @@ export class CameraModel {
 
   static async unregisterCamera(
     input: { cameraId: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project?: ProjectSchema }> {
     const successfulOps: OperationMetadata[] = [];
     const projectId = context.user['curr_project'];
