@@ -1,3 +1,4 @@
+import { SQSEvent } from 'aws-lambda';
 import { getConfig } from '../config/config.js';
 import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
@@ -6,21 +7,24 @@ import { CreateDeployment, UpdateDeployment, DeleteDeployment } from './deployme
 import ImageErrorExport from './image-errors.js';
 import AnnotationsExport from './annotations.js';
 import { parseMessage } from './utils.js';
+import { TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
+import { Types } from 'mongoose';
+import { User } from '../api/auth/authorization.js';
 
-async function handler(event) {
+async function handler(event: SQSEvent) {
   if (!event.Records || !event.Records.length) return;
   const config = await getConfig();
   await connectToDatabase(config);
 
   for (const record of event.Records) {
     console.log(`record body: ${record.body}`);
-    const task = parseMessage(JSON.parse(record.body));
+    const task: TaskInput<any> & { _id: string } = parseMessage(JSON.parse(record.body));
 
-    let output = {};
+    let output: Record<any, any> | undefined = {};
     await TaskModel.update(
       { _id: task._id, status: 'RUNNING' },
-      { user: { curr_project: task.projectId } }
+      { user: { curr_project: task.projectId } as User },
     );
 
     try {
@@ -42,13 +46,18 @@ async function handler(event) {
 
       await TaskModel.update(
         { _id: task._id, status: 'COMPLETE', output },
-        { user: { curr_project: task.projectId } }
+        { user: { curr_project: task.projectId } as User },
       );
-
     } catch (err) {
       await TaskModel.update(
-        { _id: task._id, status: 'FAIL', output: { error: err instanceof GraphQLError ? err : new InternalServerError(err) } },
-        { user: { curr_project: task.projectId } }
+        {
+          _id: task._id,
+          status: 'FAIL',
+          output: {
+            error: err instanceof GraphQLError ? err : new InternalServerError(err as string),
+          },
+        },
+        { user: { curr_project: task.projectId } as User },
       );
     }
   }
