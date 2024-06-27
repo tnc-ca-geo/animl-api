@@ -46,6 +46,7 @@ const FiltersSchema = new Schema({
 });
 
 const ViewSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
@@ -53,6 +54,7 @@ const ViewSchema = new Schema({
 });
 
 const DeploymentSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   name: { type: String, required: true },
   description: { type: String },
   location: { type: LocationSchema },

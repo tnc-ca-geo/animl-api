@@ -4,6 +4,7 @@ import MongoPaging from 'mongo-cursor-pagination';
 const Schema = mongoose.Schema;
 
 const TaskSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   user: { type: String, required: true },
   projectId: { type: String, required: true, ref: 'Project' },
   type: {
