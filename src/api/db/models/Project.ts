@@ -566,9 +566,7 @@ export class ProjectModel {
 
           // filter out deployment, sort remaining ones, and save project
           camConfig.deployments = sortDeps(
-            camConfig!.deployments.filter(
-              (dep) => !idMatch(dep._id!, deploymentId),
-            ) as typeof camConfig.deployments,
+            camConfig!.deployments.filter((dep) => !idMatch(dep._id!, deploymentId)),
           );
 
           await project.save();
