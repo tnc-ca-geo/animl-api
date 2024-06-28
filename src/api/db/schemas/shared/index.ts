@@ -7,6 +7,7 @@ const PointSchema = new Schema({
 });
 
 const LocationSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   geometry: { type: PointSchema, required: true },
   altitude: { type: String },
   name: { type: String },
@@ -32,6 +33,7 @@ const ValidationSchema = new Schema({
  */
 
 const LabelSchema = new Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, required: true },
   type: { type: String, enum: ['manual', 'ml', 'default'], required: true, default: 'manual' },
   labelId: { type: String, required: true },
   conf: { type: Number },
@@ -53,9 +55,12 @@ const LabelSchema = new Schema({
  */
 
 const ObjectSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   bbox: { type: [Number], required: true },
   locked: { type: Boolean, default: false, required: true },
   labels: { type: [LabelSchema] },
 });
 
 export { PointSchema, LocationSchema, LabelSchema, ObjectSchema };
+export type ObjectSchema = mongoose.InferSchemaType<typeof ObjectSchema>;
+export type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;

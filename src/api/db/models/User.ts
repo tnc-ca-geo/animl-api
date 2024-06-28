@@ -1,7 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 
@@ -16,7 +16,10 @@ export class UserModel {
    * @param {string} input.name Project Name
    * @param {object} context
    */
-  static async createGroups(input: { name: string }, context: Context): Promise<GenericResponse> {
+  static async createGroups(
+    input: { name: string },
+    context: Pick<Context, 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -43,7 +46,10 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async create(input: gql.CreateUserInput, context: Context): Promise<GenericResponse> {
+  static async create(
+    input: gql.CreateUserInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -112,7 +118,10 @@ export class UserModel {
    * @param {string[]} input.roles List of roles the user should have within the project
    * @param {object} context
    */
-  static async update(input: gql.UpdateUserInput, context: Context): Promise<GenericResponse> {
+  static async update(
+    input: gql.UpdateUserInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<GenericResponse> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -170,8 +179,8 @@ export class UserModel {
    * @param {object} context
    */
   static async list(
-    input: gql.QueryUsersInput,
-    context: Context,
+    input: Maybe<gql.QueryUsersInput> | undefined,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<{ users: CognitoUser[] }> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
@@ -207,7 +216,7 @@ export class UserModel {
           enabled: user.Enabled,
           status: user.UserStatus,
         }))
-        .filter((user) => !input.filter || user.username.includes(input.filter));
+        .filter((user) => !input?.filter || user.username.includes(input.filter));
 
       const roles = new Map<string, CognitoUser>();
       for (const { role, username, ...user } of users) {
@@ -250,13 +259,12 @@ export default class AuthedUserModel extends BaseAuthedModel {
   }
 }
 
-type UserWithRole = Cognito.UserType & { role: string };
 interface CognitoUser {
-  roles: string[];
+  roles: gql.UserRole[];
   username: string;
-  email: string | undefined;
-  created: Date | undefined;
-  updated: Date | undefined;
-  enabled: boolean | undefined;
-  status: Cognito.UserStatusType | undefined;
+  email?: string;
+  created?: Date;
+  updated?: Date;
+  enabled?: boolean;
+  status?: Cognito.UserStatusType;
 }

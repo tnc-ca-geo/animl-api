@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 
-const AutomationRuleSchema = new Schema({
+const AutomationRuleSchema = new Schema<IAutomationRule>({
   name: { type: String, required: true },
   event: {
     type: {
@@ -46,6 +46,7 @@ const FiltersSchema = new Schema({
 });
 
 const ViewSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   name: { type: String, required: true },
   filters: { type: FiltersSchema, required: true },
   description: { type: String },
@@ -53,6 +54,7 @@ const ViewSchema = new Schema({
 });
 
 const DeploymentSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
   name: { type: String, required: true },
   description: { type: String },
   location: { type: LocationSchema },
@@ -102,4 +104,24 @@ const ProjectSchema = new Schema({
 
 export default mongoose.model('Project', ProjectSchema);
 
+export type AutomationRuleSchema = mongoose.InferSchemaType<typeof AutomationRuleSchema>;
+export type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;
+export type ViewSchema = mongoose.InferSchemaType<typeof ViewSchema>;
+export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
+export type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
+export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
+
+// Mongoose's automated TS tooling has issues with the action & event properties due to
+// their `type` properties, so we need to manually define the interface to help it along.
+export interface IAutomationRule {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  event: { type: 'image-added' | 'label-added'; label: string };
+  action: {
+    type: 'run-inference' | 'send-alert';
+    alertRecipients: string[];
+    mlModel: string;
+    categoryConfig: Map<string, { confThreshold: number; disabled: boolean }>;
+  };
+}

@@ -8,6 +8,6 @@ export default /* GraphQL */ `
     url: String
     count: Int
     meta: JSONObject
-    error: [ExportError]
+    error: [ExportError!]
   }
 `;

@@ -2,7 +2,7 @@ export default /* GraphQL */ `
   type Validation {
     validated: Boolean!
     validationDate: Date!
-    userId: ID!
+    userId: ID
   }
 
   type Label {
@@ -19,13 +19,13 @@ export default /* GraphQL */ `
   }
 
   type LabelList {
-    categories: [String]
+    categories: [String!]
   }
 
   type Object {
     _id: ID!
     bbox: [Float!]
     locked: Boolean!
-    labels: [Label]
+    labels: [Label!]
   }
 `;

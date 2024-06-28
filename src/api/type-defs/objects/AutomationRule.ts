@@ -6,7 +6,7 @@ export default /* GraphQL */ `
 
   type AutomationAction {
     type: String!
-    alertRecipients: [String]
+    alertRecipients: [String!]
     mlModel: String
     confThreshold: Float
     categoryConfig: JSONObject

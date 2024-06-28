@@ -1,7 +1,7 @@
 export default /* GraphQL */ `
   type RegisterCameraPayload {
     project: Project
-    wirelessCameras: [WirelessCamera]
+    wirelessCameras: [WirelessCamera!]
   }
 `;
 

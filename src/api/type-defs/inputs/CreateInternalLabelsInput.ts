@@ -5,7 +5,7 @@ export default /* GraphQL */ `
     bbox: [Float!]!
     mlModel: String!
     mlModelVersion: String!
-    imageId: ID
+    imageId: ID!
   }
 
   input CreateInternalLabelsInput {

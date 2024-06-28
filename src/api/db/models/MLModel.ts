@@ -1,7 +1,7 @@
 import GraphQLError, { InternalServerError, NotFoundError } from '../../errors.js';
 import MLModel, { MLModelSchema } from '../schemas/MLModel.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, MethodParams } from './utils-model.js';
+import { BaseAuthedModel, MethodParams } from './utils.js';
 import { HydratedDocument } from 'mongoose';
 
 export class MLModelModel {
@@ -19,7 +19,7 @@ export class MLModelModel {
   }
 
   static async getMLModels(
-    input: Maybe<{ _ids?: Maybe<string[]> }>,
+    input?: Maybe<{ _ids?: Maybe<string[]> }>,
   ): Promise<HydratedDocument<MLModelSchema>[]> {
     const query = input?._ids ? { _id: { $in: input._ids } } : {};
     try {

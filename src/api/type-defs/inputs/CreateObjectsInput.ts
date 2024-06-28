@@ -3,7 +3,7 @@ export default /* GraphQL */ `
     _id: ID!
     bbox: [Float!]
     locked: Boolean!
-    labels: [CreateLabelInput]
+    labels: [CreateLabelInput!]
   }
 
   input CreateObjectInput {

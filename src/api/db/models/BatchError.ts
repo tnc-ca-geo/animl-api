@@ -2,7 +2,7 @@ import GraphQLError, { InternalServerError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 
 /**
  * BatchErrors are errors that are generated when an uploaded Zip fails
