@@ -1,9 +1,8 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 
-
-const flattenObj = (ob) => {
-  const result = {};
+const flattenObj = (ob: Record<any, any>): Record<string, string> => {
+  const result: Record<string, string> = {};
   for (const i in ob) {
     if (typeof ob[i] === 'object' && !Array.isArray(ob[i])) {
       const temp = flattenObj(ob[i]);
@@ -17,7 +16,7 @@ const flattenObj = (ob) => {
   return result;
 };
 
-const isValidISOString = (str) => {
+const isValidISOString = (str: string): boolean => {
   const date = DateTime.fromISO(str);
   return date.isValid;
 };
@@ -26,12 +25,11 @@ const isValidISOString = (str) => {
 // This is necessary because dates are serialized as ISO strings in SQS messages
 // and must be converted to DateTime objects before being used in the app
 // https://github.com/tnc-ca-geo/animl-api/issues/166
-const parseMessage = (msg) => {
+const parseMessage = <T extends Record<string, any>>(msg: T): T => {
   const msgCopy = _.cloneDeep(msg);
   const flatMsg = flattenObj(msg);
 
   Object.entries(flatMsg).forEach(([key, value]) => {
-
     if (value !== null && typeof value == 'string' && isValidISOString(value)) {
       let pointer = msgCopy;
       const keys = key.split('.');
@@ -39,7 +37,7 @@ const parseMessage = (msg) => {
       for (const k of keys) {
         pointer = pointer[k];
       }
-      pointer[lastKey] = DateTime.fromISO(value);
+      (pointer[lastKey!] as any) = DateTime.fromISO(value);
     }
 
     if (Array.isArray(value)) {
@@ -51,15 +49,12 @@ const parseMessage = (msg) => {
           for (const k of keys) {
             pointer = pointer[k];
           }
-          pointer[lastKey][i] = DateTime.fromISO(item);
+          pointer[lastKey!][i] = DateTime.fromISO(item);
         }
       });
     }
-
   });
   return msgCopy;
 };
 
-export {
-  parseMessage
-};
+export { parseMessage };
