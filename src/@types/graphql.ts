@@ -1130,12 +1130,12 @@ export type UpdateViewPayload = {
 
 export type User = {
   __typename?: 'User';
-  created: Scalars['String']['output'];
-  email: Scalars['String']['output'];
-  enabled: Scalars['Boolean']['output'];
+  created?: Maybe<Scalars['Date']['output']>;
+  email?: Maybe<Scalars['String']['output']>;
+  enabled?: Maybe<Scalars['Boolean']['output']>;
   roles: Array<UserRole>;
-  status: Scalars['String']['output'];
-  updated: Scalars['String']['output'];
+  status?: Maybe<Scalars['String']['output']>;
+  updated?: Maybe<Scalars['Date']['output']>;
   username: Scalars['String']['output'];
 };
 
