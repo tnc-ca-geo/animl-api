@@ -6,7 +6,7 @@ export default /* GraphQL */ `
     addedEnd: Date
     cameras: [String!]
     deployments: [String!]
-    labels: [String]
+    labels: [String!]
     reviewed: Boolean
     custom: String
   }

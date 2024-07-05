@@ -1,6 +1,6 @@
 export default /* GraphQL */ `
   type Filters {
-    cameras: [String]
+    cameras: [String!]
     deployments: [String!]
     labels: [String!]
     createdStart: Date
