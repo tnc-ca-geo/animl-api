@@ -1,9 +1,9 @@
 export default /* GraphQL */ `
   type View {
-    _id: String!
+    _id: ID!
     name: String!
     filters: Filters!
     description: String
-    editable: Boolean!
+    editable: Boolean
   }
 `;

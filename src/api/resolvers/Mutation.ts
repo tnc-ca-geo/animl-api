@@ -266,7 +266,7 @@ export default {
     { input }: gql.MutationUpdateObjectsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.updateObjects(input, context);
+    const res = await context.models.Image.updateObjects(input);
     return { isOk: res.ok };
   },
 
@@ -275,7 +275,7 @@ export default {
     { input }: gql.MutationDeleteObjectsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.deleteObjects(input, context);
+    const res = await context.models.Image.deleteObjects(input);
     return { isOk: res.ok };
   },
 
@@ -302,7 +302,7 @@ export default {
     { input }: gql.MutationUpdateLabelsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.updateLabels(input, context);
+    const res = await context.models.Image.updateLabels(input);
     return { isOk: res.ok };
   },
 
@@ -311,7 +311,7 @@ export default {
     { input }: gql.MutationDeleteLabelsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.deleteLabels(input, context);
+    const res = await context.models.Image.deleteLabels(input);
     return { isOk: res.ok };
   },
 };

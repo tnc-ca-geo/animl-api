@@ -12,14 +12,14 @@ import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
 import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
 import { Context } from '../../handler.js';
 
 export class BatchModel {
   static async queryByFilter(
     input: gql.QueryBatchesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<BatchSchemaWithErrors>> {
     try {
       const pipeline: Record<'$match', Record<string, any>>[] = [
@@ -56,7 +56,7 @@ export class BatchModel {
   }
 
   static async queryById(_id: string): Promise<mongoose.HydratedDocument<BatchSchemaWithErrors>> {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     try {
       const batch = await Batch.findOne<mongoose.HydratedDocument<BatchSchemaWithErrors>>(query);
       if (!batch) throw new NotFoundError('Batch not found');
@@ -232,7 +232,7 @@ export class BatchModel {
 
   static async createUpload(
     input: gql.CreateUploadInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<gql.CreateUploadPayload> {
     try {
       const id = `batch-${randomUUID()}`;

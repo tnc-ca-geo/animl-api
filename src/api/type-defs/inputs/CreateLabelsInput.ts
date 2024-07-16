@@ -13,8 +13,9 @@ export default /* GraphQL */ `
     labeledDate: Date
     validation: ValidationInput
     userId: ID
-    imageId: ID
+    imageId: ID!
     objectId: ID
+    mlModel: String
   }
 
   input CreateLabelsInput {

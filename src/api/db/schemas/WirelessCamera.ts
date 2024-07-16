@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
 const ProjectRegistrationSchema = new Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, required: true },
   projectId: { type: String, default: 'default_project', required: true },
   active: { type: Boolean, required: true },
 });

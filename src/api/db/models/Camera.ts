@@ -2,9 +2,8 @@ import GraphQLError, { InternalServerError, CameraRegistrationError } from '../.
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
-import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import { ProjectSchema } from '../schemas/Project.js';
@@ -12,7 +11,7 @@ import { ProjectSchema } from '../schemas/Project.js';
 export class CameraModel {
   static async getWirelessCameras(
     input: gql.QueryWirelessCamerasArgs['input'],
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<WirelessCameraSchema[]> {
     const query: Record<string, any> = input?._ids ? { _id: { $in: input._ids } } : {};
     // if user has curr_project, limit returned cameras to those that
@@ -36,7 +35,7 @@ export class CameraModel {
       make?: string;
       model?: string;
     },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ camera: WirelessCameraSchema; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.createWirelessCamera - input: ', input);
     const successfulOps: OperationMetadata[] = [];
@@ -82,12 +81,12 @@ export class CameraModel {
 
   static async registerCamera(
     input: { cameraId: string; make?: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project: Maybe<ProjectSchema> }> {
     console.log('CameraModel.registerCamera - context: ', context);
 
     const successfulOps: OperationMetadata[] = [];
-    const projectId = context.user['curr_project'];
+    const projectId = context.user['curr_project']!;
     const cameraId = input.cameraId.toString();
 
     try {
@@ -156,7 +155,7 @@ export class CameraModel {
 
   static async unregisterCamera(
     input: { cameraId: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project?: ProjectSchema }> {
     const successfulOps: OperationMetadata[] = [];
     const projectId = context.user['curr_project'];

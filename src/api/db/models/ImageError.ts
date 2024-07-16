@@ -4,13 +4,7 @@ import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import retry from 'async-retry';
-import {
-  BaseAuthedModel,
-  GenericResponse,
-  MethodParams,
-  Pagination,
-  roleCheck,
-} from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, Pagination, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import { ExportErrorsInput } from '../../../@types/graphql.js';
 import { HydratedDocument } from 'mongoose';
@@ -133,7 +127,7 @@ export class ImageErrorModel {
    */
   static async exportErrorsTask(
     input: ExportErrorsInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
