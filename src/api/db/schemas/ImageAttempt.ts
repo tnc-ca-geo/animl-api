@@ -44,3 +44,4 @@ const ImageAttemptSchema = new Schema({
 export default mongoose.model('ImageAttempt', ImageAttemptSchema);
 
 export type ImageAttemptSchema = mongoose.InferSchemaType<typeof ImageAttemptSchema>;
+export type ImageMetadataSchema = mongoose.InferSchemaType<typeof ImageMetadataSchema>;

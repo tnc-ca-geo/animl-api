@@ -4,8 +4,7 @@ import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import retry from 'async-retry';
-import { hasRole } from './utils.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, Pagination } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, Pagination, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import { ExportErrorsInput } from '../../../@types/graphql.js';
 import { HydratedDocument } from 'mongoose';
@@ -159,17 +158,17 @@ export default class AuthedImageErrorModel extends BaseAuthedModel {
     return await ImageErrorModel.queryByFilter(...args);
   }
 
-  @hasRole(WRITE_IMAGES_ROLES)
+  @roleCheck(WRITE_IMAGES_ROLES)
   async createError(...args: MethodParams<typeof ImageErrorModel.createError>) {
     return await ImageErrorModel.createError(...args);
   }
 
-  @hasRole(WRITE_IMAGES_ROLES)
+  @roleCheck(WRITE_IMAGES_ROLES)
   async clearErrors(...args: MethodParams<typeof ImageErrorModel.clearErrors>) {
     return await ImageErrorModel.clearErrors(...args);
   }
 
-  @hasRole(EXPORT_DATA_ROLES)
+  @roleCheck(EXPORT_DATA_ROLES)
   async exportErrors(...args: MethodParams<typeof ImageErrorModel.exportErrorsTask>) {
     return await ImageErrorModel.exportErrorsTask(...args);
   }

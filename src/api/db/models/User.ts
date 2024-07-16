@@ -1,7 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 
@@ -250,13 +250,12 @@ export default class AuthedUserModel extends BaseAuthedModel {
   }
 }
 
-type UserWithRole = Cognito.UserType & { role: string };
 interface CognitoUser {
-  roles: string[];
+  roles: gql.UserRole[];
   username: string;
-  email: string | undefined;
-  created: Date | undefined;
-  updated: Date | undefined;
-  enabled: boolean | undefined;
-  status: Cognito.UserStatusType | undefined;
+  email?: string;
+  created?: Date;
+  updated?: Date;
+  enabled?: boolean;
+  status?: Cognito.UserStatusType;
 }

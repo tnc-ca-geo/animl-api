@@ -2,9 +2,8 @@ import GraphQLError, { InternalServerError, CameraRegistrationError } from '../.
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
 import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
-import { hasRole, idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
-import { BaseAuthedModel, MethodParams } from './utils-model.js';
+import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import { ProjectSchema } from '../schemas/Project.js';
@@ -234,12 +233,12 @@ export default class AuthedCameraModel extends BaseAuthedModel {
     return await CameraModel.createWirelessCamera(...args);
   }
 
-  @hasRole(WRITE_CAMERA_REGISTRATION_ROLES)
+  @roleCheck(WRITE_CAMERA_REGISTRATION_ROLES)
   async registerCamera(...args: MethodParams<typeof CameraModel.registerCamera>) {
     return await CameraModel.registerCamera(...args);
   }
 
-  @hasRole(WRITE_CAMERA_REGISTRATION_ROLES)
+  @roleCheck(WRITE_CAMERA_REGISTRATION_ROLES)
   async unregisterCamera(...args: MethodParams<typeof CameraModel.unregisterCamera>) {
     return await CameraModel.unregisterCamera(...args);
   }

@@ -2,7 +2,7 @@ export default /* GraphQL */ `
   type Image {
     _id: ID!
     batchId: String
-    errors: [ImageError]
+    errors: [ImageError!]
     bucket: String!
     fileTypeExtension: String!
     path: String
@@ -22,7 +22,7 @@ export default /* GraphQL */ `
     model: String
     location: Location
     reviewed: Boolean
-    objects: [Object]
-    comments: [ImageComment]
+    objects: [Object!]
+    comments: [ImageComment!]
   }
 `;
