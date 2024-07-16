@@ -1061,7 +1061,7 @@ export type UnregisterCameraPayload = {
 };
 
 export type UpdateAutomationRulesInput = {
-  automationRules?: InputMaybe<Array<AutomationRuleInput>>;
+  automationRules: Array<AutomationRuleInput>;
 };
 
 export type UpdateAutomationRulesPayload = {
