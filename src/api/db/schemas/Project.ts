@@ -109,3 +109,6 @@ export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>
 export type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
 export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
+export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
+export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
+export type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;

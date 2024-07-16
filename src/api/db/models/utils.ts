@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
-import mongoose, { HydratedDocument, PipelineStage } from 'mongoose';
+import mongoose, { HydratedDocument, PipelineStage, Types, PipelineStage } from 'mongoose';
 import { Config } from '../../../config/config.js';
 import { User } from '../../auth/authorization.js';
 import {
@@ -180,6 +180,7 @@ export function buildPipeline(
       },
     });
   }
+  
   // match reviewedFilter
   if (reviewed !== null) {
     pipeline.push({
@@ -203,8 +204,8 @@ export function buildPipeline(
   return pipeline;
 }
 
-export function sanitizeMetadata<T>(md: T): T {
-  const sanitized: Record<any, any> = {};
+export function sanitizeMetadata(md: ImageMetadata): ImageMetadata {
+  const sanitized: Record<string, any> = {};
   // If second char in key is uppercase,
   // assume it's an acronym (like GPSLatitude) & leave it,
   // else camel case
@@ -213,7 +214,7 @@ export function sanitizeMetadata<T>(md: T): T {
     const newKey = !(key.charAt(1) == key.charAt(1).toUpperCase())
       ? key.charAt(0).toLowerCase() + key.slice(1)
       : key;
-    sanitized[newKey as keyof ImageMetadata] = md[key as keyof T];
+    sanitized[newKey] = md[key as keyof ImageMetadata];
   }
 
   // TODO: I don't love that this is here. We can't parse the dateTimeOriginal
@@ -225,7 +226,7 @@ export function sanitizeMetadata<T>(md: T): T {
     sanitized.dateTimeOriginal = dto;
   }
 
-  return sanitized;
+  return sanitized as ImageMetadata;
 }
 
 export function createImageAttemptRecord(md: ImageMetadata) {
@@ -377,7 +378,16 @@ export function createImageRecord(md: ImageMetadata) {
   });
 }
 
-export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord) {
+export function isLabelDupe(
+  image: ImageSchema,
+  newLabel: {
+    labelId: string;
+    conf?: Maybe<number>;
+    bbox: number[];
+    mlModel?: string;
+    mlModelVersion?: string;
+  },
+): boolean {
   const labels = image.objects.reduce((labels, object) => {
     object.labels.forEach((label) => labels.push(label));
     return labels;
@@ -407,8 +417,8 @@ export function isLabelDupe(image: ImageSchema, newLabel: LabelRecord) {
 export function reviewerLabelRecord(
   project: ProjectSchema,
   image: ImageSchema,
-  label: HydratedDocument<LabelSchema>,
-) {
+  label: LabelInput,
+): LabelRecord {
   label.type = 'manual';
   const labelRecord = createLabelRecord(label, label.userId!);
 
@@ -433,12 +443,7 @@ export function reviewerLabelRecord(
 }
 
 // TODO: accommodate users as label authors as well as models
-export function createLabelRecord(
-  input:
-    | HydratedDocument<LabelSchema>
-    | (gql.CreateInternalLabelInput & { _id: undefined; type: undefined; validation: undefined }),
-  authorId: string,
-): LabelRecord {
+export function createLabelRecord(input: LabelInput, authorId: string): LabelRecord {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   return {
     ...(_id && { _id }),
@@ -614,11 +619,11 @@ export interface GenericResponse {
 // accessed on this object within this file. It is not authoratative and may be incomplete.
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
-  dateTimeOriginal: Date;
+  dateTimeOriginal: Date | DateTime<true> | DateTime<false>;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId
-  deploymentId: string;
+  deploymentId: Types.ObjectId;
   projectId: string;
   fileName?: string; // Used as originalFileName, optional
   MIMEType?: string; // Optional, note the case sensitivity
@@ -644,15 +649,25 @@ export interface ImageMetadata {
   imageHeight?: number;
   imageBytes?: number;
 }
+type LabelInput = {
+  _id?: Maybe<string>;
+  userId?: Maybe<string>;
+  type?: 'ml' | 'manual';
+  labelId: string;
+  conf?: Maybe<number>;
+  bbox: number[];
+  mlModelVersion?: string;
+  validation?: any; // Replace `any` with a more specific type if applicable
+};
 export interface LabelRecord {
-  _id?: mongoose.Types.ObjectId;
+  _id?: string;
   type?: string;
   labelId: string;
   conf?: Maybe<number>;
   bbox: number[];
   labeledDate: DateTime;
   mlModel?: string;
-  mlModelVersion?: Maybe<string>;
+  mlModelVersion?: string;
   userId?: string;
   validation?: Maybe<{ validated: boolean }>;
 }
