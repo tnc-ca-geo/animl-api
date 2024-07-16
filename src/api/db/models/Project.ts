@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument, HydratedSingleSubdocument } from 'mongoose';
 import { TaskModel } from './Task.js';
 import GraphQLError, {
   AuthenticationError,
@@ -9,11 +9,17 @@ import GraphQLError, {
   DBValidationError,
 } from '../../errors.js';
 import { DateTime } from 'luxon';
-import Project from '../schemas/Project.js';
+import Project, {
+  AutomationRuleSchema,
+  CameraConfigSchema,
+  ProjectLabelSchema,
+  ProjectSchema,
+  ViewSchema,
+} from '../schemas/Project.js';
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
-import Image from '../schemas/Image.js';
-import { sortDeps, hasRole, idMatch } from './utils.js';
+import Image, { ImageSchema } from '../schemas/Image.js';
+import { sortDeps, idMatch } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -22,13 +28,17 @@ import {
   WRITE_VIEWS_ROLES,
   WRITE_AUTOMATION_RULES_ROLES,
 } from '../../auth/roles.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { Context } from '../../handler.js';
+import * as gql from '../../../@types/graphql.js';
+import { TaskSchema } from '../schemas/Task.js';
 
 // The max number of labeled images that can be deleted
 // when removin a label from a project
 const MAX_LABEL_DELETE = 500;
 
 export class ProjectModel {
-  static async queryById(_id) {
+  static async queryById(_id: string) {
     const query = { _id: { $eq: _id } };
     try {
       const project = await Project.findOne(query);
@@ -37,11 +47,14 @@ export class ProjectModel {
       return project;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async getProjects(input, context) {
+  static async getProjects(
+    input: gql.QueryProjectsInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>[]> {
     console.log('Project.getProjects - input: ', input);
     let query = {};
     if (context.user['is_superuser']) {
@@ -57,22 +70,14 @@ export class ProjectModel {
       return projects;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createProject(input, context) {
-    const operation = async (input) => {
-      return await retry(
-        async () => {
-          const newProject = new Project(input);
-          await newProject.save();
-          return newProject;
-        },
-        { retries: 2 },
-      );
-    };
-
+  static async createProject(
+    input: gql.CreateProjectInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>> {
     if (!context.user['cognito:username']) {
       // If projects are created by a "machine" user they will end up orphaned
       // in that no users will have permission to see the project
@@ -98,18 +103,26 @@ export class ProjectModel {
         .toLowerCase()
         .replace(/\s/g, '_')
         .replace(/[^0-9a-z_]/gi, '');
-      const project = await operation({
-        ...input,
-        _id,
-        views: [
-          {
-            name: 'All images',
-            filters: {},
-            description: 'Default view of all images. This view is not editable.',
-            editable: false,
-          },
-        ],
-      });
+
+      const project = await retry(
+        async () => {
+          const newProject = new Project({
+            ...input,
+            _id,
+            views: [
+              {
+                name: 'All images',
+                filters: {},
+                description: 'Default view of all images. This view is not editable.',
+                editable: false,
+              },
+            ],
+          });
+          await newProject.save();
+          return newProject;
+        },
+        { retries: 2 },
+      );
 
       await UserModel.createGroups({ name: _id }, context);
 
@@ -118,7 +131,7 @@ export class ProjectModel {
       await UserModel.update(
         {
           username: context.user['cognito:username'],
-          roles: ['manager'],
+          roles: ['manager'] as gql.UserRole[],
         },
         context,
       );
@@ -126,13 +139,16 @@ export class ProjectModel {
       return project;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateProject(input, context) {
+  static async updateProject(
+    input: gql.UpdateProjectInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>> {
     try {
-      const project = await this.queryById(context.user['curr_project']);
+      const project = await this.queryById(context.user['curr_project']!);
 
       Object.assign(project, input);
 
@@ -141,13 +157,17 @@ export class ProjectModel {
       return project;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createCameraConfig(input, context) {
+  static async createCameraConfig(
+    input: { projectId: string; cameraId: string },
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
-    const operation = async ({ projectId, cameraId }, context) => {
+    const { projectId, cameraId } = input;
+    try {
       return await retry(
         async () => {
           const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
@@ -191,34 +211,33 @@ export class ProjectModel {
 
           console.log('updatedProject: ', updatedProject);
 
-          if (updatedProject.cameraConfigs.length > project.cameraConfigs.length) {
+          if (updatedProject!.cameraConfigs.length > project.cameraConfigs.length) {
             console.log(
               "Couldn't find a camera config with that _id, so added one to project: ",
               updatedProject,
             );
           }
 
-          return updatedProject;
+          return updatedProject!;
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      return await operation(input, context);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createView(input, context) {
-    const operation = async (input) => {
+  static async createView(
+    input: gql.CreateViewInput,
+    context: Context,
+  ): Promise<HydratedSingleSubdocument<ViewSchema>> {
+    try {
       return await retry(
         async () => {
           // find project, add new view, and save
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
           const newView = {
@@ -229,111 +248,115 @@ export class ProjectModel {
           };
           project.views.push(newView);
           const updatedProj = await project.save();
-          return updatedProj.views.find((v) => v.name === newView.name);
+          return updatedProj.views.find(
+            (v): v is HydratedSingleSubdocument<ViewSchema> => v.name === newView.name,
+          )!;
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      return await operation(input);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateView(input, context) {
-    const operation = async (input) => {
+  static async updateView(
+    input: gql.UpdateViewInput,
+    context: Context,
+  ): Promise<HydratedSingleSubdocument<ViewSchema>> {
+    try {
       return await retry(
         async (bail) => {
           // find view
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
-          const view = project.views.find((v) => idMatch(v._id, input.viewId));
+          const view = project.views.find((v) => idMatch(v._id!, input.viewId))!;
           if (!view.editable) {
-            bail(new ForbiddenError(`View ${view.name} is not editable`));
+            bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
           // appy updates & save project
-          for (const [key, newVal] of Object.entries(input.diffs)) {
-            view[key] = newVal;
-          }
+          Object.assign(view, input.diffs);
           const updatedProj = await project.save();
-          return updatedProj.views.find((v) => idMatch(v._id, input.viewId));
+          return updatedProj.views.find((v): v is HydratedSingleSubdocument<ViewSchema> =>
+            idMatch(v._id!, input.viewId),
+          )!;
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      return await operation(input);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteView(input, context) {
-    const operation = async (input) => {
+  static async deleteView(
+    input: gql.DeleteViewInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
       return await retry(
         async (bail) => {
           // find view
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
-          const view = project.views.find((v) => idMatch(v._id, input.viewId));
-          if (!view.editable) {
-            bail(new ForbiddenError(`View ${view.name} is not editable`));
+          const view = project.views.find((v) => idMatch(v._id!, input.viewId));
+          if (!view?.editable) {
+            bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
           // remove view from project and save
-          project.views = project.views.filter((v) => !idMatch(v._id, input.viewId));
-          return await project.save();
+          project.views = project.views.filter(
+            (v) => !idMatch(v._id!, input.viewId),
+          ) as mongoose.Types.DocumentArray<ViewSchema>;
+          return project.save();
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      return await operation(input);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateAutomationRules(input, context) {
-    const operation = async ({ automationRules }) => {
+  static async updateAutomationRules(
+    { automationRules }: gql.UpdateAutomationRulesInput,
+    context: Context,
+  ): Promise<mongoose.Types.DocumentArray<AutomationRuleSchema>> {
+    try {
       return await retry(
         async () => {
           console.log('attempting to update automation rules with: ', automationRules);
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
-          project.automationRules = automationRules;
+          project.automationRules =
+            automationRules as mongoose.Types.DocumentArray<AutomationRuleSchema>;
           await project.save();
           return project.automationRules;
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      return await operation(input);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async reMapImagesToDeps({ projId, camConfig }) {
-    const operation = async ({ projId, camConfig }) => {
-      return await retry(
+  static async reMapImagesToDeps({
+    projId,
+    camConfig,
+  }: {
+    projId: string;
+    camConfig: HydratedDocument<CameraConfigSchema>;
+  }) {
+    try {
+      await retry(
         async () => {
           // build array of operations from camConfig.deployments:
           // for each deployment, build filter, build update, then perform bulkWrite
@@ -345,7 +368,7 @@ export class ProjectModel {
               ? camConfig.deployments[index + 1].startDate
               : null;
 
-            const filter = { projectId: projId, cameraId: camConfig._id };
+            const filter: Record<any, any> = { projectId: projId, cameraId: camConfig._id };
             if (createdStart || createdEnd) {
               filter.dateTimeOriginal = {
                 ...(createdStart && { $gte: createdStart }),
@@ -354,15 +377,17 @@ export class ProjectModel {
             }
 
             for await (const img of Image.find(filter)) {
-              const update = {};
-              if (img.deploymentId.toString() !== dep._id.toString()) {
+              const update: Partial<ImageSchema> = {};
+              if (img.deploymentId.toString() !== dep._id!.toString()) {
                 update.deploymentId = dep._id;
               }
 
               if (img.timezone !== dep.timezone) {
-                const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal).setZone(img.timezone);
+                const dtOriginal = DateTime.fromJSDate(img.dateTimeOriginal as any as Date).setZone(
+                  img.timezone,
+                );
                 const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
-                update.dateTimeOriginal = newDT;
+                update.dateTimeOriginal = newDT.toJSDate();
                 update.timezone = dep.timezone;
               }
 
@@ -378,17 +403,16 @@ export class ProjectModel {
         },
         { retries: 3 },
       );
-    };
-
-    try {
-      await operation({ projId, camConfig });
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createDeploymentTask(input, context) {
+  static async createDeploymentTask(
+    input: gql.CreateDeploymentInput,
+    context: Context,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {
@@ -401,44 +425,48 @@ export class ProjectModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
   // NOTE: this function is called by the task handler
-  static async createDeployment(input, context) {
-    const operation = async ({ cameraId, deployment }) => {
-      return await retry(
+  static async createDeployment(
+    input: gql.CreateDeploymentInput,
+    context: Context,
+  ): Promise<HydratedSingleSubdocument<CameraConfigSchema>> {
+    try {
+      const { cameraId, deployment } = input;
+      const { project, camConfig } = await retry(
         async () => {
           // find camera config
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          if (!camConfig) throw new NotFoundError('Camera config not found');
 
           // add new deployment, sort them, and save project
           camConfig.deployments.push(deployment);
-          camConfig.deployments = sortDeps(camConfig.deployments);
+          camConfig.deployments = sortDeps(camConfig!.deployments);
           await project.save();
           return { project, camConfig };
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateDeploymentTask(input, context) {
+  static async updateDeploymentTask(
+    input: gql.UpdateDeploymentInput,
+    context: Context,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {
@@ -451,40 +479,39 @@ export class ProjectModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
   // NOTE: this function is called by the task handler
-  static async updateDeployment(input, context) {
-    const operation = async ({ cameraId, deploymentId, diffs }) => {
-      return await retry(
+  static async updateDeployment(
+    input: gql.UpdateDeploymentInput,
+    context: Context,
+  ): Promise<HydratedDocument<CameraConfigSchema>> {
+    const { cameraId, deploymentId, diffs } = input;
+    try {
+      const { project, camConfig } = await retry(
         async (bail) => {
           // find deployment
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
           const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-          const deployment = camConfig.deployments.find((dep) => idMatch(dep._id, deploymentId));
-          if (deployment.name === 'default') {
-            bail(new ForbiddenError(`View ${deployment.name} is not editable`));
+          if (!camConfig) throw new NotFoundError('Camera config not found');
+          const deployment = camConfig!.deployments.find((dep) => idMatch(dep._id!, deploymentId));
+          if (deployment!.name === 'default') {
+            bail(new ForbiddenError(`View ${deployment!.name} is not editable`));
           }
 
           // apply updates, sort deployments, and save project
-          for (const [key, newVal] of Object.entries(diffs)) {
-            deployment[key] = newVal;
-          }
+          Object.assign(deployment!, diffs);
           camConfig.deployments = sortDeps(camConfig.deployments);
           await project.save();
           return { project, camConfig };
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       if (Object.keys(input.diffs).includes('startDate')) {
         await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
@@ -492,11 +519,14 @@ export class ProjectModel {
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteDeploymentTask(input, context) {
+  static async deleteDeploymentTask(
+    input: gql.DeleteDeploymentInput,
+    context: Context,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {
@@ -509,48 +539,52 @@ export class ProjectModel {
       );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
   // NOTE: this function is called by the task handler
-  static async deleteDeployment(input, context) {
-    const operation = async ({ cameraId, deploymentId }) => {
-      return await retry(
+  static async deleteDeployment(
+    { cameraId, deploymentId }: gql.DeleteDeploymentInput,
+    context: Context,
+  ): Promise<HydratedDocument<CameraConfigSchema>> {
+    try {
+      const { project, camConfig } = await retry(
         async () => {
           // find camera config
           const [project] = await ProjectModel.getProjects(
-            { _ids: [context.user['curr_project']] },
+            { _ids: [context.user['curr_project']!] },
             context,
           );
-          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId))!;
 
           // filter out deployment, sort remaining ones, and save project
-          camConfig.deployments = camConfig.deployments.filter(
-            (dep) => !idMatch(dep._id, deploymentId),
+          camConfig.deployments = sortDeps(
+            camConfig!.deployments.filter(
+              (dep) => !idMatch(dep._id!, deploymentId),
+            ) as typeof camConfig.deployments,
           );
-          camConfig.deployments = sortDeps(camConfig.deployments);
+
           await project.save();
           return { project, camConfig };
         },
         { retries: 2 },
       );
-    };
-
-    try {
-      const { project, camConfig } = await operation(input);
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async createLabel(input, context) {
+  static async createLabel(
+    input: gql.CreateProjectLabelInput,
+    context: Context,
+  ): Promise<HydratedDocument<gql.ProjectLabel>> {
     try {
-      const project = await this.queryById(context.user['curr_project']);
+      const project = await this.queryById(context.user['curr_project']!);
 
       if (
         project.labels.filter((label) => {
@@ -568,20 +602,21 @@ export class ProjectModel {
 
       await project.save();
 
-      return project.labels.pop();
+      return project.labels.pop()!;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async deleteLabel(input, context) {
+  static async deleteLabel(
+    input: gql.DeleteProjectLabelInput,
+    context: Context,
+  ): Promise<GenericResponse> {
     try {
-      const project = await this.queryById(context.user['curr_project']);
+      const project = await this.queryById(context.user['curr_project']!);
 
-      const label = (project.labels || []).filter((p) => {
-        return p._id.toString() === input._id.toString();
-      })[0];
+      const label = project.labels?.find((p) => p._id.toString() === input._id.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
       const count = await ImageModel.countImagesByLabel([input._id], context);
@@ -602,33 +637,38 @@ export class ProjectModel {
 
       project.labels.splice(project.labels.indexOf(label), 1);
 
-      project.view = project.views.map((view) => {
-        if (!view.filters || !view.filters.labels || !Array.isArray(view.filters.labels))
-          return view;
-        view.filters.labels = view.filters.labels.filter((label) => {
-          return project.labels.some((l) => {
-            return l._id === label;
-          });
-        });
-        return view;
+      const views = project.views.map((view) => {
+        if (!Array.isArray(view.filters.labels)) return view;
+
+        return {
+          ...view,
+          filters: {
+            ...view.filters,
+            labels: view.filters.labels.filter((label) =>
+              project.labels.some((l) => l._id === label),
+            ),
+          },
+        };
       });
+      project.views = views as typeof project.views;
 
       await project.save();
 
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 
-  static async updateLabel(input, context) {
+  static async updateLabel(
+    input: gql.UpdateProjectLabelInput,
+    context: Context,
+  ): Promise<HydratedDocument<ProjectLabelSchema>> {
     try {
-      const project = await this.queryById(context.user['curr_project']);
+      const project = await this.queryById(context.user['curr_project']!);
 
-      const label = (project.labels || []).filter((p) => {
-        return p._id.toString() === input._id.toString();
-      })[0];
+      const label = project.labels.find((p) => p._id.toString() === input._id.toString());
       if (!label) throw new NotFoundError('Label not found on project');
 
       Object.assign(label, input);
@@ -638,77 +678,72 @@ export class ProjectModel {
       return label;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err);
+      throw new InternalServerError(err as string);
     }
   }
 }
 
-export default class AuthedProjectModel {
-  constructor(user) {
-    if (!user) throw new AuthenticationError('Authentication failed');
-    this.user = user;
+export default class AuthedProjectModel extends BaseAuthedModel {
+  getProjects(...args: MethodParams<typeof ProjectModel.getProjects>) {
+    return ProjectModel.getProjects(...args);
   }
 
-  async getProjects(input, context) {
-    return await ProjectModel.getProjects(input, context);
+  createProject(...args: MethodParams<typeof ProjectModel.createProject>) {
+    return ProjectModel.createProject(...args);
   }
 
-  async createProject(input, context) {
-    return await ProjectModel.createProject(input, context);
+  @roleCheck(WRITE_PROJECT_ROLES)
+  deleteLabel(...args: MethodParams<typeof ProjectModel.deleteLabel>) {
+    return ProjectModel.deleteLabel(...args);
   }
 
-  async deleteLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.deleteLabel(input, context);
+  @roleCheck(WRITE_PROJECT_ROLES)
+  createLabel(...args: MethodParams<typeof ProjectModel.createLabel>) {
+    return ProjectModel.createLabel(...args);
   }
 
-  async createLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.createLabel(input, context);
+  @roleCheck(WRITE_PROJECT_ROLES)
+  updateLabel(...args: MethodParams<typeof ProjectModel.updateLabel>) {
+    return ProjectModel.updateLabel(...args);
   }
 
-  async updateLabel(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateLabel(input, context);
+  @roleCheck(WRITE_PROJECT_ROLES)
+  updateProject(...args: MethodParams<typeof ProjectModel.updateProject>) {
+    return ProjectModel.updateProject(...args);
   }
 
-  async updateProject(input, context) {
-    if (!hasRole(this.user, WRITE_PROJECT_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateProject(input, context);
+  @roleCheck(WRITE_VIEWS_ROLES)
+  createView(...args: MethodParams<typeof ProjectModel.createView>) {
+    return ProjectModel.createView(...args);
   }
 
-  async createView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.createView(input, context);
+  @roleCheck(WRITE_VIEWS_ROLES)
+  updateView(...args: MethodParams<typeof ProjectModel.updateView>) {
+    return ProjectModel.updateView(...args);
   }
 
-  async updateView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateView(input, context);
+  @roleCheck(WRITE_VIEWS_ROLES)
+  deleteView(...args: MethodParams<typeof ProjectModel.deleteView>) {
+    return ProjectModel.deleteView(...args);
   }
 
-  async deleteView(input, context) {
-    if (!hasRole(this.user, WRITE_VIEWS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.deleteView(input, context);
+  @roleCheck(WRITE_AUTOMATION_RULES_ROLES)
+  updateAutomationRules(...args: MethodParams<typeof ProjectModel.updateAutomationRules>) {
+    return ProjectModel.updateAutomationRules(...args);
   }
 
-  async updateAutomationRules(input, context) {
-    if (!hasRole(this.user, WRITE_AUTOMATION_RULES_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateAutomationRules(input, context);
+  @roleCheck(WRITE_DEPLOYMENTS_ROLES)
+  createDeployment(...args: MethodParams<typeof ProjectModel.createDeploymentTask>) {
+    return ProjectModel.createDeploymentTask(...args);
   }
 
-  async createDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.createDeploymentTask(input, context);
+  @roleCheck(WRITE_DEPLOYMENTS_ROLES)
+  updateDeployment(...args: MethodParams<typeof ProjectModel.updateDeploymentTask>) {
+    return ProjectModel.updateDeploymentTask(...args);
   }
 
-  async updateDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.updateDeploymentTask(input, context);
-  }
-
-  async deleteDeployment(input, context) {
-    if (!hasRole(this.user, WRITE_DEPLOYMENTS_ROLES)) throw new ForbiddenError();
-    return await ProjectModel.deleteDeploymentTask(input, context);
+  @roleCheck(WRITE_DEPLOYMENTS_ROLES)
+  deleteDeployment(...args: MethodParams<typeof ProjectModel.deleteDeploymentTask>) {
+    return ProjectModel.deleteDeploymentTask(...args);
   }
 }

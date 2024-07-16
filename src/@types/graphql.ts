@@ -18,7 +18,7 @@ export type Scalars = {
 
 export type AutomationAction = {
   __typename?: 'AutomationAction';
-  alertRecipients?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  alertRecipients?: Maybe<Array<Scalars['String']['output']>>;
   categoryConfig?: Maybe<Scalars['JSONObject']['output']>;
   confThreshold?: Maybe<Scalars['Float']['output']>;
   mlModel?: Maybe<Scalars['String']['output']>;
@@ -26,7 +26,7 @@ export type AutomationAction = {
 };
 
 export type AutomationActionInput = {
-  alertRecipients?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  alertRecipients?: InputMaybe<Array<Scalars['String']['input']>>;
   categoryConfig?: InputMaybe<Scalars['JSONObject']['input']>;
   confThreshold?: InputMaybe<Scalars['Float']['input']>;
   mlModel?: InputMaybe<Scalars['String']['input']>;
@@ -64,7 +64,7 @@ export type Batch = {
   _id: Scalars['String']['output'];
   created?: Maybe<Scalars['Date']['output']>;
   dead?: Maybe<Scalars['Int']['output']>;
-  errors?: Maybe<Array<Maybe<BatchError>>>;
+  errors?: Maybe<Array<BatchError>>;
   imageErrors?: Maybe<Scalars['Int']['output']>;
   ingestionComplete?: Maybe<Scalars['Date']['output']>;
   originalFile?: Maybe<Scalars['String']['output']>;
@@ -221,7 +221,7 @@ export type CreateUploadPayload = {
   batch: Scalars['String']['output'];
   multipartUploadId?: Maybe<Scalars['String']['output']>;
   url?: Maybe<Scalars['String']['output']>;
-  urls?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  urls?: Maybe<Array<Scalars['String']['output']>>;
   user: Scalars['String']['output'];
 };
 
@@ -344,7 +344,7 @@ export type ExportStatusInput = {
 export type ExportStatusPayload = {
   __typename?: 'ExportStatusPayload';
   count?: Maybe<Scalars['Int']['output']>;
-  error?: Maybe<Array<Maybe<ExportError>>>;
+  error?: Maybe<Array<ExportError>>;
   meta?: Maybe<Scalars['JSONObject']['output']>;
   status: Scalars['String']['output'];
   url?: Maybe<Scalars['String']['output']>;
@@ -354,12 +354,12 @@ export type Filters = {
   __typename?: 'Filters';
   addedEnd?: Maybe<Scalars['Date']['output']>;
   addedStart?: Maybe<Scalars['Date']['output']>;
-  cameras?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  cameras?: Maybe<Array<Scalars['String']['output']>>;
   createdEnd?: Maybe<Scalars['Date']['output']>;
   createdStart?: Maybe<Scalars['Date']['output']>;
   custom?: Maybe<Scalars['String']['output']>;
-  deployments?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  labels?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  deployments?: Maybe<Array<Scalars['String']['output']>>;
+  labels?: Maybe<Array<Scalars['String']['output']>>;
   notReviewed?: Maybe<Scalars['Boolean']['output']>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
 };
@@ -372,7 +372,7 @@ export type FiltersInput = {
   createdStart?: InputMaybe<Scalars['Date']['input']>;
   custom?: InputMaybe<Scalars['String']['input']>;
   deployments?: InputMaybe<Array<Scalars['String']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  labels?: InputMaybe<Array<Scalars['String']['input']>>;
   reviewed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -387,11 +387,11 @@ export type Image = {
   batchId?: Maybe<Scalars['String']['output']>;
   bucket: Scalars['String']['output'];
   cameraId: Scalars['String']['output'];
-  comments?: Maybe<Array<Maybe<ImageComment>>>;
+  comments?: Maybe<Array<ImageComment>>;
   dateAdded: Scalars['Date']['output'];
   dateTimeOriginal: Scalars['Date']['output'];
   deploymentId: Scalars['ID']['output'];
-  errors?: Maybe<Array<Maybe<ImageError>>>;
+  errors?: Maybe<Array<ImageError>>;
   fileTypeExtension: Scalars['String']['output'];
   imageBytes?: Maybe<Scalars['Int']['output']>;
   imageHeight?: Maybe<Scalars['Int']['output']>;
@@ -400,7 +400,7 @@ export type Image = {
   make: Scalars['String']['output'];
   mimeType?: Maybe<Scalars['String']['output']>;
   model?: Maybe<Scalars['String']['output']>;
-  objects?: Maybe<Array<Maybe<Object>>>;
+  objects?: Maybe<Array<Object>>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
@@ -414,7 +414,7 @@ export type ImageAttempt = {
   _id: Scalars['ID']['output'];
   batch?: Maybe<Scalars['String']['output']>;
   created: Scalars['Date']['output'];
-  errors?: Maybe<Array<Maybe<ImageError>>>;
+  errors?: Maybe<Array<ImageError>>;
   metadata?: Maybe<ImageMetadata>;
   projectId: Scalars['String']['output'];
 };
@@ -429,7 +429,7 @@ export type ImageComment = {
 
 export type ImageCommentsPayload = {
   __typename?: 'ImageCommentsPayload';
-  comments?: Maybe<Array<Maybe<ImageComment>>>;
+  comments?: Maybe<Array<ImageComment>>;
 };
 
 export type ImageError = {
@@ -504,7 +504,7 @@ export type LabelDiffsInput = {
 
 export type LabelList = {
   __typename?: 'LabelList';
-  categories?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  categories?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type LabelUpdate = {
@@ -532,7 +532,7 @@ export type LocationInput = {
 export type MlModel = {
   __typename?: 'MLModel';
   _id: Scalars['String']['output'];
-  categories?: Maybe<Array<Maybe<Categories>>>;
+  categories?: Maybe<Array<Categories>>;
   defaultConfThreshold?: Maybe<Scalars['Float']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   version: Scalars['String']['output'];
@@ -768,7 +768,7 @@ export type Object = {
   __typename?: 'Object';
   _id: Scalars['ID']['output'];
   bbox?: Maybe<Array<Scalars['Float']['output']>>;
-  labels?: Maybe<Array<Maybe<Label>>>;
+  labels?: Maybe<Array<Label>>;
   locked: Scalars['Boolean']['output'];
 };
 
@@ -780,7 +780,7 @@ export type ObjectDiffsInput = {
 export type ObjectInput = {
   _id: Scalars['ID']['input'];
   bbox?: InputMaybe<Array<Scalars['Float']['input']>>;
-  labels?: InputMaybe<Array<InputMaybe<CreateLabelInput>>>;
+  labels?: InputMaybe<Array<CreateLabelInput>>;
   locked: Scalars['Boolean']['input'];
 };
 
@@ -812,11 +812,11 @@ export type PointInput = {
 export type Project = {
   __typename?: 'Project';
   _id: Scalars['String']['output'];
-  automationRules?: Maybe<Array<Maybe<AutomationRule>>>;
-  availableMLModels?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  cameraConfigs?: Maybe<Array<Maybe<CameraConfig>>>;
+  automationRules?: Maybe<Array<AutomationRule>>;
+  availableMLModels?: Maybe<Array<Scalars['String']['output']>>;
+  cameraConfigs?: Maybe<Array<CameraConfig>>;
   description?: Maybe<Scalars['String']['output']>;
-  labels?: Maybe<Array<Maybe<ProjectLabel>>>;
+  labels?: Maybe<Array<ProjectLabel>>;
   name: Scalars['String']['output'];
   timezone: Scalars['String']['output'];
   views: Array<View>;
@@ -857,13 +857,13 @@ export type Query = {
   images?: Maybe<ImagesConnection>;
   imagesCount?: Maybe<ImagesCount>;
   labels?: Maybe<LabelList>;
-  mlModels?: Maybe<Array<Maybe<MlModel>>>;
-  projects?: Maybe<Array<Maybe<Project>>>;
+  mlModels?: Maybe<Array<MlModel>>;
+  projects?: Maybe<Array<Project>>;
   stats?: Maybe<Task>;
   task?: Maybe<Task>;
   tasks?: Maybe<TasksPayload>;
   users?: Maybe<UsersPayload>;
-  wirelessCameras?: Maybe<Array<Maybe<WirelessCamera>>>;
+  wirelessCameras?: Maybe<Array<WirelessCamera>>;
 };
 
 
@@ -1015,12 +1015,12 @@ export type RegisterCameraInput = {
 export type RegisterCameraPayload = {
   __typename?: 'RegisterCameraPayload';
   project?: Maybe<Project>;
-  wirelessCameras?: Maybe<Array<Maybe<WirelessCamera>>>;
+  wirelessCameras?: Maybe<Array<WirelessCamera>>;
 };
 
 export type StandardErrorPayload = {
   __typename?: 'StandardErrorPayload';
-  errors?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  errors?: Maybe<Array<Scalars['String']['output']>>;
   isOk?: Maybe<Scalars['Boolean']['output']>;
 };
 
@@ -1057,16 +1057,16 @@ export type UnregisterCameraInput = {
 export type UnregisterCameraPayload = {
   __typename?: 'UnregisterCameraPayload';
   project?: Maybe<Project>;
-  wirelessCameras?: Maybe<Array<Maybe<WirelessCamera>>>;
+  wirelessCameras?: Maybe<Array<WirelessCamera>>;
 };
 
 export type UpdateAutomationRulesInput = {
-  automationRules?: InputMaybe<Array<InputMaybe<AutomationRuleInput>>>;
+  automationRules: Array<AutomationRuleInput>;
 };
 
 export type UpdateAutomationRulesPayload = {
   __typename?: 'UpdateAutomationRulesPayload';
-  automationRules?: Maybe<Array<Maybe<AutomationRule>>>;
+  automationRules?: Maybe<Array<AutomationRule>>;
 };
 
 export type UpdateBatchInput = {
@@ -1130,12 +1130,12 @@ export type UpdateViewPayload = {
 
 export type User = {
   __typename?: 'User';
-  created: Scalars['String']['output'];
-  email: Scalars['String']['output'];
-  enabled: Scalars['Boolean']['output'];
+  created?: Maybe<Scalars['Date']['output']>;
+  email?: Maybe<Scalars['String']['output']>;
+  enabled?: Maybe<Scalars['Boolean']['output']>;
   roles: Array<UserRole>;
-  status: Scalars['String']['output'];
-  updated: Scalars['String']['output'];
+  status?: Maybe<Scalars['String']['output']>;
+  updated?: Maybe<Scalars['Date']['output']>;
   username: Scalars['String']['output'];
 };
 

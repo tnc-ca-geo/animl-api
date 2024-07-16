@@ -59,3 +59,4 @@ const ObjectSchema = new Schema({
 });
 
 export { PointSchema, LocationSchema, LabelSchema, ObjectSchema };
+export type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;
