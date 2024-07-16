@@ -102,6 +102,12 @@ const ProjectSchema = new Schema({
 
 export default mongoose.model('Project', ProjectSchema);
 
+export type AutomationRuleSchema = mongoose.InferSchemaType<typeof AutomationRuleSchema>;
+export type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;
+export type ViewSchema = mongoose.InferSchemaType<typeof ViewSchema>;
+export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
+export type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
+export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
 export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;

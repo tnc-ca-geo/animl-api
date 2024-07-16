@@ -4,6 +4,6 @@ export default /* GraphQL */ `
     multipartUploadId: String
     user: String!
     url: String
-    urls: [String]
+    urls: [String!]
   }
 `;

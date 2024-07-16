@@ -56,7 +56,7 @@ export class BatchModel {
   }
 
   static async queryById(_id: string): Promise<mongoose.HydratedDocument<BatchSchemaWithErrors>> {
-    const query = { _id };
+    const query = { _id: { $eq: _id } };
     try {
       const batch = await Batch.findOne<mongoose.HydratedDocument<BatchSchemaWithErrors>>(query);
       if (!batch) throw new NotFoundError('Batch not found');

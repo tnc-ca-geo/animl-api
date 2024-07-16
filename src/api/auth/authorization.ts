@@ -63,7 +63,7 @@ export interface User {
   aud: string;
   'cognito:username': string;
   is_superuser: boolean;
-  curr_project: string | null;
+  curr_project: string;
   projects: Record<string, { roles: string[] }>;
   curr_project_roles: string[];
 }
