@@ -1,7 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 
