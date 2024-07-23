@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
-import mongoose, { Types, PipelineStage } from 'mongoose';
+import mongoose, { HydratedDocument, PipelineStage, Types, PipelineStage } from 'mongoose';
 import { Config } from '../../../config/config.js';
 import { User } from '../../auth/authorization.js';
 import {
@@ -133,7 +133,6 @@ export function buildPipeline(
     addedEnd,
     labels,
     reviewed,
-    notReviewed,
     custom,
   }: gql.Filters,
   projectId?: string,
@@ -181,57 +180,12 @@ export function buildPipeline(
       },
     });
   }
-
-  // match notReivewed filter
-  if (reviewed === false) {
-    // NOTE: this is a bit un-intuitive. Because a filter value of
-    // reviewed === null means that we want to *include* reviewed images,
-    // and because filters are by nature exclusionary (i.e, "only return documents
-    // that match my query"), when reviewed === false, we're actually saying,
-    // "only show me the not-reviewed images".
-    // The same logic applies to notReviewed === false, below.
-
-    // include images that ARE NOT reviewed, i.e.:
-    pipeline.push({
-      $match: {
-        $or: [
-          { 'objects.locked': false }, // have at least one unlocked object,
-          { objects: { $size: 0 } }, // no objects at all,
-          {
-            objects: {
-              $not: {
-                // OR all invalidated labels
-                $elemMatch: {
-                  labels: {
-                    $elemMatch: {
-                      $or: [{ validation: null }, { 'validation.validated': true }],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        ],
-      },
-    });
-  }
-
+  
   // match reviewedFilter
-  if (notReviewed === false) {
-    // include images that ARE reviewed, i.e.:
+  if (reviewed !== null) {
     pipeline.push({
       $match: {
-        'objects.0': { $exists: true }, // have objects
-        'objects.locked': { $ne: false }, // all objects are locked
-        'objects.labels': {
-          $elemMatch: {
-            $or: [
-              // AND not all labels are invalidated
-              { validation: null },
-              { 'validation.validated': true },
-            ],
-          },
-        },
+        reviewed: reviewed,
       },
     });
   }
@@ -697,7 +651,6 @@ export interface ImageMetadata {
   imageHeight?: number;
   imageBytes?: number;
 }
-
 type LabelInput = {
   _id?: Maybe<string>;
   userId?: Maybe<string>;
