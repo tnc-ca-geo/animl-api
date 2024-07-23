@@ -19,7 +19,7 @@ export class MLModelModel {
   }
 
   static async getMLModels(
-    input: Maybe<{ _ids?: Maybe<string[]> }>,
+    input?: Maybe<{ _ids?: Maybe<string[]> }>,
   ): Promise<HydratedDocument<MLModelSchema>[]> {
     const query = input?._ids ? { _id: { $in: input._ids } } : {};
     try {

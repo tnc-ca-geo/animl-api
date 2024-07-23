@@ -127,7 +127,7 @@ export class ImageErrorModel {
    */
   static async exportErrorsTask(
     input: ExportErrorsInput,
-    context: Context,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(

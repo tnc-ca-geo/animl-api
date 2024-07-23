@@ -539,7 +539,9 @@ export function mapImgToDep(
     : findDeployment(img, camConfig, projTimeZone)!;
 }
 
-export function sortDeps(deps: DeploymentSchema[]): DeploymentSchema[] {
+export function sortDeps(
+  deps: mongoose.Types.DocumentArray<DeploymentSchema> | DeploymentSchema[],
+): mongoose.Types.DocumentArray<DeploymentSchema> {
   return deps.toSorted((a, b) =>
     a.name === 'default'
       ? // Default first
@@ -548,7 +550,7 @@ export function sortDeps(deps: DeploymentSchema[]): DeploymentSchema[] {
         DateTime.fromJSDate(a.startDate!)
           .diff(DateTime.fromJSDate(b.startDate!))
           .as('milliseconds'),
-  );
+  ) as mongoose.Types.DocumentArray<DeploymentSchema>;
 }
 
 export function findActiveProjReg(camera: WirelessCameraSchema) {
@@ -604,11 +606,11 @@ export class BaseAuthedModel {
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 
 export type Pagination<T = {}> = T & {
-  paginatedField?: string;
-  sortAscending?: boolean;
-  limit?: number;
-  next?: string;
-  previous?: string;
+  paginatedField?: Maybe<string>;
+  sortAscending?: Maybe<boolean>;
+  limit?: Maybe<number>;
+  next?: Maybe<string>;
+  previous?: Maybe<string>;
 };
 
 export interface GenericResponse {

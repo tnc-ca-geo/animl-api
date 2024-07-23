@@ -3,10 +3,10 @@ import SQS from '@aws-sdk/client-sqs';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, MethodParams, roleCheck } from './utils-model.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 /**
  * Tasks manage the state of async events (except for batch uploads) on the platform
@@ -25,23 +25,26 @@ export class TaskModel {
    * @param {Object} context
    */
   static async queryByFilter(
-    input: gql.QueryTasksInput,
-    context: Context,
+    input: Maybe<gql.QueryTasksInput> | undefined,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<TaskSchema>> {
-    return await MongoPaging.aggregate(Task.collection, {
+    return MongoPaging.aggregate(Task.collection, {
       aggregation: [
         { $match: { projectId: context.user['curr_project'] } },
         { $match: { user: context.user.sub } },
       ],
-      limit: input.limit,
-      paginatedField: input.paginatedField,
-      sortAscending: input.sortAscending,
-      next: input.next,
-      previous: input.previous,
+      limit: input?.limit,
+      paginatedField: input?.paginatedField,
+      sortAscending: input?.sortAscending,
+      next: input?.next,
+      previous: input?.previous,
     });
   }
 
-  static async queryById(_id: string, context: Context): Promise<HydratedDocument<TaskSchema>> {
+  static async queryById(
+    _id: Types.ObjectId | string,
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     const query = { _id: { $eq: _id } };
     const task = await Task.findOne(query);
     if (!task) throw new NotFoundError('Task not found');
@@ -53,7 +56,10 @@ export class TaskModel {
     return task;
   }
 
-  static async create(input: TaskInput, context: Context): Promise<HydratedDocument<TaskSchema>> {
+  static async create(
+    input: TaskInput<any>,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     const task = new Task({
       user: input.user,
       projectId: input.projectId,
@@ -77,8 +83,8 @@ export class TaskModel {
   }
 
   static async update(
-    input: Partial<TaskSchema> & { _id: gql.Scalars['ID']['input'] },
-    context: Context,
+    input: { _id: Types.ObjectId | string } & Partial<Omit<TaskSchema, '_id'>>,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     const task = await this.queryById(input._id, context);
 
@@ -102,6 +108,6 @@ export default class AuthedTaskModel extends BaseAuthedModel {
   }
 }
 
-export interface TaskInput extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
-  config: any;
+export interface TaskInput<T> extends Pick<TaskSchema, 'user' | 'projectId' | 'type'> {
+  config: T;
 }

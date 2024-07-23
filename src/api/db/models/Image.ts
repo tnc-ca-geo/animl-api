@@ -49,18 +49,25 @@ import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './uti
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { DateTime } from 'luxon';
+import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
-  static async countImages(input: gql.QueryImagesCountInput, context: Context): Promise<number> {
+  static async countImages(
+    input: gql.QueryImagesCountInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<number> {
     const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByLabel(labels: string[], context: Context): Promise<number> {
+  static async countImagesByLabel(
+    labels: string[],
+    context: Pick<Context, 'user'>,
+  ): Promise<number> {
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -71,7 +78,10 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async queryById(_id: string, context: Context): Promise<HydratedDocument<ImageSchema>> {
+  static async queryById(
+    _id: string,
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] }> {
     const query = !context.user['is_superuser']
       ? { _id, projectId: context.user['curr_project']! }
       : { _id };
@@ -81,9 +91,9 @@ export class ImageModel {
 
       const epipeline = [];
       epipeline.push({ $match: { image: image._id } });
-      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF
+      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF;
 
-      return image;
+      return image as HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -92,7 +102,7 @@ export class ImageModel {
 
   static async queryByFilter(
     input: gql.QueryImagesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<ImageSchema>> {
     try {
       const result = await MongoPaging.aggregate(Image.collection, {
@@ -113,7 +123,7 @@ export class ImageModel {
 
   static async deleteImages(
     input: gql.DeleteImagesInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<GenericResponse & { errors: string[] }> {
     try {
       const res = await Promise.allSettled(
@@ -136,7 +146,10 @@ export class ImageModel {
     }
   }
 
-  static async deleteImage(input: { imageId: string }, context: Context): Promise<GenericResponse> {
+  static async deleteImage(
+    input: { imageId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<GenericResponse> {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -167,15 +180,15 @@ export class ImageModel {
 
   static async createImage(
     input: gql.CreateImageInput,
-    context: Context,
-  ): Promise<HydratedDocument<ImageAttemptSchema>> {
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] }> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
     let existingCam;
-    let imageAttempt;
+    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema>>;
 
     try {
       // 1. create ImageAttempt record
@@ -327,7 +340,7 @@ export class ImageModel {
         }
       }
 
-      return imageAttempt;
+      return imageAttempt as HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] };
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
@@ -355,7 +368,7 @@ export class ImageModel {
 
   static async deleteComment(
     input: gql.DeleteImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -382,7 +395,7 @@ export class ImageModel {
 
   static async updateComment(
     input: gql.UpdateImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -407,7 +420,7 @@ export class ImageModel {
 
   static async createComment(
     input: gql.CreateImageCommentInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
@@ -429,7 +442,7 @@ export class ImageModel {
 
   static async createObjects(
     input: gql.CreateObjectsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.createObjects - input: ', JSON.stringify(input));
 
@@ -559,7 +572,7 @@ export class ImageModel {
    */
   static async createInternalLabels(
     input: gql.CreateInternalLabelsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
 
@@ -688,7 +701,7 @@ export class ImageModel {
 
   static async createLabels(
     input: gql.CreateLabelsInput,
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<AlternativeGenericResponse> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
@@ -813,7 +826,7 @@ export class ImageModel {
    */
   static async deleteAnyLabels(
     input: { labelId: string },
-    context: Context,
+    context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageSchema>[]> {
     const images = await Image.find({
       'objects.labels.labelId': input.labelId,
@@ -904,8 +917,8 @@ export class ImageModel {
 
   static async getStatsTask(
     input: gql.QueryStatsInput,
-    context: Context,
-  ): Promise<HydratedDocument<TaskModel>> {
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return await TaskModel.create(
         {
@@ -924,8 +937,8 @@ export class ImageModel {
 
   static async exportAnnotationsTask(
     input: gql.ExportInput,
-    context: Context,
-  ): Promise<HydratedDocument<TaskModel>> {
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
       return TaskModel.create(
         {
@@ -995,90 +1008,90 @@ export class ImageModel {
 }
 
 export default class AuthedImageModel extends BaseAuthedModel {
-  async countImages(...args: MethodParams<typeof ImageModel.countImages>) {
-    return await ImageModel.countImages(...args);
+  countImages(...args: MethodParams<typeof ImageModel.countImages>) {
+    return ImageModel.countImages(...args);
   }
 
-  async queryById(...args: MethodParams<typeof ImageModel.queryById>) {
-    return await ImageModel.queryById(...args);
+  queryById(...args: MethodParams<typeof ImageModel.queryById>) {
+    return ImageModel.queryById(...args);
   }
 
-  async queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
-    return await ImageModel.queryByFilter(...args);
-  }
-
-  @roleCheck(WRITE_COMMENTS_ROLES)
-  async createComment(...args: MethodParams<typeof ImageModel.createComment>) {
-    return await ImageModel.createComment(...args);
+  queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
+    return ImageModel.queryByFilter(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
-  async updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
-    return await ImageModel.updateComment(...args);
+  createComment(...args: MethodParams<typeof ImageModel.createComment>) {
+    return ImageModel.createComment(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
-  async deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
-    return await ImageModel.deleteComment(...args);
+  updateComment(...args: MethodParams<typeof ImageModel.updateComment>) {
+    return ImageModel.updateComment(...args);
+  }
+
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  deleteComment(...args: MethodParams<typeof ImageModel.deleteComment>) {
+    return ImageModel.deleteComment(...args);
   }
 
   @roleCheck(DELETE_IMAGES_ROLES)
-  async deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
-    return await ImageModel.deleteImage(...args);
+  deleteImage(...args: MethodParams<typeof ImageModel.deleteImage>) {
+    return ImageModel.deleteImage(...args);
   }
 
   @roleCheck(DELETE_IMAGES_ROLES)
-  async deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
-    return await ImageModel.deleteImages(...args);
+  deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
+    return ImageModel.deleteImages(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
-  async createImage(...args: MethodParams<typeof ImageModel.createImage>) {
-    return await ImageModel.createImage(...args);
+  createImage(...args: MethodParams<typeof ImageModel.createImage>) {
+    return ImageModel.createImage(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
-    return await ImageModel.createObjects(...args);
+  createObjects(...args: MethodParams<typeof ImageModel.createObjects>) {
+    return ImageModel.createObjects(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
-    return await ImageModel.updateObjects(...args);
+  updateObjects(...args: MethodParams<typeof ImageModel.updateObjects>) {
+    return ImageModel.updateObjects(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
-    return await ImageModel.deleteObjects(...args);
+  deleteObjects(...args: MethodParams<typeof ImageModel.deleteObjects>) {
+    return ImageModel.deleteObjects(...args);
   }
 
-  async createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
+  createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
-    return await ImageModel.createInternalLabels(...args);
+    return ImageModel.createInternalLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
-    return await ImageModel.createLabels(...args);
+  createLabels(...args: MethodParams<typeof ImageModel.createLabels>) {
+    return ImageModel.createLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
-    return await ImageModel.updateLabels(...args);
+  updateLabels(...args: MethodParams<typeof ImageModel.updateLabels>) {
+    return ImageModel.updateLabels(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
-  async deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
-    return await ImageModel.deleteLabels(...args);
+  deleteLabels(...args: MethodParams<typeof ImageModel.deleteLabels>) {
+    return ImageModel.deleteLabels(...args);
   }
 
-  async getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
-    return await ImageModel.getStatsTask(...args);
+  getStats(...args: MethodParams<typeof ImageModel.getStatsTask>) {
+    return ImageModel.getStatsTask(...args);
   }
 
   @roleCheck(EXPORT_DATA_ROLES)
-  async exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
-    return await ImageModel.exportAnnotationsTask(...args);
+  exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
+    return ImageModel.exportAnnotationsTask(...args);
   }
 }
 
