@@ -25,7 +25,7 @@ export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
     imageCount++;
 
     // increment reviewedCount
-    isImageReviewed(img) ? reviewed++ : notReviewed++;
+    img.reviewed ? reviewed++ : notReviewed++;
 
     // build reviwer list
     let reviewers = [];
