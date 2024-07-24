@@ -1,9 +1,9 @@
 import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
-import Image, { ImageSchema } from '../api/db/schemas/Image.js';
+import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
-import { TaskInput } from '../api/db/models/Task.js';
-import { FiltersSchema } from '../api/db/schemas/Project.js';
+import { type TaskInput } from '../api/db/models/Task.js';
+import { type FiltersSchema } from '../api/db/schemas/Project.js';
 
 export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };

@@ -4,19 +4,19 @@ import { Upload } from '@aws-sdk/lib-storage';
 import S3 from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { InternalServerError } from '../api/errors.js';
-import { Transformer, transform } from 'stream-transform';
+import { type Transformer, transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
 import { idMatch } from '../api/db/models/utils.js';
 import { ProjectModel } from '../api/db/models/Project.js';
-import Image, { ImageSchema } from '../api/db/schemas/Image.js';
+import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import { buildPipeline } from '../api/db/models/utils.js';
-import { Config } from '../config/config.js';
-import { User } from '../api/auth/authorization.js';
-import { DeploymentSchema, FiltersSchema, ProjectSchema } from '../api/db/schemas/Project.js';
-import { ObjectSchema, LabelSchema } from '../api/db/schemas/shared/index.js';
-import { HydratedDocument, PipelineStage, Types } from 'mongoose';
-import { TaskInput } from '../api/db/models/Task.js';
+import { type Config } from '../config/config.js';
+import { type User } from '../api/auth/authorization.js';
+import type { DeploymentSchema, FiltersSchema, ProjectSchema } from '../api/db/schemas/Project.js';
+import type { ObjectSchema, LabelSchema } from '../api/db/schemas/shared/index.js';
+import type { HydratedDocument, PipelineStage, Types } from 'mongoose';
+import { type TaskInput } from '../api/db/models/Task.js';
 
 export class AnnotationsExport {
   config: Config;

@@ -8,9 +8,9 @@ import { InternalServerError } from '../api/errors.js';
 import { stringify } from 'csv-stringify';
 import ImageError from '../api/db/schemas/ImageError.js';
 import { ImageErrorModel } from '../api/db/models/ImageError.js';
-import { Config } from '../config/config.js';
-import { TaskInput } from '../api/db/models/Task.js';
-import { FiltersInput, Format } from '../@types/graphql.js';
+import { type Config } from '../config/config.js';
+import { type TaskInput } from '../api/db/models/Task.js';
+import type { FiltersInput, Format } from '../@types/graphql.js';
 
 export class ImageErrorExport {
   config: Config;
