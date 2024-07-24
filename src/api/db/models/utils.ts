@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
-import mongoose, { HydratedDocument, PipelineStage, Types, PipelineStage } from 'mongoose';
+import mongoose, { PipelineStage, Types } from 'mongoose';
 import { Config } from '../../../config/config.js';
 import { User } from '../../auth/authorization.js';
 import {
@@ -180,7 +180,7 @@ export function buildPipeline(
       },
     });
   }
-  
+
   // match reviewedFilter
   if (reviewed !== null) {
     pipeline.push({
