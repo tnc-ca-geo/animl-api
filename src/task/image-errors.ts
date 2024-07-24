@@ -11,6 +11,7 @@ import { ImageErrorModel } from '../api/db/models/ImageError.js';
 import { type Config } from '../config/config.js';
 import { type TaskInput } from '../api/db/models/Task.js';
 import type { FiltersInput, Format } from '../@types/graphql.js';
+import type { PipelineStage } from 'mongoose';
 
 export class ImageErrorExport {
   config: Config;
@@ -50,7 +51,7 @@ export class ImageErrorExport {
     }
   }
 
-  async getCount(pipeline: any) {
+  async getCount(pipeline: PipelineStage[]): Promise<number> {
     console.log('getting error count');
     let count = null;
     try {
