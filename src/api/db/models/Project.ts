@@ -39,7 +39,6 @@ import {
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
-import { User } from '../../auth/authorization.js';
 
 // The max number of labeled images that can be deleted
 // when removin a label from a project
@@ -119,6 +118,7 @@ export class ProjectModel {
             _id,
             views: [
               {
+                _id: new mongoose.Types.ObjectId(),
                 name: 'All images',
                 filters: {},
                 description: 'Default view of all images. This view is not editable.',
