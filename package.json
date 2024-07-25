@@ -9,7 +9,7 @@
         "build": "tsc",
         "deploy-dev": "sls deploy --stage dev",
         "deploy-prod": "sls deploy --stage prod",
-        "seed-db": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
+        "seed-db": "tsc && AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
         "seed-db-dev": "STAGE=dev npm run seed-db",
         "seed-db-prod": "STAGE=prod npm run seed-db",
         "export-db": "tsc && AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/exportDb.js",

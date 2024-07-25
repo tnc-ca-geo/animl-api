@@ -1,9 +1,9 @@
-import { InternalServerError } from '../api/errors.js';
-import { getConfig } from '../config/config.js';
-import { connectToDatabase } from '../api/db/connect.js';
-import Project from '../api/db/schemas/Project.js';
-import MLModel from '../api/db/schemas/MLModel.js';
-
+import mongoose from 'mongoose';
+import { InternalServerError } from '../../.build/api/errors.js';
+import { getConfig } from '../../.build/config/config.js';
+import { connectToDatabase } from '../../.build/api/db/connect.js';
+import Project from '../../.build/api/db/schemas/Project.js';
+import MLModel from '../../.build/api/db/schemas/MLModel.js';
 
 const defaultMLModelsConfig = [
   {
@@ -12,10 +12,27 @@ const defaultMLModelsConfig = [
     description: 'Microsoft Megadetector v5a',
     defaultConfThreshold: 0.25,
     categories: [
-      { _id: '1', name: 'animal' },
-      { _id: '2', name: 'person' },
-      { _id: '3', name: 'vehicle' }
-    ]
+      {
+        _id: '0',
+        name: 'empty',
+        color: '#8D8D8D',
+      },
+      {
+        _id: '1',
+        name: 'animal',
+        color: '#00A2C7',
+      },
+      {
+        _id: '2',
+        name: 'person',
+        color: '#86EAD4',
+      },
+      {
+        _id: '3',
+        name: 'vehicle',
+        color: '#F76B15',
+      },
+    ],
   },
   {
     _id: 'megadetector_v5b',
@@ -23,10 +40,27 @@ const defaultMLModelsConfig = [
     description: 'Microsoft Megadetector v5b',
     defaultConfThreshold: 0.25,
     categories: [
-      { _id: '1', name: 'animal' },
-      { _id: '2', name: 'person' },
-      { _id: '3', name: 'vehicle' }
-    ]
+      {
+        _id: '0',
+        name: 'empty',
+        color: '#8D8D8D',
+      },
+      {
+        _id: '1',
+        name: 'animal',
+        color: '#00A2C7',
+      },
+      {
+        _id: '2',
+        name: 'person',
+        color: '#86EAD4',
+      },
+      {
+        _id: '3',
+        name: 'vehicle',
+        color: '#F76B15',
+      },
+    ],
   },
   {
     _id: 'mirav2',
@@ -34,12 +68,32 @@ const defaultMLModelsConfig = [
     description: 'Santa Cruz Island classifier',
     defaultConfThreshold: 0.8,
     categories: [
-      { _id: 'bird', name: 'bird' },
-      { _id: 'fox', name: 'fox' },
-      { _id: 'lizard', name: 'lizard' },
-      { _id: 'skunk', name: 'skunk' },
-      { _id: 'rodent', name: 'rodent' }
-    ]
+      {
+        _id: 'bird',
+        name: 'bird',
+        color: '#6E56CF',
+      },
+      {
+        _id: 'fox',
+        name: 'fox',
+        color: '#3E63DD',
+      },
+      {
+        _id: 'lizard',
+        name: 'lizard',
+        color: '#30A46C',
+      },
+      {
+        _id: 'skunk',
+        name: 'skunk',
+        color: '#E93D82',
+      },
+      {
+        _id: 'rodent',
+        name: 'rodent',
+        color: '#E54D2E',
+      },
+    ],
   },
   {
     _id: 'nzdoc',
@@ -47,70 +101,70 @@ const defaultMLModelsConfig = [
     description: 'New Zealand Department of Conservation classifier',
     defaultConfThreshold: 0.4,
     categories: [
-      { _id: 'bellbird', name: 'bellbird' },
-      { _id: 'bird_sp', name: 'bird_sp' },
-      { _id: 'blackbird',name: 'blackbird' },
-      { _id: 'brown_creeper', name: 'brown_creeper' },
-      {  _id: 'canada_goose', name: 'canada_goose' },
-      { _id: 'cat', name: 'cat' },
-      { _id: 'chaffinch', name: 'chaffinch' },
-      { _id: 'cow', name: 'cow' },
-      { _id: 'deer', name: 'deer' },
-      { _id: 'dog', name: 'dog' },
-      { _id: 'dunnock', name: 'dunnock' },
-      { _id: 'empty', name: 'empty' },
-      { _id: 'fantail', name: 'fantail' },
-      { _id: 'goldfinch', name: 'goldfinch' },
-      { _id: 'goose', name: 'goose' },
-      { _id: 'greenfinch', name: 'greenfinch' },
-      { _id: 'grey_warbler', name: 'grey_warbler' },
-      { _id: 'hare', name: 'hare' },
-      { _id: 'harrier', name: 'harrier' },
-      { _id: 'hedgehog', name: 'hedgehog' },
-      { _id: 'human', name: 'human' },
-      { _id: 'insect', name: 'insect' },
-      { _id: 'kaka', name: 'kaka' },
-      { _id: 'kakariki', name: 'kakariki' },
-      { _id: 'kea', name: 'kea' },
-      { _id: 'kingfisher', name: 'kingfisher' },
-      { _id: 'lagomorph_sp', name: 'lagomorph_sp' },
-      { _id: 'lizard', name: 'lizard' },
-      { _id: 'magpie', name: 'magpie' },
-      { _id: 'morepork', name: 'morepork' },
-      { _id: 'moth', name: 'moth' },
-      { _id: 'mouse', name: 'mouse' },
-      { _id: 'pig', name: 'pig' },
-      { _id: 'pipit', name: 'pipit' },
-      { _id: 'possum', name: 'possum' },
-      { _id: 'quail', name: 'quail' },
-      { _id: 'rabbit', name: 'rabbit' },
-      { _id: 'rat', name: 'rat' },
-      { _id: 'redpoll', name: 'redpoll' },
-      { _id: 'rifleman', name: 'rifleman' },
-      { _id: 'robin', name: 'robin' },
-      { _id: 'sheep', name: 'sheep' },
-      { _id: 'silvereye', name: 'silvereye' },
-      { _id: 'starling', name: 'starling' },
-      { _id: 'stoat', name: 'stoat' },
-      { _id: 'thrush', name: 'thrush' },
-      { _id: 'tomtit', name: 'tomtit' },
-      { _id: 'tui', name: 'tui' },
-      { _id: 'warbler', name: 'warbler' },
-      { _id: 'weasel', name: 'weasel' },
-      { _id: 'weka', name: 'weka' },
-      { _id: 'yellowhammer', name: 'yellowhammer' }
-    ]
-  }
+      { _id: 'bellbird', name: 'bellbird', color: '#E54D2E' },
+      { _id: 'bird_sp', name: 'bird_sp', color: '#E5484D' },
+      { _id: 'blackbird', name: 'blackbird', color: '#E54666' },
+      { _id: 'brown_creeper', name: 'brown_creeper', color: '#E93D82' },
+      { _id: 'canada_goose', name: 'canada_goose', color: '#D6409F' },
+      { _id: 'cat', name: 'cat', color: '#AB4ABA' },
+      { _id: 'chaffinch', name: 'chaffinch', color: '#8E4EC6' },
+      { _id: 'cow', name: 'cow', color: '#6E56CF' },
+      { _id: 'deer', name: 'deer', color: '#5B5BD6' },
+      { _id: 'dog', name: 'dog', color: '#3E63DD' },
+      { _id: 'dunnock', name: 'dunnock', color: '#0090FF' },
+      { _id: 'empty', name: 'empty', color: '#00A2C7' },
+      { _id: 'fantail', name: 'fantail', color: '#12A594' },
+      { _id: 'goldfinch', name: 'goldfinch', color: '#29A383' },
+      { _id: 'goose', name: 'goose', color: '#30A46C' },
+      { _id: 'greenfinch', name: 'greenfinch', color: '#46A758' },
+      { _id: 'grey_warbler', name: 'grey_warbler', color: '#A18072' },
+      { _id: 'hare', name: 'hare', color: '#978365' },
+      { _id: 'harrier', name: 'harrier', color: '#AD7F58' },
+      { _id: 'hedgehog', name: 'hedgehog', color: '#F76B15' },
+      { _id: 'human', name: 'human', color: '#FFC53D' },
+      { _id: 'insect', name: 'insect', color: '#FFE629' },
+      { _id: 'kaka', name: 'kaka', color: '#BDEE63' },
+      { _id: 'kakariki', name: 'kakariki', color: '#86EAD4' },
+      { _id: 'kea', name: 'kea', color: '#7CE2FE' },
+      { _id: 'kingfisher', name: 'kingfisher', color: '#E54D2E' },
+      { _id: 'lagomorph_sp', name: 'lagomorph_sp', color: '#E5484D' },
+      { _id: 'lizard', name: 'lizard', color: '#E54666' },
+      { _id: 'magpie', name: 'magpie', color: '#D6409F' },
+      { _id: 'morepork', name: 'morepork', color: '#D6409F' },
+      { _id: 'moth', name: 'moth', color: '#AB4ABA' },
+      { _id: 'mouse', name: 'mouse', color: '#8E4EC6' },
+      { _id: 'pig', name: 'pig', color: '#6E56CF' },
+      { _id: 'pipit', name: 'pipit', color: '#5B5BD6' },
+      { _id: 'possum', name: 'possum', color: '#3E63DD' },
+      { _id: 'quail', name: 'quail', color: '#0090FF' },
+      { _id: 'rabbit', name: 'rabbit', color: '#00A2C7' },
+      { _id: 'rat', name: 'rat', color: '#12A594' },
+      { _id: 'redpoll', name: 'redpoll', color: '#29A383' },
+      { _id: 'rifleman', name: 'rifleman', color: '#30A46C' },
+      { _id: 'robin', name: 'robin', color: '#46A758' },
+      { _id: 'sheep', name: 'sheep', color: '#A18072' },
+      { _id: 'silvereye', name: 'silvereye', color: '#978365' },
+      { _id: 'starling', name: 'starling', color: '#AD7F58' },
+      { _id: 'stoat', name: 'stoat', color: '#F76B15' },
+      { _id: 'thrush', name: 'thrush', color: '#FFC53D' },
+      { _id: 'tomtit', name: 'tomtit', color: '#FFE629' },
+      { _id: 'tui', name: 'tui', color: '#BDEE63' },
+      { _id: 'warbler', name: 'warbler', color: '#86EAD4' },
+      { _id: 'weasel', name: 'weasel', color: '#7CE2FE' },
+      { _id: 'weka', name: 'weka', color: '#E54D2E' },
+      { _id: 'yellowhammer', name: 'yellowhammer', color: '#E5484D' },
+    ],
+  },
 ];
 
-
-
-const defaultViewsConfig = [{
-  name: 'All images',
-  filters: {},
-  description: 'Default view of all images. This view is not editable.',
-  editable: false
-}];
+const defaultViewsConfig = [
+  {
+    name: 'All images',
+    filters: {},
+    description: 'Default view of all images. This view is not editable.',
+    editable: false,
+  },
+];
 
 const defaultProjectsConfig = [
   {
@@ -120,11 +174,13 @@ const defaultProjectsConfig = [
     timezone: 'America/Los_Angeles',
     views: defaultViewsConfig,
     availableMLModels: ['megadetector_v5a', 'mirav2'],
-    automationRules: [{
-      event: { type: 'image-added' },
-      action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
-      name: 'Run Megadetector on all new images'
-    }]
+    automationRules: [
+      {
+        event: { type: 'image-added' },
+        action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
+        name: 'Run Megadetector on all new images',
+      },
+    ],
   },
   // NOTE: THIS IS TEMPORARY! remove after seeding DBs
   {
@@ -134,11 +190,13 @@ const defaultProjectsConfig = [
     timezone: 'America/Los_Angeles',
     views: defaultViewsConfig,
     availableMLModels: ['megadetector_v5a', 'mirav2'],
-    automationRules: [{
-      event: { type: 'image-added' },
-      action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
-      name: 'Run Megadetector on all new images'
-    }]
+    automationRules: [
+      {
+        event: { type: 'image-added' },
+        action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
+        name: 'Run Megadetector on all new images',
+      },
+    ],
   },
   // NOTE: THIS IS TEMPORARY! remove after seeding DBs
   {
@@ -148,12 +206,14 @@ const defaultProjectsConfig = [
     timezone: 'America/Los_Angeles',
     views: defaultViewsConfig,
     availableMLModels: ['megadetector_v5a'],
-    automationRules: [{
-      event: { type: 'image-added' },
-      action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
-      name: 'Run Megadetector on all new images'
-    }]
-  }
+    automationRules: [
+      {
+        event: { type: 'image-added' },
+        action: { type: 'run-inference', mlModel: 'megadetector_v5a' },
+        name: 'Run Megadetector on all new images',
+      },
+    ],
+  },
 ];
 
 async function createDefaultMLModels({ defaultMLModelsConfig }) {
@@ -166,6 +226,7 @@ async function createDefaultMLModels({ defaultMLModelsConfig }) {
   for (const modelConfig of defaultMLModelsConfig) {
     if (!existingMLModelIds.includes(modelConfig._id)) {
       try {
+        // TODO: gererate random colors for all categories? Or maybe just hardcode in what we have in prod for now
         const newModel = new MLModel(modelConfig);
         await newModel.save();
         newModelRecords.push(newModel);
@@ -188,6 +249,11 @@ async function createDefaultProjects({ defaultProjectsConfig }) {
   for (const projectConfig of defaultProjectsConfig) {
     if (!existingProjIds.includes(projectConfig._id)) {
       try {
+        projectConfig.views = defaultViewsConfig.map((view) => ({
+          _id: new mongoose.Types.ObjectId(),
+          ...view,
+        }));
+        console.log('Creating new project with views: ', projectConfig.views);
         const newProject = new Project(projectConfig);
         await newProject.save();
         newProjectRecords.push(newProject);
@@ -207,7 +273,6 @@ async function seedDB() {
   console.log('Seeding Db with config: ', config);
 
   try {
-
     // create default project records
     await createDefaultProjects({ defaultProjectsConfig });
 
