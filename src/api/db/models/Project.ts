@@ -44,6 +44,8 @@ import { TaskSchema } from '../schemas/Task.js';
 // when removin a label from a project
 const MAX_LABEL_DELETE = 500;
 
+const ObjectId = mongoose.Types.ObjectId;
+
 export class ProjectModel {
   static async queryById(_id: string) {
     const query = { _id: { $eq: _id } };
@@ -118,7 +120,7 @@ export class ProjectModel {
             _id,
             views: [
               {
-                _id: new mongoose.Types.ObjectId(),
+                _id: new ObjectId(),
                 name: 'All images',
                 filters: {},
                 description: 'Default view of all images. This view is not editable.',
