@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { InternalServerError } from '../api/errors.js';
 import { DateTime } from 'luxon';
 import appRoot from 'app-root-path';
 import prompt from 'prompt';
-import { connectToDatabase } from '../api/db/connect.js';
-import { getConfig } from '../config/config.js';
+import { InternalServerError } from '../../.build/api/errors.js';
+import { connectToDatabase } from '../../.build/api/db/connect.js';
+import { getConfig } from '../../.build/config/config.js';
 import { backupConfig } from './backupConfig.js';
 import { operations } from './operations.js';
 

@@ -3,13 +3,13 @@ import path from 'node:path';
 import stream from 'node:stream/promises';
 import { DateTime } from 'luxon';
 import appRoot from 'app-root-path';
+import { stringify } from 'csv-stringify';
+import cliProgress from 'cli-progress';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
 import { getConfig } from '../../.build/config/config.js';
 import { analysisConfig, reportColumns } from './analysisConfig.js';
 import Image from '../../.build/api/db/schemas/Image.js';
 import { ProjectModel } from '../../.build/api/db/models/Project.js';
-import { stringify } from 'csv-stringify';
-import cliProgress from 'cli-progress';
 
 /*
  * Script to analyze ML model performance at the object level

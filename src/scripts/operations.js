@@ -1,10 +1,10 @@
-import Image from '../api/db/schemas/Image.js';
-import { isImageReviewed } from '../api/db/models/utils.js';
 import Mongoose from 'mongoose';
 import { DateTime } from 'luxon';
 import fetch from 'node-fetch';
 import sharp from 'sharp';
-import { buildImgUrl } from '../api/db/models/utils.js';
+import Image from '../../.build/api/db/schemas/Image.js';
+import { isImageReviewed } from '../../.build/api/db/models/utils.js';
+import { buildImgUrl } from '../../.build/api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
 
