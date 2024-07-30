@@ -424,7 +424,7 @@ export type ImageAttempt = {
   _id: Scalars['ID']['output'];
   batch?: Maybe<Scalars['String']['output']>;
   created: Scalars['Date']['output'];
-  errors?: Maybe<Array<ImageError>>;
+  errs?: Maybe<Array<ImageError>>;
   metadata?: Maybe<ImageMetadata>;
   projectId: Scalars['String']['output'];
 };

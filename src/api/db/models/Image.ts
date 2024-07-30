@@ -181,14 +181,14 @@ export class ImageModel {
   static async createImage(
     input: gql.CreateImageInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] }> {
+  ): Promise<HydratedDocument<ImageAttemptSchema> & { errs?: ImageErrorSchema[] }> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
     let existingCam;
-    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema>>;
+    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema> & { errs?: ImageErrorSchema[] }>;
 
     try {
       // 1. create ImageAttempt record
@@ -221,7 +221,15 @@ export class ImageModel {
         imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
         if (!imageAttempt) {
           imageAttempt = createImageAttemptRecord(md);
+          console.log(
+            'Image.createImage() - created new imageAttempt: ',
+            JSON.stringify(imageAttempt),
+          );
           await imageAttempt.save();
+          console.log(
+            'Image.createImage() - imageAttempt after saving: ',
+            JSON.stringify(imageAttempt),
+          );
         }
       } catch (err) {
         throw new InternalServerError(err instanceof Error ? err.message : String(err));
@@ -325,8 +333,8 @@ export class ImageModel {
       }
 
       // 3. if there were errors in the array, create ImageErrors for them
+      const imageErrors: ImageErrorSchema[] = [];
       if (errors.length) {
-        console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
           const err = new ImageError({
             image: md.imageId,
@@ -334,13 +342,14 @@ export class ImageModel {
             path: md.path || md.fileName,
             error: errors[i].message,
           });
-          console.log(`creating ImageErrors for: ${JSON.stringify(err)}`);
           await err.save();
-          errors[i] = err as any as Error; // Hack to get around TypeScript's type checking
+          imageErrors.push(err);
         }
       }
 
-      return imageAttempt as HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] };
+      imageAttempt.errs = imageErrors;
+      console.log('Image.createImage() - returning imageAttempt: ', JSON.stringify(imageAttempt));
+      return imageAttempt;
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
