@@ -181,14 +181,14 @@ export class ImageModel {
   static async createImage(
     input: gql.CreateImageInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageAttemptSchema> & { errs?: ImageErrorSchema[] }> {
+  ): Promise<gql.ImageAttempt> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
     let projectId = 'default_project';
     let cameraId = md.serialNumber.toString(); // this will be 'unknown' if there's no SN
     let existingCam;
-    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema> & { errs?: ImageErrorSchema[] }>;
+    let imageAttempt: Maybe<HydratedDocument<ImageAttemptSchema>>;
 
     try {
       // 1. create ImageAttempt record
@@ -347,9 +347,10 @@ export class ImageModel {
         }
       }
 
-      imageAttempt.errs = imageErrors;
-      console.log('Image.createImage() - returning imageAttempt: ', JSON.stringify(imageAttempt));
-      return imageAttempt;
+      return {
+        ...imageAttempt.toObject(),
+        errs: imageErrors,
+      };
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
