@@ -446,7 +446,7 @@ export function reviewerLabelRecord(
 export function createLabelRecord(input: LabelInput, authorId: string): LabelRecord {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   return {
-    ...(_id && { _id }),
+    ...(_id ? { _id } : { _id: new mongoose.Types.ObjectId() }),
     type,
     labelId,
     conf,
@@ -651,6 +651,7 @@ export interface ImageMetadata {
   imageHeight?: number;
   imageBytes?: number;
 }
+
 type LabelInput = {
   _id?: Maybe<string>;
   userId?: Maybe<string>;
@@ -661,8 +662,9 @@ type LabelInput = {
   mlModelVersion?: string;
   validation?: any; // Replace `any` with a more specific type if applicable
 };
+
 export interface LabelRecord {
-  _id?: string;
+  _id?: gql.Scalars['ID']['output'];
   type?: string;
   labelId: string;
   conf?: Maybe<number>;

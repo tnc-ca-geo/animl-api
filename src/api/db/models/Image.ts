@@ -671,6 +671,7 @@ export class ImageModel {
             }
             if (!objExists) {
               image.objects.unshift({
+                _id: new ObjectId(),
                 bbox: labelRecord.bbox,
                 locked: false,
                 labels: [labelRecord],
