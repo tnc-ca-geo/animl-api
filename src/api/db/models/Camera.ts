@@ -119,7 +119,7 @@ export class CameraModel {
           pr.active = pr.projectId === projectId;
         });
         if (!foundProject) {
-          cam.projRegistrations.push({ projectId, active: true });
+          cam.projRegistrations.push({ _id: new ObjectId(), projectId, active: true });
         }
 
         await cam.save();
