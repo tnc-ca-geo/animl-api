@@ -617,10 +617,6 @@ export type Pagination<T = {}> = T & {
   previous?: Maybe<string>;
 };
 
-export interface GenericResponse {
-  isOk: boolean;
-}
-
 // NOTE: This interface was reverse-engineered by looking at the properties that were
 // accessed on this object within this file. It is not authoratative and may be incomplete.
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {

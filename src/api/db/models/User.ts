@@ -1,7 +1,7 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
 import GraphQLError, { InternalServerError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 
@@ -19,7 +19,7 @@ export class UserModel {
   static async createGroups(
     input: { name: string },
     context: Pick<Context, 'config'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -49,7 +49,7 @@ export class UserModel {
   static async create(
     input: gql.CreateUserInput,
     context: Pick<Context, 'user' | 'config'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {
@@ -121,7 +121,7 @@ export class UserModel {
   static async update(
     input: gql.UpdateUserInput,
     context: Pick<Context, 'user' | 'config'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     const cognito = new Cognito.CognitoIdentityProviderClient();
 
     try {

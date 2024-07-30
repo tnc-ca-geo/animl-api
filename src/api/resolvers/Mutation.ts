@@ -284,8 +284,7 @@ export default {
     { input }: gql.MutationCreateInternalLabelsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.createInternalLabels(input, context);
-    return { isOk: res.ok };
+    return await context.models.Image.createInternalLabels(input, context);
   },
 
   createLabels: async (
@@ -293,8 +292,7 @@ export default {
     { input }: gql.MutationCreateLabelsArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    const res = await context.models.Image.createLabels(input, context);
-    return { isOk: res.ok };
+    return await context.models.Image.createLabels(input, context);
   },
 
   updateLabels: async (

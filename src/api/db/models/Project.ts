@@ -20,14 +20,7 @@ import Project, {
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
 import Image, { ImageSchema } from '../schemas/Image.js';
-import {
-  sortDeps,
-  idMatch,
-  BaseAuthedModel,
-  GenericResponse,
-  MethodParams,
-  roleCheck,
-} from './utils.js';
+import { sortDeps, idMatch, BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -620,7 +613,7 @@ export class ProjectModel {
   static async deleteLabel(
     input: gql.DeleteProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 

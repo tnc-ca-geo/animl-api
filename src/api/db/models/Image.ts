@@ -45,7 +45,7 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { DateTime } from 'luxon';
@@ -124,7 +124,7 @@ export class ImageModel {
   static async deleteImages(
     input: gql.DeleteImagesInput,
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse & { errors: string[] }> {
+  ): Promise<gql.StandardErrorPayload> {
     try {
       const res = await Promise.allSettled(
         input.imageIds!.map((imageId) => {
@@ -149,7 +149,7 @@ export class ImageModel {
   static async deleteImage(
     input: { imageId: string },
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -583,7 +583,7 @@ export class ImageModel {
   static async createInternalLabels(
     input: gql.CreateInternalLabelsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<AlternativeGenericResponse> {
+  ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
 
     try {
@@ -697,7 +697,7 @@ export class ImageModel {
           );
         }
       }
-      return { ok: true };
+      return { isOk: true };
     } catch (err) {
       console.log(
         `Image.createInternalLabels() ERROR on image ${input.labels
@@ -712,7 +712,7 @@ export class ImageModel {
   static async createLabels(
     input: gql.CreateLabelsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<AlternativeGenericResponse> {
+  ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
     try {
@@ -770,7 +770,7 @@ export class ImageModel {
       }
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
-      return { ok: true };
+      return { isOk: true };
     } catch (err) {
       console.log(
         `Image.createLabels() ERROR on images ${input.labels
@@ -1103,8 +1103,4 @@ export default class AuthedImageModel extends BaseAuthedModel {
   exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
     return ImageModel.exportAnnotationsTask(...args);
   }
-}
-
-interface AlternativeGenericResponse {
-  ok: boolean;
 }

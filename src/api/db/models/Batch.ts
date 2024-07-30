@@ -12,7 +12,7 @@ import Batch, { BatchSchema } from '../schemas/Batch.js';
 import mongoose from 'mongoose';
 import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { ImageErrorModel } from './ImageError.js';
 import { Context } from '../../handler.js';
 
@@ -122,7 +122,7 @@ export class BatchModel {
     return batch;
   }
 
-  static async stopBatch(input: gql.StopBatchInput): Promise<GenericResponse> {
+  static async stopBatch(input: gql.StopBatchInput): Promise<gql.StandardPayload> {
     try {
       const batch = await retry(
         (bail, attempt) => {
@@ -158,7 +158,7 @@ export class BatchModel {
     }
   }
 
-  static async redriveBatch(input: gql.RedriveBatchInput): Promise<GenericResponse> {
+  static async redriveBatch(input: gql.RedriveBatchInput): Promise<gql.StandardPayload> {
     try {
       await retry(
         async (bail, attempt) => {
@@ -211,7 +211,7 @@ export class BatchModel {
     }
   }
 
-  static async closeUpload(input: gql.CloseUploadInput): Promise<GenericResponse> {
+  static async closeUpload(input: gql.CloseUploadInput): Promise<gql.StandardPayload> {
     try {
       const s3 = new S3.S3Client();
       await s3.send(

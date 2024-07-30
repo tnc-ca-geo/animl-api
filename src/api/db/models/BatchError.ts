@@ -2,7 +2,8 @@ import GraphQLError, { InternalServerError } from '../../errors.js';
 import { WRITE_IMAGES_ROLES } from '../../auth/roles.js';
 import BatchError, { BatchErrorSchema } from '../schemas/BatchError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
+import * as gql from '../../../@types/graphql.js';
 
 /**
  * BatchErrors are errors that are generated when an uploaded Zip fails
@@ -42,7 +43,7 @@ export class BatchErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async clearErrors(input: { batch: string }): Promise<GenericResponse> {
+  static async clearErrors(input: { batch: string }): Promise<gql.StandardPayload> {
     try {
       await retry(
         () =>
