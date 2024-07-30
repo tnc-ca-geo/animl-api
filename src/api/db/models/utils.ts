@@ -349,6 +349,7 @@ export function createImageRecord(md: ImageMetadata) {
   const triggerSource = getTriggerSource(md);
 
   const location = coords && {
+    _id: new mongoose.Types.ObjectId(),
     geometry: { type: 'Point', coordinates: coords },
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
   };
