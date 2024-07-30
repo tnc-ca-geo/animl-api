@@ -244,6 +244,7 @@ export class ProjectModel {
             context,
           );
           const newView = {
+            _id: new ObjectId(),
             name: input.name,
             filters: input.filters,
             ...(input.description && { description: input.description }),
