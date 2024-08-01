@@ -424,10 +424,8 @@ export class AnnotationsExport {
     return sanitizedFilters;
   }
 
-  findFirstValidLabel(obj: ObjectSchema): LabelSchema {
-    const label = obj.labels.find((label) => label.validation && label.validation.validated);
-    if (!label) throw new InternalServerError('Error finding first valid label for object');
-    return label;
+  findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+    return obj.labels.find((label) => label.validation && label.validation.validated) || null;
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
