@@ -349,7 +349,7 @@ export class ImageModel {
 
       return {
         ...imageAttempt.toObject(),
-        errs: imageErrors,
+        errors: imageErrors,
       };
     } catch (err) {
       // Fallback catch for unforeseen errors
