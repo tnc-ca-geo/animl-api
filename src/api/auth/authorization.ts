@@ -52,7 +52,7 @@ async function getUserInfo(req: APIGatewayProxyEvent, config: Config): Promise<U
 
     user['is_superuser'] = user['cognito:groups'].includes('animl_superuser');
     user['projects'] = projects;
-    user['curr_project_roles'] = selectedProject ? projects[selectedProject].roles : [];
+    user['curr_project_roles'] = projects[selectedProject] ? projects[selectedProject].roles : [];
   }
 
   return user;
