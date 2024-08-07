@@ -47,7 +47,7 @@ The instructions below assume you have the following tools globally installed:
 - Node & npm
 - [Serverless](https://www.serverless.com/framework/docs/getting-started/)
 - [aws-cli](https://aws.amazon.com/cli/)
-- [Docker] (https://docs.docker.com/engine/install/)
+- [Docker](https://docs.docker.com/engine/install/)
 
 ### Create "animl" AWS config profile
 
