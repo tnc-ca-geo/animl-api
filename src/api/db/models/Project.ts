@@ -20,14 +20,7 @@ import Project, {
 import { UserModel } from './User.js';
 import { ImageModel } from './Image.js';
 import Image, { ImageSchema } from '../schemas/Image.js';
-import {
-  sortDeps,
-  idMatch,
-  BaseAuthedModel,
-  GenericResponse,
-  MethodParams,
-  roleCheck,
-} from './utils.js';
+import { sortDeps, idMatch, BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { MLModelModel } from './MLModel.js';
 import retry from 'async-retry';
 import {
@@ -39,11 +32,12 @@ import {
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
-import { User } from '../../auth/authorization.js';
 
 // The max number of labeled images that can be deleted
 // when removin a label from a project
 const MAX_LABEL_DELETE = 500;
+
+const ObjectId = mongoose.Types.ObjectId;
 
 export class ProjectModel {
   static async queryById(_id: string) {
@@ -119,6 +113,7 @@ export class ProjectModel {
             _id,
             views: [
               {
+                _id: new ObjectId(),
                 name: 'All images',
                 filters: {},
                 description: 'Default view of all images. This view is not editable.',
@@ -249,6 +244,7 @@ export class ProjectModel {
             context,
           );
           const newView = {
+            _id: new ObjectId(),
             name: input.name,
             filters: input.filters,
             ...(input.description && { description: input.description }),
@@ -618,7 +614,7 @@ export class ProjectModel {
   static async deleteLabel(
     input: gql.DeleteProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 

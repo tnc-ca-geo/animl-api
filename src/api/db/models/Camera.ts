@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import retry from 'async-retry';
@@ -7,6 +8,8 @@ import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import { ProjectSchema } from '../schemas/Project.js';
+
+const ObjectId = mongoose.Types.ObjectId;
 
 export class CameraModel {
   static async getWirelessCameras(
@@ -48,7 +51,7 @@ export class CameraModel {
           const newCamera = new WirelessCamera({
             _id: input.cameraId,
             make: input.make,
-            projRegistrations: [{ projectId, active: true }],
+            projRegistrations: [{ _id: new ObjectId(), projectId, active: true }],
             model: input.model,
           });
           await newCamera.save();
@@ -116,7 +119,7 @@ export class CameraModel {
           pr.active = pr.projectId === projectId;
         });
         if (!foundProject) {
-          cam.projRegistrations.push({ projectId, active: true });
+          cam.projRegistrations.push({ _id: new ObjectId(), projectId, active: true });
         }
 
         await cam.save();

@@ -61,6 +61,7 @@ export class TaskModel {
     context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     const task = new Task({
+      _id: new Types.ObjectId(),
       user: input.user,
       projectId: input.projectId,
       type: input.type,

@@ -4,7 +4,8 @@ import { WRITE_IMAGES_ROLES, EXPORT_DATA_ROLES } from '../../auth/roles.js';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, Pagination, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, Pagination, roleCheck } from './utils.js';
+import * as gql from '../../../@types/graphql.js';
 import { Context } from '../../handler.js';
 import { ExportErrorsInput } from '../../../@types/graphql.js';
 import { HydratedDocument } from 'mongoose';
@@ -107,7 +108,7 @@ export class ImageErrorModel {
    * @param {Object} input
    * @param {String} input.batch
    */
-  static async clearErrors(input: { batch: string }): Promise<GenericResponse> {
+  static async clearErrors(input: { batch: string }): Promise<gql.StandardPayload> {
     try {
       await retry(() => ImageError.deleteMany({ batch: input.batch }), { retries: 2 });
 

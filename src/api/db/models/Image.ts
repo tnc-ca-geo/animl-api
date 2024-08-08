@@ -45,7 +45,7 @@ import {
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
-import { BaseAuthedModel, GenericResponse, MethodParams, roleCheck } from './utils.js';
+import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { DateTime } from 'luxon';
@@ -124,7 +124,7 @@ export class ImageModel {
   static async deleteImages(
     input: gql.DeleteImagesInput,
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse & { errors: string[] }> {
+  ): Promise<gql.StandardErrorPayload> {
     try {
       const res = await Promise.allSettled(
         input.imageIds!.map((imageId) => {
@@ -149,7 +149,7 @@ export class ImageModel {
   static async deleteImage(
     input: { imageId: string },
     context: Pick<Context, 'user'>,
-  ): Promise<GenericResponse> {
+  ): Promise<gql.StandardPayload> {
     try {
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
@@ -181,7 +181,7 @@ export class ImageModel {
   static async createImage(
     input: gql.CreateImageInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] }> {
+  ): Promise<gql.ImageAttempt> {
     const successfulOps: Array<{ op: string; info: { cameraId: string } }> = [];
     const errors: Error[] = [];
     const md = sanitizeMetadata(input.md);
@@ -221,7 +221,15 @@ export class ImageModel {
         imageAttempt = await ImageAttempt.findOne({ _id: md.imageId });
         if (!imageAttempt) {
           imageAttempt = createImageAttemptRecord(md);
+          console.log(
+            'Image.createImage() - created new imageAttempt: ',
+            JSON.stringify(imageAttempt),
+          );
           await imageAttempt.save();
+          console.log(
+            'Image.createImage() - imageAttempt after saving: ',
+            JSON.stringify(imageAttempt),
+          );
         }
       } catch (err) {
         throw new InternalServerError(err instanceof Error ? err.message : String(err));
@@ -325,8 +333,8 @@ export class ImageModel {
       }
 
       // 3. if there were errors in the array, create ImageErrors for them
+      const imageErrors: ImageErrorSchema[] = [];
       if (errors.length) {
-        console.log(`${errors.length} Image Errors being created`);
         for (let i = 0; i < errors.length; i++) {
           const err = new ImageError({
             image: md.imageId,
@@ -334,13 +342,15 @@ export class ImageModel {
             path: md.path || md.fileName,
             error: errors[i].message,
           });
-          console.log(`creating ImageErrors for: ${JSON.stringify(err)}`);
           await err.save();
-          errors[i] = err as any as Error; // Hack to get around TypeScript's type checking
+          imageErrors.push(err);
         }
       }
 
-      return imageAttempt as HydratedDocument<ImageAttemptSchema> & { errors: ImageErrorSchema[] };
+      return {
+        ...imageAttempt.toObject(),
+        errors: imageErrors,
+      };
     } catch (err) {
       // Fallback catch for unforeseen errors
       console.log(`Image.createImage() ERROR on image ${md.imageId}: ${err}`);
@@ -573,7 +583,7 @@ export class ImageModel {
   static async createInternalLabels(
     input: gql.CreateInternalLabelsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<AlternativeGenericResponse> {
+  ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
 
     try {
@@ -661,6 +671,7 @@ export class ImageModel {
             }
             if (!objExists) {
               image.objects.unshift({
+                _id: new ObjectId(),
                 bbox: labelRecord.bbox,
                 locked: false,
                 labels: [labelRecord],
@@ -687,7 +698,7 @@ export class ImageModel {
           );
         }
       }
-      return { ok: true };
+      return { isOk: true };
     } catch (err) {
       console.log(
         `Image.createInternalLabels() ERROR on image ${input.labels
@@ -702,7 +713,7 @@ export class ImageModel {
   static async createLabels(
     input: gql.CreateLabelsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<AlternativeGenericResponse> {
+  ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
 
     try {
@@ -760,7 +771,7 @@ export class ImageModel {
       }
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
-      return { ok: true };
+      return { isOk: true };
     } catch (err) {
       console.log(
         `Image.createLabels() ERROR on images ${input.labels
@@ -1093,8 +1104,4 @@ export default class AuthedImageModel extends BaseAuthedModel {
   exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
     return ImageModel.exportAnnotationsTask(...args);
   }
-}
-
-interface AlternativeGenericResponse {
-  ok: boolean;
 }

@@ -5,9 +5,9 @@ import { execSync as eS } from 'child_process';
 
 import appRoot from 'app-root-path';
 import { DateTime } from 'luxon';
-import { InternalServerError } from '../api/errors.js';
-import { connectToDatabase } from '../api/db/connect.js';
-import { getConfig } from '../config/config.js';
+import { InternalServerError } from '../../.build/api/errors.js';
+import { connectToDatabase } from '../../.build/api/db/connect.js';
+import { getConfig } from '../../.build/config/config.js';
 import { backupConfig } from './backupConfig.js';
 
 const execSync = util.promisify(eS);
@@ -60,11 +60,10 @@ async function exportDb() {
   const options = {
     db,
     dbUri: config['/DB/MONGO_DB_URL'].split('?')[0],
-    outputPath: snapshotPath
+    outputPath: snapshotPath,
   };
 
   try {
-
     console.log(`backing up db: ${db}...`);
     const collections = await listCollections(config);
     if (!collections || collections.length === 0) {

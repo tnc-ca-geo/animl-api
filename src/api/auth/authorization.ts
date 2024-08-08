@@ -30,8 +30,7 @@ async function getUserInfo(req: APIGatewayProxyEvent, config: Config): Promise<U
   );
 
   // add selected project info to user
-  const selectedProject = req.headers['x-selected-project'];
-  if (!selectedProject) return null;
+  const selectedProject = req.headers['x-selected-project'] || '';
   user['curr_project'] = selectedProject;
 
   // parse cognito groups into projects

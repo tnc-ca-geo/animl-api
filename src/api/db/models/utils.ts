@@ -349,6 +349,7 @@ export function createImageRecord(md: ImageMetadata) {
   const triggerSource = getTriggerSource(md);
 
   const location = coords && {
+    _id: new mongoose.Types.ObjectId(),
     geometry: { type: 'Point', coordinates: coords },
     ...(md.GPSAltitude && { altitude: md.GPSAltitude }),
   };
@@ -446,7 +447,7 @@ export function reviewerLabelRecord(
 export function createLabelRecord(input: LabelInput, authorId: string): LabelRecord {
   const { _id, type, labelId, conf, bbox, mlModelVersion, validation } = input;
   return {
-    ...(_id && { _id }),
+    ...(_id ? { _id } : { _id: new mongoose.Types.ObjectId() }),
     type,
     labelId,
     conf,
@@ -603,6 +604,10 @@ export class BaseAuthedModel {
   }
 }
 
+// NOTE: This is a bit of magic to let TS infer what the arguments for a method (T) are.
+// We do that so we can tell TS “hey, this method is using the same arguments as whatever
+// method we pass in to MethodParams<,,,>” to avoid having us type them twice
+// (e.g. see usage in AuthedProjectModel class methods)
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 
 export type Pagination<T = {}> = T & {
@@ -612,10 +617,6 @@ export type Pagination<T = {}> = T & {
   next?: Maybe<string>;
   previous?: Maybe<string>;
 };
-
-export interface GenericResponse {
-  isOk: boolean;
-}
 
 // NOTE: This interface was reverse-engineered by looking at the properties that were
 // accessed on this object within this file. It is not authoratative and may be incomplete.
@@ -651,6 +652,7 @@ export interface ImageMetadata {
   imageHeight?: number;
   imageBytes?: number;
 }
+
 type LabelInput = {
   _id?: Maybe<string>;
   userId?: Maybe<string>;
@@ -661,8 +663,9 @@ type LabelInput = {
   mlModelVersion?: string;
   validation?: any; // Replace `any` with a more specific type if applicable
 };
+
 export interface LabelRecord {
-  _id?: string;
+  _id?: gql.Scalars['ID']['output'];
   type?: string;
   labelId: string;
   conf?: Maybe<number>;
