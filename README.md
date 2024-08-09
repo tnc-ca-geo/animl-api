@@ -7,7 +7,7 @@ trap data stored in MongoDB.
 
 Animl is comprised of a number of microservices, most of which are managed in their own repositories.
 
-### `Core services`
+### Core services
 
 Services necessary to run Animl:
 
@@ -16,7 +16,7 @@ Services necessary to run Animl:
 - [Animl Frontend](http://github.com/tnc-ca-geo/animl-frontend)
 - [EXIF API](https://github.com/tnc-ca-geo/exif-api)
 
-### `Wireless camera services`
+### Wireless camera services
 
 Services related to ingesting and processing wireless camera trap data:
 
@@ -24,7 +24,7 @@ Services related to ingesting and processing wireless camera trap data:
 - [Animl Email Relay](https://github.com/tnc-ca-geo/animl-email-relay)
 - [Animl Ingest API](https://github.com/tnc-ca-geo/animl-ingest-api)
 
-### `Misc. services`
+### Misc. services
 
 - [Animl ML](http://github.com/tnc-ca-geo/animl-ml)
 - [Animl Analytics](http://github.com/tnc-ca-geo/animl-analytics)
