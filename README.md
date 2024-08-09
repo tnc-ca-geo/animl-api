@@ -65,7 +65,8 @@ cd animl-api
 npm install
 ```
 
-IMPORTANT NOTE: Sharp, one of the dependencies that's essential for opening image files and performing inference, may have issues once deployed to Lambda. See [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda) for more info on deploying Sharp to Lambda, but in short, unless your `node_modules/@img` directory has the following binaries, the inference Lambda will throw errors indicating it can't open Sharp:
+[!IMPORTANT]
+Sharp, one of the dependencies that's essential for opening image files and performing inference, may have issues once deployed to Lambda. See [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda) for more info on deploying Sharp to Lambda, but in short, unless your `node_modules/@img` directory has the following binaries, the inference Lambda will throw errors indicating it can't open Sharp:
 
 ```
 sharp-darwin-arm64
@@ -134,6 +135,25 @@ Note: The first time running serverless will require you to login to the serverl
 ```
 npm run deploy-dev
 ```
+
+### Working with TypeScript
+
+As of version 3.0.0, this repo is written in TypeScript. There are a few things to know about the typings and how they're generated:
+
+1. Types for DB records are generated using Mongoose's `inferSchemaType` utility and exported from their respective schema definition files. e.g.:
+
+```javascript
+// From src/api/db/schemas/Image.ts
+export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
+```
+
+2. We generate types for inputs and outputs to/from the GraphQL layer using `graphql-codegen`, which generates types from our GraphQL `type-defs`. However, if you change any of the GraphQL `type-defs`, you'll need to re-run the codegen manually by running:
+
+```bash
+npm run codegen
+```
+
+The generated types can be found in `src/@types/graphql.ts`
 
 ## `Data managment`
 
