@@ -52,6 +52,8 @@ const ssmNames = [
   `/ml/mirav2-realtime-endpoint-${process.env.STAGE}`,
   `/ml/mirav2-batch-endpoint-${process.env.STAGE}`,
   `/ml/nzdoc-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for nzdoc
+  `/ml/sdzwa-southwestv3-batch-endpoint-${process.env.STAGE}`,
+  `/ml/sdzwa-southwestv3-realtime-endpoint-${process.env.STAGE}`,
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -133,6 +135,8 @@ export interface RemoteConfig {
   '/ML/MIRAV2_REALTIME_ENDPOINT': string;
   '/ML/NZDOC_BATCH_ENDPOINT': string;
   '/ML/NZDOC_REALTIME_ENDPOINT': string;
+  '/ML/SDZWA_SOUTHWESTV3_BATCH_ENDPOINT': string;
+  '/ML/SDZWA_SOUTHWESTV3_REALTIME_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager
