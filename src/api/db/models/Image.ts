@@ -113,6 +113,7 @@ export class ImageModel {
   ): Promise<AggregationOutput<ImageSchema>> {
     try {
       const labels = input.filters.labels;
+      // short circuit by returning empty results if no labels are provided
       if (labels && labels.length === 0) {
         return {
           metadata: [{ total: 0, page: 0 }],
