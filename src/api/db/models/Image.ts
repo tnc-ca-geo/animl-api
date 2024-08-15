@@ -642,6 +642,7 @@ export class ImageModel {
                                   _id: labelRecord.labelId,
                                   name: modelLabel.name,
                                   color: modelLabel.color,
+                                  ml: true,
                                 },
                               ],
                             ],
@@ -659,6 +660,14 @@ export class ImageModel {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               });
               labelRecord.labelId = label._id;
+
+              // Ensure label.ml is set to true
+              // TODO: this is now a multi-step operation, so successful
+              // operations need to be reversed if later operations fail
+              if (!label.ml) {
+                label.ml = true;
+                await project.save();
+              }
             }
 
             let objExists = false;
