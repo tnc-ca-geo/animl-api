@@ -3,12 +3,41 @@ import { DateTime } from 'luxon';
 import fetch from 'node-fetch';
 import sharp from 'sharp';
 import Image from '../../.build/api/db/schemas/Image.js';
+import Project from '../../.build/api/db/schemas/Project.js';
 import { isImageReviewed } from '../../.build/api/db/models/utils.js';
 import { buildImgUrl } from '../../.build/api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
 
 const operations = {
+  'add-project-labels-ml-field': {
+    getIds: async () => await Project.find({}).select('_id'),
+    update: async () => {
+      console.log('Adding ml field to all ProjectLabels...');
+      const projects = await Project.find({});
+      try {
+        const res = { nModified: 0 };
+        const isMl = async (proj, lbl) => {
+          const imgs = await Image.find({
+            projectId: proj._id,
+            'objects.labels': { $elemMatch: { type: 'ml', labelId: lbl._id } },
+          }).select('_id');
+          return imgs.length > 0;
+        };
+        for (const proj of projects) {
+          for (const lbl of proj.labels) {
+            lbl.ml = await isMl(proj, lbl);
+          }
+          await proj.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+  },
+
   'add-image-dimensions': {
     getIds: async () =>
       await Image.find({
