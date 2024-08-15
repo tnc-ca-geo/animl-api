@@ -672,6 +672,9 @@ export class ProjectModel {
 
       const label = project.labels.find((p) => p._id.toString() === input._id.toString());
       if (!label) throw new NotFoundError('Label not found on project');
+      if (label.ml === true && input.name !== label.name) {
+        throw new ForbiddenError('Cannot update the name of a ML label');
+      }
 
       Object.assign(label, input);
 
