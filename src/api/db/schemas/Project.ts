@@ -68,6 +68,7 @@ const ProjectLabelSchema = new Schema({
   name: { type: String, required: true },
   color: { type: String, required: true },
   reviewerEnabled: { type: Boolean, required: true, default: true },
+  ml: { type: Boolean, required: true, default: false },
 });
 
 const CameraConfigSchema = new Schema({
@@ -91,11 +92,13 @@ const ProjectSchema = new Schema({
         _id: 'empty',
         name: 'empty',
         color: '#8D8D8D',
+        ml: true,
       },
       {
         _id: 'unknown',
         name: 'unknown',
         color: '#E93D82',
+        ml: false,
       },
     ],
     required: true,

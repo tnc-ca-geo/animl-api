@@ -845,6 +845,7 @@ export type ProjectLabel = {
   __typename?: 'ProjectLabel';
   _id: Scalars['String']['output'];
   color: Scalars['String']['output'];
+  ml: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   reviewerEnabled: Scalars['Boolean']['output'];
 };
