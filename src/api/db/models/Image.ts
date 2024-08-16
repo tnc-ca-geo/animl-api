@@ -58,6 +58,10 @@ export class ImageModel {
     input: gql.QueryImagesCountInput,
     context: Pick<Context, 'user'>,
   ): Promise<number> {
+    const labels = input.filters.labels;
+    if (labels && labels.length === 0) {
+      return 0;
+    }
     const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
     const res = await Image.aggregate(pipeline);
@@ -68,6 +72,9 @@ export class ImageModel {
     labels: string[],
     context: Pick<Context, 'user'>,
   ): Promise<number> {
+    if (labels.length === 0) {
+      return 0;
+    }
     const pipeline = [
       { $match: { projectId: context.user['curr_project'] } },
       ...buildLabelPipeline(labels),
@@ -105,7 +112,19 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<AggregationOutput<ImageSchema>> {
     try {
-      const result = await MongoPaging.aggregate(Image.collection, {
+      const labels = input.filters.labels;
+      // short circuit by returning empty results if no labels are provided
+      if (labels && labels.length === 0) {
+        return {
+          metadata: [{ total: 0, page: 0 }],
+          results: [],
+          previous: null,
+          hasPrevious: false,
+          next: null,
+          hasNext: false,
+        } as AggregationOutput<ImageSchema>;
+      }
+      return await MongoPaging.aggregate(Image.collection, {
         aggregation: buildPipeline(input.filters, context.user['curr_project']!),
         limit: input.limit,
         paginatedField: input.paginatedField,
@@ -113,8 +132,6 @@ export class ImageModel {
         next: input.next,
         previous: input.previous,
       });
-      // console.log('res: ', JSON.stringify(result));
-      return result;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);

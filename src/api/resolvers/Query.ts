@@ -63,6 +63,7 @@ export default {
     { input }: gql.QueryImagesArgs,
     context: Context,
   ): Promise<gql.ImagesConnection> => {
+    console.log('images query - input: ', input);
     console.time('images query');
     const response = await context.models.Image.queryByFilter(input, context);
     console.timeEnd('images query');
