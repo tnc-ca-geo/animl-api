@@ -18,6 +18,7 @@ const operations = {
       try {
         const res = { nModified: 0 };
         const isMl = async (proj, lbl) => {
+          if (lbl.name === 'empty') return true;
           const imgs = await Image.find({
             projectId: proj._id,
             'objects.labels': { $elemMatch: { type: 'ml', labelId: lbl._id } },
