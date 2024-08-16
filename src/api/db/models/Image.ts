@@ -602,6 +602,8 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
+    let successfulOps: Array<{ op: string; info: { labelId: string } }> = [];
+    let projectId: string = '';
 
     try {
       for (const label of input.labels) {
@@ -612,14 +614,17 @@ export class ImageModel {
               JSON.stringify(label),
             );
 
+            successfulOps = []; // reset successfulOps in case this is a retry
+
             (label as any).type = 'ml';
 
             // find image, create label record
             const image = await ImageModel.queryById(label.imageId, context);
+            projectId = image.projectId;
             // TODO: Pair with Natty on the shape of the label
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
-            const project = await ProjectModel.queryById(image.projectId);
+            const project = await ProjectModel.queryById(projectId);
             const labelRecord = createLabelRecord(label, label.mlModel);
 
             const model = await MLModelModel.queryById(labelRecord.mlModel!);
@@ -641,7 +646,7 @@ export class ImageModel {
             ) {
               await Project.findOneAndUpdate(
                 {
-                  _id: image.projectId,
+                  _id: projectId,
                 },
                 [
                   { $addFields: { labelIds: '$labels._id' } },
@@ -671,6 +676,10 @@ export class ImageModel {
                 ],
                 { returnDocument: 'after' },
               );
+              successfulOps.push({
+                op: 'project-label-created',
+                info: { labelId: labelRecord.labelId },
+              });
             } else {
               // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
               const [label] = project.labels.filter((l) => {
@@ -679,11 +688,13 @@ export class ImageModel {
               labelRecord.labelId = label._id;
 
               // Ensure label.ml is set to true
-              // TODO: this is now a multi-step operation, so successful
-              // operations need to be reversed if later operations fail
               if (!label.ml) {
                 label.ml = true;
                 await project.save();
+                successfulOps.push({
+                  op: 'label-ml-field-set-true',
+                  info: { labelId: labelRecord.labelId },
+                });
               }
             }
 
@@ -706,7 +717,6 @@ export class ImageModel {
 
             // set image as unreviewed due to new labels
             image.reviewed = false;
-
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -731,6 +741,24 @@ export class ImageModel {
           .map((l) => l.imageId)
           .join(', ')}: ${err}`,
       );
+
+      // reverse any successful operations
+      for (const op of successfulOps) {
+        if (op.op === 'project-label-created') {
+          // find project, remove newly created label record
+          const proj = await ProjectModel.queryById(projectId);
+          const labelIdx = proj.labels.findIndex((label) => idMatch(label._id, op.info.labelId));
+          proj.labels.splice(labelIdx, 1);
+          await proj.save();
+        }
+        if (op.op === 'label-ml-field-set-true') {
+          // find project label, reset ml field to false
+          const proj = await ProjectModel.queryById(projectId);
+          const [label] = proj.labels.filter((l) => idMatch(l._id, op.info.labelId));
+          label.ml = false;
+          await proj.save();
+        }
+      }
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
