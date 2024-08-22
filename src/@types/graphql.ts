@@ -210,6 +210,7 @@ export type CreateProjectInput = {
 
 export type CreateProjectLabelInput = {
   color: Scalars['String']['input'];
+  ml?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -1130,6 +1131,7 @@ export type UpdateProjectInput = {
 export type UpdateProjectLabelInput = {
   _id: Scalars['ID']['input'];
   color: Scalars['String']['input'];
+  ml?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };

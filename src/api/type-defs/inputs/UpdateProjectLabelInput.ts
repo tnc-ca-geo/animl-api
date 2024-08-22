@@ -4,5 +4,6 @@ export default /* GraphQL */ `
     name: String!
     color: String!
     reviewerEnabled: Boolean
+    ml: Boolean
   }
 `;

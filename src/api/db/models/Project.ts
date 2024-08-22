@@ -597,10 +597,7 @@ export class ProjectModel {
           'A label with that name already exists, avoid creating labels with duplicate names',
         );
 
-      project.labels.push({
-        name: input.name,
-        color: input.color,
-      });
+      project.labels.push(input);
 
       await project.save();
 
