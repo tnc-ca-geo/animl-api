@@ -1,8 +1,12 @@
 import mongoose from 'mongoose';
 import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
+import Images from '../schemas/Image.js';
 import retry from 'async-retry';
-import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
+import {
+  WRITE_CAMERA_REGISTRATION_ROLES,
+  WRITE_CAMERA_SERIAL_NUMBER_ROLES,
+} from '../../auth/roles.js';
 import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
@@ -225,6 +229,45 @@ export class CameraModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  static async updateSerialNumber(
+    input: gql.UpdateCameraSerialNumberInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    const { cameraId, newId } = input;
+    console.log('CameraModel.updateSerialNumber - input: ', input);
+    try {
+      // check if it's a wireless camera
+      const wirelessCamera = await WirelessCamera.findOne({ _id: cameraId });
+      if (wirelessCamera) {
+        throw new GraphQLError(`You can't update wireless cameras' serial numbers`);
+      }
+
+      // update serial number on all images
+      // TODO: do we want to wrap this in a retry?
+      console.time('update-serial-number-on-images');
+      const res = await Images.updateMany({ cameraId }, { cameraId: newId });
+      console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
+      console.timeEnd('update-serial-number-on-images');
+
+      if (res.matchedCount === res.modifiedCount) {
+        console.log('CameraModel.updateSerialNumber() - updated all images');
+        // update Project.cameraConfigs
+        const project = await ProjectModel.queryById(context.user['curr_project']);
+        const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+        if (camConfig) {
+          camConfig._id = newId;
+          await project.save();
+          console.log('CameraModel.updateSerialNumber() - updated Project.cameraConfigs');
+        }
+      }
+
+      return { isOk: true };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 }
 
 export default class AuthedCameraModel extends BaseAuthedModel {
@@ -244,6 +287,11 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   @roleCheck(WRITE_CAMERA_REGISTRATION_ROLES)
   async unregisterCamera(...args: MethodParams<typeof CameraModel.unregisterCamera>) {
     return await CameraModel.unregisterCamera(...args);
+  }
+
+  @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
+  async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumber>) {
+    return await CameraModel.updateSerialNumber(...args);
   }
 }
 
