@@ -194,7 +194,11 @@ export class ImageModel {
       throw new InternalServerError(err as string);
     }
   }
-
+  /**
+   * Creates an ImageAttempt record and Image record
+   * This is called by the image-ingestion lambda when new images are detected
+   * in the ingestion S3 bucket
+   */
   static async createImage(
     input: gql.CreateImageInput,
     context: Pick<Context, 'user'>,
@@ -467,6 +471,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Finds Image records and creates new Object subdocuments on them
+   * It's used by frontend when creating new empty objects and when adding
+   * the first label to temporary objects (objects that users manually create via the UI)
+   */
   static async createObjects(
     input: gql.CreateObjectsInput,
     context: Pick<Context, 'user'>,
@@ -515,6 +524,9 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend when bboxes are adjusted or Objects are locked/unlocked
+   */
   static async updateObjects(input: gql.UpdateObjectsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
 
@@ -559,6 +571,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend when `labelsRemoved` is dispatched (right now `labelsRemoved` is
+   * only called when reverting `labelsAdded`) and there is only one label left on the object,
+   * or when `markedEmpty` is reverted/undone
+   */
   static async deleteObjects(input: gql.DeleteObjectsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.deleteObjects - input: ', JSON.stringify(input));
 
@@ -833,6 +850,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend to update label validation state
+   *
+   * @param {object} input
+   */
   static async updateLabels(input: gql.UpdateLabelsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
 
@@ -945,6 +967,9 @@ export class ImageModel {
     return image;
   }
 
+  /**
+   * Used by frontend when `labelsRemoved` is called (this is only used when reverting `labelsAdded`)
+   */
   static async deleteLabels(input: gql.DeleteLabelsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
 
