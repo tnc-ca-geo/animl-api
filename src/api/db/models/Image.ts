@@ -775,83 +775,53 @@ export class ImageModel {
     input: gql.CreateLabelsInput,
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
-    console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
+    console.log('ImageModel.createLabels - new label count: ', JSON.stringify(input.labels.length));
     console.time('total-time');
 
     try {
-      let successfulLabelsCreated: number = 0;
+      console.time('creating-labels');
       const project = await ProjectModel.queryById(context.user['curr_project']);
 
-      console.time('querying-images');
       const images = await Image.find({
-        projectId: context.user['curr_project'], // TODO: not sure if querying by projectId makes it faster or slower? Test this
+        projectId: context.user['curr_project'],
         _id: { $in: input.labels.map((l) => l.imageId) },
       });
-      console.timeEnd('querying-images');
       const imageMap = new Map(images.map((image) => [image._id, image]));
 
-      for (const label of input.labels) {
-        const res = await retry(
-          async () => {
-            console.time('creating-label');
-            console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
+      const res = await retry(
+        async () => {
+          let operations = [];
 
+          for (const label of input.labels) {
             const image = imageMap.get(label.imageId);
             if (!image) throw new NotFoundError('Image not found');
             const labelRecord = reviewerLabelRecord(project, image, label);
 
-            // if label.objectId was specified, find object and save label to it
-            // else try to match to existing object bbox and merge label into that
-            // else add new object
-            if (label.objectId) {
-              const object = image.objects.find((obj) => idMatch(obj._id!, label.objectId!));
-              object?.labels.unshift(labelRecord);
-            } else {
-              let objExists = false;
-              for (const object of image.objects) {
-                if (_.isEqual(object.bbox, label.bbox)) {
-                  object.labels.unshift(labelRecord);
-                  objExists = true;
-                  break;
-                }
-              }
-              if (!objExists) {
-                image.objects.unshift({
-                  bbox: labelRecord.bbox,
-                  locked: false,
-                  labels: [labelRecord],
-                });
-              }
-            }
-            console.time('saving-image');
-            await image.save();
-            console.timeEnd('saving-image');
-            return { image, newLabel: labelRecord };
-          },
-          { retries: 2 },
-        );
-        console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
-        console.timeEnd('creating-label');
-        if (label.mlModel) {
-          // TODO: this probably is never used. All ml-generated labels would use createInternalLabels
-          await handleEvent(
-            {
-              event: 'label-added',
-              label: res.newLabel,
-              image: res.image,
-            },
-            context,
-          );
-        }
-        successfulLabelsCreated++;
-      }
+            // find object and save label to position 0 of label array
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: {
+                  $push: { 'objects.$[obj].labels': { $each: [labelRecord], $position: 0 } },
+                },
+                arrayFilters: [{ 'obj._id': new ObjectId(label.objectId) }],
+              },
+            });
+          }
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+
+      console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
+      console.timeEnd('creating-labels');
+
       console.time('updating-review-status');
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
       console.timeEnd('updating-review-status');
-      console.log('ImageModel.createLabels - successfulLabelsCreated: ', successfulLabelsCreated);
       console.timeEnd('total-time');
-      return { isOk: true };
+      return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
       console.log(
         `Image.createLabels() ERROR on images ${input.labels
