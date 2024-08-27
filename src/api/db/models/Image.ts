@@ -769,16 +769,22 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
+    console.time('total-time');
 
     try {
+      let successfulLabelsCreated: number = 0;
+      const project = await ProjectModel.queryById(context.user['curr_project']);
+
       for (const label of input.labels) {
         const res = await retry(
           async () => {
+            console.time('creating-label');
             console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
 
+            console.time('querying-image');
             // find image, create label record
             const image = await ImageModel.queryById(label.imageId, context);
-            const project = await ProjectModel.queryById(image.projectId);
+            console.timeEnd('querying-image');
             const labelRecord = reviewerLabelRecord(project, image, label);
 
             // if label.objectId was specified, find object and save label to it
@@ -804,15 +810,17 @@ export class ImageModel {
                 });
               }
             }
-
+            console.time('saving-image');
             await image.save();
+            console.timeEnd('saving-image');
             return { image, newLabel: labelRecord };
           },
           { retries: 2 },
         );
         console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
+        console.timeEnd('creating-label');
         if (label.mlModel) {
-          // TODO: Verify this
+          // TODO: this probably is never used. All ml-generated labels would use createInternalLabels
           await handleEvent(
             {
               event: 'label-added',
@@ -822,9 +830,14 @@ export class ImageModel {
             context,
           );
         }
+        successfulLabelsCreated++;
       }
+      console.time('updating-review-status');
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
+      console.timeEnd('updating-review-status');
+      console.log('ImageModel.createLabels - successfulLabelsCreated: ', successfulLabelsCreated);
+      console.timeEnd('total-time');
       return { isOk: true };
     } catch (err) {
       console.log(
