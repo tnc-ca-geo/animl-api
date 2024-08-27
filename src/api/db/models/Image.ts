@@ -764,6 +764,13 @@ export class ImageModel {
     }
   }
 
+  /**
+   * This endpoint is only used by human reviewers editing labels via the frontend.
+   * All ML-generated labels use createInternalLabels
+   *
+   * @param {object} input
+   * @param {object} context
+   */
   static async createLabels(
     input: gql.CreateLabelsInput,
     context: Pick<Context, 'user'>,
@@ -775,16 +782,22 @@ export class ImageModel {
       let successfulLabelsCreated: number = 0;
       const project = await ProjectModel.queryById(context.user['curr_project']);
 
+      console.time('querying-images');
+      const images = await Image.find({
+        projectId: context.user['curr_project'], // TODO: not sure if querying by projectId makes it faster or slower? Test this
+        _id: { $in: input.labels.map((l) => l.imageId) },
+      });
+      console.timeEnd('querying-images');
+      const imageMap = new Map(images.map((image) => [image._id, image]));
+
       for (const label of input.labels) {
         const res = await retry(
           async () => {
             console.time('creating-label');
             console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
 
-            console.time('querying-image');
-            // find image, create label record
-            const image = await ImageModel.queryById(label.imageId, context);
-            console.timeEnd('querying-image');
+            const image = imageMap.get(label.imageId);
+            if (!image) throw new NotFoundError('Image not found');
             const labelRecord = reviewerLabelRecord(project, image, label);
 
             // if label.objectId was specified, find object and save label to it
