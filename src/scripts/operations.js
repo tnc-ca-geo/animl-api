@@ -9,7 +9,89 @@ import { buildImgUrl } from '../../.build/api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
 
+const pipeline = [
+  // {
+  //   $match: {
+  //     projectId: 'owpge',
+  //   },
+  // },
+  {
+    $set: {
+      objects: {
+        $map: {
+          input: '$objects',
+          as: 'obj',
+          in: {
+            $setField: {
+              field: 'allValidatedLabels',
+              input: '$$obj',
+              value: {
+                $filter: {
+                  input: '$$obj.labels',
+                  as: 'label',
+                  cond: {
+                    $or: [
+                      { $eq: ['$$label.validation.validated', true] },
+                      { $eq: ['$$label.validation.validated', false] },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    $match: {
+      // image has an object that is locked,
+      // but it doesn't have any validated (or invalidated) labels
+      objects: {
+        $elemMatch: {
+          locked: true,
+          allValidatedLabels: { $exists: true, $eq: [] },
+        },
+      },
+    },
+  },
+];
+
 const operations = {
+  'unlock-objects-with-all-non-validated-labels': {
+    // Unlock all objects that don't have any validated or invalidated labels
+    // (Label.validation === null or undefined), and mark image as not reviewed
+    // https://github.com/tnc-ca-geo/animl-api/issues/256
+    getIds: async () => {
+      const aggregation = await Image.aggregate(pipeline);
+      // console.log(aggregation);
+      return aggregation.map((img) => img._id);
+    },
+    update: async () => {
+      console.log('Unlocking objects with all non-validated labels...');
+      const imagesToUpdate = await Image.aggregate(pipeline);
+      try {
+        const res = { nModified: 0 };
+        for await (const img of imagesToUpdate) {
+          const image = await Image.findOne({ _id: img._id });
+          for (const [i, obj] of img.objects.entries()) {
+            // unlock object if it has no validated labels
+            if (obj.locked && obj.allValidatedLabels.length === 0) {
+              image.objects[i].locked = false;
+            }
+          }
+          // update reviewed state
+          image.reviewed = isImageReviewed(image);
+          await image.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+  },
+
   'add-project-labels-ml-field': {
     getIds: async () => await Project.find({}).select('_id'),
     update: async () => {

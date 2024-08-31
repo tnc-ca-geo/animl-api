@@ -194,7 +194,11 @@ export class ImageModel {
       throw new InternalServerError(err as string);
     }
   }
-
+  /**
+   * Creates an ImageAttempt record and Image record
+   * This is called by the image-ingestion lambda when new images are detected
+   * in the ingestion S3 bucket
+   */
   static async createImage(
     input: gql.CreateImageInput,
     context: Pick<Context, 'user'>,
@@ -467,6 +471,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Finds Image records and creates new Object subdocuments on them
+   * It's used by frontend when creating new empty objects and when adding
+   * the first label to temporary objects (objects that users manually create via the UI)
+   */
   static async createObjects(
     input: gql.CreateObjectsInput,
     context: Pick<Context, 'user'>,
@@ -515,6 +524,9 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend when bboxes are adjusted or Objects are locked/unlocked
+   */
   static async updateObjects(input: gql.UpdateObjectsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.updateObjects - input: ', JSON.stringify(input));
 
@@ -559,6 +571,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend when `labelsRemoved` is dispatched (right now `labelsRemoved` is
+   * only called when reverting `labelsAdded`) and there is only one label left on the object,
+   * or when `markedEmpty` is reverted/undone
+   */
   static async deleteObjects(input: gql.DeleteObjectsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.deleteObjects - input: ', JSON.stringify(input));
 
@@ -764,68 +781,64 @@ export class ImageModel {
     }
   }
 
+  /**
+   * This endpoint is only used by human reviewers editing labels via the frontend.
+   * All ML-generated labels use createInternalLabels
+   *
+   * @param {object} input
+   * @param {object} context
+   */
   static async createLabels(
     input: gql.CreateLabelsInput,
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
-    console.log('ImageModel.createLabels - input: ', JSON.stringify(input));
+    console.log('ImageModel.createLabels - new label count: ', JSON.stringify(input.labels.length));
+    console.time('total-time');
 
     try {
-      for (const label of input.labels) {
-        const res = await retry(
-          async () => {
-            console.log('ImageModel.createLabels - creating label: ', JSON.stringify(label));
+      console.time('creating-labels');
+      const project = await ProjectModel.queryById(context.user['curr_project']);
 
-            // find image, create label record
-            const image = await ImageModel.queryById(label.imageId, context);
-            const project = await ProjectModel.queryById(image.projectId);
+      const images = await Image.find({
+        projectId: context.user['curr_project'],
+        _id: { $in: input.labels.map((l) => l.imageId) },
+      });
+      const imageMap = new Map(images.map((image) => [image._id, image]));
+
+      const res = await retry(
+        async () => {
+          let operations = [];
+
+          for (const label of input.labels) {
+            const image = imageMap.get(label.imageId);
+            if (!image) throw new NotFoundError('Image not found');
             const labelRecord = reviewerLabelRecord(project, image, label);
 
-            // if label.objectId was specified, find object and save label to it
-            // else try to match to existing object bbox and merge label into that
-            // else add new object
-            if (label.objectId) {
-              const object = image.objects.find((obj) => idMatch(obj._id!, label.objectId!));
-              object?.labels.unshift(labelRecord);
-            } else {
-              let objExists = false;
-              for (const object of image.objects) {
-                if (_.isEqual(object.bbox, label.bbox)) {
-                  object.labels.unshift(labelRecord);
-                  objExists = true;
-                  break;
-                }
-              }
-              if (!objExists) {
-                image.objects.unshift({
-                  bbox: labelRecord.bbox,
-                  locked: false,
-                  labels: [labelRecord],
-                });
-              }
-            }
+            // find object and save label to position 0 of label array
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: {
+                  $push: { 'objects.$[obj].labels': { $each: [labelRecord], $position: 0 } },
+                },
+                arrayFilters: [{ 'obj._id': new ObjectId(label.objectId) }],
+              },
+            });
+          }
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
 
-            await image.save();
-            return { image, newLabel: labelRecord };
-          },
-          { retries: 2 },
-        );
-        console.log('ImageModel.createLabels - res: ', JSON.stringify(res));
-        if (label.mlModel) {
-          // TODO: Verify this
-          await handleEvent(
-            {
-              event: 'label-added',
-              label: res.newLabel,
-              image: res.image,
-            },
-            context,
-          );
-        }
-      }
+      console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
+      console.timeEnd('creating-labels');
+
+      console.time('updating-review-status');
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
-      return { isOk: true };
+      console.timeEnd('updating-review-status');
+      console.timeEnd('total-time');
+      return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
       console.log(
         `Image.createLabels() ERROR on images ${input.labels
@@ -837,6 +850,11 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by frontend to update label validation state
+   *
+   * @param {object} input
+   */
   static async updateLabels(input: gql.UpdateLabelsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.updateLabels - input: ', JSON.stringify(input));
 
@@ -949,6 +967,9 @@ export class ImageModel {
     return image;
   }
 
+  /**
+   * Used by frontend when `labelsRemoved` is called (this is only used when reverting `labelsAdded`)
+   */
   static async deleteLabels(input: gql.DeleteLabelsInput): Promise<mongoose.mongo.BSON.Document> {
     console.log('ImageModel.deleteLabels - input: ', JSON.stringify(input));
 
