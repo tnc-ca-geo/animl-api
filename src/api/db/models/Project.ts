@@ -173,7 +173,8 @@ export class ProjectModel {
     try {
       return await retry(
         async () => {
-          const [project] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
+          let project = await Project.findOne({ _id: projectId });
+          if (!project) throw new NotFoundError('Project not found');
           console.log('originalProject: ', project);
 
           const newCamConfig = {
