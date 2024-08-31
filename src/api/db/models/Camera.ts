@@ -7,7 +7,7 @@ import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
-import { ProjectSchema } from '../schemas/Project.js';
+import Project, { ProjectSchema } from '../schemas/Project.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -188,6 +188,7 @@ export class CameraModel {
       if (defaultProjReg) defaultProjReg.active = true;
       else {
         cam.projRegistrations.push({
+          _id: new ObjectId(),
           projectId: 'default_project',
           active: true,
         });
@@ -197,7 +198,10 @@ export class CameraModel {
 
       // make sure there's a Project.cameraConfig record for this camera
       // in the default_project and create one if not
-      let [defaultProj] = await ProjectModel.getProjects({ _ids: ['default_project'] }, context);
+      let defaultProj = await Project.findOne({ _id: 'default_project' });
+      if (!defaultProj) {
+        throw new CameraRegistrationError('Could not find default project');
+      }
 
       let addedNewCamConfig = false;
       const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));
