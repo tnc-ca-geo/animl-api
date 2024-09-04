@@ -14,7 +14,7 @@ export default /* GraphQL */ `
     validation: ValidationInput
     userId: ID
     imageId: ID!
-    objectId: ID
+    objectId: ID!
     mlModel: String
   }
 

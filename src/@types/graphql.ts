@@ -183,7 +183,7 @@ export type CreateLabelInput = {
   labelId: Scalars['String']['input'];
   labeledDate?: InputMaybe<Scalars['Date']['input']>;
   mlModel?: InputMaybe<Scalars['String']['input']>;
-  objectId?: InputMaybe<Scalars['ID']['input']>;
+  objectId: Scalars['ID']['input'];
   userId?: InputMaybe<Scalars['ID']['input']>;
   validation?: InputMaybe<ValidationInput>;
 };
