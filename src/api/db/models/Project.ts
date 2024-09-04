@@ -34,7 +34,7 @@ import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
 
 // The max number of labeled images that can be deleted
-// when removin a label from a project
+// when removing a label from a project
 const MAX_LABEL_DELETE = 500;
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -353,6 +353,8 @@ export class ProjectModel {
     }
   }
 
+  // NOTE: this function is only called as part of CRUD ops on deployments,
+  // all of which are themselves called by the async task handler
   static async reMapImagesToDeps({
     projId,
     camConfig,
@@ -434,7 +436,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async createDeployment(
     input: gql.CreateDeploymentInput,
     context: Pick<Context, 'user'>,
@@ -488,7 +490,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async updateDeployment(
     input: gql.UpdateDeploymentInput,
     context: Pick<Context, 'user'>,
@@ -548,7 +550,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async deleteDeployment(
     { cameraId, deploymentId }: gql.DeleteDeploymentInput,
     context: Pick<Context, 'user'>,

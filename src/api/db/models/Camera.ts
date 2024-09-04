@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
 import Images from '../schemas/Image.js';
@@ -12,6 +12,8 @@ import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import Project, { ProjectSchema } from '../schemas/Project.js';
+import { TaskModel } from './Task.js';
+import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -234,6 +236,27 @@ export class CameraModel {
     }
   }
 
+  static async updateSerialNumberTask(
+    input: gql.UpdateCameraSerialNumberInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return await TaskModel.create(
+        {
+          type: 'UpdateSerialNumber',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  // NOTE: this method is called by the async task handler
   static async updateSerialNumber(
     input: gql.UpdateCameraSerialNumberInput,
     context: Pick<Context, 'user'>,
@@ -268,6 +291,7 @@ export class CameraModel {
 
       return { isOk: true };
     } catch (err) {
+      // TODO: reverse successful actions
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -294,8 +318,8 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
-  async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumber>) {
-    return await CameraModel.updateSerialNumber(...args);
+  async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumberTask>) {
+    return await CameraModel.updateSerialNumberTask(...args);
   }
 }
 

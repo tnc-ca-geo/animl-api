@@ -152,7 +152,7 @@ export default {
     _: unknown,
     { input }: gql.MutationUpdateCameraSerialNumberArgs,
     context: Context,
-  ): Promise<gql.StandardPayload> => {
+  ): Promise<gql.Task> => {
     return context.models.Camera.updateSerialNumber(input, context);
   },
 
