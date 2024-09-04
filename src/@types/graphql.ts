@@ -580,7 +580,7 @@ export type Mutation = {
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
   updateBatch?: Maybe<BatchPayload>;
-  updateCameraSerialNumber?: Maybe<StandardPayload>;
+  updateCameraSerialNumber?: Maybe<Task>;
   updateDeployment?: Maybe<Task>;
   updateImageComment?: Maybe<ImageCommentsPayload>;
   updateLabels?: Maybe<StandardPayload>;
