@@ -271,7 +271,7 @@ export class CameraModel {
       }
 
       // update serial number on all images
-      // TODO: do we want to wrap this in a retry?
+      // TODO: do we want to wrap this all in a retry?
       console.time('update-serial-number-on-images');
       const res = await Images.updateMany({ cameraId }, { cameraId: newId });
       console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
@@ -279,14 +279,73 @@ export class CameraModel {
 
       if (res.matchedCount === res.modifiedCount) {
         console.log('CameraModel.updateSerialNumber() - updated all images');
-        // update Project.cameraConfigs
+
         const project = await ProjectModel.queryById(context.user['curr_project']);
         const camConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
-        if (camConfig) {
-          camConfig._id = newId;
-          await project.save();
-          console.log('CameraModel.updateSerialNumber() - updated Project.cameraConfigs');
+        if (!camConfig) {
+          throw new GraphQLError(`Could not find cameraConfig for camera ${cameraId}`);
         }
+
+        // check if we're merging a source camera into a target camera
+        const isMerge = project.cameraConfigs.some((cc) => idMatch(cc._id, newId));
+
+        if (isMerge) {
+          console.log(
+            `CameraModel.updateSerialNumber() - merging cameras - source: ${cameraId}, target: ${newId}`,
+          );
+          const sourceCam = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+          const sourceDeployments = sourceCam?.deployments.map((dep) => dep._id.toString()) || [];
+          console.log('CameraModel.updateSerialNumber() - sourceDeployments: ', sourceDeployments);
+
+          // remove source cameraConfig from Project
+          console.log('CameraModel.updateSerialNumber() - removing source cameraConfig');
+          const ccIdx = project.cameraConfigs.findIndex((cc) => idMatch(cc._id, cameraId));
+          project.cameraConfigs.splice(ccIdx, 1);
+
+          console.log(
+            'CameraModel.updateSerialNumber() - sourceDeployments after deleting cameraConfig: ',
+            sourceDeployments,
+          );
+
+          // re-map images to deployments in target cameraConfig
+          console.log(
+            'CameraModel.updateSerialNumber() - re-mapping images to target cameraConfig',
+          );
+          const targetCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, newId));
+          if (!targetCamConfig) {
+            throw new GraphQLError(`Could not find cameraConfig for camera ${newId}`);
+          }
+          await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: targetCamConfig });
+
+          // remove source deployments from Views
+          console.log('CameraModel.updateSerialNumber() - removing source deployments from Views');
+          project.views.forEach((view) => {
+            console.log('CameraModel.updateSerialNumber() - checking view: ', view.name);
+            if (view.filters.deployments?.length) {
+              console.log('CameraModel.updateSerialNumber() - view has deployments');
+              view.filters.deployments = view.filters.deployments.filter(
+                (depId) => !sourceDeployments.includes(depId),
+              );
+              console.log(
+                'CameraModel.updateSerialNumber() - updated view.filters.deployments: ',
+                view.filters.deployments,
+              );
+            }
+          });
+        } else {
+          // update Project's cameraConfig with new _id
+          console.log(
+            'CameraModel.updateSerialNumber() - NOT a merge. Just updating cameraConfig with new _id',
+          );
+          camConfig._id = newId;
+        }
+
+        console.log('CameraModel.updateSerialNumber() - saving Project: ', project);
+        await project.save();
+        console.log('CameraModel.updateSerialNumber() - updated Project.cameraConfigs');
+      } else {
+        // TODO: how to handle partial success?
+        console.log('CameraModel.updateSerialNumber() - not all images were updated successfully');
       }
 
       return { isOk: true };

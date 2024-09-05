@@ -354,6 +354,7 @@ export class ProjectModel {
   }
 
   // NOTE: this function is only called as part of CRUD ops on deployments,
+  // or if we are merging one camera into another in updateCameraSerialNumber,
   // all of which are themselves called by the async task handler
   static async reMapImagesToDeps({
     projId,
@@ -363,6 +364,7 @@ export class ProjectModel {
     camConfig: HydratedDocument<CameraConfigSchema>;
   }) {
     try {
+      console.time('reMapImagesToDeps');
       await retry(
         async () => {
           // build array of operations from camConfig.deployments:
@@ -410,6 +412,7 @@ export class ProjectModel {
         },
         { retries: 3 },
       );
+      console.timeEnd('reMapImagesToDeps');
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
