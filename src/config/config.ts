@@ -16,6 +16,7 @@ const localConfig = {
   CSV_EXPORT_COLUMNS: [
     '_id',
     'originalFileName',
+    'path',
     'dateAdded',
     'dateTimeOriginal',
     'cameraId',
