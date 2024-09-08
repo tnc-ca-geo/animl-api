@@ -382,6 +382,7 @@ export class AnnotationsExport {
         deploymentName: deployment.name === 'default' ? `${img.cameraId}-default` : deployment.name,
         deploymentTimezone: deployment.timezone,
         ...(img.originalFileName && { originalFileName: img.originalFileName }),
+        ...(img.path && { path: img.path }),
         ...(deployment.location && {
           deploymentLat: deployment.location.geometry.coordinates[1],
           deploymentLong: deployment.location.geometry.coordinates[0],
