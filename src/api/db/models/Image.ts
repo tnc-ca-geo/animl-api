@@ -459,8 +459,9 @@ export class ImageModel {
       if (!image.comments)
         image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
       image.comments.push({
+        _id: new ObjectId(),
         author: context.user['cognito:username'],
-        comment: input.comment,
+        comment: input.comment
       });
       await image.save();
 
