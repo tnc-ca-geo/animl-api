@@ -408,7 +408,7 @@ export class ImageModel {
       if (!comment) throw new NotFoundError('Comment not found on image');
 
       if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ForbiddenError('Can only edit your own comments');
+        throw new ForbiddenError('Can only delete your own comments');
       }
 
       image.comments = image.comments.filter(
@@ -456,9 +456,12 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      if (!image.comments)
+      if (!image.comments) {
         image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
+      }
+
       image.comments.push({
+        _id: new ObjectId(),
         author: context.user['cognito:username'],
         comment: input.comment,
       });
