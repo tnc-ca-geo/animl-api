@@ -362,6 +362,7 @@ export type Filters = {
   createdEnd?: Maybe<Scalars['Date']['output']>;
   createdStart?: Maybe<Scalars['Date']['output']>;
   custom?: Maybe<Scalars['String']['output']>;
+  comments?: Maybe<Scalars['String']['output']>;
   deployments?: Maybe<Array<Scalars['String']['output']>>;
   labels?: Maybe<Array<Scalars['String']['output']>>;
   notReviewed?: Maybe<Scalars['Boolean']['output']>;
@@ -375,6 +376,7 @@ export type FiltersInput = {
   createdEnd?: InputMaybe<Scalars['Date']['input']>;
   createdStart?: InputMaybe<Scalars['Date']['input']>;
   custom?: InputMaybe<Scalars['String']['input']>;
+  comments?: InputMaybe<Scalars['String']['input']>;
   deployments?: InputMaybe<Array<Scalars['String']['input']>>;
   labels?: InputMaybe<Array<Scalars['String']['input']>>;
   reviewed?: InputMaybe<Scalars['Boolean']['input']>;
