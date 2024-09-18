@@ -144,7 +144,7 @@ export function buildPipeline(
     pipeline.push({ 
       $match: {
         $text: {
-          $search: comments
+          $search: `"${comments}"`
         }
       }
     })
