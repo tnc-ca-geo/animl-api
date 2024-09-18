@@ -34,7 +34,7 @@ import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
 
 // The max number of labeled images that can be deleted
-// when removin a label from a project
+// when removing a label from a project
 const MAX_LABEL_DELETE = 500;
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -353,6 +353,9 @@ export class ProjectModel {
     }
   }
 
+  // NOTE: this function is only called as part of CRUD ops on deployments,
+  // or if we are merging one camera into another in updateCameraSerialNumber,
+  // all of which are themselves called by the async task handler
   static async reMapImagesToDeps({
     projId,
     camConfig,
@@ -361,6 +364,7 @@ export class ProjectModel {
     camConfig: HydratedDocument<CameraConfigSchema>;
   }) {
     try {
+      console.time('reMapImagesToDeps');
       await retry(
         async () => {
           // build array of operations from camConfig.deployments:
@@ -408,6 +412,7 @@ export class ProjectModel {
         },
         { retries: 3 },
       );
+      console.timeEnd('reMapImagesToDeps');
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -434,7 +439,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async createDeployment(
     input: gql.CreateDeploymentInput,
     context: Pick<Context, 'user'>,
@@ -488,7 +493,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async updateDeployment(
     input: gql.UpdateDeploymentInput,
     context: Pick<Context, 'user'>,
@@ -548,7 +553,7 @@ export class ProjectModel {
     }
   }
 
-  // NOTE: this function is called by the task handler
+  // NOTE: this function is called by the async task handler
   static async deleteDeployment(
     { cameraId, deploymentId }: gql.DeleteDeploymentInput,
     context: Pick<Context, 'user'>,

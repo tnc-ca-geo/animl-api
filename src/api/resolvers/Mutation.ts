@@ -148,6 +148,14 @@ export default {
     return context.models.Camera.unregisterCamera(input, context);
   },
 
+  updateCameraSerialNumber: async (
+    _: unknown,
+    { input }: gql.MutationUpdateCameraSerialNumberArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    return context.models.Camera.updateSerialNumber(input, context);
+  },
+
   createProject: async (
     _: unknown,
     { input }: gql.MutationCreateProjectArgs,

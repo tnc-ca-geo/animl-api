@@ -580,6 +580,7 @@ export type Mutation = {
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
   updateBatch?: Maybe<BatchPayload>;
+  updateCameraSerialNumber?: Maybe<Task>;
   updateDeployment?: Maybe<Task>;
   updateImageComment?: Maybe<ImageCommentsPayload>;
   updateLabels?: Maybe<StandardPayload>;
@@ -733,6 +734,11 @@ export type MutationUpdateAutomationRulesArgs = {
 
 export type MutationUpdateBatchArgs = {
   input: UpdateBatchInput;
+};
+
+
+export type MutationUpdateCameraSerialNumberArgs = {
+  input: UpdateCameraSerialNumberInput;
 };
 
 
@@ -1101,6 +1107,11 @@ export type UpdateBatchInput = {
   total?: InputMaybe<Scalars['Int']['input']>;
   uploadComplete?: InputMaybe<Scalars['Date']['input']>;
   uploadedFile?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateCameraSerialNumberInput = {
+  cameraId: Scalars['ID']['input'];
+  newId: Scalars['String']['input'];
 };
 
 export type UpdateDeploymentInput = {

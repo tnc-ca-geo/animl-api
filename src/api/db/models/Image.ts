@@ -194,6 +194,7 @@ export class ImageModel {
       throw new InternalServerError(err as string);
     }
   }
+
   /**
    * Creates an ImageAttempt record and Image record
    * This is called by the image-ingestion lambda when new images are detected
@@ -626,6 +627,9 @@ export class ImageModel {
     let projectId: string = '';
 
     try {
+      // NOTE: this could probably be optimized to use a single bulkWrite operation
+      // (see example in createLabels() below), but it's not a high priority since
+      // but at most this will receive 10 labels at a time, so there's no risk of timeouts
       for (const label of input.labels) {
         const res = await retry(
           async () => {
