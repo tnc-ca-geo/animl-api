@@ -1,13 +1,19 @@
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import GraphQLError, { InternalServerError, CameraRegistrationError } from '../../errors.js';
 import WirelessCamera, { WirelessCameraSchema } from '../schemas/WirelessCamera.js';
+import Images from '../schemas/Image.js';
 import retry from 'async-retry';
-import { WRITE_CAMERA_REGISTRATION_ROLES } from '../../auth/roles.js';
+import {
+  WRITE_CAMERA_REGISTRATION_ROLES,
+  WRITE_CAMERA_SERIAL_NUMBER_ROLES,
+} from '../../auth/roles.js';
 import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
 import { Context } from '../../handler.js';
 import type * as gql from '../../../@types/graphql.js';
 import Project, { ProjectSchema } from '../schemas/Project.js';
+import { TaskModel } from './Task.js';
+import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -229,6 +235,151 @@ export class CameraModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  static async updateSerialNumberTask(
+    input: gql.UpdateCameraSerialNumberInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return await TaskModel.create(
+        {
+          type: 'UpdateSerialNumber',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  // NOTE: this method is called by the async task handler
+  static async updateSerialNumber(
+    input: gql.UpdateCameraSerialNumberInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    const { cameraId, newId } = input;
+    let successfulOps: OperationMetadata[] = [];
+    console.log('CameraModel.updateSerialNumber - input: ', input);
+
+    try {
+      // check if it's a wireless camera
+      const wirelessCamera = await WirelessCamera.findOne({ _id: cameraId });
+      if (wirelessCamera) {
+        throw new GraphQLError(`You can't update wireless cameras' serial numbers`);
+      }
+
+      // Step 1: update serial number on all images
+      // TODO: do we want to wrap this all in a retry?
+      console.time('update-serial-number-on-images');
+      const affectedImgIds = (await Images.find({ cameraId }, '_id')).map((img) =>
+        img._id.toString(),
+      );
+      const res = await Images.updateMany({ cameraId }, { cameraId: newId });
+      console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
+      console.timeEnd('update-serial-number-on-images');
+      if (res.matchedCount !== res.modifiedCount) {
+        throw new GraphQLError('Not all images were updated successfully');
+      }
+      successfulOps.push({
+        op: 'images-updated',
+        info: { sourceCamId: input.cameraId, targetCamId: newId, affectedImgIds },
+      });
+      console.log('CameraModel.updateSerialNumber() - updated all images');
+
+      // Step 2: check if we're merging a source camera into a target camera
+      const project = await ProjectModel.queryById(context.user['curr_project']);
+      const sourceCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
+      const isMerge = project.cameraConfigs.some((cc) => idMatch(cc._id, newId));
+
+      if (isMerge) {
+        console.log(
+          `CameraModel.updateSerialNumber() - merging cameras - source: ${cameraId}, target: ${newId}`,
+        );
+        const sourceDeployments =
+          sourceCamConfig?.deployments.map((dep) => dep._id.toString()) || [];
+
+        // Step 3: remove source cameraConfig from Project
+        console.log('CameraModel.updateSerialNumber() - removing source cameraConfig');
+        const ccIdx = project.cameraConfigs.findIndex((cc) => idMatch(cc._id, cameraId));
+        project.cameraConfigs.splice(ccIdx, 1);
+
+        // Step 4: re-map images to deployments in target cameraConfig
+        console.log('CameraModel.updateSerialNumber() - re-mapping images to target cameraConfig');
+        const targetCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, newId));
+        if (!targetCamConfig) {
+          throw new GraphQLError(`Could not find cameraConfig for camera ${newId}`);
+        }
+        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: targetCamConfig });
+        successfulOps.push({
+          op: 'images-remapped-to-target-deps',
+          info: { sourceCamConfig },
+        });
+
+        // Step 5: remove source deployments from Views
+        console.log('CameraModel.updateSerialNumber() - removing source deployments from Views');
+        project.views.forEach((view) => {
+          console.log('CameraModel.updateSerialNumber() - checking view: ', view.name);
+          if (view.filters.deployments?.length) {
+            console.log('CameraModel.updateSerialNumber() - view has deployments');
+            view.filters.deployments = view.filters.deployments.filter(
+              (depId) => !sourceDeployments.includes(depId),
+            );
+            console.log(
+              'CameraModel.updateSerialNumber() - updated view.filters.deployments: ',
+              view.filters.deployments,
+            );
+          }
+        });
+      } else {
+        // Step 3: update Project's cameraConfig with new _id
+        console.log(
+          'CameraModel.updateSerialNumber() - NOT a merge. Just updating cameraConfig with new _id',
+        );
+        if (!sourceCamConfig) {
+          throw new GraphQLError(`Could not find cameraConfig for camera ${cameraId}`);
+        }
+        sourceCamConfig._id = newId;
+      }
+
+      console.log('CameraModel.updateSerialNumber() - saving Project: ', project);
+      await project.save();
+      console.log('CameraModel.updateSerialNumber() - updated Project.cameraConfigs');
+
+      return { isOk: true };
+    } catch (err) {
+      // reverse successful operations
+      // NOTE: many of the mutations above involve updating the Project document,
+      // which is the last operation and thus would be the last to fail,
+      // so we can safely assume that if we're in this catch block,
+      // the Project document has not been updated
+      console.log('CameraModel.updateSerialNumber() - caught error: ', err);
+      for (const op of successfulOps) {
+        if (op.op === 'images-updated') {
+          console.log('reversing images-updated operation');
+          await Images.updateMany(
+            { _id: { $in: op.info.affectedImgIds } },
+            { cameraId: op.info.sourceCamId },
+          );
+        } else if (op.op === 'images-remapped-to-target-deps') {
+          console.log('reversing images-remapped-to-target-deps operation');
+          // re-map images back to source cameraConfig deployments
+          // NOTE: the images that were already associated with the target cameraConfig
+          // don't need to be re-mapped because their deploymentIds should not have changed
+          await ProjectModel.reMapImagesToDeps({
+            projId: context.user['curr_project'],
+            camConfig: op.info.sourceCamConfig,
+          });
+        }
+      }
+
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 }
 
 export default class AuthedCameraModel extends BaseAuthedModel {
@@ -249,9 +400,14 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   async unregisterCamera(...args: MethodParams<typeof CameraModel.unregisterCamera>) {
     return await CameraModel.unregisterCamera(...args);
   }
+
+  @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
+  async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumberTask>) {
+    return await CameraModel.updateSerialNumberTask(...args);
+  }
 }
 
 interface OperationMetadata {
   op: string;
-  info: { cameraId: string };
+  info: { [key: string]: any };
 }

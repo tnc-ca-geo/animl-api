@@ -4,6 +4,7 @@ import { connectToDatabase } from '../api/db/connect.js';
 import { TaskModel } from '../api/db/models/Task.js';
 import GetStats from './stats.js';
 import { CreateDeployment, UpdateDeployment, DeleteDeployment } from './deployment.js';
+import { UpdateSerialNumber } from './camera.js';
 import ImageErrorExport from './image-errors.js';
 import AnnotationsExport from './annotations.js';
 import { parseMessage } from './utils.js';
@@ -39,6 +40,8 @@ async function handler(event: SQSEvent) {
         output = await UpdateDeployment(task);
       } else if (task.type === 'DeleteDeployment') {
         output = await DeleteDeployment(task);
+      } else if (task.type === 'UpdateSerialNumber') {
+        output = await UpdateSerialNumber(task);
       } else {
         throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }
