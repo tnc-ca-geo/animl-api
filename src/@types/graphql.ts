@@ -256,6 +256,10 @@ export type CreateViewPayload = {
   view?: Maybe<View>;
 };
 
+export type DeleteCameraInput = {
+  cameraId: Scalars['ID']['input'];
+};
+
 export type DeleteDeploymentInput = {
   cameraId: Scalars['ID']['input'];
   deploymentId: Scalars['ID']['input'];
