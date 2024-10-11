@@ -6,6 +6,7 @@ import retry from 'async-retry';
 import {
   WRITE_CAMERA_REGISTRATION_ROLES,
   WRITE_CAMERA_SERIAL_NUMBER_ROLES,
+  WRITE_DELETE_CAMERA_ROLES,
 } from '../../auth/roles.js';
 import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
@@ -256,6 +257,26 @@ export class CameraModel {
     }
   }
 
+  static async deleteCameraTask(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return await TaskModel.create(
+        {
+          type: 'DeleteCamera',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   // NOTE: this method is called by the async task handler
   static async updateSerialNumber(
     input: gql.UpdateCameraSerialNumberInput,
@@ -404,6 +425,11 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
   async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumberTask>) {
     return await CameraModel.updateSerialNumberTask(...args);
+  }
+
+  @roleCheck(WRITE_DELETE_CAMERA_ROLES)
+  async deleteCamera(...args: MethodParams<typeof CameraModel.deleteCameraTask>) {
+    return await CameraModel.deleteCameraTask(...args);
   }
 }
 

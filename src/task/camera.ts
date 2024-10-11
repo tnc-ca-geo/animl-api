@@ -10,4 +10,5 @@ export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialN
 
 export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
   console.log('DeleteCamera task:', task);
+  return { isOk: true };
 }
