@@ -41,6 +41,7 @@ export default /* GraphQL */ `
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
     unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload
     updateCameraSerialNumber(input: UpdateCameraSerialNumberInput!): Task
+    deleteCamera(input: DeleteCameraInput!): Task
 
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload

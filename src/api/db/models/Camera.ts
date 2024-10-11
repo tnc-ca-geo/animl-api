@@ -262,6 +262,7 @@ export class CameraModel {
     context: Pick<Context, 'user' | 'config'>,
   ): Promise<HydratedDocument<TaskSchema>> {
     try {
+      console.log('CameraModel.deleteCameraTask - input: ', input);
       return await TaskModel.create(
         {
           type: 'DeleteCamera',

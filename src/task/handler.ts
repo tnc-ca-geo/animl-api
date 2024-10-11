@@ -27,7 +27,7 @@ async function handler(event: SQSEvent) {
       { _id: task._id, status: 'RUNNING' },
       { user: { curr_project: task.projectId } as User },
     );
-
+    console.log('TaskModel task.type:', task.type);
     try {
       if (task.type === 'GetStats') {
         output = await GetStats(task);

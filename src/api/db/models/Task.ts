@@ -66,7 +66,7 @@ export class TaskModel {
       projectId: input.projectId,
       type: input.type,
     });
-
+    console.log('TaskModel.create task:', task);
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
 
     await task.save();
