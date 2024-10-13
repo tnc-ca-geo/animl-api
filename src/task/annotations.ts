@@ -374,12 +374,12 @@ export class AnnotationsExport {
   flattenComments(comments: ImageComment[]): string {
     const serializedComments = comments.map((comment) => {
       // Replace new lines with escaped newlines in output
-      const escapedNewLine = comment.comment.replaceAll('\n', '\\n')
-      return `${comment.author}:${escapedNewLine}`
+      const escapedNewLine = comment.comment.replaceAll('\n', '\\n');
+      return `${comment.author}:${escapedNewLine}`;
     });
     const joinedComments = serializedComments.join(';');
 
-    return joinedComments
+    return joinedComments;
   }
 
   flattenImgTransform(): Transformer {
