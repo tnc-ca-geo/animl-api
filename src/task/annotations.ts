@@ -17,6 +17,7 @@ import type { DeploymentSchema, FiltersSchema, ProjectSchema } from '../api/db/s
 import type { ObjectSchema, LabelSchema } from '../api/db/schemas/shared/index.js';
 import type { HydratedDocument, PipelineStage, Types } from 'mongoose';
 import { type TaskInput } from '../api/db/models/Task.js';
+import { ImageComment } from '../@types/graphql.js';
 
 export class AnnotationsExport {
   config: Config;
@@ -368,6 +369,19 @@ export class AnnotationsExport {
     console.log('successfully uploaded to s3: ', res);
   }
 
+  // Flatten and join comments to single string
+  // Format: author:comment;author:comment;...
+  flattenComments(comments: ImageComment[]): string {
+    const serializedComments = comments.map((comment) => {
+      // Replace new lines with escaped newlines in output
+      const escapedNewLine = comment.comment.replaceAll('\n', '\\n')
+      return `${comment.author}:${escapedNewLine}`
+    });
+    const joinedComments = serializedComments.join(';');
+
+    return joinedComments
+  }
+
   flattenImgTransform(): Transformer {
     return transform((img) => {
       const deployment = this.getDeployment(img);
@@ -387,6 +401,7 @@ export class AnnotationsExport {
           deploymentLat: deployment.location.geometry.coordinates[1],
           deploymentLong: deployment.location.geometry.coordinates[0],
         }),
+        comments: this.flattenComments(img.comments)
       };
 
       // build flattened representation of objects/labels
