@@ -27,6 +27,7 @@ const localConfig = {
     'deploymentTimezone',
     'deploymentLat',
     'deploymentLong',
+    'comments',
   ],
 };
 

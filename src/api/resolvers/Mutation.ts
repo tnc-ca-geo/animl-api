@@ -115,6 +115,14 @@ export default {
     return context.models.Image.createComment(input, context);
   },
 
+  createImagetag: async (
+    _: unknown,
+    { input }: gql.MutationCreateImageTagArgs,
+    context: Context,
+  ): Promise<gql.ImageTagsPayload> => {
+    return context.models.Image.createTag(input, context);
+  },
+
   createImage: async (
     _: unknown,
     { input }: gql.MutationCreateImageArgs,

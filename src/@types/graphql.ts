@@ -162,6 +162,12 @@ export type CreateImagePayload = {
   imageAttempt?: Maybe<ImageAttempt>;
 };
 
+export type CreateImageTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+  value: Scalars['Boolean']['input'];
+};
+
 export type CreateInternalLabelInput = {
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
@@ -483,6 +489,18 @@ export type ImageMetadata = {
   timezone?: Maybe<Scalars['String']['output']>;
 };
 
+export type ImageTag = {
+  __typename?: 'ImageTag';
+  _id: Scalars['ID']['output'];
+  tagId: Scalars['ID']['output'];
+  value?: Maybe<Scalars['Boolean']['output']>;
+};
+
+export type ImageTagsPayload = {
+  __typename?: 'ImageTagsPayload';
+  tags?: Maybe<Array<ImageTag>>;
+};
+
 export type ImagesConnection = {
   __typename?: 'ImagesConnection';
   images: Array<Image>;
@@ -559,6 +577,7 @@ export type Mutation = {
   createImage?: Maybe<CreateImagePayload>;
   createImageComment?: Maybe<ImageCommentsPayload>;
   createImageError?: Maybe<ImageError>;
+  createImageTag?: Maybe<ImageTagsPayload>;
   createInternalLabels?: Maybe<StandardPayload>;
   createLabels?: Maybe<StandardPayload>;
   createObjects?: Maybe<StandardPayload>;
@@ -629,6 +648,11 @@ export type MutationCreateImageCommentArgs = {
 
 export type MutationCreateImageErrorArgs = {
   input: CreateImageErrorInput;
+};
+
+
+export type MutationCreateImageTagArgs = {
+  input: CreateImageTagInput;
 };
 
 

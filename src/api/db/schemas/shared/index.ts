@@ -45,6 +45,14 @@ const LabelSchema = new Schema({
   userId: { type: String }, // if type === 'manual'
 });
 
+const TagSchema = new Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, require: true },
+  name: { type: String },
+  default: { type: Boolean },
+  color: { type: String },
+  permission: { type: [String] },
+});
+
 /*
  * ObjectSchema
  *    bbox - [ymin, xmin, ymax, xmax], normalized (not absolute)
@@ -61,6 +69,7 @@ const ObjectSchema = new Schema({
   labels: { type: [LabelSchema] },
 });
 
-export { PointSchema, LocationSchema, LabelSchema, ObjectSchema };
+export { PointSchema, LocationSchema, LabelSchema, ObjectSchema, TagSchema };
 export type ObjectSchema = mongoose.InferSchemaType<typeof ObjectSchema>;
 export type LabelSchema = mongoose.InferSchemaType<typeof LabelSchema>;
+export type TagSchema = mongoose.InferSchemaType<typeof TagSchema>;

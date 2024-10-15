@@ -17,6 +17,12 @@ const ImageCommentSchema = new Schema({
   comment: { type: String, required: true },
 });
 
+const ImageTagSchema = new Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, required: true },
+  tagId: { type: String, required: true },
+  value: { type: Boolean, required: true }
+});
+
 const ImageSchema = new Schema({
   _id: { type: String, required: true },
   bucket: { type: String, required: true },
@@ -42,6 +48,7 @@ const ImageSchema = new Schema({
   reviewed: { type: Boolean },
   objects: { type: [ObjectSchema] },
   comments: { type: [ImageCommentSchema] },
+  tags: { type: [ImageTagSchema] }
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
@@ -50,3 +57,4 @@ export default mongoose.model('Image', ImageSchema);
 
 export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
 export type ImageCommentSchema = mongoose.InferSchemaType<typeof ImageCommentSchema>;
+export type ImageTagSchema = mongoose.InferSchemaType<typeof ImageTagSchema>;

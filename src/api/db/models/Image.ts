@@ -13,7 +13,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
-import Image, { ImageCommentSchema, ImageSchema } from '../schemas/Image.js';
+import Image, { ImageCommentSchema, ImageSchema, ImageTagSchema } from '../schemas/Image.js';
 import Project, { CameraConfigSchema } from '../schemas/Project.js';
 import ImageError, { ImageErrorSchema } from '../schemas/ImageError.js';
 import ImageAttempt, { ImageAttemptSchema } from '../schemas/ImageAttempt.js';
@@ -469,6 +469,32 @@ export class ImageModel {
       await image.save();
 
       return { comments: image.comments };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async createTag(
+    input: gql.CreateImageTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ImageTagSchema> }> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      if (!image.tags) {
+        image.tags = [] as any as mongoose.Types.DocumentArray<ImageTagSchema>;
+      }
+
+      image.tags.push({
+        _id: new ObjectId(),
+        tagId: input.tagId,
+        value: input.value
+      });
+      await image.save();
+
+
+      return { tags: image.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1116,6 +1142,11 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(WRITE_COMMENTS_ROLES)
   createComment(...args: MethodParams<typeof ImageModel.createComment>) {
     return ImageModel.createComment(...args);
+  }
+
+  @roleCheck(WRITE_COMMENTS_ROLES)
+  createTag(...args: MethodParams<typeof ImageModel.createTag>) {
+    return ImageModel.createTag(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
