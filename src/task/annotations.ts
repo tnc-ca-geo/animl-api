@@ -375,9 +375,9 @@ export class AnnotationsExport {
     const serializedComments = comments.map((comment) => {
       // Replace new lines with escaped newlines in output
       const escapedNewLine = comment.comment.replaceAll('\n', '\\n');
-      return `${comment.author}:${escapedNewLine}`;
+      return `${comment.author}: ${escapedNewLine}`;
     });
-    const joinedComments = serializedComments.join(';');
+    const joinedComments = serializedComments.join('; ');
 
     return joinedComments;
   }
@@ -401,7 +401,7 @@ export class AnnotationsExport {
           deploymentLat: deployment.location.geometry.coordinates[1],
           deploymentLong: deployment.location.geometry.coordinates[0],
         }),
-        comments: this.flattenComments(img.comments)
+        ...(img.comments && { comments: this.flattenComments(img.comments) }),
       };
 
       // build flattened representation of objects/labels
