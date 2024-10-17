@@ -257,27 +257,6 @@ export class CameraModel {
     }
   }
 
-  static async deleteCameraTask(
-    input: gql.DeleteCameraInput,
-    context: Pick<Context, 'user' | 'config'>,
-  ): Promise<HydratedDocument<TaskSchema>> {
-    try {
-      console.log('CameraModel.deleteCameraTask - input: ', input);
-      return await TaskModel.create(
-        {
-          type: 'DeleteCamera',
-          projectId: context.user['curr_project'],
-          user: context.user.sub,
-          config: input,
-        },
-        context,
-      );
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
-  }
-
   // NOTE: this method is called by the async task handler
   static async updateSerialNumber(
     input: gql.UpdateCameraSerialNumberInput,
@@ -401,6 +380,44 @@ export class CameraModel {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
+  }
+
+  static async deleteCameraTask(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      console.log('CameraModel.deleteCameraTask - input: ', input);
+      return await TaskModel.create(
+        {
+          type: 'DeleteCamera',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteCamera(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    console.log('CameraModel.deleteCamera - input: ', input);
+    ProjectModel.deleteCameraConfig(
+      {
+        cameraId: input.cameraId,
+      },
+      context,
+    );
+    // TODO: delete deployments from views
+    // TODO: delete images associated with this camera
+    // TODO: unregister camera
+    return { isOk: true };
   }
 }
 
