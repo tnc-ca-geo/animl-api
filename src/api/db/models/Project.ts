@@ -172,7 +172,7 @@ export class ProjectModel {
 
   static async createCameraConfig(
     input: { projectId: string; cameraId: string },
-    context: Pick<Context, 'user'>,
+    _: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
     const { projectId, cameraId } = input;
@@ -238,6 +238,44 @@ export class ProjectModel {
     }
   }
 
+  static async deleteCameraConfig(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+          console.log('originalProject: ', project);
+
+          console.log('Deleteing camera config with _id: ', input.cameraId);
+          // NOTE: using findOneAndUpdate() with an aggregation pipeline to update
+          // Projects to preserve atomicity of the operation and avoid race conditions
+          // during bulk upload image ingestion.
+          // https://github.com/tnc-ca-geo/animl-api/issues/112
+          const updatedProject = await Project.findOneAndUpdate(
+            { _id: context.user['curr_project'] },
+            [
+              { $addFields: { camIds: '$cameraConfigs._id' } },
+              {
+                $pull: { cameraConfigs: { _id: input.cameraId } },
+              },
+            ],
+            { returnDocument: 'after' },
+          );
+
+          console.log('updatedProject: ', updatedProject);
+          return updatedProject!;
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createView(
     input: gql.CreateViewInput,
     context: Pick<Context, 'user'>,
@@ -288,7 +326,7 @@ export class ProjectModel {
             bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
-          // appy updates & save project
+          // apply updates & save project
           Object.assign(view, input.diffs);
           const updatedProj = await project.save();
           return updatedProj.views.find((v): v is HydratedSingleSubdocument<ViewSchema> =>
