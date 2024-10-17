@@ -7,3 +7,8 @@ export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialN
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   return await CameraModel.updateSerialNumber(task.config, context);
 }
+
+export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
+  console.log('DeleteCamera task:', task);
+  return { isOk: true };
+}
