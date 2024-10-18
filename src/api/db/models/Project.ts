@@ -372,6 +372,50 @@ export class ProjectModel {
     }
   }
 
+  static async removeCameraFromViews(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          // find view
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+          console.log('originalProject: ', project);
+
+          // get all deployment ids for the camera
+          const projectDeps = project.cameraConfigs
+            .find((cc) => cc._id === input.cameraId)
+            ?.deployments.map((d) => d._id.toString());
+
+          // finds all views that filter for the cameraId or any of the deployment ids
+          const viewsWithCamera = project.views.filter((v) => {
+            // get all deployment ids from the views
+            const viewDeps = v.filters.deployments;
+            return (
+              v.filters.cameras?.includes(input.cameraId) ||
+              (viewDeps && projectDeps && projectDeps.some((d) => viewDeps.includes(d)))
+            );
+          });
+          project.views.forEach((v) => {
+            if (viewsWithCamera.includes(v)) {
+              v.filters.cameras = v.filters.cameras?.filter((c) => c === input.cameraId);
+              v.filters.deployments = v.filters.deployments?.filter((d) => {
+                projectDeps?.includes(d);
+              });
+            }
+          });
+          return project.save();
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async updateAutomationRules(
     { automationRules }: gql.UpdateAutomationRulesInput,
     context: Pick<Context, 'user'>,
