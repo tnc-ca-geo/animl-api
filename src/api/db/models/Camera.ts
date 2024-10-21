@@ -425,7 +425,7 @@ export class CameraModel {
         context,
       );
 
-      // TODO: delete images associated with this camera
+      // TODO: Step3: delete images associated with this camera
       // Step 4: unregister camera
       if ((await CameraModel.getWirelessCameras({ _ids: [input.cameraId] }, context)).length > 0) {
         await CameraModel.unregisterCamera({ cameraId: input.cameraId }, context);
