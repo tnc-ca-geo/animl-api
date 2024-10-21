@@ -6,6 +6,7 @@ import retry from 'async-retry';
 import {
   WRITE_CAMERA_REGISTRATION_ROLES,
   WRITE_CAMERA_SERIAL_NUMBER_ROLES,
+  WRITE_DELETE_CAMERA_ROLES,
 } from '../../auth/roles.js';
 import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
@@ -380,6 +381,61 @@ export class CameraModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  static async deleteCameraTask(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      console.log('CameraModel.deleteCameraTask - input: ', input);
+      return await TaskModel.create(
+        {
+          type: 'DeleteCamera',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  // NOTE: this method is called by the async task handler
+  static async deleteCamera(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    console.log('CameraModel.deleteCamera - input: ', input);
+    try {
+      // Step 1: delete deployments from views
+      await ProjectModel.removeCameraFromViews(
+        {
+          cameraId: input.cameraId,
+        },
+        context,
+      );
+      // Step 2: delete camera record from project
+      await ProjectModel.deleteCameraConfig(
+        {
+          cameraId: input.cameraId,
+        },
+        context,
+      );
+
+      // TODO: Step3: delete images associated with this camera
+      // Step 4: unregister camera
+      if ((await CameraModel.getWirelessCameras({ _ids: [input.cameraId] }, context)).length > 0) {
+        await CameraModel.unregisterCamera({ cameraId: input.cameraId }, context);
+      }
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+    return { isOk: true };
+  }
 }
 
 export default class AuthedCameraModel extends BaseAuthedModel {
@@ -404,6 +460,11 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
   async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumberTask>) {
     return await CameraModel.updateSerialNumberTask(...args);
+  }
+
+  @roleCheck(WRITE_DELETE_CAMERA_ROLES)
+  async deleteCamera(...args: MethodParams<typeof CameraModel.deleteCameraTask>) {
+    return await CameraModel.deleteCameraTask(...args);
   }
 }
 
