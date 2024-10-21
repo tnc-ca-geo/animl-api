@@ -1051,6 +1051,26 @@ export class ImageModel {
     }
   }
 
+  static async deleteImagesTask(
+    input: gql.DeleteImagesInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'DeleteImages',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   /**
    * A custom middleware-like method that is used to update the reviewed status of
    * images that should only be ran by operations that would affect the reviewed status.
