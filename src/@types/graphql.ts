@@ -256,6 +256,10 @@ export type DeleteImageCommentInput = {
   imageId: Scalars['ID']['input'];
 };
 
+export type DeleteImagesByFilterTaskInput = {
+  filters: FiltersInput;
+};
+
 export type DeleteImagesInput = {
   imageIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
