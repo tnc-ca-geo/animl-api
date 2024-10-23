@@ -71,6 +71,12 @@ const ProjectLabelSchema = new Schema({
   ml: { type: Boolean, required: true, default: false },
 });
 
+const ProjectTagSchema = new Schema({
+  _id: { type: String, required: true, default: randomUUID },
+  name: { type: String, required: true },
+  color: { type: String, required: true }
+});
+
 const CameraConfigSchema = new Schema({
   _id: { type: String, required: true } /* _id is serial number */,
   deployments: { type: [DeploymentSchema] },
@@ -103,6 +109,7 @@ const ProjectSchema = new Schema({
     ],
     required: true,
   },
+  tags: { type: [ProjectTagSchema] }
 });
 
 export default mongoose.model('Project', ProjectSchema);
@@ -112,6 +119,7 @@ export type FiltersSchema = mongoose.InferSchemaType<typeof FiltersSchema>;
 export type ViewSchema = mongoose.InferSchemaType<typeof ViewSchema>;
 export type DeploymentSchema = mongoose.InferSchemaType<typeof DeploymentSchema>;
 export type ProjectLabelSchema = mongoose.InferSchemaType<typeof ProjectLabelSchema>;
+export type ProjectTagSchema = mongoose.InferSchemaType<typeof ProjectTagSchema>;
 export type CameraConfigSchema = mongoose.InferSchemaType<typeof CameraConfigSchema>;
 export type ProjectSchema = mongoose.InferSchemaType<typeof ProjectSchema>;
 
