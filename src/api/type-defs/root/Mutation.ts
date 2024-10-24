@@ -24,6 +24,8 @@ export default /* GraphQL */ `
     updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
     deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
 
+    createProjectTag(input: CreateProjectTagInput!): ProjectTagsPayload
+
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
     clearImageErrors(input: ClearImageErrorsInput!): StandardPayload

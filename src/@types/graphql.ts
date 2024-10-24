@@ -215,6 +215,11 @@ export type CreateProjectLabelInput = {
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type CreateProjectTagInput = {
+  color: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+};
+
 export type CreateUploadInput = {
   originalFile: Scalars['String']['input'];
   partCount?: InputMaybe<Scalars['Int']['input']>;
@@ -564,6 +569,7 @@ export type Mutation = {
   createObjects?: Maybe<StandardPayload>;
   createProject?: Maybe<ProjectPayload>;
   createProjectLabel?: Maybe<ProjectLabelPayload>;
+  createProjectTag?: Maybe<ProjectTagsPayload>;
   createUpload?: Maybe<CreateUploadPayload>;
   createUser?: Maybe<StandardPayload>;
   createView?: Maybe<CreateViewPayload>;
@@ -654,6 +660,11 @@ export type MutationCreateProjectArgs = {
 
 export type MutationCreateProjectLabelArgs = {
   input: CreateProjectLabelInput;
+};
+
+
+export type MutationCreateProjectTagArgs = {
+  input: CreateProjectTagInput;
 };
 
 
@@ -844,6 +855,7 @@ export type Project = {
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
   name: Scalars['String']['output'];
+  tags?: Maybe<Array<ProjectTag>>;
   timezone: Scalars['String']['output'];
   views: Array<View>;
 };
@@ -872,6 +884,18 @@ export type ProjectRegistration = {
   _id: Scalars['ID']['output'];
   active: Scalars['Boolean']['output'];
   projectId: Scalars['String']['output'];
+};
+
+export type ProjectTag = {
+  __typename?: 'ProjectTag';
+  _id: Scalars['String']['output'];
+  color: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type ProjectTagsPayload = {
+  __typename?: 'ProjectTagsPayload';
+  tags?: Maybe<Array<Maybe<ProjectTag>>>;
 };
 
 export type Query = {

@@ -174,6 +174,15 @@ export default {
     return { project };
   },
 
+  createProjectTag: async (
+    _: unknown,
+    { input }: gql.MutationCreateProjectTagArgs,
+    context: Context,
+  ): Promise<gql.ProjectTagsPayload> => {
+    const tags = await context.models.Project.createTag(input, context);
+    return { tags };
+  },
+
   createProjectLabel: async (
     _: unknown,
     { input }: gql.MutationCreateProjectLabelArgs,

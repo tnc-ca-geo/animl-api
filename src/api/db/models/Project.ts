@@ -15,6 +15,7 @@ import Project, {
   IAutomationRule,
   ProjectLabelSchema,
   ProjectSchema,
+  ProjectTagSchema,
   ViewSchema,
 } from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -587,6 +588,34 @@ export class ProjectModel {
     }
   }
 
+  static async createTag(
+    input: gql.CreateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      if (
+        project.tags.filter((tag) => {
+          return tag.name.toLowerCase() === input.name.toLowerCase();
+        }).length
+      ) {
+        throw new DBValidationError(
+          'A tag with that name already exists, avoid creating tags with duplicate names',
+        );
+      }
+
+      project.tags.push(input);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Pick<Context, 'user'>,
@@ -703,6 +732,11 @@ export default class AuthedProjectModel extends BaseAuthedModel {
   @roleCheck(WRITE_PROJECT_ROLES)
   deleteLabel(...args: MethodParams<typeof ProjectModel.deleteLabel>) {
     return ProjectModel.deleteLabel(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  createTag(...args: MethodParams<typeof ProjectModel.createTag>) {
+    return ProjectModel.createTag(...args);
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)
