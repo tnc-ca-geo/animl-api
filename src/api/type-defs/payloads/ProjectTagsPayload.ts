@@ -1,5 +1,5 @@
 export default /* GraphQL */ `
   type ProjectTagsPayload {
-    tags: [ProjectTag]
+    tags: [ProjectTag!]
   }
 `;

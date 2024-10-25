@@ -7,6 +7,7 @@ import GraphQLError, {
   DeleteLabelError,
   ForbiddenError,
   DBValidationError,
+  DeleteTagError,
 } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project, {
@@ -37,6 +38,10 @@ import { TaskSchema } from '../schemas/Task.js';
 // The max number of labeled images that can be deleted
 // when removing a label from a project
 const MAX_LABEL_DELETE = 500;
+
+// The max number of tagged images that can be deleted
+// when removing a tag from a project
+const MAX_TAG_DELETE = 500;
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -595,6 +600,10 @@ export class ProjectModel {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
+      if (!project.tags) {
+        project.tags = [] as any as mongoose.Types.DocumentArray<ProjectTagSchema>;
+      }
+
       if (
         project.tags.filter((tag) => {
           return tag.name.toLowerCase() === input.name.toLowerCase();
@@ -637,6 +646,32 @@ export class ProjectModel {
       await project.save();
 
       return project.labels.pop()!;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteTag(
+    input: gql.DeleteProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new DeleteTagError('Tag not found on project');
+      }
+
+      // TODO implement pipeline
+      // TODO implement delete from existing images
+
+      project.tags.splice(project.tags.indexOf(tag), 1);
+
+      await project.save();
+
+      return { tags: project.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -732,6 +767,11 @@ export default class AuthedProjectModel extends BaseAuthedModel {
   @roleCheck(WRITE_PROJECT_ROLES)
   deleteLabel(...args: MethodParams<typeof ProjectModel.deleteLabel>) {
     return ProjectModel.deleteLabel(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  deleteTag(...args: MethodParams<typeof ProjectModel.deleteTag>) {
+    return ProjectModel.deleteTag(...args);
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)

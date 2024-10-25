@@ -288,6 +288,10 @@ export type DeleteProjectLabelInput = {
   _id: Scalars['ID']['input'];
 };
 
+export type DeleteProjectTagInput = {
+  _id: Scalars['ID']['input'];
+};
+
 export type DeleteViewInput = {
   viewId: Scalars['ID']['input'];
 };
@@ -579,6 +583,7 @@ export type Mutation = {
   deleteLabels?: Maybe<StandardPayload>;
   deleteObjects?: Maybe<StandardPayload>;
   deleteProjectLabel?: Maybe<StandardPayload>;
+  deleteProjectTag?: Maybe<ProjectTagsPayload>;
   deleteView?: Maybe<DeleteViewPayload>;
   redriveBatch?: Maybe<StandardPayload>;
   registerCamera?: Maybe<RegisterCameraPayload>;
@@ -710,6 +715,11 @@ export type MutationDeleteObjectsArgs = {
 
 export type MutationDeleteProjectLabelArgs = {
   input: DeleteProjectLabelInput;
+};
+
+
+export type MutationDeleteProjectTagArgs = {
+  input: DeleteProjectTagInput;
 };
 
 
@@ -895,7 +905,7 @@ export type ProjectTag = {
 
 export type ProjectTagsPayload = {
   __typename?: 'ProjectTagsPayload';
-  tags?: Maybe<Array<Maybe<ProjectTag>>>;
+  tags?: Maybe<Array<ProjectTag>>;
 };
 
 export type Query = {
