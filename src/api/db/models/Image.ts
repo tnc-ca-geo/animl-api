@@ -85,23 +85,6 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
-  static async countImagesByTag(
-    tags: string[],
-    context: Pick<Context, 'user'>,
-  ): Promise<number> {
-    if (tags.length === 0) {
-      return 0;
-    }
-    const pipeline = [
-      { $match: { projectId: ontext.user['curr_project'] } },
-      ...buildTagPipeline(tags),
-      { $count: 'count' },
-    ];
-
-    const res = await Project.aggregate(pipeline);
-    return res[0] ? res[0].count : 0;
-  }
-
   static async queryById(
     _id: string,
     context: Pick<Context, 'user'>,
