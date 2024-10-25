@@ -625,6 +625,55 @@ export class ProjectModel {
     }
   }
 
+  static async deleteTag(
+    input: gql.DeleteProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new DeleteTagError('Tag not found on project');
+      }
+
+      // TODO implement pipeline
+      // TODO implement delete from existing images
+
+      project.tags.splice(project.tags.indexOf(tag), 1);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async updateTag(
+    input: gql.UpdateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      const tag = project.tags.find((l) => l._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new NotFoundError('Tag not found on project');
+      }
+
+      Object.assign(tag, input);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Pick<Context, 'user'>,
@@ -646,32 +695,6 @@ export class ProjectModel {
       await project.save();
 
       return project.labels.pop()!;
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
-  }
-
-  static async deleteTag(
-    input: gql.DeleteProjectTagInput,
-    context: Pick<Context, 'user'>,
-  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
-    try {
-      const project = await this.queryById(context.user['curr_project']);
-
-      const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
-      if (!tag) {
-        throw new DeleteTagError('Tag not found on project');
-      }
-
-      // TODO implement pipeline
-      // TODO implement delete from existing images
-
-      project.tags.splice(project.tags.indexOf(tag), 1);
-
-      await project.save();
-
-      return { tags: project.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -765,11 +788,6 @@ export default class AuthedProjectModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)
-  deleteLabel(...args: MethodParams<typeof ProjectModel.deleteLabel>) {
-    return ProjectModel.deleteLabel(...args);
-  }
-
-  @roleCheck(WRITE_PROJECT_ROLES)
   deleteTag(...args: MethodParams<typeof ProjectModel.deleteTag>) {
     return ProjectModel.deleteTag(...args);
   }
@@ -777,6 +795,16 @@ export default class AuthedProjectModel extends BaseAuthedModel {
   @roleCheck(WRITE_PROJECT_ROLES)
   createTag(...args: MethodParams<typeof ProjectModel.createTag>) {
     return ProjectModel.createTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  updateTag(...args: MethodParams<typeof ProjectModel.updateTag>) {
+    return ProjectModel.updateTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  deleteLabel(...args: MethodParams<typeof ProjectModel.deleteLabel>) {
+    return ProjectModel.deleteLabel(...args);
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)

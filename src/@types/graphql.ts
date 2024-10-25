@@ -598,6 +598,7 @@ export type Mutation = {
   updateObjects?: Maybe<StandardPayload>;
   updateProject?: Maybe<ProjectPayload>;
   updateProjectLabel?: Maybe<ProjectLabelPayload>;
+  updateProjectTag?: Maybe<ProjectTagsPayload>;
   updateUser?: Maybe<StandardPayload>;
   updateView?: Maybe<UpdateViewPayload>;
 };
@@ -790,6 +791,11 @@ export type MutationUpdateProjectArgs = {
 
 export type MutationUpdateProjectLabelArgs = {
   input: UpdateProjectLabelInput;
+};
+
+
+export type MutationUpdateProjectTagArgs = {
+  input: UpdateProjectTagInput;
 };
 
 
@@ -1179,6 +1185,12 @@ export type UpdateProjectLabelInput = {
   ml?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type UpdateProjectTagInput = {
+  _id: Scalars['ID']['input'];
+  color: Scalars['String']['input'];
+  name: Scalars['String']['input'];
 };
 
 export type UpdateUserInput = {
