@@ -10,7 +10,8 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
     context,
   );
   while (images.results.length > 0) {
-    await ImageModel.deleteImages({ imageIds: images.results.map((image) => image._id) }, context);
+    const batch = images.results.map((image) => image._id);
+    await ImageModel.deleteImages({ imageIds: batch }, context);
     if (images.hasNext) {
       images = await ImageModel.queryByFilter(
         { filters: task.config.filters, limit: 100, next: images.next },

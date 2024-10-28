@@ -19,6 +19,7 @@ const TaskSchema = new Schema({
       'DeleteDeployment',
       'UpdateSerialNumber',
       'DeleteImages',
+      'DeleteImagesByFilter',
     ],
   },
   status: {

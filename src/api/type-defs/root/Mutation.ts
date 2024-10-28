@@ -2,6 +2,8 @@ export default /* GraphQL */ `
   type Mutation {
     createImage(input: CreateImageInput!): CreateImagePayload
     deleteImages(input: DeleteImagesInput!): StandardErrorPayload
+    deleteImagesTask(input: DeleteImagesInput!): Task
+    deleteImagesByFilterTask(input: DeleteImagesByFilterTaskInput!): Task
 
     createImageComment(input: CreateImageCommentInput!): ImageCommentsPayload
     updateImageComment(input: UpdateImageCommentInput!): ImageCommentsPayload
