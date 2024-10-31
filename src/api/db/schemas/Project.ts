@@ -72,7 +72,7 @@ const ProjectLabelSchema = new Schema({
 });
 
 const ProjectTagSchema = new Schema({
-  _id: { type: String, required: true, default: randomUUID },
+  _id: { type: Schema.Types.ObjectId, required: true, auto: true },
   name: { type: String, required: true },
   color: { type: String, required: true }
 });
@@ -109,7 +109,7 @@ const ProjectSchema = new Schema({
     ],
     required: true,
   },
-  tags: { type: [ProjectTagSchema] }
+  tags: { type: [ProjectTagSchema] },
 });
 
 export default mongoose.model('Project', ProjectSchema);

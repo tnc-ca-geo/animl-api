@@ -162,6 +162,11 @@ export type CreateImagePayload = {
   imageAttempt?: Maybe<ImageAttempt>;
 };
 
+export type CreateImageTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+};
+
 export type CreateInternalLabelInput = {
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
@@ -259,6 +264,11 @@ export type DeleteDeploymentInput = {
 export type DeleteImageCommentInput = {
   id: Scalars['String']['input'];
   imageId: Scalars['ID']['input'];
+};
+
+export type DeleteImageTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type DeleteImagesInput = {
@@ -425,6 +435,7 @@ export type Image = {
   path?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
   reviewed?: Maybe<Scalars['Boolean']['output']>;
+  tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
   userSetData?: Maybe<Scalars['JSONObject']['output']>;
 };
@@ -490,6 +501,11 @@ export type ImageMetadata = {
   originalFileName?: Maybe<Scalars['String']['output']>;
   path?: Maybe<Scalars['String']['output']>;
   timezone?: Maybe<Scalars['String']['output']>;
+};
+
+export type ImageTagsPayload = {
+  __typename?: 'ImageTagsPayload';
+  tags?: Maybe<Array<Scalars['ID']['output']>>;
 };
 
 export type ImagesConnection = {
@@ -568,6 +584,7 @@ export type Mutation = {
   createImage?: Maybe<CreateImagePayload>;
   createImageComment?: Maybe<ImageCommentsPayload>;
   createImageError?: Maybe<ImageError>;
+  createImageTag?: Maybe<ImageTagsPayload>;
   createInternalLabels?: Maybe<StandardPayload>;
   createLabels?: Maybe<StandardPayload>;
   createObjects?: Maybe<StandardPayload>;
@@ -579,6 +596,7 @@ export type Mutation = {
   createView?: Maybe<CreateViewPayload>;
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
+  deleteImageTag?: Maybe<ImageTagsPayload>;
   deleteImages?: Maybe<StandardErrorPayload>;
   deleteLabels?: Maybe<StandardPayload>;
   deleteObjects?: Maybe<StandardPayload>;
@@ -644,6 +662,11 @@ export type MutationCreateImageErrorArgs = {
 };
 
 
+export type MutationCreateImageTagArgs = {
+  input: CreateImageTagInput;
+};
+
+
 export type MutationCreateInternalLabelsArgs = {
   input: CreateInternalLabelsInput;
 };
@@ -696,6 +719,11 @@ export type MutationDeleteDeploymentArgs = {
 
 export type MutationDeleteImageCommentArgs = {
   input: DeleteImageCommentInput;
+};
+
+
+export type MutationDeleteImageTagArgs = {
+  input: DeleteImageTagInput;
 };
 
 
@@ -904,7 +932,7 @@ export type ProjectRegistration = {
 
 export type ProjectTag = {
   __typename?: 'ProjectTag';
-  _id: Scalars['String']['output'];
+  _id: Scalars['ID']['output'];
   color: Scalars['String']['output'];
   name: Scalars['String']['output'];
 };

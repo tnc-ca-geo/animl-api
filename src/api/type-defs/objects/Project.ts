@@ -23,7 +23,7 @@ export default /* GraphQL */ `
   }
 
   type ProjectTag {
-    _id: String!
+    _id: ID!
     name: String!
     color: String!
   }

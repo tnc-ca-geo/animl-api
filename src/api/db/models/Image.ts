@@ -28,6 +28,7 @@ import {
   WRITE_IMAGES_ROLES,
   WRITE_COMMENTS_ROLES,
   EXPORT_DATA_ROLES,
+  WRITE_TAGS_ROLES,
 } from '../../auth/roles.js';
 import {
   buildPipeline,
@@ -469,6 +470,50 @@ export class ImageModel {
       await image.save();
 
       return { comments: image.comments };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async createTag(
+    input: gql.CreateImageTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      if (!image.tags) {
+        image.tags = [] as any as mongoose.Types.DocumentArray<mongoose.Types.ObjectId>;
+      }
+
+      image.tags.push(new mongoose.Types.ObjectId(input.tagId));
+      await image.save();
+
+      return { tags: image.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteTag(
+    input: gql.DeleteImageTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const tag = image.tags?.filter((c) => idMatch(c._id!, input.tagId))[0];
+      if (!tag) throw new NotFoundError('Tag not found on image');
+
+      image.tags = image.tags.filter(
+        (c) => !idMatch(c._id!, input.tagId),
+      ) as mongoose.Types.ObjectId[];
+
+      await image.save();
+
+      return { tags: image.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1111,6 +1156,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
 
   queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
     return ImageModel.queryByFilter(...args);
+  }
+
+  @roleCheck(WRITE_TAGS_ROLES)
+  createTag(...args: MethodParams<typeof ImageModel.createTag>) {
+    return ImageModel.createTag(...args);
+  }
+
+  @roleCheck(WRITE_TAGS_ROLES)
+  deleteTag(...args: MethodParams<typeof ImageModel.deleteTag>) {
+    return ImageModel.deleteTag(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
