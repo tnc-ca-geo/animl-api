@@ -22,14 +22,15 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
     }
   }
 
-  return { isOk: true };
+  return { filters: task.config.filters };
 }
 
 export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
+  const output = task.config.imageIds?.slice();
   while (task.config.imageIds?.length && task.config.imageIds.length > 0) {
     const batch = task.config.imageIds?.splice(0, 100);
     await ImageModel.deleteImages({ imageIds: batch }, context);
   }
-  return { isOk: true };
+  return { imageIds: output };
 }
