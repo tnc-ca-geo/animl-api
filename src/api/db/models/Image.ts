@@ -504,11 +504,11 @@ export class ImageModel {
     try {
       const image = await ImageModel.queryById(input.imageId, context);
 
-      const tag = image.tags?.filter((c) => idMatch(c._id!, input.tagId))[0];
+      const tag = image.tags?.filter((t) => idMatch(t, input.tagId))[0];
       if (!tag) throw new NotFoundError('Tag not found on image');
 
       image.tags = image.tags.filter(
-        (c) => !idMatch(c._id!, input.tagId),
+        (t) => !idMatch(t, input.tagId),
       ) as mongoose.Types.ObjectId[];
 
       await image.save();
