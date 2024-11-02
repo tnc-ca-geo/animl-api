@@ -9,7 +9,7 @@ import GraphQLError, {
   NotFoundError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
-import mongoose, { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
@@ -514,6 +514,25 @@ export class ImageModel {
       await image.save();
 
       return { tags: image.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteProjectTag(
+    input: { tagId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<UpdateWriteOpResult>  {
+    try {
+      const res = await Image.updateMany({ 
+        "tags": input.tagId
+      }, {
+        "$pull": {
+          "tags": input.tagId
+        }
+      });
+      return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);

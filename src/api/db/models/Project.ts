@@ -637,8 +637,7 @@ export class ProjectModel {
         throw new DeleteTagError('Tag not found on project');
       }
 
-      // TODO implement pipeline
-      // TODO implement delete from existing images
+      await ImageModel.deleteProjectTag({ tagId: input._id }, context);
 
       project.tags.splice(project.tags.indexOf(tag), 1);
 
