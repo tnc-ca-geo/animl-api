@@ -1051,6 +1051,10 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by the frontend when the user manually selects and deletes more than
+   * 100 images at once
+   */
   static async deleteImagesTask(
     input: gql.DeleteImagesInput,
     context: Pick<Context, 'config' | 'user'>,
@@ -1071,6 +1075,9 @@ export class ImageModel {
     }
   }
 
+  /**
+   * Used by the frontend to delete all currently filtered images
+   */
   static async deleteImagesByFilterTask(
     input: gql.DeleteImagesByFilterTaskInput,
     context: Pick<Context, 'config' | 'user'>,
