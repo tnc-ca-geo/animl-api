@@ -1052,6 +1052,53 @@ export class ImageModel {
   }
 
   /**
+   * Used by the frontend when the user manually selects and deletes more than
+   * 100 images at once
+   */
+  static async deleteImagesTask(
+    input: gql.DeleteImagesInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'DeleteImages',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
+   * Used by the frontend to delete all currently filtered images
+   */
+  static async deleteImagesByFilterTask(
+    input: gql.DeleteImagesByFilterTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'DeleteImagesByFilter',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * A custom middleware-like method that is used to update the reviewed status of
    * images that should only be ran by operations that would affect the reviewed status.
    *
@@ -1136,6 +1183,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(DELETE_IMAGES_ROLES)
   deleteImages(...args: MethodParams<typeof ImageModel.deleteImages>) {
     return ImageModel.deleteImages(...args);
+  }
+
+  @roleCheck(DELETE_IMAGES_ROLES)
+  deleteImagesTask(...args: MethodParams<typeof ImageModel.deleteImagesTask>) {
+    return ImageModel.deleteImagesTask(...args);
+  }
+
+  @roleCheck(DELETE_IMAGES_ROLES)
+  deleteImagesByFilterTask(...args: MethodParams<typeof ImageModel.deleteImagesByFilterTask>) {
+    return ImageModel.deleteImagesByFilterTask(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)

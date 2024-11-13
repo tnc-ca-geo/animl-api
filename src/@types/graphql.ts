@@ -256,6 +256,14 @@ export type DeleteImageCommentInput = {
   imageId: Scalars['ID']['input'];
 };
 
+export type DeleteImagesByFilterInput = {
+  filters: FiltersInput;
+};
+
+export type DeleteImagesByFilterTaskInput = {
+  filters: FiltersInput;
+};
+
 export type DeleteImagesInput = {
   imageIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -570,6 +578,8 @@ export type Mutation = {
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
   deleteImages?: Maybe<StandardErrorPayload>;
+  deleteImagesByFilterTask?: Maybe<Task>;
+  deleteImagesTask?: Maybe<Task>;
   deleteLabels?: Maybe<StandardPayload>;
   deleteObjects?: Maybe<StandardPayload>;
   deleteProjectLabel?: Maybe<StandardPayload>;
@@ -683,6 +693,16 @@ export type MutationDeleteImageCommentArgs = {
 
 
 export type MutationDeleteImagesArgs = {
+  input: DeleteImagesInput;
+};
+
+
+export type MutationDeleteImagesByFilterTaskArgs = {
+  input: DeleteImagesByFilterTaskInput;
+};
+
+
+export type MutationDeleteImagesTaskArgs = {
   input: DeleteImagesInput;
 };
 
