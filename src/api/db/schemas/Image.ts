@@ -46,8 +46,6 @@ const ImageSchema = new Schema({
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
-ImageSchema.index({ 'comments.comment': 'text' });
-
 export default mongoose.model('Image', ImageSchema);
 
 export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;

@@ -142,10 +142,8 @@ export function buildPipeline(
 
   if (comments) {
     pipeline.push({ 
-      $match: {
-        $text: {
-          $search: `"${comments}"`
-        }
+      $search: {
+        $text: `"${comments}"`
       }
     })
   }
