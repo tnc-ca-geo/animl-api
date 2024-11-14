@@ -124,7 +124,7 @@ export class ImageModel {
           hasNext: false,
         } as AggregationOutput<ImageSchema>;
       }
-      return await MongoPaging.aggregate(Image.collection, {
+      return MongoPaging.aggregate(Image.collection, {
         aggregation: buildPipeline(input.filters, context.user['curr_project']!),
         limit: input.limit,
         paginatedField: input.paginatedField,
