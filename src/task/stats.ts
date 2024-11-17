@@ -1,5 +1,5 @@
 import { ProjectModel } from '../api/db/models/Project.js';
-import { buildPipeline, isImageReviewed, idMatch } from '../api/db/models/utils.js';
+import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';

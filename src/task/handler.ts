@@ -11,6 +11,7 @@ import { parseMessage } from './utils.js';
 import { type TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 import { type User } from '../api/auth/authorization.js';
+import { DeleteImages, DeleteImagesByFilter } from './image.js';
 
 async function handler(event: SQSEvent) {
   if (!event.Records || !event.Records.length) return;
@@ -42,6 +43,10 @@ async function handler(event: SQSEvent) {
         output = await DeleteDeployment(task);
       } else if (task.type === 'UpdateSerialNumber') {
         output = await UpdateSerialNumber(task);
+      } else if (task.type === 'DeleteImages') {
+        output = await DeleteImages(task);
+      } else if (task.type === 'DeleteImagesByFilter') {
+        output = await DeleteImagesByFilter(task);
       } else {
         throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }

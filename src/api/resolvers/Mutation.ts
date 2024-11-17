@@ -148,6 +148,22 @@ export default {
     return context.models.Image.deleteImages(input, context);
   },
 
+  deleteImagesTask: async (
+    _: unknown,
+    { input }: gql.MutationDeleteImagesArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    return context.models.Image.deleteImagesTask(input, context);
+  },
+
+  deleteImagesByFilterTask: async (
+    _: unknown,
+    { input }: gql.MutationDeleteImagesByFilterTaskArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    return context.models.Image.deleteImagesByFilterTask(input, context);
+  },
+
   registerCamera: async (
     _: unknown,
     { input }: gql.MutationRegisterCameraArgs,
