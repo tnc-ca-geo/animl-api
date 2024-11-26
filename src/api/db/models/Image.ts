@@ -525,12 +525,11 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<UpdateWriteOpResult>  {
     try {
-      const res = await Image.updateMany({ 
-        "tags": input.tagId
-      }, {
-        "$pull": {
-          "tags": input.tagId
-        }
+      const projectId = context.user['curr_project']!;
+      const res = await Image.updateMany({
+        projectId: projectId
+      }, { 
+        $pull: { tags: new mongoose.Types.ObjectId(input.tagId) }
       });
       return res;
     } catch (err) {
