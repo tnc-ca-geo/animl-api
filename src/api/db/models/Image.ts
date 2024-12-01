@@ -520,6 +520,24 @@ export class ImageModel {
     }
   }
 
+  static async countProjectTag(
+    input: { tagId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<number>  {
+    try {
+      const projectId = context.user['curr_project']!;
+      const count = await Image.countDocuments({
+        projectId: projectId,
+        tags: new ObjectId(input.tagId)
+      });
+
+      return count;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async deleteProjectTag(
     input: { tagId: string },
     context: Pick<Context, 'user'>,

@@ -41,7 +41,7 @@ const MAX_LABEL_DELETE = 500;
 
 // The max number of tagged images that can be deleted
 // when removing a tag from a project
-const MAX_TAG_DELETE = 500;
+const MAX_TAG_DELETE = 50000;
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -635,6 +635,15 @@ export class ProjectModel {
       const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
       if (!tag) {
         throw new DeleteTagError('Tag not found on project');
+      }
+
+      const toRemoveCount = await ImageModel.countProjectTag({ tagId: input._id }, context);
+
+      if (toRemoveCount > MAX_TAG_DELETE) {
+        const msg =
+          `This tag is already in extensive use (>${MAX_TAG_DELETE} images) and cannot be ` +
+          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteTagError(msg);
       }
 
       await ImageModel.deleteProjectTag({ tagId: input._id }, context);
