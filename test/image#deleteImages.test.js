@@ -19,7 +19,7 @@ tape('Image: DeleteImages', async (t) => {
 
     Sinon.stub(ImageSchema, 'find').callsFake((command) => {
       t.deepEquals(command, { _id: { $in: ['project:123', 'project:223', 'project:323'] } });
-      mocks.push(`Image::find::${command._id.toString()}`);
+      mocks.push(`Image::find::${JSON.stringify(command._id)}`);
       const res = command._id.$in.map((id) => ({ _id: id }));
       return res;
     });
@@ -39,7 +39,7 @@ tape('Image: DeleteImages', async (t) => {
         _id: { $in: ['project:123', 'project:223', 'project:323'] },
         projectId: 'project',
       });
-      mocks.push(`Image::DeleteMany::${command._id.toString()}`);
+      mocks.push(`Image::DeleteMany::${JSON.stringify(command._id)}`);
       return { acknowledged: true, deletedCount: 3 };
     });
 
@@ -48,7 +48,7 @@ tape('Image: DeleteImages', async (t) => {
         _id: { $in: ['project:123', 'project:223', 'project:323'] },
         projectId: 'project',
       });
-      mocks.push(`ImageAttempt::DeleteMany::${command._id.toString()}`);
+      mocks.push(`ImageAttempt::DeleteMany::${JSON.stringify(command._id)}`);
       return { acknowledged: true, deletedCount: 3 };
     });
 
@@ -56,7 +56,7 @@ tape('Image: DeleteImages', async (t) => {
       t.deepEquals(command, {
         image: { $in: ['project:123', 'project:223', 'project:323'] },
       });
-      mocks.push(`ImageError::DeleteMany::${command.image.toString()}`);
+      mocks.push(`ImageError::DeleteMany::${JSON.stringify(command.image)}`);
       return { acknowledged: true, deletedCount: 3 };
     });
 
@@ -90,14 +90,13 @@ tape('Image: DeleteImages', async (t) => {
   } catch (err) {
     t.error(err);
   }
-  console.log(mocks);
   t.deepEquals(mocks.sort(), [
-    'Image::Find::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
+    'Image::find::{"$in":["project:123","project:223","project:323"]}',
     'mongoose::startSession',
-    'Image::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
-    'ImageAttempt::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
-    'ImageError::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
-    'S3::DeleteObjectCommand::animl-images-serving-dev',
+    'Image::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
+    'ImageAttempt::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
+    'ImageError::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
+    'S3::DeleteObjectsCommand::animl-images-serving-dev',
   ].sort());
 
   Sinon.restore();
@@ -112,7 +111,7 @@ tape('Image: DeleteImages - error', async (t) => {
 
     Sinon.stub(ImageSchema, 'find').callsFake((command) => {
       t.deepEquals(command, { _id: { $in: ['project:123', 'project:223', 'project:323'] } });
-      mocks.push(`Image::find::${command._id.toString()}`);
+      mocks.push(`Image::find::${JSON.stringify(command._id)}`);
       const res = command._id.$in.map((id) => ({ _id: id }));
       return res;
     });
@@ -132,7 +131,7 @@ tape('Image: DeleteImages - error', async (t) => {
         _id: { $in: ['project:123', 'project:223', 'project:323'] },
         projectId: 'project',
       });
-      mocks.push(`Image::DeleteMany::${command._id.toString()}`);
+      mocks.push(`Image::DeleteMany::${JSON.stringify(command._id)}`);
       return { acknowledged: true, deletedCount: 3 };
     });
 
@@ -141,12 +140,12 @@ tape('Image: DeleteImages - error', async (t) => {
         _id: { $in: ['project:123', 'project:223', 'project:323'] },
         projectId: 'project',
       });
-      mocks.push(`ImageAttempt::DeleteMany::${command._id.toString()}`);
+      mocks.push(`ImageAttempt::DeleteMany::${JSON.stringify(command._id)}`);
       return { acknowledged: true, deletedCount: 3 };
     });
 
     Sinon.stub(ImageErrorSchema, 'deleteMany').callsFake((command) => {
-      mocks.push(`ImageError::DeleteMany::${command.image}`);
+      mocks.push(`ImageError::DeleteMany::${JSON.stringify(command.image)}`);
       if (command.image === 'project:323') {
         return Promise.reject(new Error('Network Error'));
       } else {
@@ -167,7 +166,6 @@ tape('Image: DeleteImages - error', async (t) => {
         curr_project: 'project'
       }
     });
-    console.log(res);
     t.equals(res.isOk, false);
     t.equals(res.errors.length, 1);
   } catch (err) {
@@ -175,11 +173,11 @@ tape('Image: DeleteImages - error', async (t) => {
   }
 
   t.deepEquals(mocks.sort(), [
-    'Image::Find::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
+    'Image::find::{"$in":["project:123","project:223","project:323"]}',
     'mongoose::startSession',
-    'Image::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
-    'ImageAttempt::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
-    'ImageError::DeleteMany::{ \'$in\': [ \'project: 123\', \'project: 223\', \'project: 323\' ] }',
+    'Image::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
+    'ImageAttempt::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
+    'ImageError::DeleteMany::{"$in":["project:123","project:223","project:323"]}',
   ].sort());
 
   Sinon.restore();
