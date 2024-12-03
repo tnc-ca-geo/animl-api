@@ -7,6 +7,7 @@ import GraphQLError, {
   DeleteLabelError,
   ForbiddenError,
   DBValidationError,
+  DeleteTagError,
 } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project, {
@@ -15,6 +16,7 @@ import Project, {
   IAutomationRule,
   ProjectLabelSchema,
   ProjectSchema,
+  ProjectTagSchema,
   ViewSchema,
 } from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -36,6 +38,10 @@ import { TaskSchema } from '../schemas/Task.js';
 // The max number of labeled images that can be deleted
 // when removing a label from a project
 const MAX_LABEL_DELETE = 500;
+
+// The max number of tagged images that can be deleted
+// when removing a tag from a project
+const MAX_TAG_DELETE = 50000;
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -587,6 +593,95 @@ export class ProjectModel {
     }
   }
 
+  static async createTag(
+    input: gql.CreateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      if (!project.tags) {
+        project.tags = [] as any as mongoose.Types.DocumentArray<ProjectTagSchema>;
+      }
+
+      if (
+        project.tags.filter((tag) => {
+          return tag.name.toLowerCase() === input.name.toLowerCase();
+        }).length
+      ) {
+        throw new DBValidationError(
+          'A tag with that name already exists, avoid creating tags with duplicate names',
+        );
+      }
+
+      project.tags.push(input);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteTag(
+    input: gql.DeleteProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new DeleteTagError('Tag not found on project');
+      }
+
+      const toRemoveCount = await ImageModel.countProjectTag({ tagId: input._id }, context);
+
+      if (toRemoveCount > MAX_TAG_DELETE) {
+        const msg =
+          `This tag is already in extensive use (>${MAX_TAG_DELETE} images) and cannot be ` +
+          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteTagError(msg);
+      }
+
+      await ImageModel.deleteProjectTag({ tagId: input._id }, context);
+
+      project.tags.splice(project.tags.indexOf(tag), 1);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async updateTag(
+    input: gql.UpdateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      const tag = project.tags.find((l) => l._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new NotFoundError('Tag not found on project');
+      }
+
+      Object.assign(tag, input);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Pick<Context, 'user'>,
@@ -698,6 +793,21 @@ export default class AuthedProjectModel extends BaseAuthedModel {
 
   createProject(...args: MethodParams<typeof ProjectModel.createProject>) {
     return ProjectModel.createProject(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  deleteTag(...args: MethodParams<typeof ProjectModel.deleteTag>) {
+    return ProjectModel.deleteTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  createTag(...args: MethodParams<typeof ProjectModel.createTag>) {
+    return ProjectModel.createTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  updateTag(...args: MethodParams<typeof ProjectModel.updateTag>) {
+    return ProjectModel.updateTag(...args);
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)

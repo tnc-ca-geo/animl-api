@@ -24,5 +24,6 @@ export default /* GraphQL */ `
     reviewed: Boolean
     objects: [Object!]
     comments: [ImageComment!]
+    tags: [ID!]
   }
 `;

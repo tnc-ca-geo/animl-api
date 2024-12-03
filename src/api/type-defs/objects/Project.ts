@@ -22,6 +22,12 @@ export default /* GraphQL */ `
     ml: Boolean!
   }
 
+  type ProjectTag {
+    _id: ID!
+    name: String!
+    color: String!
+  }
+
   type Project {
     _id: String!
     name: String!
@@ -31,6 +37,7 @@ export default /* GraphQL */ `
     automationRules: [AutomationRule!]
     cameraConfigs: [CameraConfig!]
     labels: [ProjectLabel!]
+    tags: [ProjectTag!]
     availableMLModels: [String!]
   }
 `;

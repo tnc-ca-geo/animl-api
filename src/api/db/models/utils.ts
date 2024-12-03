@@ -33,6 +33,18 @@ export function buildImgUrl(image: ImageSchema, config: Config, size = 'original
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
 }
 
+export function buildTagPipeline(tags: string[]): PipelineStage[] {
+  const pipeline: PipelineStage[] = [];
+
+  pipeline.push({
+    $match: {
+      tags: { $in: tags }
+    }
+  });
+
+  return pipeline
+}
+
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
 
