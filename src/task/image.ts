@@ -3,6 +3,8 @@ import { ImageModel } from '../api/db/models/Image.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
 
+const IMAGE_DELETION_BATCH_SIZE = 300;
+
 export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFilterTaskInput>) {
   /**
    * Deletes images that match the inputted filters in batches of 100.
@@ -12,7 +14,7 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   let images = await ImageModel.queryByFilter(
-    { filters: task.config.filters, limit: 100 },
+    { filters: task.config.filters, limit: IMAGE_DELETION_BATCH_SIZE },
     context,
   );
   while (images.results.length > 0) {
@@ -20,7 +22,7 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
     await ImageModel.deleteImages({ imageIds: batch }, context);
     if (images.hasNext) {
       images = await ImageModel.queryByFilter(
-        { filters: task.config.filters, limit: 100, next: images.next },
+        { filters: task.config.filters, limit: IMAGE_DELETION_BATCH_SIZE, next: images.next },
         context,
       );
     } else {
@@ -41,7 +43,7 @@ export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   const imagesToDelete = task.config.imageIds?.slice() ?? [];
   while (imagesToDelete.length > 0) {
-    const batch = imagesToDelete.splice(0, 100);
+    const batch = imagesToDelete.splice(0, IMAGE_DELETION_BATCH_SIZE);
     await ImageModel.deleteImages({ imageIds: batch }, context);
   }
   return { imageIds: task.config.imageIds };

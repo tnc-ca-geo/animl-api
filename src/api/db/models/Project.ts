@@ -471,7 +471,7 @@ export class ProjectModel {
         { retries: 2 },
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -530,7 +530,7 @@ export class ProjectModel {
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       if (Object.keys(input.diffs).includes('startDate')) {
-        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       }
       return camConfig;
     } catch (err) {
@@ -585,7 +585,7 @@ export class ProjectModel {
         { retries: 2 },
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
