@@ -190,6 +190,7 @@ export class ImageModel {
         } finally {
           // Ending the session
           await session.endSession();
+          console.timeEnd('delete-images mongo records');
         }
       }
       console.timeEnd('delete-images mongo records');
@@ -216,9 +217,10 @@ export class ImageModel {
         errors: s3Res.Errors?.map((e) => e.toString()) ?? [],
       };
     } catch (err) {
-      console.log(err);
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
+      return {
+        isOk: false,
+        errors: [String(err)],
+      };
     }
   }
 
