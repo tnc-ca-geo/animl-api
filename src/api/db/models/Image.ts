@@ -144,16 +144,15 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardErrorPayload> {
     try {
+      // Current limit of image deletion due to constraints of s3 deleteObjects
+      if (input.imageIds!.length > 100) {
+        throw new Error('Cannot delete more than 100 images at a time');
+      }
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
       console.time('delete-images total');
       console.time('delete-images mongo records');
       const images = await Image.find({ _id: { $in: input.imageIds! } });
-
-      // Current limit of image deletion due to constraints of s3 deleteObjects
-      if (images.length > 100) {
-        throw new Error('Cannot delete more than 100 images at a time');
-      }
 
       if (images.length !== 0) {
         const session = await mongoose.startSession();
