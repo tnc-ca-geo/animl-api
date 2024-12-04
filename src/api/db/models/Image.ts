@@ -150,6 +150,11 @@ export class ImageModel {
       console.time('delete-images mongo records');
       const images = await Image.find({ _id: { $in: input.imageIds! } });
 
+      // Current limit of image deletion due to constraints of s3 deleteObjects
+      if (images.length > 100) {
+        throw new Error('Cannot delete more than 100 images at a time');
+      }
+
       if (images.length !== 0) {
         const session = await mongoose.startSession();
         session.startTransaction();
