@@ -55,6 +55,8 @@ import { TaskSchema } from '../schemas/Task.js';
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
+  static readonly DELETE_IMAGES_BATCH_SIZE = 300;
+
   static async countImages(
     input: gql.QueryImagesCountInput,
     context: Pick<Context, 'user'>,
@@ -145,7 +147,7 @@ export class ImageModel {
   ): Promise<gql.StandardErrorPayload> {
     try {
       // Current limit of image deletion due to constraints of s3 deleteObjects
-      if (input.imageIds!.length > 300) {
+      if (input.imageIds!.length > this.DELETE_IMAGES_BATCH_SIZE) {
         throw new Error('Cannot delete more than 300 images at a time');
       }
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
