@@ -145,8 +145,8 @@ export class ImageModel {
   ): Promise<gql.StandardErrorPayload> {
     try {
       // Current limit of image deletion due to constraints of s3 deleteObjects
-      if (input.imageIds!.length > 100) {
-        throw new Error('Cannot delete more than 100 images at a time');
+      if (input.imageIds!.length > 300) {
+        throw new Error('Cannot delete more than 300 images at a time');
       }
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
