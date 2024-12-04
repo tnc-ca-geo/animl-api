@@ -197,7 +197,6 @@ export class ImageModel {
           console.timeEnd('delete-images mongo records');
         }
       }
-      console.timeEnd('delete-images mongo records');
 
       const keys: { Key: string }[] = [];
       console.time('delete-images s3 records');
