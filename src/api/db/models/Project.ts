@@ -250,18 +250,13 @@ export class ProjectModel {
           console.log('originalProject: ', project);
 
           console.log('Deleteing camera config with _id: ', input.cameraId);
-          // NOTE: using findOneAndUpdate() with an aggregation pipeline to update
-          // Projects to preserve atomicity of the operation and avoid race conditions
-          // during bulk upload image ingestion.
-          // https://github.com/tnc-ca-geo/animl-api/issues/112
+          // NOTE: using findOneAndUpdate() to update Projects to preserve atomicity of the
+          // operation and avoid race conditions
           const updatedProject = await Project.findOneAndUpdate(
             { _id: context.user['curr_project'] },
-            [
-              { $addFields: { camIds: '$cameraConfigs._id' } },
-              {
-                $pull: { cameraConfigs: { _id: input.cameraId } },
-              },
-            ],
+            {
+              $pull: { cameraConfigs: { _id: input.cameraId } },
+            },
             { returnDocument: 'after' },
           );
 
