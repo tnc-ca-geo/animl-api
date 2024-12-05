@@ -188,13 +188,13 @@ export default {
     return context.models.Camera.updateSerialNumber(input, context);
   },
 
-  deleteCamera: async (
+  deleteCameraConfig: async (
     _: unknown,
     { input }: gql.MutationDeleteCameraArgs,
     context: Context,
   ): Promise<gql.Task> => {
     console.log('Mutation.deleteCamera input:', input);
-    return context.models.Camera.deleteCamera(input, context);
+    return context.models.Camera.deleteCameraConfig(input, context);
   },
 
   createProject: async (
