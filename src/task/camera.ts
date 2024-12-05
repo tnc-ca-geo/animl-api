@@ -2,6 +2,8 @@ import { type User } from '../api/auth/authorization.js';
 import { CameraModel } from '../api/db/models/Camera.js';
 import { type TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
+import { ProjectModel } from '../api/db/models/Project.js';
+import { DeleteImagesByFilter } from './image.js';
 
 export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialNumberInput>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
@@ -10,5 +12,43 @@ export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialN
 
 export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
-  return await CameraModel.deleteCamera(task.config, context);
+
+  console.log('CameraModel.deleteCameraConfig - input: ', task.config);
+  try {
+    // Step 1: delete deployments from views
+    await ProjectModel.removeCameraFromViews(
+      {
+        cameraId: task.config.cameraId,
+      },
+      context,
+    );
+    // Step 2: delete camera record from project
+    await ProjectModel.deleteCameraConfig(
+      {
+        cameraId: task.config.cameraId,
+      },
+      context,
+    );
+
+    // TODO: Step3: delete images associated with this camera
+    await DeleteImagesByFilter({
+      projectId: task.projectId,
+      config: {
+        filters: {
+          cameras: [task.config.cameraId],
+        },
+      },
+      type: 'DeleteImagesByFilter',
+      user: task.user,
+    });
+    // Step 4: unregister camera
+    if (
+      (await CameraModel.getWirelessCameras({ _ids: [task.config.cameraId] }, context)).length > 0
+    ) {
+      await CameraModel.unregisterCamera({ cameraId: task.config.cameraId }, context);
+    }
+  } catch (err) {
+    return { isOk: false, error: err };
+  }
+  return { isOk: true };
 }
