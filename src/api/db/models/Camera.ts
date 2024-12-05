@@ -402,40 +402,6 @@ export class CameraModel {
       throw new InternalServerError(err as string);
     }
   }
-
-  // NOTE: this method is called by the async task handler
-  static async deleteCameraConfig(
-    input: gql.DeleteCameraInput,
-    context: Pick<Context, 'user'>,
-  ): Promise<gql.StandardPayload> {
-    console.log('CameraModel.deleteCameraConfig - input: ', input);
-    try {
-      // Step 1: delete deployments from views
-      await ProjectModel.removeCameraFromViews(
-        {
-          cameraId: input.cameraId,
-        },
-        context,
-      );
-      // Step 2: delete camera record from project
-      await ProjectModel.deleteCameraConfig(
-        {
-          cameraId: input.cameraId,
-        },
-        context,
-      );
-
-      // TODO: Step3: delete images associated with this camera
-      // Step 4: unregister camera
-      if ((await CameraModel.getWirelessCameras({ _ids: [input.cameraId] }, context)).length > 0) {
-        await CameraModel.unregisterCamera({ cameraId: input.cameraId }, context);
-      }
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
-    return { isOk: true };
-  }
 }
 
 export default class AuthedCameraModel extends BaseAuthedModel {
