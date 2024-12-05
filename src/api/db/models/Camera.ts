@@ -404,11 +404,11 @@ export class CameraModel {
   }
 
   // NOTE: this method is called by the async task handler
-  static async deleteCamera(
+  static async deleteCameraConfig(
     input: gql.DeleteCameraInput,
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
-    console.log('CameraModel.deleteCamera - input: ', input);
+    console.log('CameraModel.deleteCameraConfig - input: ', input);
     try {
       // Step 1: delete deployments from views
       await ProjectModel.removeCameraFromViews(
@@ -463,7 +463,7 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_DELETE_CAMERA_ROLES)
-  async deleteCamera(...args: MethodParams<typeof CameraModel.deleteCameraTask>) {
+  async deleteCameraConfig(...args: MethodParams<typeof CameraModel.deleteCameraTask>) {
     return await CameraModel.deleteCameraTask(...args);
   }
 }
