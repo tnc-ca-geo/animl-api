@@ -172,7 +172,7 @@ export class ProjectModel {
 
   static async createCameraConfig(
     input: { projectId: string; cameraId: string },
-    context: Pick<Context, 'user'>,
+    _: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
     const { projectId, cameraId } = input;
@@ -238,6 +238,39 @@ export class ProjectModel {
     }
   }
 
+  static async deleteCameraConfig(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+          console.log('originalProject: ', project);
+
+          console.log('Deleteing camera config with _id: ', input.cameraId);
+          // NOTE: using findOneAndUpdate() to update Projects to preserve atomicity of the
+          // operation and avoid race conditions
+          const updatedProject = await Project.findOneAndUpdate(
+            { _id: context.user['curr_project'] },
+            {
+              $pull: { cameraConfigs: { _id: input.cameraId } },
+            },
+            { returnDocument: 'after' },
+          );
+
+          console.log('updatedProject: ', updatedProject);
+          return updatedProject!;
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createView(
     input: gql.CreateViewInput,
     context: Pick<Context, 'user'>,
@@ -288,7 +321,7 @@ export class ProjectModel {
             bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
-          // appy updates & save project
+          // apply updates & save project
           Object.assign(view, input.diffs);
           const updatedProj = await project.save();
           return updatedProj.views.find((v): v is HydratedSingleSubdocument<ViewSchema> =>
@@ -324,6 +357,50 @@ export class ProjectModel {
           project.views = project.views.filter(
             (v) => !idMatch(v._id!, input.viewId),
           ) as mongoose.Types.DocumentArray<ViewSchema>;
+          return project.save();
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async removeCameraFromViews(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          // find view
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+          console.log('originalProject: ', project);
+
+          // get all deployment ids for the camera
+          const projectDeps = project.cameraConfigs
+            .find((cc) => cc._id === input.cameraId)
+            ?.deployments.map((d) => d._id.toString());
+
+          // finds all views that filter for the cameraId or any of the deployment ids
+          const viewsWithCamera = project.views.filter((v) => {
+            // get all deployment ids from the views
+            const viewDeps = v.filters.deployments;
+            return (
+              v.filters.cameras?.includes(input.cameraId) ||
+              (viewDeps && projectDeps && projectDeps.some((d) => viewDeps.includes(d)))
+            );
+          });
+          project.views.forEach((v) => {
+            if (viewsWithCamera.includes(v)) {
+              v.filters.cameras = v.filters.cameras?.filter((c) => c === input.cameraId);
+              v.filters.deployments = v.filters.deployments?.filter((d) => {
+                projectDeps?.includes(d);
+              });
+            }
+          });
           return project.save();
         },
         { retries: 2 },
