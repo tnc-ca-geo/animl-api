@@ -36,6 +36,7 @@ export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
       config: {
         filters: {
           cameras: [task.config.cameraId],
+          labels: null,
         },
       },
       type: 'DeleteImagesByFilter',
