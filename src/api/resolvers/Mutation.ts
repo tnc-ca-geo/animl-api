@@ -190,7 +190,7 @@ export default {
 
   deleteCameraConfig: async (
     _: unknown,
-    { input }: gql.MutationDeleteCameraArgs,
+    { input }: gql.MutationDeleteCameraConfigArgs,
     context: Context,
   ): Promise<gql.Task> => {
     console.log('Mutation.deleteCamera input:', input);
