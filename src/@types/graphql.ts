@@ -606,7 +606,7 @@ export type Mutation = {
   createUpload?: Maybe<CreateUploadPayload>;
   createUser?: Maybe<StandardPayload>;
   createView?: Maybe<CreateViewPayload>;
-  deleteCamera?: Maybe<Task>;
+  deleteCameraConfig?: Maybe<Task>;
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
   deleteImageTag?: Maybe<ImageTagsPayload>;
@@ -727,7 +727,7 @@ export type MutationCreateViewArgs = {
 };
 
 
-export type MutationDeleteCameraArgs = {
+export type MutationDeleteCameraConfigArgs = {
   input: DeleteCameraInput;
 };
 
