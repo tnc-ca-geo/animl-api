@@ -249,7 +249,7 @@ export class ProjectModel {
           if (!project) throw new NotFoundError('Project not found');
           console.log('originalProject: ', project);
 
-          console.log('Deleteing camera config with _id: ', input.cameraId);
+          console.log('Deleting camera config with _id: ', input.cameraId);
           // NOTE: using findOneAndUpdate() to update Projects to preserve atomicity of the
           // operation and avoid race conditions
           const updatedProject = await Project.findOneAndUpdate(
@@ -377,30 +377,29 @@ export class ProjectModel {
           // find view
           let project = await Project.findOne({ _id: context.user['curr_project'] });
           if (!project) throw new NotFoundError('Project not found');
-          console.log('originalProject: ', project);
 
           // get all deployment ids for the camera
-          const projectDeps = project.cameraConfigs
-            .find((cc) => cc._id === input.cameraId)
-            ?.deployments.map((d) => d._id.toString());
+          const projectDeps =
+            project.cameraConfigs
+              .find((cc) => cc._id === input.cameraId)
+              ?.deployments.map((d) => d._id.toString()) ?? [];
 
-          // finds all views that filter for the cameraId or any of the deployment ids
-          const viewsWithCamera = project.views.filter((v) => {
-            // get all deployment ids from the views
-            const viewDeps = v.filters.deployments;
-            return (
+          console.log('deployments to be removed from views: ', projectDeps);
+
+          project.views.forEach((v, index) => {
+            // if view filters has the camera id or any of the deployment ids
+            if (
               v.filters.cameras?.includes(input.cameraId) ||
-              (viewDeps && projectDeps && projectDeps.some((d) => viewDeps.includes(d)))
-            );
-          });
-          project.views.forEach((v) => {
-            if (viewsWithCamera.includes(v)) {
+              projectDeps.some((d) => v.filters.deployments?.includes(d))
+            ) {
               v.filters.cameras = v.filters.cameras?.filter((c) => c === input.cameraId);
-              v.filters.deployments = v.filters.deployments?.filter((d) => {
-                projectDeps?.includes(d);
-              });
+              v.filters.deployments = v.filters.deployments?.filter(
+                (d) => !projectDeps.includes(d),
+              );
+              project.views[index] = v;
             }
           });
+
           return project.save();
         },
         { retries: 2 },
