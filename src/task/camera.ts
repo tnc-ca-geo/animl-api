@@ -30,7 +30,7 @@ export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
       context,
     );
 
-    // TODO: Step3: delete images associated with this camera
+    // Step3: delete images associated with this camera
     await DeleteImagesByFilter({
       projectId: task.projectId,
       config: {
