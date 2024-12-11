@@ -374,7 +374,7 @@ export class ProjectModel {
     try {
       return await retry(
         async () => {
-          // find view
+          // find project
           let project = await Project.findOne({ _id: context.user['curr_project'] });
           if (!project) throw new NotFoundError('Project not found');
 
