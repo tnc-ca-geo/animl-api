@@ -256,6 +256,10 @@ export type CreateViewPayload = {
   view?: Maybe<View>;
 };
 
+export type DeleteCameraInput = {
+  cameraId: Scalars['ID']['input'];
+};
+
 export type DeleteDeploymentInput = {
   cameraId: Scalars['ID']['input'];
   deploymentId: Scalars['ID']['input'];
@@ -602,6 +606,7 @@ export type Mutation = {
   createUpload?: Maybe<CreateUploadPayload>;
   createUser?: Maybe<StandardPayload>;
   createView?: Maybe<CreateViewPayload>;
+  deleteCameraConfig?: Maybe<Task>;
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
   deleteImageTag?: Maybe<ImageTagsPayload>;
@@ -719,6 +724,11 @@ export type MutationCreateUserArgs = {
 
 export type MutationCreateViewArgs = {
   input: CreateViewInput;
+};
+
+
+export type MutationDeleteCameraConfigArgs = {
+  input: DeleteCameraInput;
 };
 
 

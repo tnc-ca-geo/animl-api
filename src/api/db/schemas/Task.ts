@@ -20,6 +20,7 @@ const TaskSchema = new Schema({
       'UpdateSerialNumber',
       'DeleteImages',
       'DeleteImagesByFilter',
+      'DeleteCamera',
     ],
   },
   status: {
