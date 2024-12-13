@@ -48,7 +48,7 @@ export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
     if (
       (await CameraModel.getWirelessCameras({ _ids: [task.config.cameraId] }, context)).length > 0
     ) {
-      await CameraModel.unregisterCamera({ cameraId: task.config.cameraId }, context);
+      await CameraModel.removeProjectRegistration({ cameraId: task.config.cameraId }, context);
     }
   } catch (err) {
     return { isOk: false, error: err };
