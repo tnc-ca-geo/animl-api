@@ -38,11 +38,11 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
 
   pipeline.push({
     $match: {
-      tags: { $in: tags }
-    }
+      tags: { $in: tags },
+    },
   });
 
-  return pipeline
+  return pipeline;
 }
 
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
@@ -194,7 +194,7 @@ export function buildPipeline(
   }
 
   // match reviewedFilter
-  if (reviewed !== null) {
+  if (reviewed !== null && reviewed !== undefined) {
     pipeline.push({
       $match: {
         reviewed: reviewed,

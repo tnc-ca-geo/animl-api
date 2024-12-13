@@ -15,9 +15,14 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
     { filters: task.config.filters, limit: ImageModel.DELETE_IMAGES_BATCH_SIZE },
     context,
   );
+  const errors = [];
+
   while (images.results.length > 0) {
     const batch = images.results.map((image) => image._id);
-    await ImageModel.deleteImages({ imageIds: batch }, context);
+    const res = await ImageModel.deleteImages({ imageIds: batch }, context);
+    if (res.errors) {
+      errors.push(...res.errors);
+    }
     if (images.hasNext) {
       images = await ImageModel.queryByFilter(
         {
@@ -32,7 +37,7 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
     }
   }
 
-  return { filters: task.config.filters };
+  return { filters: task.config.filters, errors: errors };
 }
 
 export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
@@ -44,9 +49,13 @@ export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   const imagesToDelete = task.config.imageIds?.slice() ?? [];
+  const errors = [];
   while (imagesToDelete.length > 0) {
     const batch = imagesToDelete.splice(0, ImageModel.DELETE_IMAGES_BATCH_SIZE);
-    await ImageModel.deleteImages({ imageIds: batch }, context);
+    const res = await ImageModel.deleteImages({ imageIds: batch }, context);
+    if (res.errors) {
+      errors.push(...res.errors);
+    }
   }
-  return { imageIds: task.config.imageIds };
+  return { imageIds: task.config.imageIds, errors: errors };
 }
