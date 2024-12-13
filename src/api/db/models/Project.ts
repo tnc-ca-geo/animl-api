@@ -392,7 +392,7 @@ export class ProjectModel {
               v.filters.cameras?.includes(input.cameraId) ||
               projectDeps.some((d) => v.filters.deployments?.includes(d))
             ) {
-              v.filters.cameras = v.filters.cameras?.filter((c) => c === input.cameraId);
+              v.filters.cameras = v.filters.cameras?.filter((c) => c !== input.cameraId);
               v.filters.deployments = v.filters.deployments?.filter(
                 (d) => !projectDeps.includes(d),
               );
