@@ -6,6 +6,7 @@ import retry from 'async-retry';
 import {
   WRITE_CAMERA_REGISTRATION_ROLES,
   WRITE_CAMERA_SERIAL_NUMBER_ROLES,
+  WRITE_DELETE_CAMERA_ROLES,
 } from '../../auth/roles.js';
 import { ProjectModel } from './Project.js';
 import { BaseAuthedModel, MethodParams, roleCheck, idMatch } from './utils.js';
@@ -236,6 +237,69 @@ export class CameraModel {
     }
   }
 
+  // NOTE: this function is called by the async task handler as part of the delete camera task
+  static async removeProjectRegistration(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<{ wirelessCameras: WirelessCameraSchema[]; project?: ProjectSchema }> {
+    const projectId = context.user['curr_project'];
+
+    try {
+      const wirelessCameras = await WirelessCamera.find();
+      const cam = wirelessCameras.find((c) => idMatch(c._id, input.cameraId));
+
+      if (!cam) {
+        const msg = `Couldn't find camera record for camera ${input.cameraId}`;
+        throw new CameraRegistrationError(msg);
+      }
+      const activeReg = cam.projRegistrations.find((pr) => pr.active);
+
+      // if active registration === curr_project,
+      // set default_project registration to active
+      if (activeReg?.projectId === projectId) {
+        const defaultProjReg = cam.projRegistrations.find(
+          (pr) => pr.projectId === 'default_project',
+        );
+        if (defaultProjReg) defaultProjReg.active = true;
+        else {
+          cam.projRegistrations.push({
+            _id: new ObjectId(),
+            projectId: 'default_project',
+            active: true,
+          });
+        }
+      }
+      const currProjIndex = cam.projRegistrations.findIndex((pr) => pr.projectId === projectId);
+      cam.projRegistrations.splice(currProjIndex, 1);
+      await cam.save();
+
+      // make sure there's a Project.cameraConfig record for this camera
+      // in the default_project and create one if not
+      let defaultProj = await Project.findOne({ _id: 'default_project' });
+      if (!defaultProj) {
+        throw new CameraRegistrationError('Could not find default project');
+      }
+
+      let addedNewCamConfig = false;
+      const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));
+      if (!camConfig) {
+        defaultProj = (await ProjectModel.createCameraConfig(
+          {
+            projectId: 'default_project',
+            cameraId: input.cameraId,
+          },
+          context,
+        ))!;
+        addedNewCamConfig = true;
+      }
+
+      return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj }) };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async updateSerialNumberTask(
     input: gql.UpdateCameraSerialNumberInput,
     context: Pick<Context, 'user' | 'config'>,
@@ -380,6 +444,27 @@ export class CameraModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  static async deleteCameraTask(
+    input: gql.DeleteCameraInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      console.log('CameraModel.deleteCameraTask - input: ', input);
+      return await TaskModel.create(
+        {
+          type: 'DeleteCamera',
+          projectId: context.user['curr_project'],
+          user: context.user.sub,
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 }
 
 export default class AuthedCameraModel extends BaseAuthedModel {
@@ -404,6 +489,11 @@ export default class AuthedCameraModel extends BaseAuthedModel {
   @roleCheck(WRITE_CAMERA_SERIAL_NUMBER_ROLES)
   async updateSerialNumber(...args: MethodParams<typeof CameraModel.updateSerialNumberTask>) {
     return await CameraModel.updateSerialNumberTask(...args);
+  }
+
+  @roleCheck(WRITE_DELETE_CAMERA_ROLES)
+  async deleteCameraConfig(...args: MethodParams<typeof CameraModel.deleteCameraTask>) {
+    return await CameraModel.deleteCameraTask(...args);
   }
 }
 

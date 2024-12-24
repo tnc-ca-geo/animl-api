@@ -18,7 +18,7 @@ export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
 
   const project = await ProjectModel.queryById(context.user['curr_project']);
   const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
-
+  console.log('GetStats pipeline:', pipeline);
   // stream in images from MongoDB
   for await (const img of Image.aggregate<ImageSchema>(pipeline)) {
     // increment imageCount
