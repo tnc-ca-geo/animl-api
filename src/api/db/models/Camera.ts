@@ -237,6 +237,7 @@ export class CameraModel {
     }
   }
 
+  // NOTE: this function is called by the async task handler as part of the delete camera task
   static async removeProjectRegistration(
     input: { cameraId: string },
     context: Pick<Context, 'user'>,
