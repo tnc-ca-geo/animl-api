@@ -251,9 +251,6 @@ export class CameraModel {
         const msg = `Couldn't find camera record for camera ${input.cameraId}`;
         throw new CameraRegistrationError(msg);
       }
-      let addedNewCamConfig = false;
-      let defaultProj: Maybe<ProjectSchema> = null;
-
       const activeReg = cam.projRegistrations.find((pr) => pr.active);
 
       // if active registration === curr_project,
@@ -262,29 +259,8 @@ export class CameraModel {
         const defaultProjReg = cam.projRegistrations.find(
           (pr) => pr.projectId === 'default_project',
         );
-        if (defaultProjReg) {
-          defaultProjReg.active = true;
-        } else {
-          // make sure there's a Project.cameraConfig record for this camera
-          // in the default_project and create one if not
-          defaultProj = await Project.findOne({ _id: 'default_project' });
-          if (!defaultProj) {
-            throw new CameraRegistrationError('Could not find default project');
-          }
-
-          const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));
-          if (!camConfig) {
-            defaultProj = (await ProjectModel.createCameraConfig(
-              {
-                projectId: 'default_project',
-                cameraId: input.cameraId,
-              },
-              context,
-            ))!;
-            addedNewCamConfig = true;
-          }
-
-          // create new project registration to default project
+        if (defaultProjReg) defaultProjReg.active = true;
+        else {
           cam.projRegistrations.push({
             _id: new ObjectId(),
             projectId: 'default_project',
@@ -296,7 +272,27 @@ export class CameraModel {
       cam.projRegistrations.splice(currProjIndex, 1);
       await cam.save();
 
-      return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj! }) };
+      // make sure there's a Project.cameraConfig record for this camera
+      // in the default_project and create one if not
+      let defaultProj = await Project.findOne({ _id: 'default_project' });
+      if (!defaultProj) {
+        throw new CameraRegistrationError('Could not find default project');
+      }
+
+      let addedNewCamConfig = false;
+      const camConfig = defaultProj.cameraConfigs.find((cc) => idMatch(cc._id, input.cameraId));
+      if (!camConfig) {
+        defaultProj = (await ProjectModel.createCameraConfig(
+          {
+            projectId: 'default_project',
+            cameraId: input.cameraId,
+          },
+          context,
+        ))!;
+        addedNewCamConfig = true;
+      }
+
+      return { wirelessCameras, ...(addedNewCamConfig && { project: defaultProj }) };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
