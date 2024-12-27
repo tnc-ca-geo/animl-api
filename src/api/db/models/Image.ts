@@ -9,7 +9,7 @@ import GraphQLError, {
   NotFoundError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
-import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
+import mongoose, { HydratedDocument, ObjectId, UpdateWriteOpResult } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
@@ -1076,6 +1076,113 @@ export class ImageModel {
       }),
     );
   }
+
+  /**
+   * (n: n-m-q) Query for any images that have objects that have the label
+   * (m: n-q) Filter images that only have a single label (image, objects[])
+   * (q: n-m) Filter remaining images for images with objects that have the label as the validated label (image, objects[])
+   * 
+   * 1. For m, delete object
+   * 2. For q: remove label and unlock object
+   * 3. For remaining, remove label and do nothing
+   */
+  static async deleteLabelsFromImages(
+    input: { labelId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ImageSchema>[]> {
+    const allImagesWithLabel = await Image.find({
+      'projectId': context.user['curr_project']!,
+      'objects.labels.labelId': input.labelId,
+    });
+
+    // Objects with single label which is input.labelId
+    const removableObjects = allImagesWithLabel.reduce((acc, img) => {
+      const matchingObjects = img.objects
+        .filter((obj) => obj.labels.length === 1 && obj.labels[0].labelId === input.labelId)
+        .map((obj) => obj._id);
+      return [...acc, ...matchingObjects];
+    }, [] as mongoose.Types.ObjectId[]);
+
+    // Locked objects with > 1 label where firstValidated is input.labelId
+    const unlockableObjects = allImagesWithLabel.reduce((acc, img) => {
+      const matchingObjects = img.objects
+        .filter((obj) => {
+          // If the object doesn't have > 1 labels or it is not locked, skip it
+          if (obj.labels.length <= 1 || obj.locked === true) {
+            return false;
+          } 
+          const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
+          return (firstValidated !== undefined && firstValidated.labelId === input.labelId)
+        })
+        .map((obj) => obj._id);
+      return [...acc, ...matchingObjects];
+    }, [] as mongoose.Types.ObjectId[])
+
+    // Remove label from all images in the project.  We will deal with
+    // cleaning up the objects afterwards.
+    Image.updateMany(
+      { 
+        projectId: context.user['curr_project']!,
+        'objects.labels': input.labelId
+      },
+      {
+        $pull: {
+          'objects.labels': input.labelId
+        }
+      }
+    );
+
+    // Remove objects which previously had only a single label which was
+    // the label that was removed.
+    //
+    // If we guarauntee that objects can't have 0 labels, we could make this
+    // a query to just pull any object with 0 labels because it allows us to
+    // assume that any object with 0 labels is a result of us removing the label
+    // in the previous query.
+    //
+    // For safety's sake, remove an object with an _id that's in the array
+    // we filtered earlier.
+    Image.updateMany(
+      { 
+        projectId: context.user['curr_project']!,
+        'objects.labels': input.labelId
+      },
+      {
+        $pullAll: {
+          'objects._id': removableObjects
+        }
+      }
+    );
+
+    // This is going to update every object on these objects 
+    // not just the ones that we specify.
+    //
+    // This might be a mongodb limitation that forces us to do
+    // this unlock as individual queries.
+    //
+    // $elemMatch exists, but this will only return one object
+    // in the array.  If an image has multiple objects with the removed
+    // label, this operation will only apply to the first one.
+    //
+    // Individual queries will probably slow this down significantly.
+    Image.updateMany(
+      { 
+        projectId: context.user['curr_project']!,
+        'objects._id': {
+          $in: unlockableObjects
+        }
+      },
+      {
+        $set: {
+          'objects.locked': false
+        }
+      }
+    )
+
+    // TODO return something useful
+    return []
+  }
+
 
   /**
    * Apply a single label deletion operation - only to be called by deleteAnyLabels
