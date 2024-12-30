@@ -66,6 +66,14 @@ export default {
     return context.models.User.updateUser(input, context);
   },
 
+  resendTempPassword: async (
+    _: unknown,
+    { input }: gql.MutationResendTempPasswordArgs,
+    context: Context,
+  ): Promise<gql.StandardPayload> => {
+    return context.models.User.resendTempPassword(input, context);
+  },
+
   updateBatch: async (
     _: unknown,
     { input }: gql.MutationUpdateBatchArgs,
