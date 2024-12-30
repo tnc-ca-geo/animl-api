@@ -235,6 +235,31 @@ export class UserModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  /**
+   * Resend temp password email to a user
+   * @param input
+   * @param context
+   */
+  static async resendTempPassword(
+    input: gql.ResendTempPasswordInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<gql.StandardPayload> {
+    try {
+      const cognito = new Cognito.CognitoIdentityProviderClient();
+      await cognito.send(
+        new Cognito.AdminCreateUserCommand({
+          Username: input.username,
+          UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
+          MessageAction: 'RESEND',
+        }),
+      );
+      return { isOk: true };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 }
 
 export default class AuthedUserModel extends BaseAuthedModel {
@@ -256,6 +281,11 @@ export default class AuthedUserModel extends BaseAuthedModel {
   @roleCheck(MANAGE_USERS_ROLES)
   updateUser(...args: MethodParams<typeof UserModel.update>) {
     return UserModel.update(...args);
+  }
+
+  @roleCheck(MANAGE_USERS_ROLES)
+  resendTempPassword(...args: MethodParams<typeof UserModel.resendTempPassword>) {
+    return UserModel.resendTempPassword(...args);
   }
 }
 
