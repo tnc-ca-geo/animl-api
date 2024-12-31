@@ -1095,91 +1095,57 @@ export class ImageModel {
       'objects.labels.labelId': input.labelId,
     });
 
-    // Objects with single label which is input.labelId
-    const removableObjects = allImagesWithLabel.reduce((acc, img) => {
-      const matchingObjects = img.objects
-        .filter((obj) => obj.labels.length === 1 && obj.labels[0].labelId === input.labelId)
-        .map((obj) => obj._id);
-      return [...acc, ...matchingObjects];
-    }, [] as mongoose.Types.ObjectId[]);
-
-    // Locked objects with > 1 label where firstValidated is input.labelId
-    const unlockableObjects = allImagesWithLabel.reduce((acc, img) => {
-      const matchingObjects = img.objects
-        .filter((obj) => {
-          // If the object doesn't have > 1 labels or it is not locked, skip it
-          if (obj.labels.length <= 1 || obj.locked === true) {
-            return false;
-          } 
-          const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
-          return (firstValidated !== undefined && firstValidated.labelId === input.labelId)
-        })
-        .map((obj) => obj._id);
-      return [...acc, ...matchingObjects];
-    }, [] as mongoose.Types.ObjectId[])
-
-    // Remove label from all images in the project.  We will deal with
-    // cleaning up the objects afterwards.
-    Image.updateMany(
-      { 
-        projectId: context.user['curr_project']!,
-        'objects.labels': input.labelId
-      },
-      {
-        $pull: {
-          'objects.labels': input.labelId
+    const operations = allImagesWithLabel.reduce((operations: any[], img) => {
+      const { removable, unlockable } = img.objects.reduce((acc, obj) => {
+        const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
+        if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
+          acc.removable.push(obj._id);
+        } else if (obj.labels.length > 1 && obj.locked === true && firstValidated !== undefined && firstValidated.labelId === input.labelId) {
+          acc.unlockable.push(obj);
         }
-      }
-    );
 
-    // Remove objects which previously had only a single label which was
-    // the label that was removed.
-    //
-    // If we guarauntee that objects can't have 0 labels, we could make this
-    // a query to just pull any object with 0 labels because it allows us to
-    // assume that any object with 0 labels is a result of us removing the label
-    // in the previous query.
-    //
-    // For safety's sake, remove an object with an _id that's in the array
-    // we filtered earlier.
-    Image.updateMany(
-      { 
-        projectId: context.user['curr_project']!,
-        'objects.labels': input.labelId
-      },
-      {
-        $pullAll: {
-          'objects._id': removableObjects
-        }
-      }
-    );
+        return acc
+      }, { removable: [] as mongoose.Types.ObjectId[], unlockable: [] as ObjectSchema[] });
 
-    // This is going to update every object on these objects 
-    // not just the ones that we specify.
-    //
-    // This might be a mongodb limitation that forces us to do
-    // this unlock as individual queries.
-    //
-    // $elemMatch exists, but this will only return one object
-    // in the array.  If an image has multiple objects with the removed
-    // label, this operation will only apply to the first one.
-    //
-    // Individual queries will probably slow this down significantly.
-    Image.updateMany(
-      { 
-        projectId: context.user['curr_project']!,
-        'objects._id': {
-          $in: unlockableObjects
-        }
-      },
-      {
-        $set: {
-          'objects.locked': false
-        }
-      }
-    )
 
-    // TODO return something useful
+      const removeOperation = {
+        updateOne: {
+          filter: { _id: img._id },
+          update: {
+            $pullAll: { 'objects._id': [removable] }
+          }
+        }
+      };
+
+      const unlockOperations = unlockable.map((obj) => {
+        return {
+          updateone: {
+            filter: { _id: img._id },
+            update: {
+              $set: { 'objects.$[obj].locked': false }
+            },
+            arrayfilters: [
+              { 'obj._id': new ObjectId(obj._id) }
+            ]
+          }
+        }
+      });
+
+      const standardOperation = {
+        updateOne: {
+          filter: { _id: img._id },
+          update: {
+            $pull: { 'objects.labels._id': input.labelId }
+          }
+        }
+      };
+
+      return [...operations, ...[removeOperation], ...unlockOperations, ...[standardOperation]];
+
+    }, []);
+
+    await Image.bulkWrite(operations);
+
     return []
   }
 
