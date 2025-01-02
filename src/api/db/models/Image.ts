@@ -1089,64 +1089,89 @@ export class ImageModel {
   static async deleteLabelsFromImages(
     input: { labelId: string },
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageSchema>[]> {
+  ): Promise<boolean> {
     const allImagesWithLabel = await Image.find({
       'projectId': context.user['curr_project']!,
       'objects.labels.labelId': input.labelId,
     });
 
     const operations = allImagesWithLabel.reduce((operations: any[], img) => {
-      const { removable, unlockable } = img.objects.reduce((acc, obj) => {
+      const { removable, unlockable, rest } = img.objects.reduce((acc, obj) => {
         const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
         if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
           acc.removable.push(obj._id);
         } else if (obj.labels.length > 1 && obj.locked === true && firstValidated !== undefined && firstValidated.labelId === input.labelId) {
           acc.unlockable.push(obj);
+        } else {
+          acc.rest.push(obj._id);
         }
 
         return acc
-      }, { removable: [] as mongoose.Types.ObjectId[], unlockable: [] as ObjectSchema[] });
+      }, 
+      { 
+        removable: [] as mongoose.Types.ObjectId[], 
+        unlockable: [] as ObjectSchema[], 
+        rest: [] as mongoose.Types.ObjectId[] 
+      });
 
-
-      const removeOperation = {
-        updateOne: {
-          filter: { _id: img._id },
-          update: {
-            $pullAll: { 'objects._id': [removable] }
-          }
-        }
-      };
+      const removeOperation = removable.length > 0 
+        ? [{
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $pull: { 'objects': {
+                  _id: {
+                    $in: removable 
+                  }
+                }}
+              }
+            }
+          }] 
+        : [];
 
       const unlockOperations = unlockable.map((obj) => {
         return {
-          updateone: {
+          updateOne: {
             filter: { _id: img._id },
             update: {
-              $set: { 'objects.$[obj].locked': false }
+              $set: { 'objects.$[obj].locked': false },
+              $pull: { 
+                'objects.$[obj].labels': {
+                  labelId: input.labelId
+                }
+              }
             },
-            arrayfilters: [
+            arrayFilters: [
               { 'obj._id': new ObjectId(obj._id) }
             ]
           }
         }
       });
 
-      const standardOperation = {
-        updateOne: {
-          filter: { _id: img._id },
-          update: {
-            $pull: { 'objects.labels._id': input.labelId }
+      const standardOperations = rest.map((objId) => {
+        return {
+          updateOne: {
+            filter: { _id: img._id },
+            update: {
+              $pull: { 
+                'objects.$[obj].labels': {
+                  labelId: input.labelId
+                }
+              }
+            },
+            arrayFilters: [
+              { 'obj._id': objId }
+            ]
           }
         }
-      };
+      });
 
-      return [...operations, ...[removeOperation], ...unlockOperations, ...[standardOperation]];
-
+      return [...operations, ...removeOperation, ...unlockOperations, ...standardOperations];
     }, []);
 
-    await Image.bulkWrite(operations);
+    const res = await Image.bulkWrite(operations);
 
-    return []
+    return res.isOk();
   }
 
 

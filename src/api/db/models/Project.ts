@@ -721,6 +721,8 @@ export class ProjectModel {
 
       const count = await ImageModel.countImagesByLabel([input._id], context);
 
+      // TODO
+      // Need to benchmark so that we can up the limit if bulk works faster
       if (count > MAX_LABEL_DELETE) {
         const msg =
           `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
@@ -728,12 +730,10 @@ export class ProjectModel {
         throw new DeleteLabelError(msg);
       }
 
-      await ImageModel.deleteAnyLabels(
-        {
-          labelId: input._id,
-        },
-        context,
-      );
+      let isBulkDeleteOk = await ImageModel.deleteLabelsFromImages({ labelId: input._id }, context);
+      if (!isBulkDeleteOk) {
+        return { isOk: false };
+      }
 
       project.labels.splice(project.labels.indexOf(label), 1);
 
