@@ -9,7 +9,7 @@ import GraphQLError, {
   NotFoundError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
-import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
+import mongoose, { HydratedDocument, ObjectId, UpdateWriteOpResult } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
@@ -1076,6 +1076,104 @@ export class ImageModel {
       }),
     );
   }
+
+  /**
+   * (n: n-m-q) Query for any images that have objects that have the label
+   * (m: n-q) Filter images that only have a single label (image, objects[])
+   * (q: n-m) Filter remaining images for images with objects that have the label as the validated label (image, objects[])
+   * 
+   * 1. For m, delete object
+   * 2. For q: remove label and unlock object
+   * 3. For remaining, remove label and do nothing
+   */
+  static async deleteLabelsFromImages(
+    input: { labelId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<boolean> {
+    const allImagesWithLabel = await Image.find({
+      'projectId': context.user['curr_project']!,
+      'objects.labels.labelId': input.labelId,
+    });
+
+    const operations = allImagesWithLabel.reduce((operations: any[], img) => {
+      const { removable, unlockable, rest } = img.objects.reduce((acc, obj) => {
+        const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
+        if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
+          acc.removable.push(obj._id);
+        } else if (obj.labels.length > 1 && obj.locked === true && firstValidated !== undefined && firstValidated.labelId === input.labelId) {
+          acc.unlockable.push(obj);
+        } else {
+          acc.rest.push(obj._id);
+        }
+
+        return acc
+      }, 
+      { 
+        removable: [] as mongoose.Types.ObjectId[], 
+        unlockable: [] as ObjectSchema[], 
+        rest: [] as mongoose.Types.ObjectId[] 
+      });
+
+      const removeOperation = removable.length > 0 
+        ? [{
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $pull: { 'objects': {
+                  _id: {
+                    $in: removable 
+                  }
+                }}
+              }
+            }
+          }] 
+        : [];
+
+      const unlockOperations = unlockable.map((obj) => {
+        return {
+          updateOne: {
+            filter: { _id: img._id },
+            update: {
+              $set: { 'objects.$[obj].locked': false },
+              $pull: { 
+                'objects.$[obj].labels': {
+                  labelId: input.labelId
+                }
+              }
+            },
+            arrayFilters: [
+              { 'obj._id': new ObjectId(obj._id) }
+            ]
+          }
+        }
+      });
+
+      const standardOperations = rest.map((objId) => {
+        return {
+          updateOne: {
+            filter: { _id: img._id },
+            update: {
+              $pull: { 
+                'objects.$[obj].labels': {
+                  labelId: input.labelId
+                }
+              }
+            },
+            arrayFilters: [
+              { 'obj._id': objId }
+            ]
+          }
+        }
+      });
+
+      return [...operations, ...removeOperation, ...unlockOperations, ...standardOperations];
+    }, []);
+
+    const res = await Image.bulkWrite(operations);
+
+    return res.isOk();
+  }
+
 
   /**
    * Apply a single label deletion operation - only to be called by deleteAnyLabels
