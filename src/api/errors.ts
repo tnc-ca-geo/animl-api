@@ -115,3 +115,14 @@ export class CameraRegistrationError extends GraphQLError {
     });
   }
 }
+
+export class DeleteCameraError extends GraphQLError {
+  constructor(message = 'DeleteCameraError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'DELETE_CAMERA_ERROR',
+        ...properties,
+      },
+    });
+  }
+}

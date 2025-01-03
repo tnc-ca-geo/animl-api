@@ -4,6 +4,7 @@ import { type TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import { DeleteImagesByFilter } from './image.js';
+import { DeleteCameraError } from '../api/errors.js';
 
 export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialNumberInput>) {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
@@ -20,7 +21,7 @@ export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
   const wirelessCam = await CameraModel.getWirelessCameras({ _ids: [cameraId] }, context);
   const isWirelessCam = wirelessCam.length > 0;
   if (isWirelessCam && task.projectId === 'default_project') {
-    throw new Error('You cannot delete wireless cameras from the Default Project');
+    throw new DeleteCameraError('You cannot delete wireless cameras from the Default Project');
   }
 
   // Step 1: delete deployments from views
