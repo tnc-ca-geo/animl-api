@@ -3,7 +3,9 @@ import { ImageModel } from '../api/db/models/Image.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
 
-export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFilterTaskInput>) {
+export async function DeleteImagesByFilter(
+  task: TaskInput<gql.DeleteImagesByFilterTaskInput>,
+): Promise<{ filters: gql.FiltersInput; errors: any[] }> {
   /**
    * Deletes images that match the inputted filters in batches of 300.
    * This is used by the frontend to delete all images currently shown.
@@ -40,7 +42,9 @@ export async function DeleteImagesByFilter(task: TaskInput<gql.DeleteImagesByFil
   return { filters: task.config.filters, errors: errors };
 }
 
-export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
+export async function DeleteImages(
+  task: TaskInput<gql.DeleteImagesInput>,
+): Promise<{ imageIds: String[]; errors: any[] }> {
   /**
    * Deletes a list of images by their IDs in batches of 300.
    * This is used by the frontend when the user is selecting more than 300 images to delete to delete at once.
@@ -57,5 +61,5 @@ export async function DeleteImages(task: TaskInput<gql.DeleteImagesInput>) {
       errors.push(...res.errors);
     }
   }
-  return { imageIds: task.config.imageIds, errors: errors };
+  return { imageIds: task.config.imageIds as String[], errors: errors };
 }

@@ -122,7 +122,7 @@ export class AnnotationsExport {
     return count;
   }
 
-  async toCSV(): Promise<AnnotationResponse> {
+  async toCSV(): Promise<AnnotationOutput> {
     console.log('exporting to CSV');
 
     try {
@@ -173,7 +173,7 @@ export class AnnotationsExport {
     };
   }
 
-  async toCOCO(): Promise<AnnotationResponse> {
+  async toCOCO(): Promise<AnnotationOutput> {
     console.log('exporting to coco');
     try {
       // create categories map & string
@@ -570,7 +570,7 @@ export class AnnotationsExport {
 export default async function (
   task: TaskInput<{ filters: FiltersSchema; format: any }> & { _id: string },
   config: Config,
-) {
+): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(
     {
       projectId: task.projectId,
@@ -592,7 +592,7 @@ export default async function (
   }
 }
 
-interface AnnotationResponse {
+interface AnnotationOutput {
   url: string;
   count: number;
   meta: { reviewedCount: { reviewed: number; notReviewed: number } };

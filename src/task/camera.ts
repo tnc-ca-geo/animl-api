@@ -6,12 +6,16 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import { DeleteImagesByFilter } from './image.js';
 import { DeleteCameraError } from '../api/errors.js';
 
-export async function UpdateSerialNumber(task: TaskInput<gql.UpdateCameraSerialNumberInput>) {
+export async function UpdateSerialNumber(
+  task: TaskInput<gql.UpdateCameraSerialNumberInput>,
+): Promise<gql.StandardPayload> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   return await CameraModel.updateSerialNumber(task.config, context);
 }
 
-export async function DeleteCamera(task: TaskInput<gql.DeleteCameraInput>) {
+export async function DeleteCamera(
+  task: TaskInput<gql.DeleteCameraInput>,
+): Promise<{ isOk: boolean; errors: any[] }> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   console.log('CameraModel.deleteCameraConfig - input: ', task.config);
   const { cameraId } = task.config;
