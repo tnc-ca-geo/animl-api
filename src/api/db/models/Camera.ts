@@ -269,6 +269,8 @@ export class CameraModel {
           });
         }
       }
+
+      // remove registration for curr_project
       const currProjIndex = cam.projRegistrations.findIndex((pr) => pr.projectId === projectId);
       cam.projRegistrations.splice(currProjIndex, 1);
       await cam.save();
