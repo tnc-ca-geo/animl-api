@@ -1095,13 +1095,17 @@ export class ImageModel {
       'objects.labels.labelId': input.labelId,
     });
 
+    if (allImagesWithLabel === undefined || allImagesWithLabel.length === 0) {
+      return true;
+    }
+
     const operations = allImagesWithLabel.reduce((operations: any[], img) => {
       const { removable, unlockable, rest } = img.objects.reduce((acc, obj) => {
         const firstValidated = obj.labels.find((lbl) => lbl.validation && lbl.validation.validated);
         if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
           acc.removable.push(obj._id);
         } else if (obj.labels.length > 1 && obj.locked === true && firstValidated !== undefined && firstValidated.labelId === input.labelId) {
-          acc.unlockable.push(obj);
+          acc.unlockable.push(obj); 
         } else {
           acc.rest.push(obj._id);
         }
@@ -1142,7 +1146,7 @@ export class ImageModel {
               }
             },
             arrayFilters: [
-              { 'obj._id': new ObjectId(obj._id) }
+              { 'obj._id': obj._id }
             ]
           }
         }
