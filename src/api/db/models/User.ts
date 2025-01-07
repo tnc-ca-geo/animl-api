@@ -239,6 +239,7 @@ export class UserModel {
   /**
    * Resend temp password email to a user
    * @param input
+   * @param input.username the email to resend the temp password to
    * @param context
    */
   static async resendTempPassword(
