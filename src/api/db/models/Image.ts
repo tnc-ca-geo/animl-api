@@ -9,7 +9,7 @@ import GraphQLError, {
   NotFoundError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
-import mongoose, { HydratedDocument, ObjectId, UpdateWriteOpResult } from 'mongoose';
+import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
