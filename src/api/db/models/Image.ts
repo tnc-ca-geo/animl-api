@@ -1078,18 +1078,25 @@ export class ImageModel {
   }
 
   /**
-   * (n: n-m-q) Query for any images that have objects that have the label
-   * (m: n-q) Filter images that only have a single label (image, objects[])
-   * (q: n-m) Filter remaining images for images with objects that have the label as the validated label (image, objects[])
+   * Images.objects can be grouped into three categories depending on their
+   * locked state and number of labels:
    *
-   * 1. For m, delete object
-   * 2. For q: remove label and unlock object
-   * 3. For remaining, remove label and do nothing
+   * n: total image.objects with target label
+   * m: objects which only have a single label which is the target label
+   * q: objects which have multiple labels and the first validated label is the target label
+   * r: objects which have multiple labels and the first validated label is not the target label
+   *
+   * n = m + q + r
+   *
+   * For m, delete object
+   * For q: remove label and unlock object
+   * For r: remove label and do nothing
    */
   static async deleteLabelsFromImages(
     input: { labelId: string },
     context: Pick<Context, 'user'>,
   ): Promise<boolean> {
+    // All images that have at least one object which has the target label
     const allImagesWithLabel = await Image.find({
       projectId: context.user['curr_project']!,
       'objects.labels.labelId': input.labelId,
@@ -1102,7 +1109,7 @@ export class ImageModel {
     const operations = allImagesWithLabel.reduce((operations: any[], img) => {
       const { removable, unlockable, rest } = img.objects.reduce(
         (acc, obj) => {
-          // This object doesn't have the label so skip it
+          // This object doesn't have the target label so skip it
           if (obj.labels.find((lbl) => lbl.labelId === input.labelId) === undefined) {
             return acc;
           }
@@ -1110,6 +1117,7 @@ export class ImageModel {
           const firstValidated = obj.labels.find(
             (lbl) => lbl.validation && lbl.validation.validated,
           );
+
           if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
             acc.removable.push(obj._id);
           } else if (
