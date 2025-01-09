@@ -5,7 +5,9 @@ import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
 
-export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
+export default async function (
+  task: TaskInput<{ filters: FiltersSchema }>,
+): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
   let reviewed = 0;
@@ -18,7 +20,7 @@ export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
 
   const project = await ProjectModel.queryById(context.user['curr_project']);
   const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
-
+  console.log('GetStats pipeline:', pipeline);
   // stream in images from MongoDB
   for await (const img of Image.aggregate<ImageSchema>(pipeline)) {
     // increment imageCount
@@ -69,6 +71,14 @@ export default async function (task: TaskInput<{ filters: FiltersSchema }>) {
     labelList,
     multiReviewerCount,
   };
+}
+
+interface GetStatsOutput {
+  imageCount: number;
+  reviewedCount: { reviewed: number; notReviewed: number };
+  reviewerList: Reviewer[];
+  labelList: Record<string, number>;
+  multiReviewerCount: number;
 }
 
 interface Reviewer {

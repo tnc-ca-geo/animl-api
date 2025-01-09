@@ -152,8 +152,6 @@ export class ImageModel {
       }
       const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
 
-      console.time('delete-images total');
-      console.time('delete-images mongo records');
       const images = await Image.find({ _id: { $in: input.imageIds! } });
 
       if (images.length !== 0) {
@@ -196,12 +194,10 @@ export class ImageModel {
         } finally {
           // Ending the session
           await session.endSession();
-          console.timeEnd('delete-images mongo records');
         }
       }
 
       const keys: { Key: string }[] = [];
-      console.time('delete-images s3 records');
       input.imageIds!.forEach((id) => {
         const image = images.find((i) => idMatch(i._id, id));
         ['medium', 'original', 'small'].forEach((size) => {
@@ -214,8 +210,6 @@ export class ImageModel {
           Delete: { Objects: keys },
         }),
       );
-      console.timeEnd('delete-images s3 records');
-      console.timeEnd('delete-images total');
 
       return {
         isOk: s3Res.Errors === undefined || s3Res.Errors.length === 0,
