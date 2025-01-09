@@ -1194,8 +1194,27 @@ export class ImageModel {
       return true;
     }
 
-    const res = await Image.bulkWrite(operations);
-    return res.isOk();
+    const batchSize = 5000;
+    let idx = 0;
+    let batches = []
+    while (idx * batchSize < operations.length) {
+      const batchEnd = idx * batchSize;
+      const batchStart = batchEnd - batchSize;
+      batches.push(operations.slice(batchStart, batchEnd));
+      idx += 1;
+    }
+    batches.push(operations.slice(idx * batchSize, operations.length));
+
+    const batchPromises: Promise<any>[] = batches.map((batch) => Image.bulkWrite(batch));
+
+    const resArray = await Promise.all(batchPromises);
+
+    // TODO
+    // For some reason, it seems like mongoose is not
+    // properly creating a BulkWriteResult class
+    // this is the underlying object that MongoDB
+    // sends back
+    return resArray.every((res) => res.result.ok);
   }
 
   /**

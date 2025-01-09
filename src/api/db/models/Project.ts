@@ -799,12 +799,12 @@ export class ProjectModel {
 
       // TODO
       // Need to benchmark so that we can up the limit if bulk works faster
-      if (count > MAX_LABEL_DELETE) {
-        const msg =
-          `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
-          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
-        throw new DeleteLabelError(msg);
-      }
+      // if (count > MAX_LABEL_DELETE) {
+      //   const msg =
+      //     `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
+      //     ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+      //   throw new DeleteLabelError(msg);
+      // }
 
       let isBulkDeleteOk = await ImageModel.deleteLabelsFromImages({ labelId: input._id }, context);
       if (!isBulkDeleteOk) {
