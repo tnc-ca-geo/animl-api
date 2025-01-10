@@ -26,6 +26,13 @@ export default /* GraphQL */ `
     updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
     deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
 
+    createProjectTag(input: CreateProjectTagInput!): ProjectTagsPayload
+    deleteProjectTag(input: DeleteProjectTagInput!): ProjectTagsPayload
+    updateProjectTag(input: UpdateProjectTagInput!): ProjectTagsPayload
+
+    createImageTag(input: CreateImageTagInput!): ImageTagsPayload
+    deleteImageTag(input: DeleteImageTagInput!): ImageTagsPayload
+
     createBatchError(input: CreateBatchErrorInput!): BatchError
     createImageError(input: CreateImageErrorInput!): ImageError
     clearImageErrors(input: ClearImageErrorsInput!): StandardPayload
@@ -34,6 +41,7 @@ export default /* GraphQL */ `
     registerCamera(input: RegisterCameraInput!): RegisterCameraPayload
     unregisterCamera(input: UnregisterCameraInput!): UnregisterCameraPayload
     updateCameraSerialNumber(input: UpdateCameraSerialNumberInput!): Task
+    deleteCameraConfig(input: DeleteCameraInput!): Task
 
     createView(input: CreateViewInput!): CreateViewPayload
     updateView(input: UpdateViewInput!): UpdateViewPayload

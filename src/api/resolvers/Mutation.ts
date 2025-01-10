@@ -115,6 +115,22 @@ export default {
     return context.models.Image.createComment(input, context);
   },
 
+  createImageTag: async (
+    _: unknown,
+    { input }: gql.MutationCreateImageTagArgs,
+    context: Context,
+  ): Promise<gql.ImageTagsPayload> => {
+    return context.models.Image.createTag(input, context);
+  },
+
+  deleteImageTag: async (
+    _: unknown,
+    { input }: gql.MutationDeleteImageTagArgs,
+    context: Context,
+  ): Promise<gql.ImageTagsPayload> => {
+    return context.models.Image.deleteTag(input, context);
+  },
+
   createImage: async (
     _: unknown,
     { input }: gql.MutationCreateImageArgs,
@@ -172,6 +188,15 @@ export default {
     return context.models.Camera.updateSerialNumber(input, context);
   },
 
+  deleteCameraConfig: async (
+    _: unknown,
+    { input }: gql.MutationDeleteCameraConfigArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    console.log('Mutation.deleteCamera input:', input);
+    return context.models.Camera.deleteCameraConfig(input, context);
+  },
+
   createProject: async (
     _: unknown,
     { input }: gql.MutationCreateProjectArgs,
@@ -188,6 +213,30 @@ export default {
   ): Promise<gql.ProjectPayload> => {
     const project = await context.models.Project.updateProject(input, context);
     return { project };
+  },
+
+  createProjectTag: async (
+    _: unknown,
+    { input }: gql.MutationCreateProjectTagArgs,
+    context: Context,
+  ): Promise<gql.ProjectTagsPayload> => {
+    return await context.models.Project.createTag(input, context);
+  },
+
+  deleteProjectTag: async (
+    _: unknown,
+    { input }: gql.MutationDeleteProjectTagArgs,
+    context: Context,
+  ): Promise<gql.ProjectTagsPayload> => {
+    return await context.models.Project.deleteTag(input, context);
+  },
+
+  updateProjectTag: async (
+    _: unknown,
+    { input }: gql.MutationUpdateProjectTagArgs,
+    context: Context,
+  ): Promise<gql.ProjectTagsPayload> => {
+    return await context.models.Project.updateTag(input, context);
   },
 
   createProjectLabel: async (

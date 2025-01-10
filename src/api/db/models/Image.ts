@@ -9,7 +9,7 @@ import GraphQLError, {
   NotFoundError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
-import mongoose, { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
 import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import { TaskModel } from './Task.js';
 import { ObjectSchema } from '../schemas/shared/index.js';
@@ -28,6 +28,7 @@ import {
   WRITE_IMAGES_ROLES,
   WRITE_COMMENTS_ROLES,
   EXPORT_DATA_ROLES,
+  WRITE_TAGS_ROLES,
 } from '../../auth/roles.js';
 import {
   buildPipeline,
@@ -54,6 +55,8 @@ import { TaskSchema } from '../schemas/Task.js';
 const ObjectId = mongoose.Types.ObjectId;
 
 export class ImageModel {
+  static readonly DELETE_IMAGES_BATCH_SIZE = 300;
+
   static async countImages(
     input: gql.QueryImagesCountInput,
     context: Pick<Context, 'user'>,
@@ -143,23 +146,80 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardErrorPayload> {
     try {
-      const res = await Promise.allSettled(
-        input.imageIds!.map((imageId) => {
-          return this.deleteImage({ imageId }, context);
+      // Current limit of image deletion due to constraints of s3 deleteObjects
+      if (input.imageIds!.length > this.DELETE_IMAGES_BATCH_SIZE) {
+        throw new Error('Cannot delete more than 300 images at a time');
+      }
+      const s3 = new S3.S3Client({ region: process.env.AWS_DEFAULT_REGION });
+
+      const images = await Image.find({ _id: { $in: input.imageIds! } });
+
+      if (images.length !== 0) {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+          const imageRes = await Image.deleteMany(
+            {
+              _id: { $in: input.imageIds! },
+              projectId: context.user['curr_project'],
+            },
+            { session: session },
+          );
+          const imageAttemptRes = await ImageAttempt.deleteMany(
+            {
+              _id: { $in: input.imageIds! },
+              projectId: context.user['curr_project'],
+            },
+            { session: session },
+          );
+          const imageErrorRes = await ImageError.deleteMany(
+            {
+              image: { $in: input.imageIds! },
+            },
+            { session: session },
+          );
+          if (imageRes.acknowledged && imageAttemptRes.acknowledged && imageErrorRes.acknowledged) {
+            // Commit the changes
+            await session.commitTransaction();
+          } else {
+            throw new Error(
+              'There was an issue deleting the images. Some or all images may not have been deleted.',
+            );
+          }
+        } catch (error) {
+          // Rollback any changes made in the database
+          await session.abortTransaction();
+          throw new InternalServerError(error as string);
+        } finally {
+          // Ending the session
+          await session.endSession();
+        }
+      }
+
+      const keys: { Key: string }[] = [];
+      input.imageIds!.forEach((id) => {
+        const image = images.find((i) => idMatch(i._id, id));
+        ['medium', 'original', 'small'].forEach((size) => {
+          keys.push({ Key: `${size}/${id}-${size}.${image?.fileTypeExtension || 'jpg'}` });
+        });
+      });
+      const s3Res = await s3.send(
+        new S3.DeleteObjectsCommand({
+          Bucket: `animl-images-serving-${process.env.STAGE}`,
+          Delete: { Objects: keys },
         }),
       );
 
-      const errors = res
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .map((r) => r.reason); // Will always be a GraphQLError
-
       return {
-        isOk: !errors.length,
-        errors,
+        isOk: s3Res.Errors === undefined || s3Res.Errors.length === 0,
+        errors: s3Res.Errors?.map((e) => e.toString()) ?? [],
       };
     } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
+      return {
+        isOk: false,
+        errors: [String(err)],
+      };
     }
   }
 
@@ -469,6 +529,87 @@ export class ImageModel {
       await image.save();
 
       return { comments: image.comments };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async createTag(
+    input: gql.CreateImageTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      if (!image.tags) {
+        image.tags = [] as any as mongoose.Types.DocumentArray<mongoose.Types.ObjectId>;
+      }
+
+      image.tags.push(new mongoose.Types.ObjectId(input.tagId));
+      await image.save();
+
+      return { tags: image.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteTag(
+    input: gql.DeleteImageTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      const tag = image.tags?.filter((t) => idMatch(t, input.tagId))[0];
+      if (!tag) throw new NotFoundError('Tag not found on image');
+
+      image.tags = image.tags.filter((t) => !idMatch(t, input.tagId)) as mongoose.Types.ObjectId[];
+
+      await image.save();
+
+      return { tags: image.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async countProjectTag(
+    input: { tagId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<number> {
+    try {
+      const projectId = context.user['curr_project']!;
+      const count = await Image.countDocuments({
+        projectId: projectId,
+        tags: new ObjectId(input.tagId),
+      });
+
+      return count;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteProjectTag(
+    input: { tagId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<UpdateWriteOpResult> {
+    try {
+      const projectId = context.user['curr_project']!;
+      const res = await Image.updateMany(
+        {
+          projectId: projectId,
+        },
+        {
+          $pull: { tags: new mongoose.Types.ObjectId(input.tagId) },
+        },
+      );
+      return res;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1158,6 +1299,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
 
   queryByFilter(...args: MethodParams<typeof ImageModel.queryByFilter>) {
     return ImageModel.queryByFilter(...args);
+  }
+
+  @roleCheck(WRITE_TAGS_ROLES)
+  createTag(...args: MethodParams<typeof ImageModel.createTag>) {
+    return ImageModel.createTag(...args);
+  }
+
+  @roleCheck(WRITE_TAGS_ROLES)
+  deleteTag(...args: MethodParams<typeof ImageModel.deleteTag>) {
+    return ImageModel.deleteTag(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)

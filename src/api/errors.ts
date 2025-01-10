@@ -94,11 +94,33 @@ export class DeleteLabelError extends GraphQLError {
   }
 }
 
+export class DeleteTagError extends GraphQLError {
+  constructor(message = 'DeleteTagError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'DELETE_TAG_FAILED',
+        ...properties,
+      },
+    });
+  }
+}
+
 export class CameraRegistrationError extends GraphQLError {
   constructor(message = 'CameraRegistrationError', properties = {}) {
     super(message, {
       extensions: {
         code: 'CAMERA_REGISTRATION_ERROR',
+        ...properties,
+      },
+    });
+  }
+}
+
+export class DeleteCameraError extends GraphQLError {
+  constructor(message = 'DeleteCameraError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'DELETE_CAMERA_ERROR',
         ...properties,
       },
     });

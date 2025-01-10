@@ -162,6 +162,11 @@ export type CreateImagePayload = {
   imageAttempt?: Maybe<ImageAttempt>;
 };
 
+export type CreateImageTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+};
+
 export type CreateInternalLabelInput = {
   bbox: Array<Scalars['Float']['input']>;
   conf?: InputMaybe<Scalars['Float']['input']>;
@@ -215,6 +220,11 @@ export type CreateProjectLabelInput = {
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type CreateProjectTagInput = {
+  color: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+};
+
 export type CreateUploadInput = {
   originalFile: Scalars['String']['input'];
   partCount?: InputMaybe<Scalars['Int']['input']>;
@@ -246,6 +256,10 @@ export type CreateViewPayload = {
   view?: Maybe<View>;
 };
 
+export type DeleteCameraInput = {
+  cameraId: Scalars['ID']['input'];
+};
+
 export type DeleteDeploymentInput = {
   cameraId: Scalars['ID']['input'];
   deploymentId: Scalars['ID']['input'];
@@ -254,6 +268,11 @@ export type DeleteDeploymentInput = {
 export type DeleteImageCommentInput = {
   id: Scalars['String']['input'];
   imageId: Scalars['ID']['input'];
+};
+
+export type DeleteImageTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type DeleteImagesByFilterInput = {
@@ -288,6 +307,10 @@ export type DeleteObjectsInput = {
 };
 
 export type DeleteProjectLabelInput = {
+  _id: Scalars['ID']['input'];
+};
+
+export type DeleteProjectTagInput = {
   _id: Scalars['ID']['input'];
 };
 
@@ -424,6 +447,7 @@ export type Image = {
   path?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
   reviewed?: Maybe<Scalars['Boolean']['output']>;
+  tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
   userSetData?: Maybe<Scalars['JSONObject']['output']>;
 };
@@ -489,6 +513,11 @@ export type ImageMetadata = {
   originalFileName?: Maybe<Scalars['String']['output']>;
   path?: Maybe<Scalars['String']['output']>;
   timezone?: Maybe<Scalars['String']['output']>;
+};
+
+export type ImageTagsPayload = {
+  __typename?: 'ImageTagsPayload';
+  tags?: Maybe<Array<Scalars['ID']['output']>>;
 };
 
 export type ImagesConnection = {
@@ -567,22 +596,27 @@ export type Mutation = {
   createImage?: Maybe<CreateImagePayload>;
   createImageComment?: Maybe<ImageCommentsPayload>;
   createImageError?: Maybe<ImageError>;
+  createImageTag?: Maybe<ImageTagsPayload>;
   createInternalLabels?: Maybe<StandardPayload>;
   createLabels?: Maybe<StandardPayload>;
   createObjects?: Maybe<StandardPayload>;
   createProject?: Maybe<ProjectPayload>;
   createProjectLabel?: Maybe<ProjectLabelPayload>;
+  createProjectTag?: Maybe<ProjectTagsPayload>;
   createUpload?: Maybe<CreateUploadPayload>;
   createUser?: Maybe<StandardPayload>;
   createView?: Maybe<CreateViewPayload>;
+  deleteCameraConfig?: Maybe<Task>;
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
+  deleteImageTag?: Maybe<ImageTagsPayload>;
   deleteImages?: Maybe<StandardErrorPayload>;
   deleteImagesByFilterTask?: Maybe<Task>;
   deleteImagesTask?: Maybe<Task>;
   deleteLabels?: Maybe<StandardPayload>;
   deleteObjects?: Maybe<StandardPayload>;
   deleteProjectLabel?: Maybe<StandardPayload>;
+  deleteProjectTag?: Maybe<ProjectTagsPayload>;
   deleteView?: Maybe<DeleteViewPayload>;
   redriveBatch?: Maybe<StandardPayload>;
   registerCamera?: Maybe<RegisterCameraPayload>;
@@ -597,6 +631,7 @@ export type Mutation = {
   updateObjects?: Maybe<StandardPayload>;
   updateProject?: Maybe<ProjectPayload>;
   updateProjectLabel?: Maybe<ProjectLabelPayload>;
+  updateProjectTag?: Maybe<ProjectTagsPayload>;
   updateUser?: Maybe<StandardPayload>;
   updateView?: Maybe<UpdateViewPayload>;
 };
@@ -642,6 +677,11 @@ export type MutationCreateImageErrorArgs = {
 };
 
 
+export type MutationCreateImageTagArgs = {
+  input: CreateImageTagInput;
+};
+
+
 export type MutationCreateInternalLabelsArgs = {
   input: CreateInternalLabelsInput;
 };
@@ -667,6 +707,11 @@ export type MutationCreateProjectLabelArgs = {
 };
 
 
+export type MutationCreateProjectTagArgs = {
+  input: CreateProjectTagInput;
+};
+
+
 export type MutationCreateUploadArgs = {
   input: CreateUploadInput;
 };
@@ -682,6 +727,11 @@ export type MutationCreateViewArgs = {
 };
 
 
+export type MutationDeleteCameraConfigArgs = {
+  input: DeleteCameraInput;
+};
+
+
 export type MutationDeleteDeploymentArgs = {
   input: DeleteDeploymentInput;
 };
@@ -689,6 +739,11 @@ export type MutationDeleteDeploymentArgs = {
 
 export type MutationDeleteImageCommentArgs = {
   input: DeleteImageCommentInput;
+};
+
+
+export type MutationDeleteImageTagArgs = {
+  input: DeleteImageTagInput;
 };
 
 
@@ -719,6 +774,11 @@ export type MutationDeleteObjectsArgs = {
 
 export type MutationDeleteProjectLabelArgs = {
   input: DeleteProjectLabelInput;
+};
+
+
+export type MutationDeleteProjectTagArgs = {
+  input: DeleteProjectTagInput;
 };
 
 
@@ -789,6 +849,11 @@ export type MutationUpdateProjectArgs = {
 
 export type MutationUpdateProjectLabelArgs = {
   input: UpdateProjectLabelInput;
+};
+
+
+export type MutationUpdateProjectTagArgs = {
+  input: UpdateProjectTagInput;
 };
 
 
@@ -864,6 +929,7 @@ export type Project = {
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
   name: Scalars['String']['output'];
+  tags?: Maybe<Array<ProjectTag>>;
   timezone: Scalars['String']['output'];
   views: Array<View>;
 };
@@ -892,6 +958,18 @@ export type ProjectRegistration = {
   _id: Scalars['ID']['output'];
   active: Scalars['Boolean']['output'];
   projectId: Scalars['String']['output'];
+};
+
+export type ProjectTag = {
+  __typename?: 'ProjectTag';
+  _id: Scalars['ID']['output'];
+  color: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type ProjectTagsPayload = {
+  __typename?: 'ProjectTagsPayload';
+  tags?: Maybe<Array<ProjectTag>>;
 };
 
 export type Query = {
@@ -1165,6 +1243,12 @@ export type UpdateProjectLabelInput = {
   ml?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   reviewerEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type UpdateProjectTagInput = {
+  _id: Scalars['ID']['input'];
+  color: Scalars['String']['input'];
+  name: Scalars['String']['input'];
 };
 
 export type UpdateUserInput = {

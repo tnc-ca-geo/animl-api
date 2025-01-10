@@ -7,6 +7,7 @@ import GraphQLError, {
   DeleteLabelError,
   ForbiddenError,
   DBValidationError,
+  DeleteTagError,
 } from '../../errors.js';
 import { DateTime } from 'luxon';
 import Project, {
@@ -15,6 +16,7 @@ import Project, {
   IAutomationRule,
   ProjectLabelSchema,
   ProjectSchema,
+  ProjectTagSchema,
   ViewSchema,
 } from '../schemas/Project.js';
 import { UserModel } from './User.js';
@@ -36,6 +38,10 @@ import { TaskSchema } from '../schemas/Task.js';
 // The max number of labeled images that can be deleted
 // when removing a label from a project
 const MAX_LABEL_DELETE = 500;
+
+// The max number of tagged images that can be deleted
+// when removing a tag from a project
+const MAX_TAG_DELETE = 50000;
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -166,7 +172,7 @@ export class ProjectModel {
 
   static async createCameraConfig(
     input: { projectId: string; cameraId: string },
-    context: Pick<Context, 'user'>,
+    _: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
     console.log('Project.createCameraConfig - input: ', input);
     const { projectId, cameraId } = input;
@@ -232,6 +238,39 @@ export class ProjectModel {
     }
   }
 
+  static async deleteCameraConfig(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+          console.log('originalProject: ', project);
+
+          console.log('Deleting camera config with _id: ', input.cameraId);
+          // NOTE: using findOneAndUpdate() to update Projects to preserve atomicity of the
+          // operation and avoid race conditions
+          const updatedProject = await Project.findOneAndUpdate(
+            { _id: context.user['curr_project'] },
+            {
+              $pull: { cameraConfigs: { _id: input.cameraId } },
+            },
+            { returnDocument: 'after' },
+          );
+
+          console.log('updatedProject: ', updatedProject);
+          return updatedProject!;
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
   static async createView(
     input: gql.CreateViewInput,
     context: Pick<Context, 'user'>,
@@ -282,7 +321,7 @@ export class ProjectModel {
             bail(new ForbiddenError(`View ${view?.name} is not editable`));
           }
 
-          // appy updates & save project
+          // apply updates & save project
           Object.assign(view, input.diffs);
           const updatedProj = await project.save();
           return updatedProj.views.find((v): v is HydratedSingleSubdocument<ViewSchema> =>
@@ -318,6 +357,49 @@ export class ProjectModel {
           project.views = project.views.filter(
             (v) => !idMatch(v._id!, input.viewId),
           ) as mongoose.Types.DocumentArray<ViewSchema>;
+          return project.save();
+        },
+        { retries: 2 },
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async removeCameraFromViews(
+    input: { cameraId: string },
+    context: Pick<Context, 'user'>,
+  ): Promise<HydratedDocument<ProjectSchema>> {
+    try {
+      return await retry(
+        async () => {
+          // find project
+          let project = await Project.findOne({ _id: context.user['curr_project'] });
+          if (!project) throw new NotFoundError('Project not found');
+
+          // get all deployment ids for the camera
+          const projectDeps =
+            project.cameraConfigs
+              .find((cc) => cc._id === input.cameraId)
+              ?.deployments.map((d) => d._id.toString()) ?? [];
+
+          console.log('deployments to be removed from views: ', projectDeps);
+
+          project.views.forEach((v, index) => {
+            // if view filters has the camera id or any of the deployment ids
+            if (
+              v.filters.cameras?.includes(input.cameraId) ||
+              projectDeps.some((d) => v.filters.deployments?.includes(d))
+            ) {
+              v.filters.cameras = v.filters.cameras?.filter((c) => c !== input.cameraId);
+              v.filters.deployments = v.filters.deployments?.filter(
+                (d) => !projectDeps.includes(d),
+              );
+              project.views[index] = v;
+            }
+          });
+
           return project.save();
         },
         { retries: 2 },
@@ -465,7 +547,7 @@ export class ProjectModel {
         { retries: 2 },
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       return camConfig;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -524,7 +606,7 @@ export class ProjectModel {
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
       if (Object.keys(input.diffs).includes('startDate')) {
-        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+        await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       }
       return camConfig;
     } catch (err) {
@@ -579,8 +661,97 @@ export class ProjectModel {
         { retries: 2 },
       );
       // TODO: we need to reverse the above operation if reMapImagesToDeps fails!
-      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig });
+      await ProjectModel.reMapImagesToDeps({ projId: project._id, camConfig: camConfig });
       return camConfig;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async createTag(
+    input: gql.CreateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      if (!project.tags) {
+        project.tags = [] as any as mongoose.Types.DocumentArray<ProjectTagSchema>;
+      }
+
+      if (
+        project.tags.filter((tag) => {
+          return tag.name.toLowerCase() === input.name.toLowerCase();
+        }).length
+      ) {
+        throw new DBValidationError(
+          'A tag with that name already exists, avoid creating tags with duplicate names',
+        );
+      }
+
+      project.tags.push(input);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async deleteTag(
+    input: gql.DeleteProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']);
+
+      const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new DeleteTagError('Tag not found on project');
+      }
+
+      const toRemoveCount = await ImageModel.countProjectTag({ tagId: input._id }, context);
+
+      if (toRemoveCount > MAX_TAG_DELETE) {
+        const msg =
+          `This tag is already in extensive use (>${MAX_TAG_DELETE} images) and cannot be ` +
+          ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteTagError(msg);
+      }
+
+      await ImageModel.deleteProjectTag({ tagId: input._id }, context);
+
+      project.tags.splice(project.tags.indexOf(tag), 1);
+
+      await project.save();
+
+      return { tags: project.tags };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async updateTag(
+    input: gql.UpdateProjectTagInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
+    try {
+      const project = await this.queryById(context.user['curr_project']!);
+
+      const tag = project.tags.find((l) => l._id.toString() === input._id.toString());
+      if (!tag) {
+        throw new NotFoundError('Tag not found on project');
+      }
+
+      Object.assign(tag, input);
+
+      await project.save();
+
+      return { tags: project.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -698,6 +869,21 @@ export default class AuthedProjectModel extends BaseAuthedModel {
 
   createProject(...args: MethodParams<typeof ProjectModel.createProject>) {
     return ProjectModel.createProject(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  deleteTag(...args: MethodParams<typeof ProjectModel.deleteTag>) {
+    return ProjectModel.deleteTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  createTag(...args: MethodParams<typeof ProjectModel.createTag>) {
+    return ProjectModel.createTag(...args);
+  }
+
+  @roleCheck(WRITE_PROJECT_ROLES)
+  updateTag(...args: MethodParams<typeof ProjectModel.updateTag>) {
+    return ProjectModel.updateTag(...args);
   }
 
   @roleCheck(WRITE_PROJECT_ROLES)
