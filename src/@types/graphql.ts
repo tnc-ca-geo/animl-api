@@ -620,6 +620,7 @@ export type Mutation = {
   deleteView?: Maybe<DeleteViewPayload>;
   redriveBatch?: Maybe<StandardPayload>;
   registerCamera?: Maybe<RegisterCameraPayload>;
+  resendTempPassword?: Maybe<StandardPayload>;
   stopBatch?: Maybe<StandardPayload>;
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
@@ -794,6 +795,11 @@ export type MutationRedriveBatchArgs = {
 
 export type MutationRegisterCameraArgs = {
   input: RegisterCameraInput;
+};
+
+
+export type MutationResendTempPasswordArgs = {
+  input: ResendTempPasswordInput;
 };
 
 
@@ -1141,6 +1147,10 @@ export type RegisterCameraPayload = {
   __typename?: 'RegisterCameraPayload';
   project?: Maybe<Project>;
   wirelessCameras?: Maybe<Array<WirelessCamera>>;
+};
+
+export type ResendTempPasswordInput = {
+  username: Scalars['String']['input'];
 };
 
 export type StandardErrorPayload = {
