@@ -1046,32 +1046,6 @@ export class ImageModel {
   }
 
   /**
-   * A slower but more thorough label deletion method than ImageModel.deleteLabels
-   * This method iterates through all objects and deletes all instances of a given label
-   * unlocking an object if the label is the current top level choice of a validated object
-   * or deleting the object if it only has a single label and it's the one we're removing
-   *
-   * @param {object} input
-   * @param {string} input.labelId - Label to remove
-   * @param {object} context
-   */
-  static async deleteAnyLabels(
-    input: { labelId: string },
-    context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageSchema>[]> {
-    const images = await Image.find({
-      'objects.labels.labelId': input.labelId,
-      projectId: context.user['curr_project']!,
-    });
-
-    return await Promise.all(
-      images.map((image) => {
-        return ImageModel.deleteAnyLabel(image, input.labelId);
-      }),
-    );
-  }
-
-  /**
    * Images.objects can be grouped into three categories depending on their
    * locked state and number of labels:
    *
@@ -1100,95 +1074,106 @@ export class ImageModel {
       return true;
     }
 
-    const operations = allImagesWithLabel.reduce((operations: any[], img) => {
-      const { removable, unlockable, rest } = img.objects.reduce(
-        (acc, obj) => {
-          // This object doesn't have the target label so skip it
-          if (obj.labels.find((lbl) => lbl.labelId === input.labelId) === undefined) {
+    const { operations, imageIds } = allImagesWithLabel.reduce(
+      (outerAcc, img) => {
+        const { removable, unlockable, rest } = img.objects.reduce(
+          (acc, obj) => {
+            // This object doesn't have the target label so skip it
+            if (obj.labels.find((lbl) => lbl.labelId === input.labelId) === undefined) {
+              return acc;
+            }
+
+            const firstValidated = obj.labels.find(
+              (lbl) => lbl.validation && lbl.validation.validated,
+            );
+
+            if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
+              acc.removable.push(obj._id);
+            } else if (
+              obj.labels.length > 1 &&
+              obj.locked === true &&
+              firstValidated !== undefined &&
+              firstValidated.labelId === input.labelId
+            ) {
+              acc.unlockable.push(obj);
+            } else {
+              acc.rest.push(obj._id);
+            }
+
             return acc;
-          }
+          },
+          {
+            removable: [] as mongoose.Types.ObjectId[],
+            unlockable: [] as ObjectSchema[],
+            rest: [] as mongoose.Types.ObjectId[],
+          },
+        );
 
-          const firstValidated = obj.labels.find(
-            (lbl) => lbl.validation && lbl.validation.validated,
-          );
-
-          if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
-            acc.removable.push(obj._id);
-          } else if (
-            obj.labels.length > 1 &&
-            obj.locked === true &&
-            firstValidated !== undefined &&
-            firstValidated.labelId === input.labelId
-          ) {
-            acc.unlockable.push(obj);
-          } else {
-            acc.rest.push(obj._id);
-          }
-
-          return acc;
-        },
-        {
-          removable: [] as mongoose.Types.ObjectId[],
-          unlockable: [] as ObjectSchema[],
-          rest: [] as mongoose.Types.ObjectId[],
-        },
-      );
-
-      const removeOperation =
-        removable.length > 0
-          ? [
-              {
-                updateOne: {
-                  filter: { _id: img._id },
-                  update: {
-                    $pull: {
-                      objects: {
-                        _id: {
-                          $in: removable,
+        const removeOperation =
+          removable.length > 0
+            ? [
+                {
+                  updateOne: {
+                    filter: { _id: img._id },
+                    update: {
+                      $pull: {
+                        objects: {
+                          _id: {
+                            $in: removable,
+                          },
                         },
                       },
                     },
                   },
                 },
-              },
-            ]
-          : [];
+              ]
+            : [];
 
-      const unlockOperations = unlockable.map((obj) => {
-        return {
-          updateOne: {
-            filter: { _id: img._id },
-            update: {
-              $set: { 'objects.$[obj].locked': false },
-              $pull: {
-                'objects.$[obj].labels': {
-                  labelId: input.labelId,
+        const unlockOperations = unlockable.map((obj) => {
+          return {
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $set: { 'objects.$[obj].locked': false },
+                $pull: {
+                  'objects.$[obj].labels': {
+                    labelId: input.labelId,
+                  },
                 },
               },
+              arrayFilters: [{ 'obj._id': obj._id }],
             },
-            arrayFilters: [{ 'obj._id': obj._id }],
-          },
-        };
-      });
+          };
+        });
 
-      const standardOperations = rest.map((objId) => {
-        return {
-          updateOne: {
-            filter: { _id: img._id },
-            update: {
-              $pull: {
-                'objects.$[obj].labels': {
-                  labelId: input.labelId,
+        const standardOperations = rest.map((objId) => {
+          return {
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $pull: {
+                  'objects.$[obj].labels': {
+                    labelId: input.labelId,
+                  },
                 },
               },
+              arrayFilters: [{ 'obj._id': objId }],
             },
-            arrayFilters: [{ 'obj._id': objId }],
-          },
-        };
-      });
+          };
+        });
 
-      return [...operations, ...removeOperation, ...unlockOperations, ...standardOperations];
-    }, []);
+        outerAcc.operations = [
+          ...outerAcc.operations,
+          ...removeOperation,
+          ...unlockOperations,
+          ...standardOperations,
+        ];
+        outerAcc.imageIds = [...outerAcc.imageIds, ...img._id];
+
+        return outerAcc;
+      },
+      { operations: [] as any[], imageIds: [] as string[] },
+    );
 
     if (operations.length === 0) {
       return true;
@@ -1196,7 +1181,7 @@ export class ImageModel {
 
     const batchSize = 5000;
     let idx = 0;
-    let batches = []
+    let batches = [];
     while (idx * batchSize < operations.length) {
       const batchEnd = idx * batchSize;
       const batchStart = batchEnd - batchSize;
@@ -1206,8 +1191,9 @@ export class ImageModel {
     batches.push(operations.slice(idx * batchSize, operations.length));
 
     const batchPromises: Promise<any>[] = batches.map((batch) => Image.bulkWrite(batch));
-
     const resArray = await Promise.all(batchPromises);
+
+    this.updateReviewStatus(imageIds);
 
     // TODO
     // For some reason, it seems like mongoose is not
