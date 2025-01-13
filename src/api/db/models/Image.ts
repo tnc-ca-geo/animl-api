@@ -339,8 +339,8 @@ export class ImageModel {
         }
 
         // test image size
-        if (md.imageBytes! >= 4 * 1000000) {
-          errors.push(new Error('Image Size Exceed 4mb'));
+        if (md.imageBytes! >= 8 * 1000000) {
+          errors.push(new Error('Image Size Exceed 8 MB'));
         }
 
         if (!errors.length) {

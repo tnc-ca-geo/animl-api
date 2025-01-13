@@ -164,6 +164,7 @@ functions:
     handler: src/ml/handler.inference
     runtime: nodejs20.x
     reservedConcurrency: 8
+    memorySize: 2048
     timeout: 120
   task:
     handler: src/task/handler.handler
