@@ -338,10 +338,10 @@ export class ImageModel {
           errors.push(new Error('Unknown DateTimeOriginal'));
         }
 
-        // // test image size
-        // if (md.imageBytes! >= 4 * 1000000) {
-        //   errors.push(new Error('Image Size Exceed 4mb'));
-        // }
+        // test image size
+        if (md.imageBytes! >= 8 * 1000000) {
+          errors.push(new Error('Image Size Exceed 8 MB'));
+        }
 
         if (!errors.length) {
           console.log('validation passed, creating image record...');
