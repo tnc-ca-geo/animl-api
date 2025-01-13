@@ -795,19 +795,15 @@ export class ProjectModel {
       const label = project.labels?.find((p) => p._id.toString() === input._id.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
-      const count = await ImageModel.countImagesByLabel([input._id], context);
-
-      // TODO
-      // Need to benchmark so that we can up the limit if bulk works faster
-      // if (count > MAX_LABEL_DELETE) {
-      //   const msg =
-      //     `This label is already in extensive use (>${MAX_LABEL_DELETE} images) and cannot be ` +
-      //     ' automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
-      //   throw new DeleteLabelError(msg);
-      // }
-
-      let isBulkDeleteOk = await ImageModel.deleteLabelsFromImages({ labelId: input._id }, context);
-      if (!isBulkDeleteOk) {
+      let { isOk, isOverLimit } = await ImageModel.deleteLabelsFromImages(
+        { labelId: input._id },
+        context,
+      );
+      if (isOverLimit) {
+        const msg =
+          'This label is in extensive use and cannot be automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        throw new DeleteLabelError(msg);
+      } else if (!isOk) {
         return { isOk: false };
       }
 

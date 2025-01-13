@@ -54,6 +54,11 @@ import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
+// Max number of label remove operations.
+// The lambda will timeout around 80,000 operations.
+// This is a safe limit with a nice number.
+const MAX_LABEL_REMOVE_COUNT = 50000;
+
 export class ImageModel {
   static readonly DELETE_IMAGES_BATCH_SIZE = 300;
 
@@ -1063,7 +1068,7 @@ export class ImageModel {
   static async deleteLabelsFromImages(
     input: { labelId: string },
     context: Pick<Context, 'user'>,
-  ): Promise<boolean> {
+  ): Promise<{ isOk: boolean; isOverLimit: boolean }> {
     // All images that have at least one object which has the target label
     const allImagesWithLabel = await Image.find({
       projectId: context.user['curr_project']!,
@@ -1071,7 +1076,7 @@ export class ImageModel {
     });
 
     if (allImagesWithLabel === undefined || allImagesWithLabel.length === 0) {
-      return true;
+      return { isOk: true, isOverLimit: false };
     }
 
     const { operations, imageIds } = allImagesWithLabel.reduce(
@@ -1176,7 +1181,14 @@ export class ImageModel {
     );
 
     if (operations.length === 0) {
-      return true;
+      return { isOk: true, isOverLimit: false };
+    }
+
+    // Avoid timeouts by capping operations.
+    // In the future, this should probably start an async task.
+    // For now, we can prompt a manual request.
+    if (operations.length > MAX_LABEL_REMOVE_COUNT) {
+      return { isOk: false, isOverLimit: true };
     }
 
     const batchSize = 5000;
@@ -1195,12 +1207,14 @@ export class ImageModel {
 
     this.updateReviewStatus(imageIds);
 
-    // TODO
     // For some reason, it seems like mongoose is not
     // properly creating a BulkWriteResult class
     // this is the underlying object that MongoDB
     // sends back
-    return resArray.every((res) => res.result.ok);
+    return {
+      isOk: resArray.every((res) => res.result.ok),
+      isOverLimit: false,
+    };
   }
 
   /**
