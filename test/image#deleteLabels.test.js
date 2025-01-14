@@ -9,7 +9,8 @@ tape('Image: DeleteLabel', async (t) => {
     MockConfig(t);
 
     const mockFind = Sinon.stub(ImageSchema, 'find');
-    const bulkWriteMock = Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
+    const bulkWriteMock = Sinon.stub(ImageSchema, 'bulkWrite').callsFake((cmd) => {
+      console.log(JSON.stringify(cmd, null, 4));
       return { isOk: () => true };
     });
 
@@ -28,11 +29,13 @@ tape('Image: DeleteLabel', async (t) => {
         ],
       },
     ]);
-    await ImageModel.deleteLabelsFromImages(
+    const noActionRes = await ImageModel.deleteLabelsFromImages(
       { labelId: 'no-labels' },
       { user: { curr_project: 'mock-project' } },
     );
-    t.assert(bulkWriteMock.calledOnceWithExactly([]));
+    t.assert(bulkWriteMock.notCalled);
+    t.assert(noActionRes.isOverLimit === false);
+    t.assert(noActionRes.isOk === true);
 
     // Do nothing
     mockFind.reset();
@@ -53,11 +56,13 @@ tape('Image: DeleteLabel', async (t) => {
         ],
       },
     ]);
-    await ImageModel.deleteLabelsFromImages(
+    const labelsButNoAction = await ImageModel.deleteLabelsFromImages(
       { labelId: 'no-matching-label' },
       { user: { curr_project: 'mock-project' } },
     );
-    t.assert(bulkWriteMock.calledOnceWithExactly([]));
+    t.assert(bulkWriteMock.notCalled);
+    t.assert(labelsButNoAction.isOk === true);
+    t.assert(labelsButNoAction.isOverLimit === false);
 
     // Delete object
     mockFind.reset();
@@ -78,12 +83,13 @@ tape('Image: DeleteLabel', async (t) => {
         ],
       },
     ]);
-    await ImageModel.deleteLabelsFromImages(
+    const deleteObjRes = await ImageModel.deleteLabelsFromImages(
       { labelId: 'matching-label-only-label' },
       { user: { curr_project: 'mock-project' } },
     );
+    // The updateImageReviewed status will also call bulkWrite
     t.assert(
-      bulkWriteMock.calledOnceWithExactly([
+      bulkWriteMock.calledWithExactly([
         {
           updateOne: {
             filter: { _id: 'matching-label-only-label' },
@@ -100,6 +106,8 @@ tape('Image: DeleteLabel', async (t) => {
         },
       ]),
     );
+    t.assert(deleteObjRes.isOverLimit === false);
+    t.assert(deleteObjRes.isOk === true);
 
     // Unlock
     mockFind.reset();
@@ -129,12 +137,12 @@ tape('Image: DeleteLabel', async (t) => {
       },
     ]);
     bulkWriteMock.resetHistory();
-    await ImageModel.deleteLabelsFromImages(
+    const removeLabelsRes = await ImageModel.deleteLabelsFromImages(
       { labelId: 'many-labels-matching-label-validated' },
       { user: { curr_project: 'mock-project' } },
     );
     t.assert(
-      bulkWriteMock.calledOnceWithExactly([
+      bulkWriteMock.calledWithExactly([
         {
           updateOne: {
             filter: { _id: 'many-labels-matching-label-validated' },
@@ -151,6 +159,8 @@ tape('Image: DeleteLabel', async (t) => {
         },
       ]),
     );
+    t.assert(removeLabelsRes.isOk === true);
+    t.assert(removeLabelsRes.isOverLimit === false);
 
     // Remove but don't unlock
     mockFind.reset();
@@ -180,12 +190,12 @@ tape('Image: DeleteLabel', async (t) => {
       },
     ]);
     bulkWriteMock.resetHistory();
-    await ImageModel.deleteLabelsFromImages(
+    const removeButDontUnlockRes = await ImageModel.deleteLabelsFromImages(
       { labelId: 'many-labels-matching-label' },
       { user: { curr_project: 'mock-project' } },
     );
     t.assert(
-      bulkWriteMock.calledOnceWithExactly([
+      bulkWriteMock.calledWith([
         {
           updateOne: {
             filter: { _id: 'many-labels-matching-label' },
@@ -201,6 +211,8 @@ tape('Image: DeleteLabel', async (t) => {
         },
       ]),
     );
+    t.assert(removeButDontUnlockRes.isOk === true);
+    t.assert(removeButDontUnlockRes.isOverLimit === false);
 
     // Do all operations
     mockFind.reset();
@@ -248,12 +260,12 @@ tape('Image: DeleteLabel', async (t) => {
       },
     ]);
     bulkWriteMock.resetHistory();
-    await ImageModel.deleteLabelsFromImages(
+    const doAllRes = await ImageModel.deleteLabelsFromImages(
       { labelId: 'do-all-operations' },
       { user: { curr_project: 'mock-project' } },
     );
     t.assert(
-      bulkWriteMock.calledOnceWithExactly([
+      bulkWriteMock.calledWithExactly([
         {
           updateOne: {
             filter: { _id: 'do-all-operations' },
@@ -297,6 +309,8 @@ tape('Image: DeleteLabel', async (t) => {
         },
       ]),
     );
+    t.assert(doAllRes.isOk === true);
+    t.assert(doAllRes.isOverLimit === false);
   } catch (err) {
     t.error(err);
   }
