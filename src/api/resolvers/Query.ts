@@ -64,9 +64,7 @@ export default {
     context: Context,
   ): Promise<gql.ImagesConnection> => {
     console.log('images query - input: ', input);
-    console.time('images query');
     const response = await context.models.Image.queryByFilter(input, context);
-    console.timeEnd('images query');
     const { previous, hasPrevious, next, hasNext, results } = response;
     return {
       pageInfo: {
@@ -85,9 +83,7 @@ export default {
     context: Context,
   ): Promise<gql.ImagesCount> => {
     console.log('imagesCount query - input: ', input);
-    console.time('images count');
     const count = await context.models.Image.countImages(input, context);
-    console.timeEnd('images count');
     return {
       count,
     };
