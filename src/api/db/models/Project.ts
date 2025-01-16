@@ -35,10 +35,6 @@ import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { TaskSchema } from '../schemas/Task.js';
 
-// The max number of labeled images that can be deleted
-// when removing a label from a project
-const MAX_LABEL_DELETE = 500;
-
 // The max number of tagged images that can be deleted
 // when removing a tag from a project
 const MAX_TAG_DELETE = 50000;
@@ -795,7 +791,7 @@ export class ProjectModel {
       const label = project.labels?.find((p) => p._id.toString() === input._id.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
-      let { isOk, isOverLimit } = await ImageModel.deleteLabelsFromImages(
+      const { isOk, isOverLimit } = await ImageModel.deleteLabelsFromImages(
         { labelId: input._id },
         context,
       );
