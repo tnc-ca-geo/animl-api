@@ -54,6 +54,11 @@ import { TaskSchema } from '../schemas/Task.js';
 
 const ObjectId = mongoose.Types.ObjectId;
 
+// Max number of label remove operations.
+// The lambda will timeout around 30,000 operations.
+// This is a safe limit with a nice number.
+const MAX_LABEL_REMOVE_COUNT = 25000;
+
 export class ImageModel {
   static readonly DELETE_IMAGES_BATCH_SIZE = 300;
 
@@ -1046,29 +1051,160 @@ export class ImageModel {
   }
 
   /**
-   * A slower but more thorough label deletion method than ImageModel.deleteLabels
-   * This method iterates through all objects and deletes all instances of a given label
-   * unlocking an object if the label is the current top level choice of a validated object
-   * or deleting the object if it only has a single label and it's the one we're removing
+   * Images.objects can be grouped into three categories depending on their
+   * locked state and number of labels:
    *
-   * @param {object} input
-   * @param {string} input.labelId - Label to remove
-   * @param {object} context
+   * n: total image.objects with target label
+   * m: objects which only have a single label which is the target label
+   * q: objects which have multiple labels and the first validated label is the target label
+   * r: objects which have multiple labels and the first validated label is not the target label
+   *
+   * n = m + q + r
+   *
+   * For m, delete object
+   * For q: remove label and unlock object
+   * For r: remove label and do nothing
    */
-  static async deleteAnyLabels(
+  static async deleteLabelsFromImages(
     input: { labelId: string },
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageSchema>[]> {
-    const images = await Image.find({
-      'objects.labels.labelId': input.labelId,
+  ): Promise<{ isOk: boolean; isOverLimit: boolean }> {
+    // All images that have at least one object which has the target label
+    const allImagesWithLabel = await Image.find({
       projectId: context.user['curr_project']!,
+      'objects.labels.labelId': input.labelId,
     });
 
-    return await Promise.all(
-      images.map((image) => {
-        return ImageModel.deleteAnyLabel(image, input.labelId);
-      }),
+    if (allImagesWithLabel === undefined || allImagesWithLabel.length === 0) {
+      return { isOk: true, isOverLimit: false };
+    }
+
+    const { operations, imageIds } = allImagesWithLabel.reduce(
+      (outerAcc, img) => {
+        const { removable, unlockable, rest } = img.objects.reduce(
+          (acc, obj) => {
+            // This object doesn't have the target label so skip it
+            if (obj.labels.find((lbl) => lbl.labelId === input.labelId) === undefined) {
+              return acc;
+            }
+
+            const firstValidated = obj.labels.find(
+              (lbl) => lbl.validation && lbl.validation.validated,
+            );
+
+            if (obj.labels.length === 1 && obj.labels[0].labelId === input.labelId) {
+              acc.removable.push(obj._id);
+            } else if (
+              obj.labels.length > 1 &&
+              obj.locked === true &&
+              firstValidated !== undefined &&
+              firstValidated.labelId === input.labelId
+            ) {
+              acc.unlockable.push(obj);
+            } else {
+              acc.rest.push(obj._id);
+            }
+
+            return acc;
+          },
+          {
+            removable: [] as mongoose.Types.ObjectId[],
+            unlockable: [] as ObjectSchema[],
+            rest: [] as mongoose.Types.ObjectId[],
+          },
+        );
+
+        const removeOperation =
+          removable.length > 0
+            ? [
+                {
+                  updateOne: {
+                    filter: { _id: img._id },
+                    update: {
+                      $pull: {
+                        objects: {
+                          _id: {
+                            $in: removable,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              ]
+            : [];
+
+        const unlockOperations = unlockable.map((obj) => {
+          return {
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $set: { 'objects.$[obj].locked': false },
+                $pull: {
+                  'objects.$[obj].labels': {
+                    labelId: input.labelId,
+                  },
+                },
+              },
+              arrayFilters: [{ 'obj._id': obj._id }],
+            },
+          };
+        });
+
+        const standardOperations = rest.map((objId) => {
+          return {
+            updateOne: {
+              filter: { _id: img._id },
+              update: {
+                $pull: {
+                  'objects.$[obj].labels': {
+                    labelId: input.labelId,
+                  },
+                },
+              },
+              arrayFilters: [{ 'obj._id': objId }],
+            },
+          };
+        });
+
+        outerAcc.operations = [
+          ...outerAcc.operations,
+          ...removeOperation,
+          ...unlockOperations,
+          ...standardOperations,
+        ];
+        outerAcc.imageIds = [...outerAcc.imageIds, ...img._id];
+
+        return outerAcc;
+      },
+      { operations: [] as any[], imageIds: [] as string[] },
     );
+
+    if (operations.length === 0) {
+      return { isOk: true, isOverLimit: false };
+    }
+
+    // Avoid timeouts by capping operations.
+    // In the future, this should probably start an async task.
+    // For now, we can prompt a manual request.
+    if (operations.length > MAX_LABEL_REMOVE_COUNT) {
+      return { isOk: false, isOverLimit: true };
+    }
+
+    const res = await Image.bulkWrite(operations);
+    if (!res.isOk()) {
+      return {
+        isOk: false,
+        isOverLimit: false,
+      };
+    }
+
+    await this.updateReviewStatus(imageIds);
+
+    return {
+      isOk: true,
+      isOverLimit: false,
+    };
   }
 
   /**
