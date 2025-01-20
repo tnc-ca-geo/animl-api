@@ -340,13 +340,11 @@ export class CameraModel {
 
       // Step 1: update serial number on all images
       // TODO: do we want to wrap this all in a retry?
-      console.time('update-serial-number-on-images');
       const affectedImgIds = (await Images.find({ cameraId }, '_id')).map((img) =>
         img._id.toString(),
       );
       const res = await Images.updateMany({ cameraId }, { cameraId: newId });
       console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
-      console.timeEnd('update-serial-number-on-images');
       if (res.matchedCount !== res.modifiedCount) {
         throw new GraphQLError('Not all images were updated successfully');
       }

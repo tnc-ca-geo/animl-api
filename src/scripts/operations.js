@@ -58,6 +58,32 @@ const pipeline = [
 ];
 
 const operations = {
+  'add-tag-filter-to-views': {
+    getIds: async () => await Project.find({}).select('_id'),
+    update: async () => {
+      console.log('Adding tag filter to all Project.views...');
+      const projects = await Project.find({});
+      try {
+        const res = { nModified: 0 };
+        for (const proj of projects) {
+          for (const view of proj.views) {
+            console.log(`Updating view ${view.name} in project ${proj.name}: ${view.filters}`);
+            // if (view.filters.editable) {
+            //   view.filters = {
+            //     ...view.filters,
+            //     tags: null,
+            //   };
+            // }
+          }
+          await proj.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.log(err);
+      }
+    },
+  },
   'unlock-objects-with-all-non-validated-labels': {
     // Unlock all objects that don't have any validated or invalidated labels
     // (Label.validation === null or undefined), and mark image as not reviewed

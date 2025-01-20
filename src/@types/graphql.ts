@@ -397,6 +397,7 @@ export type Filters = {
   labels?: Maybe<Array<Scalars['String']['output']>>;
   notReviewed?: Maybe<Scalars['Boolean']['output']>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
+  tags?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type FiltersInput = {
@@ -409,6 +410,7 @@ export type FiltersInput = {
   deployments?: InputMaybe<Array<Scalars['String']['input']>>;
   labels?: InputMaybe<Array<Scalars['String']['input']>>;
   reviewed?: InputMaybe<Scalars['Boolean']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export enum Format {

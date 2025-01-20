@@ -144,6 +144,7 @@ export function buildPipeline(
     addedStart,
     addedEnd,
     labels,
+    tags,
     reviewed,
     custom,
   }: gql.Filters,
@@ -205,6 +206,13 @@ export function buildPipeline(
   // match labels filter
   if (labels) {
     pipeline.push(...buildLabelPipeline(labels));
+  }
+
+  // match tags filter
+  if (tags) {
+    // cast string id to ObjectId
+    const tagIds = tags.map((tagStrings) => new mongoose.Types.ObjectId(tagStrings));
+    pipeline.push({ $match: { tags: { $in: tagIds } } });
   }
 
   // match custom filter
