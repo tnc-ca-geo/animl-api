@@ -211,8 +211,24 @@ export function buildPipeline(
   // match tags filter
   if (tags) {
     // cast string id to ObjectId
-    const tagIds = tags.map((tagStrings) => new mongoose.Types.ObjectId(tagStrings));
-    pipeline.push({ $match: { tags: { $in: tagIds } } });
+    const tagIds = tags
+      .filter((t) => t !== 'none')
+      .map((tagStrings) => new mongoose.Types.ObjectId(tagStrings));
+
+    const tagsFilter = tags.includes('none')
+      ? {
+          $match: {
+            $or: [
+              { tags: { $in: tagIds } },
+              {
+                $or: [{ tags: { $size: 0 } }, { tags: null }],
+              },
+            ],
+          },
+        }
+      : { $match: { tags: { $in: tagIds } } };
+
+    pipeline.push(tagsFilter);
   }
 
   // match custom filter
