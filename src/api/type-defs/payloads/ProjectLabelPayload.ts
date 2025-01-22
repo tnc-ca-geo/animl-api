@@ -1,5 +1,5 @@
 export default /* GraphQL */ `
   type ProjectLabelPayload {
-    label: ProjectLabel
+    labels: [ProjectLabel!]
   }
 `;

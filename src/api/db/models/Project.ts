@@ -757,7 +757,7 @@ export class ProjectModel {
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<gql.ProjectLabel>> {
+  ): Promise<{ labels: mongoose.Types.DocumentArray<ProjectLabelSchema> }> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -774,7 +774,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return project.labels.pop()!;
+      return { labels: project.labels };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -832,7 +832,7 @@ export class ProjectModel {
   static async updateLabel(
     input: gql.UpdateProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ProjectLabelSchema>> {
+  ): Promise<{ labels: mongoose.Types.DocumentArray<ProjectLabelSchema> }> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -846,7 +846,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return label;
+      return { labels: project.labels };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);

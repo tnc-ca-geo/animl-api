@@ -252,8 +252,7 @@ export default {
     { input }: gql.MutationCreateProjectLabelArgs,
     context: Context,
   ): Promise<gql.ProjectLabelPayload> => {
-    const label = await context.models.Project.createLabel(input, context);
-    return { label };
+    return await context.models.Project.createLabel(input, context);
   },
 
   updateProjectLabel: async (
@@ -261,8 +260,7 @@ export default {
     { input }: gql.MutationUpdateProjectLabelArgs,
     context: Context,
   ): Promise<gql.ProjectLabelPayload> => {
-    const label = await context.models.Project.updateLabel(input, context);
-    return { label };
+    return await context.models.Project.updateLabel(input, context);
   },
 
   deleteProjectLabel: async (

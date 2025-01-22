@@ -953,7 +953,7 @@ export type ProjectLabel = {
 
 export type ProjectLabelPayload = {
   __typename?: 'ProjectLabelPayload';
-  label?: Maybe<ProjectLabel>;
+  labels?: Maybe<Array<ProjectLabel>>;
 };
 
 export type ProjectPayload = {
