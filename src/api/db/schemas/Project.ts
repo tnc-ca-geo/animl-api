@@ -36,6 +36,7 @@ const FiltersSchema = new Schema({
   cameras: { type: [String], default: undefined },
   deployments: { type: [String], default: undefined },
   labels: { type: [String], default: undefined },
+  tags: { type: [String], default: undefined },
   createdStart: { type: Date },
   createdEnd: { type: Date },
   addedStart: { type: Date },
@@ -74,7 +75,7 @@ const ProjectLabelSchema = new Schema({
 const ProjectTagSchema = new Schema({
   _id: { type: Schema.Types.ObjectId, required: true, auto: true },
   name: { type: String, required: true },
-  color: { type: String, required: true }
+  color: { type: String, required: true },
 });
 
 const CameraConfigSchema = new Schema({

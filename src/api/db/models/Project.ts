@@ -724,6 +724,10 @@ export class ProjectModel {
 
       await project.save();
 
+      // TODO: once tags can be used in views,
+      // we need to remove the tag from all views
+      // as we do with labels in deleteLabel
+
       return { tags: project.tags };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
