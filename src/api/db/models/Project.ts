@@ -722,11 +722,22 @@ export class ProjectModel {
 
       project.tags.splice(project.tags.indexOf(tag), 1);
 
-      await project.save();
+      const views = project.views.map((view) => {
+        if (!Array.isArray(view.filters.tags)) return view;
 
-      // TODO: once tags can be used in views,
-      // we need to remove the tag from all views
-      // as we do with labels in deleteLabel
+        return {
+          ...view,
+          filters: {
+            ...view.filters,
+            tags: view.filters.tags.filter((tag) =>
+              project.tags.some((t) => t._id.toString() === tag),
+            ),
+          },
+        };
+      });
+      project.views = views as typeof project.views;
+
+      await project.save();
 
       return { tags: project.tags };
     } catch (err) {
@@ -811,7 +822,6 @@ export class ProjectModel {
 
       const views = project.views.map((view) => {
         if (!Array.isArray(view.filters.labels)) return view;
-
         return {
           ...view,
           filters: {
