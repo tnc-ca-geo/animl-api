@@ -722,6 +722,21 @@ export class ProjectModel {
 
       project.tags.splice(project.tags.indexOf(tag), 1);
 
+      const views = project.views.map((view) => {
+        if (!Array.isArray(view.filters.tags)) return view;
+
+        return {
+          ...view,
+          filters: {
+            ...view.filters,
+            tags: view.filters.tags.filter((tag) =>
+              project.tags.some((t) => t._id.toString() === tag),
+            ),
+          },
+        };
+      });
+      project.views = views as typeof project.views;
+
       await project.save();
 
       return { tags: project.tags };
@@ -757,7 +772,7 @@ export class ProjectModel {
   static async createLabel(
     input: gql.CreateProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<gql.ProjectLabel>> {
+  ): Promise<{ labels: mongoose.Types.DocumentArray<ProjectLabelSchema> }> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -774,7 +789,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return project.labels.pop()!;
+      return { labels: project.labels };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -807,7 +822,6 @@ export class ProjectModel {
 
       const views = project.views.map((view) => {
         if (!Array.isArray(view.filters.labels)) return view;
-
         return {
           ...view,
           filters: {
@@ -832,7 +846,7 @@ export class ProjectModel {
   static async updateLabel(
     input: gql.UpdateProjectLabelInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ProjectLabelSchema>> {
+  ): Promise<{ labels: mongoose.Types.DocumentArray<ProjectLabelSchema> }> {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
@@ -846,7 +860,7 @@ export class ProjectModel {
 
       await project.save();
 
-      return label;
+      return { labels: project.labels };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);

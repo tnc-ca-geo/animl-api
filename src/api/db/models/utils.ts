@@ -144,6 +144,7 @@ export function buildPipeline(
     addedStart,
     addedEnd,
     labels,
+    tags,
     reviewed,
     custom,
   }: gql.Filters,
@@ -205,6 +206,29 @@ export function buildPipeline(
   // match labels filter
   if (labels) {
     pipeline.push(...buildLabelPipeline(labels));
+  }
+
+  // match tags filter
+  if (tags) {
+    // cast string id to ObjectId
+    const tagIds = tags
+      .filter((t) => t !== 'none')
+      .map((tagStrings) => new mongoose.Types.ObjectId(tagStrings));
+
+    const tagsFilter = tags.includes('none')
+      ? {
+          $match: {
+            $or: [
+              { tags: { $in: tagIds } },
+              {
+                $or: [{ tags: { $size: 0 } }, { tags: null }],
+              },
+            ],
+          },
+        }
+      : { $match: { tags: { $in: tagIds } } };
+
+    pipeline.push(tagsFilter);
   }
 
   // match custom filter
