@@ -2,6 +2,8 @@
 
 The following documentation describes the data flow and relationships between Animl microservices.
 
+![Animl architecture diagram](documentation/animl-architecture-diagram.png)
+
 ### [animl-base](https://github.com/tnc-ca-geo/animl-base)
 
 - Animl Base (1) is a node application deployed on linux-based field computers that ingests new images from a Buckeye wireless camera trap base station and uploads them to S3.
@@ -50,7 +52,7 @@ The following documentation describes the data flow and relationships between An
   - bucket for storing images that fail ingestion
 - **animl-ingest-delete** - _SNS Topic_
 
-### animl-api
+### [animl-api](https://github.com/tnc-ca-geo/animl-api)
 
 - **animl-api-graphql** - _Lambda function_
   - A GraphQL API (11) that serves as the lynchpin for the Animl application and manages the business logic and CRUD operations to a MongoDB Atlas database (12). It has a two paths: an `/external` endpoint that gets called by the animl-frontend UI and is protected by a Cognito authorizer requiring the user's ID token, and an `/internal` endpoint that is called by the animl-api-inference, IngestImage, and other internal Lambda handlers and requires and API key.
