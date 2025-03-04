@@ -2,7 +2,7 @@
 
 The following documentation describes the data flow and relationships between Animl microservices.
 
-![Animl architecture diagram](/animl-architecture-diagram.png)
+![Animl architecture diagram](/documentation/animl-architecture-diagram.png)
 
 ### [animl-base](https://github.com/tnc-ca-geo/animl-base)
 
