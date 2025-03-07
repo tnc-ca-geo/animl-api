@@ -27,6 +27,9 @@ associated deployment resources are managed with the
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) via
   [Mongoose](https://mongoosejs.com/)
 
+> [!IMPORTANT]
+> There are other services required for running Animl that are not managed in this repo. For a full overview of the Animl architecture and description of how its services are integrated, see this [documentation](/documentation/).
+
 ## Development
 
 ### Prerequisites
