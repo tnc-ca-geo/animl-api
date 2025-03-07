@@ -1,6 +1,6 @@
 # Animl architecture
 
-The following documentation describes the data flow and relationships between Animl microservices. Some of the services are managed in separate [repositories](Repositories and resources), and this README provides an overview of how they are integrated.
+The following documentation describes the data flow and relationships between Animl microservices. Some of the services are managed in separate [repositories](#repositories-and-resources), and this README provides an overview of how they are integrated.
 
 ![Animl architecture diagram](/documentation/animl-achitecture-diagram-v1.0.1.png)
 
@@ -36,7 +36,9 @@ In all cases above, once images from a wireless camera is added to the ingestion
 
 **3. Bulk uploaded camera trap data ingestion and processing**
 
-When a user uploads a zip file of images to the frontend UI (18), it gets written to the **animl-images-ingestion** Bucket. When the **IngestImage** Lambda (7) detects a zip file has been added to the Bucket, it initiates the **IngestZip** Batch Job, which stands up a temporary Cloudformation stack for processing that specific bulk upload. The Batch Job validates and extracts the images from the zip file, moves them to the **images-ingestion** Bucket, and then deletes the temporary resources when the processing of that upload is complete. A more detailed description can be found in the [animl-ingest](animl-ingest) section of the documentation below.
+When a user uploads a zip file of images to the frontend UI (18), it gets written to the **animl-images-ingestion** Bucket. When the **IngestImage** Lambda (7) detects a zip file has been added to the Bucket, it initiates the **IngestZip** Batch Job, which stands up a temporary Cloudformation stack (SQS queue, Cloudwatch Metric Alarm) for processing that specific bulk upload. The Batch Job validates and extracts the images from the zip file and writes each of them individually to the **images-ingestion** Bucket. When the Cloudwatch Metric Alarm detects that the temporary SQS queue no longer contains messages awaiting processing, the processing is done, and it triggers the **IngestDelete** Lambda which tears down the temporary resources. A more detailed description can be found in the [animl-ingest > IngestZip](#animl-ingest) section of the documentation below.
+
+Like real-time images, we also perform inference on bulk-uploaded images using SageMaker Serverless endpoints. However, we have a separate inference Lambda and a separate set of sagemaker endpoints for processing bulk-uploaded images that have higher concurrency settings than their real-time counterparts to support faster processing of larger workloads. More information can be found in the [animl-api > animl-api-batchinference](#animl-api) section of the documentation below.
 
 ## Repositories and resources
 
