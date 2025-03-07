@@ -11,7 +11,7 @@ organizations using camera traps to:
 
 - ingest data from a variety of camera trap types (wireless, SD card based, IP, etc.)
 - systematically store and manage images in a single centralized, cloud-based repository
-- upload custom object detection and species clasification ML models and configure
+- upload custom object detection and species classification ML models and configure
   automated assisted-labeling pipelines
 - Offer frontend web application to view images, review ML-assisted labels,
   perform manual labeling
@@ -19,13 +19,16 @@ organizations using camera traps to:
 - Offer tools for exporting ML model training data
 
 This repository contains an AWS Lambda-based, GraphQl API for storing and
-fetching cameratrap data from a MongoDB database. The stack and and it's
+fetching camera trap data from a MongoDB database. The stack and and it's
 associated deployment resources are managed with the
 [Serverless Framework](serverless.com/). The stack includes:
 
 - [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) via
   [Mongoose](https://mongoosejs.com/)
+
+> [!IMPORTANT]
+> There are other services required for running Animl that are not managed in this repo. For a full overview of the Animl architecture and description of how its services are integrated, see this [documentation](/documentation/).
 
 ## Development
 
