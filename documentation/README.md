@@ -81,8 +81,7 @@ Like real-time images, we also perform inference on bulk-uploaded images using S
 - **IngestZip** - _Batch Job_
   - ingest-zip Batch handler (8) is responsible for creating batch-specific resources, extracting the images from the zip file, moving them to the images-ingestion bucket, and then deleting the batch resources when the batch processing is complete. We create separate, temporary SQS queues for inference for bulk uploads of images so that they don’t block real-time inference requests and so that we can track the processing progress of individual bulk uploads and display progress bars to the user.
   - Specifically, the ingest-zip Batch handler creates a new CloudFormation stack (9) consisting of 2 SQS queues (primary and DLQ) and a Cloudwatch Metric Alarm (stack template is defined in `ingest-zip/lib/stack.js` ). It then downloads the .zip from S3, unzips it, and puts the individual images back in the ingestion bucket for ingestion
-    > [!NOTE]
-    > When copying the image to S3, ingest-zip prepends the extracted images’ keys with 'batch-[batchId]'. This is important because it’s how downstream tasks know whether to process the image as an individual, real-time image or as part of a specific batch. When the ingest-image Lambda parses the Key of newly added images, it checks if the Key matches that template, and if so appends the `batchId` to the images' metadata. The `Image.batchId` is later checked in downstream steps to know what SQS queues to submit inference requests to.
+    > Note: When copying the image to S3, ingest-zip prepends the extracted images’ keys with 'batch-[batchId]'. This is important because it’s how downstream tasks know whether to process the image as an individual, real-time image or as part of a specific batch. When the ingest-image Lambda parses the Key of newly added images, it checks if the Key matches that template, and if so appends the `batchId` to the images' metadata. The `Image.batchId` is later checked in downstream steps to know what SQS queues to submit inference requests to.
   - The Cloudwatch Metric Alarm gets triggered when there are no more messages left in the batch queue, and it sends a message to the animl-ingest-delete SNS topic
   - Note: there is also a vestigial IngestZip Lambda function created by our Serverless template, but it doesn’t have a trigger and never gets invoked. TBH I can’t remember exactly why that gets created, but I think it had to do with it being the easiest way to build and deploy the IngestZip container image to ECR with Serverless.
 - **IngestDelete -** _Lambda function_
@@ -97,8 +96,7 @@ Like real-time images, we also perform inference on bulk-uploaded images using S
 
 - **animl-api-graphql** - _Lambda function_
   - A GraphQL API (11) that serves as the lynchpin for the Animl application and manages the business logic and CRUD operations to a MongoDB Atlas database (12). It has a two paths: an `/external` endpoint that gets called by the animl-frontend UI and is protected by a Cognito authorizer requiring the user's ID token, and an `/internal` endpoint that is called by the animl-api-inference, IngestImage, and other internal Lambda handlers and requires and API key.
-    > [!NOTE]
-    > A full description of the auth strategy can be found here: https://github.com/tnc-ca-geo/animl-api/issues/37
+    > Note: A full description of the auth strategy can be found here: https://github.com/tnc-ca-geo/animl-api/issues/37
   - Users can configure “Automation Rules” to specify what ML models to request predictions from for their images and under what circumstances - for example, they can create an Automation Rule to request object detections from the MegaDetector model when an image is added to the database, and they could create another to request species-level predictions from a classifier when an “animal” Label is detected and created by MegaDetector.
   - When a new image record is created, the animl-api-graphql hander looks up what Automation Rules are configured for that image’s Project and submits it to the appropriate inference queue (either the inferenceQueue for real-time predictions, or a batch inference queue if the image belongs to a batch/bulk upload)
   - A full list of the supported GraphQL Queries can be found in `src/api/type-defs/root/Query.ts` and a full list of the supported Mutations can be found in `src/api/type-defs/root/Mutation.ts`
@@ -108,12 +106,10 @@ Like real-time images, we also perform inference on bulk-uploaded images using S
   - A Lambda function (14) that pulls real-time inference request messages off of the inferenceQueue SQS queue, requests predictions from the appropriate Sagemaker Serverless endpoint(s), and requests `CreateInternalLabels` from the animl-api-graphql when predictions are returned
 - **animl-api-batchinference** - _Lambda function_
   - This Lambda (15) uses the same exact hander code as the real-time inference handler above, the only differences being: it watches for messages in the _batch_ SQS queues, consumes 10 messages at a time instead of 1, and has different reserved concurrency settings so that it can scale out horizontally to make use of 80 concurrent Sagemaker Serveless model endpoints for faster processing of large numbers of images. (The real-time inference Lambda is limited to utilizing 20 concurrent endpoints).
-    > [!NOTE]
-    > A full description of the horizontal scaling approach used to deliver fast, non-blocking processing of batches of images can be found here: https://github.com/tnc-ca-geo/animl-api/issues/101
+    > Note: A full description of the horizontal scaling approach used to deliver fast, non-blocking processing of batches of images can be found here: https://github.com/tnc-ca-geo/animl-api/issues/101
 - **animl-api-task** - _Lambda function_
   - The animl-api-graphql Lambda times out after 30 seconds, so for longer-running tasks that Lambdas are not well suited to support (e.g., situations in which we have to iterate over large numbers of individual records before updating them, or exporting large amounts of data), the animl-api-graphql Lambda will instead send a Task message to the taskQueue, and the actual execution of the task is then handled asynchronously by the animl-api-task Lambda (16), which has a much longer timeout (15 minutes)
-    > [!NOTE]
-    > A full description of the async task handling strategy and examples of long-running tasks can be found here: https://github.com/tnc-ca-geo/animl-api/issues/148
+    > Note: A full description of the async task handling strategy and examples of long-running tasks can be found here: https://github.com/tnc-ca-geo/animl-api/issues/148
 - **taskQueue** - _SQS queue_
   - Queue for long-running task requests
 - **animl-exported-data-bucket** - _S3 Bucket_
