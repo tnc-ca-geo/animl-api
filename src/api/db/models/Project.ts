@@ -797,17 +797,20 @@ export class ProjectModel {
   }
 
   static async deleteLabel(
-    input: gql.DeleteProjectLabelInput,
+    { _id: labelId, ignoreLimit = false }: gql.DeleteProjectLabelInput,
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     try {
+      console.log('Project.deleteLabel - labelId: ', labelId);
+      console.log('Project.deleteLabel - ignoreLimit: ', ignoreLimit);
+
       const project = await this.queryById(context.user['curr_project']!);
 
-      const label = project.labels?.find((p) => p._id.toString() === input._id.toString());
+      const label = project.labels?.find((p) => p._id.toString() === labelId.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
       const { isOk, isOverLimit } = await ImageModel.deleteLabelsFromImages(
-        { labelId: input._id },
+        { labelId: labelId },
         context,
       );
       if (isOverLimit) {

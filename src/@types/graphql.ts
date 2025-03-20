@@ -308,6 +308,7 @@ export type DeleteObjectsInput = {
 
 export type DeleteProjectLabelInput = {
   _id: Scalars['ID']['input'];
+  ignoreLimit?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type DeleteProjectTagInput = {
