@@ -811,6 +811,9 @@ export class ProjectModel {
         context,
       );
       if (isOverLimit) {
+        // TODO: create an async task to delete the labels from the images,
+        // and instead of throwing an error, return a payload with isOverLimit set to true
+        // so that the frontend can start polling for
         const msg =
           'This label is in extensive use and cannot be automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
         throw new DeleteLabelError(msg);
