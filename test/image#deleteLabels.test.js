@@ -34,7 +34,7 @@ tape('Image: DeleteLabel', async (t) => {
       { user: { curr_project: 'mock-project' } },
     );
     t.assert(bulkWriteMock.notCalled);
-    t.assert(noActionRes.isOverLimit === false);
+    t.assert(noActionRes.movingToTask === false);
     t.assert(noActionRes.isOk === true);
 
     // Do nothing
@@ -62,7 +62,7 @@ tape('Image: DeleteLabel', async (t) => {
     );
     t.assert(bulkWriteMock.notCalled);
     t.assert(labelsButNoAction.isOk === true);
-    t.assert(labelsButNoAction.isOverLimit === false);
+    t.assert(labelsButNoAction.movingToTask === false);
 
     // Delete object
     mockFind.reset();
@@ -106,7 +106,7 @@ tape('Image: DeleteLabel', async (t) => {
         },
       ]),
     );
-    t.assert(deleteObjRes.isOverLimit === false);
+    t.assert(deleteObjRes.movingToTask === false);
     t.assert(deleteObjRes.isOk === true);
 
     // Unlock
@@ -160,7 +160,7 @@ tape('Image: DeleteLabel', async (t) => {
       ]),
     );
     t.assert(removeLabelsRes.isOk === true);
-    t.assert(removeLabelsRes.isOverLimit === false);
+    t.assert(removeLabelsRes.movingToTask === false);
 
     // Remove but don't unlock
     mockFind.reset();
@@ -212,7 +212,7 @@ tape('Image: DeleteLabel', async (t) => {
       ]),
     );
     t.assert(removeButDontUnlockRes.isOk === true);
-    t.assert(removeButDontUnlockRes.isOverLimit === false);
+    t.assert(removeButDontUnlockRes.movingToTask === false);
 
     // Do all operations
     mockFind.reset();
@@ -310,7 +310,7 @@ tape('Image: DeleteLabel', async (t) => {
       ]),
     );
     t.assert(doAllRes.isOk === true);
-    t.assert(doAllRes.isOverLimit === false);
+    t.assert(doAllRes.movingToTask === false);
   } catch (err) {
     t.error(err);
   }
