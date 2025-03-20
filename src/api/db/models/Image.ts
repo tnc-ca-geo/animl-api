@@ -1066,9 +1066,9 @@ export class ImageModel {
    * For r: remove label and do nothing
    */
   static async deleteLabelsFromImages(
-    input: { labelId: string },
-    context: Pick<Context, 'user'>,
-  ): Promise<{ isOk: boolean; isOverLimit: boolean }> {
+    input: { labelId: string; processAsTask: boolean },
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<{ isOk: boolean; movingToTask: boolean }> {
     // All images that have at least one object which has the target label
     const allImagesWithLabel = await Image.find({
       projectId: context.user['curr_project']!,
@@ -1076,7 +1076,7 @@ export class ImageModel {
     });
 
     if (allImagesWithLabel === undefined || allImagesWithLabel.length === 0) {
-      return { isOk: true, isOverLimit: false };
+      return { isOk: true, movingToTask: false };
     }
 
     const { operations, imageIds } = allImagesWithLabel.reduce(
@@ -1181,21 +1181,39 @@ export class ImageModel {
     );
 
     if (operations.length === 0) {
-      return { isOk: true, isOverLimit: false };
+      return { isOk: true, movingToTask: false };
     }
 
-    // Avoid timeouts by capping operations.
-    // In the future, this should probably start an async task.
-    // For now, we can prompt a manual request.
-    if (operations.length > MAX_LABEL_REMOVE_COUNT) {
-      return { isOk: false, isOverLimit: true };
+    // if we are over the limit and processAsTask is false, start async task and return early
+    if (operations.length > MAX_LABEL_REMOVE_COUNT && !input.processAsTask) {
+      try {
+        const task = await TaskModel.create(
+          {
+            type: 'DeleteProjectLabel',
+            projectId: context.user['curr_project']!,
+            user: context.user['cognito:username'],
+            config: {
+              _id: input.labelId,
+              processAsTask: true,
+            },
+          },
+          context,
+        );
+      } catch (err) {
+        return { isOk: false, movingToTask: false };
+      }
+      return { isOk: true, movingToTask: true };
     }
+
+    // else if it's over the limit and processAsTask is true,
+    // this has been called by the task, so continue with the operation
+    // or it's under the limit, so continue with the operation
 
     const res = await Image.bulkWrite(operations);
     if (!res.isOk()) {
       return {
         isOk: false,
-        isOverLimit: false,
+        movingToTask: false,
       };
     }
 
@@ -1203,7 +1221,7 @@ export class ImageModel {
 
     return {
       isOk: true,
-      isOverLimit: false,
+      movingToTask: false,
     };
   }
 

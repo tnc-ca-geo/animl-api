@@ -51,7 +51,7 @@ async function handler(event: SQSEvent) {
       } else if (task.type === 'DeleteCamera') {
         output = await DeleteCamera(task);
       } else if (task.type === 'DeleteProjectLabel') {
-        output = await DeleteProjectLabel(task);
+        output = await DeleteProjectLabel(task, config);
       } else {
         throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }

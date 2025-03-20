@@ -308,7 +308,13 @@ export type DeleteObjectsInput = {
 
 export type DeleteProjectLabelInput = {
   _id: Scalars['ID']['input'];
-  ignoreLimit?: InputMaybe<Scalars['Boolean']['input']>;
+  processAsTask: Scalars['Boolean']['input'];
+};
+
+export type DeleteProjectLabelPayload = {
+  __typename?: 'DeleteProjectLabelPayload';
+  isOk?: Maybe<Scalars['Boolean']['output']>;
+  movingToTask?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type DeleteProjectTagInput = {
@@ -618,7 +624,7 @@ export type Mutation = {
   deleteImagesTask?: Maybe<Task>;
   deleteLabels?: Maybe<StandardPayload>;
   deleteObjects?: Maybe<StandardPayload>;
-  deleteProjectLabel?: Maybe<StandardPayload>;
+  deleteProjectLabel?: Maybe<DeleteProjectLabelPayload>;
   deleteProjectTag?: Maybe<ProjectTagsPayload>;
   deleteView?: Maybe<DeleteViewPayload>;
   redriveBatch?: Maybe<StandardPayload>;

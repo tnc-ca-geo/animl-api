@@ -797,31 +797,28 @@ export class ProjectModel {
   }
 
   static async deleteLabel(
-    { _id: labelId, ignoreLimit = false }: gql.DeleteProjectLabelInput,
-    context: Pick<Context, 'user'>,
-  ): Promise<gql.StandardPayload> {
+    { _id: labelId, processAsTask }: gql.DeleteProjectLabelInput,
+    context: Pick<Context, 'user' | 'config'>,
+  ): Promise<gql.DeleteProjectLabelPayload> {
     try {
-      console.log('Project.deleteLabel - labelId: ', labelId);
-      console.log('Project.deleteLabel - ignoreLimit: ', ignoreLimit);
-
       const project = await this.queryById(context.user['curr_project']!);
 
       const label = project.labels?.find((p) => p._id.toString() === labelId.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
-      const { isOk, isOverLimit } = await ImageModel.deleteLabelsFromImages(
-        { labelId: labelId },
+      const { isOk, movingToTask } = await ImageModel.deleteLabelsFromImages(
+        { labelId, processAsTask },
         context,
       );
-      if (isOverLimit) {
+
+      if (movingToTask || !isOk) {
         // TODO: create an async task to delete the labels from the images,
         // and instead of throwing an error, return a payload with isOverLimit set to true
         // so that the frontend can start polling for
-        const msg =
-          'This label is in extensive use and cannot be automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
-        throw new DeleteLabelError(msg);
-      } else if (!isOk) {
-        return { isOk: false };
+        // const msg =
+        //   'This label is in extensive use and cannot be automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
+        // throw new DeleteLabelError(msg);
+        return { isOk, movingToTask };
       }
 
       project.labels.splice(project.labels.indexOf(label), 1);

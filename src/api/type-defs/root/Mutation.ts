@@ -25,7 +25,7 @@ export default /* GraphQL */ `
 
     createProjectLabel(input: CreateProjectLabelInput!): ProjectLabelPayload
     updateProjectLabel(input: UpdateProjectLabelInput!): ProjectLabelPayload
-    deleteProjectLabel(input: DeleteProjectLabelInput!): StandardPayload
+    deleteProjectLabel(input: DeleteProjectLabelInput!): DeleteProjectLabelPayload
 
     createProjectTag(input: CreateProjectTagInput!): ProjectTagsPayload
     deleteProjectTag(input: DeleteProjectTagInput!): ProjectTagsPayload
