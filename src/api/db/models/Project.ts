@@ -812,7 +812,8 @@ export class ProjectModel {
       );
 
       if (movingToTask || !isOk) {
-        // let the frontend know if we are moving images to a task
+        // let the frontend know that the label deletion is being handled by a Task,
+        // so return the Task ID so that it can poll for progress
         return { isOk, movingToTask, task };
       }
 

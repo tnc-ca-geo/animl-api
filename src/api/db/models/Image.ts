@@ -57,7 +57,7 @@ const ObjectId = mongoose.Types.ObjectId;
 // Max number of label remove operations.
 // The lambda will timeout around 30,000 operations.
 // This is a safe limit with a nice number.
-const MAX_LABEL_REMOVE_COUNT = 100; //25000;
+const MAX_LABEL_REMOVE_COUNT = 25000;
 
 export class ImageModel {
   static readonly DELETE_IMAGES_BATCH_SIZE = 300;
@@ -1069,7 +1069,6 @@ export class ImageModel {
     input: { labelId: string; processAsTask: boolean },
     context: Pick<Context, 'user' | 'config'>,
   ): Promise<gql.DeleteProjectLabelPayload> {
-    console.log('ImageModel.deleteLabelsFromImages - input: ', JSON.stringify(input));
     // All images that have at least one object which has the target label
     const allImagesWithLabel = await Image.find({
       projectId: context.user['curr_project']!,
@@ -1185,16 +1184,8 @@ export class ImageModel {
       return { isOk: true, movingToTask: false };
     }
 
-    if (operations.length > MAX_LABEL_REMOVE_COUNT) {
-      console.log('ImageModel.deleteLabelsFromImages - over limit, so moving to task');
-    }
-    if (!input.processAsTask) {
-      console.log('ImageModel.deleteLabelsFromImages - processAsTask is false');
-    }
-
-    // if we are over the limit and processAsTask is false, start async task and return early
+    // if we are over the limit and processAsTask is false, create async task and return early
     if (operations.length > MAX_LABEL_REMOVE_COUNT && !input.processAsTask) {
-      console.log('ImageModel.deleteLabelsFromImages - moving to task');
       try {
         const task = await TaskModel.create(
           {
@@ -1208,21 +1199,15 @@ export class ImageModel {
           },
           context,
         );
-        console.log('ImageModel.deleteLabelsFromImages - task created: ', JSON.stringify(task));
         return { isOk: true, movingToTask: true, task };
       } catch (err) {
-        console.log('ImageModel.deleteLabelsFromImages - error creating task: ', err);
         return { isOk: false, movingToTask: false };
       }
     }
 
-    // else if it's over the limit and processAsTask is true,
-    // this has been called by the task, so continue with the operation
+    // we are either over the limit and processAsTask is true
+    // (so this is being called by the task handler),
     // or it's under the limit, so continue with the operation
-
-    console.log(
-      'ImageModel.deleteLabelsFromImages - we are either under the limit or over the limit but processing as task, so continuing...',
-    );
 
     const res = await Image.bulkWrite(operations);
     if (!res.isOk()) {
@@ -1232,11 +1217,7 @@ export class ImageModel {
       };
     }
 
-    console.log('ImageModel.deleteLabelsFromImages - Image.bulkWrite() res: ', JSON.stringify(res));
-
     await this.updateReviewStatus(imageIds);
-
-    console.log('ImageModel.deleteLabelsFromImages - review status updated');
 
     return {
       isOk: true,
