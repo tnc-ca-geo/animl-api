@@ -806,19 +806,14 @@ export class ProjectModel {
       const label = project.labels?.find((p) => p._id.toString() === labelId.toString());
       if (!label) throw new DeleteLabelError('Label not found on project');
 
-      const { isOk, movingToTask } = await ImageModel.deleteLabelsFromImages(
+      const { isOk, movingToTask, task } = await ImageModel.deleteLabelsFromImages(
         { labelId, processAsTask },
         context,
       );
 
       if (movingToTask || !isOk) {
-        // TODO: create an async task to delete the labels from the images,
-        // and instead of throwing an error, return a payload with isOverLimit set to true
-        // so that the frontend can start polling for
-        // const msg =
-        //   'This label is in extensive use and cannot be automatically deleted. Please contact nathaniel[dot]rindlaub@tnc[dot]org to request that it be manually deleted.';
-        // throw new DeleteLabelError(msg);
-        return { isOk, movingToTask };
+        // let the frontend know if we are moving images to a task
+        return { isOk, movingToTask, task };
       }
 
       project.labels.splice(project.labels.indexOf(label), 1);

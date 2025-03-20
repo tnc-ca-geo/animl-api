@@ -315,6 +315,7 @@ export type DeleteProjectLabelPayload = {
   __typename?: 'DeleteProjectLabelPayload';
   isOk?: Maybe<Scalars['Boolean']['output']>;
   movingToTask?: Maybe<Scalars['Boolean']['output']>;
+  task?: Maybe<Task>;
 };
 
 export type DeleteProjectTagInput = {
