@@ -21,6 +21,7 @@ const TaskSchema = new Schema({
       'DeleteImages',
       'DeleteImagesByFilter',
       'DeleteCamera',
+      'DeleteProjectLabel',
     ],
   },
   status: {

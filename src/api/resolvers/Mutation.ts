@@ -267,7 +267,7 @@ export default {
     _: unknown,
     { input }: gql.MutationDeleteProjectLabelArgs,
     context: Context,
-  ): Promise<gql.StandardPayload> => {
+  ): Promise<gql.DeleteProjectLabelPayload> => {
     return context.models.Project.deleteLabel(input, context);
   },
 

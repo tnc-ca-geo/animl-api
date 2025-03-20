@@ -12,6 +12,7 @@ import { type TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 import { type User } from '../api/auth/authorization.js';
 import { DeleteImages, DeleteImagesByFilter } from './image.js';
+import { DeleteProjectLabel } from './project.js';
 
 async function handler(event: SQSEvent) {
   if (!event.Records || !event.Records.length) return;
@@ -49,6 +50,8 @@ async function handler(event: SQSEvent) {
         output = await DeleteImagesByFilter(task);
       } else if (task.type === 'DeleteCamera') {
         output = await DeleteCamera(task);
+      } else if (task.type === 'DeleteProjectLabel') {
+        output = await DeleteProjectLabel(task, config);
       } else {
         throw new Error(`Unknown Task: ${JSON.stringify(task)}`);
       }
