@@ -1333,10 +1333,7 @@ export class ImageModel {
           type: 'ExportAnnotations',
           projectId: context.user['curr_project'],
           user: context.user['cognito:username'],
-          config: {
-            filters: input.filters,
-            format: input.format,
-          },
+          config: input,
         },
         context,
       );

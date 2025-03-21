@@ -6,6 +6,7 @@ export default /* GraphQL */ `
 
   input ExportInput {
     format: Format!
+    timezone: String!
     filters: FiltersInput!
   }
 `;

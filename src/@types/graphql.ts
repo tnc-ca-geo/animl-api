@@ -373,6 +373,7 @@ export type ExportErrorsInput = {
 export type ExportInput = {
   filters: FiltersInput;
   format: Format;
+  timezone: Scalars['String']['input'];
 };
 
 export type ExportPayload = {

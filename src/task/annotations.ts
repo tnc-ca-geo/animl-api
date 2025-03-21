@@ -26,6 +26,7 @@ export class AnnotationsExport {
   projectId: string;
   documentId: string;
   filters: FiltersSchema;
+  timezone: string;
   format: string;
   ext: string;
   filename: string;
@@ -48,11 +49,13 @@ export class AnnotationsExport {
       documentId,
       filters,
       format,
+      timezone,
     }: {
       projectId: string;
       documentId: string;
       filters: FiltersSchema;
       format: string;
+      timezone: string;
     },
     config: Config,
   ) {
@@ -63,6 +66,7 @@ export class AnnotationsExport {
     this.documentId = documentId;
     this.filters = filters;
     this.format = format;
+    this.timezone = timezone;
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
@@ -190,8 +194,8 @@ export class AnnotationsExport {
         description:
           `Image data exported from Animl project '${this.projectId}'.` +
           ` Export ID: ${this.documentId}`,
-        year: DateTime.now().get('year'),
-        date_created: DateTime.now().toISO(),
+        year: DateTime.now().setZone(this.timezone).get('year'),
+        date_created: DateTime.now().setZone(this.timezone).toISO(),
       };
       const infoString = JSON.stringify(info, null, 4);
 
@@ -321,7 +325,7 @@ export class AnnotationsExport {
       version: string;
       description: string;
       year: number;
-      date_created: string;
+      date_created: string | null;
     },
   ): Promise<void> {
     console.log('uploading via put');
@@ -385,10 +389,27 @@ export class AnnotationsExport {
   flattenImgTransform(): Transformer {
     return transform((img) => {
       const deployment = this.getDeployment(img);
+
+      console.log('this timezone: ', this.timezone);
+      console.log('deployment timezone: ', deployment.timezone);
+      console.log('img dateAdded before tz shift: ', DateTime.fromJSDate(img.dateAdded).toISO());
+      console.log(
+        'img dateTimeOriginal before tz shift: ',
+        DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
+      );
+      console.log(
+        'img dateAdded AFTER tz shift: ',
+        DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
+      );
+      console.log(
+        'img dateTimeOriginal AFTER tz shift: ',
+        DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
+      );
+
       const flatImgRecord = {
         _id: img._id,
-        dateAdded: DateTime.fromJSDate(img.dateAdded).toISO(),
-        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
+        dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
+        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -423,7 +444,6 @@ export class AnnotationsExport {
     string,
     string | boolean | DateTime<true> | DateTime<false> | Date | string[] | null
   > {
-    console.log('sanitizing filters');
     const sanitizedFilters: Record<
       string,
       string | boolean | Date | DateTime<true> | DateTime<false> | string[] | null
@@ -568,7 +588,7 @@ export class AnnotationsExport {
 }
 
 export default async function (
-  task: TaskInput<{ filters: FiltersSchema; format: any }> & { _id: string },
+  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(
@@ -577,6 +597,7 @@ export default async function (
       documentId: task._id,
       filters: task.config.filters,
       format: task.config.format,
+      timezone: task.config.timezone,
     },
     config,
   );
