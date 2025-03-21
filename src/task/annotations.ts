@@ -389,23 +389,6 @@ export class AnnotationsExport {
   flattenImgTransform(): Transformer {
     return transform((img) => {
       const deployment = this.getDeployment(img);
-
-      console.log('this timezone: ', this.timezone);
-      console.log('deployment timezone: ', deployment.timezone);
-      console.log('img dateAdded before tz shift: ', DateTime.fromJSDate(img.dateAdded).toISO());
-      console.log(
-        'img dateTimeOriginal before tz shift: ',
-        DateTime.fromJSDate(img.dateTimeOriginal).toISO(),
-      );
-      console.log(
-        'img dateAdded AFTER tz shift: ',
-        DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
-      );
-      console.log(
-        'img dateTimeOriginal AFTER tz shift: ',
-        DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
-      );
-
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
