@@ -100,7 +100,7 @@ const megadetector: InferenceFunction = async (params) => {
 
     return filteredDets;
   } catch (err) {
-    console.log(`megadetector() ERROR on image ${image._id}: ${err}`);
+    console.log(`megadetector ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
@@ -128,7 +128,7 @@ const mirav2: InferenceFunction = async (params) => {
     console.log(`mirav2 predictions for image ${image._id}: ${body}`);
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
-    console.log(`mirav2() ERROR on image ${image._id}: ${err}`);
+    console.log(`mirav2 ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
@@ -160,7 +160,7 @@ const nzdoc: InferenceFunction = async (params) => {
     console.log(`nzdoc predictions for image ${image._id}: ${body}`);
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
-    console.log(`nzdoc() ERROR on image ${image._id}: ${err}`);
+    console.log(`nzdoc ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
@@ -190,7 +190,7 @@ const sdzwasouthwestv3: InferenceFunction = async (params) => {
 
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
-    console.log(`sdzwa-southwestv3() ERROR on image ${image._id}: ${err}`);
+    console.log(`sdzwa-southwestv3 ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
@@ -222,7 +222,39 @@ const sdzwaandesv1: InferenceFunction = async (params) => {
     console.log(`sdzwa-andesv1 predictions for image ${image._id}: ${body}`);
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
-    console.log(`sdzwa-southwestv3() ERROR on image ${image._id}: ${err}`);
+    console.log(`sdzwa-southwestv3 ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
+const deepfaunene: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: bbox,
+  };
+
+  const isBatch = image.batchId;
+  if (!isBatch) {
+    throw new Error('deepfaune-ne does not support realtime processing');
+  }
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/DEEPFAUNE_NE_BATCH_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`deepfaune-ne predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`deepfaune-ne ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
@@ -234,6 +266,7 @@ modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
+modelInterfaces.set('deepfaune-ne', deepfaunene);
 
 export { modelInterfaces };
 
