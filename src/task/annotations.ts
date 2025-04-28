@@ -73,7 +73,7 @@ export class AnnotationsExport {
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     // this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
-    this.onlyIncludeReviewed = onlyIncludeReviewed || true; // TODO: move into config or expose as option?
+    this.onlyIncludeReviewed = onlyIncludeReviewed; // TODO: move into config or expose as option?
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -89,15 +89,21 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId,
       );
+
+      const reviewedPipeline = buildPipeline(
+        { ...sanitizedFilters, reviewed: true },
+        this.projectId,
+      );
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
+      this.reviewedCount = await this.getCount(reviewedPipeline);
       console.log(`in_init_onlyIncludeReviewed: `, this.onlyIncludeReviewed) // @NOTE-SANDRA: This is comingback as true
       if (this.onlyIncludeReviewed) {
         sanitizedFilters.reviewed = true;
       }
       console.log(`sanitizedFilters: `, sanitizedFilters)
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
-      this.imageCount = await this.getCount(this.pipeline);
-      this.reviewedCount = this.imageCount;
+      // this.imageCount = await this.getCount(this.pipeline);
+      // this.reviewedCount = this.imageCount;
 
       const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
@@ -586,6 +592,7 @@ export default async function (
   task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed?: boolean }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
+  console.log(`default_fn_task.config: `, task.config)
   const dataExport = new AnnotationsExport(
     {
       projectId: task.projectId,

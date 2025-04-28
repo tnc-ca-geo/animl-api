@@ -69,7 +69,7 @@ export default async function (
     reviewedCount: { reviewed, notReviewed },
     reviewerList,
     labelList,
-    multiReviewerCount,
+    multiReviewerCount
   };
 }
 
