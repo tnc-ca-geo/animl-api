@@ -374,6 +374,7 @@ export type ExportInput = {
   filters: FiltersInput;
   format: Format;
   timezone: Scalars['String']['input'];
+  onlyIncludeReviewed?: boolean;
 };
 
 export type ExportPayload = {

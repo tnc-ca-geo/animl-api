@@ -8,5 +8,6 @@ export default /* GraphQL */ `
     format: Format!
     timezone: String!
     filters: FiltersInput!
+    onlyIncludeReviewed: Boolean
   }
 `;

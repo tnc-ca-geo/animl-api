@@ -31,7 +31,7 @@ export class AnnotationsExport {
   ext: string;
   filename: string;
   bucket: string;
-  onlyIncludeReviewed: boolean;
+  onlyIncludeReviewed?: boolean;
   presignedURL: string | null;
   imageCount: number;
   imageCountThreshold: number;
@@ -50,12 +50,14 @@ export class AnnotationsExport {
       filters,
       format,
       timezone,
+      onlyIncludeReviewed,
     }: {
       projectId: string;
       documentId: string;
       filters: FiltersSchema;
       format: string;
       timezone: string;
+      onlyIncludeReviewed?: boolean;
     },
     config: Config,
   ) {
@@ -70,7 +72,8 @@ export class AnnotationsExport {
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-    this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
+    // this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
+    this.onlyIncludeReviewed = onlyIncludeReviewed || true; // TODO: move into config or expose as option?
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -87,11 +90,11 @@ export class AnnotationsExport {
         this.projectId,
       );
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
-
+      console.log(`in_init_onlyIncludeReviewed: `, this.onlyIncludeReviewed) // @NOTE-SANDRA: This is comingback as true
       if (this.onlyIncludeReviewed) {
         sanitizedFilters.reviewed = true;
       }
-
+      console.log(`sanitizedFilters: `, sanitizedFilters)
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
       this.imageCount = await this.getCount(this.pipeline);
       this.reviewedCount = this.imageCount;
@@ -164,7 +167,16 @@ export class AnnotationsExport {
 
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
-
+    console.log('annotations_response: ', {
+      url: this.presignedURL,
+      count: this.imageCount,
+      meta: {
+        reviewedCount: {
+          reviewed: this.reviewedCount,
+          notReviewed: this.notReviewedCount,
+        },
+      },
+    })
     return {
       url: this.presignedURL,
       count: this.imageCount,
@@ -571,7 +583,7 @@ export class AnnotationsExport {
 }
 
 export default async function (
-  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string }> & { _id: string },
+  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed?: boolean }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(
@@ -581,12 +593,13 @@ export default async function (
       filters: task.config.filters,
       format: task.config.format,
       timezone: task.config.timezone,
+      onlyIncludeReviewed: task.config.onlyIncludeReviewed
     },
     config,
   );
 
   await dataExport.init();
-
+  console.log(`annotations_initated_sandra`)
   if (!task.config.format || task.config.format === 'csv') {
     return await dataExport.toCSV();
   } else if (task.config.format === 'coco') {
