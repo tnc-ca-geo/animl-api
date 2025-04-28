@@ -94,13 +94,14 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: true },
         this.projectId,
       );
+
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
       this.reviewedCount = await this.getCount(reviewedPipeline);
-      console.log(`in_init_onlyIncludeReviewed: `, this.onlyIncludeReviewed) // @NOTE-SANDRA: This is comingback as true
+
       if (this.onlyIncludeReviewed) {
         sanitizedFilters.reviewed = true;
       }
-      console.log(`sanitizedFilters: `, sanitizedFilters)
+
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
       // this.imageCount = await this.getCount(this.pipeline);
       // this.reviewedCount = this.imageCount;
@@ -173,16 +174,7 @@ export class AnnotationsExport {
 
     // get presigned url for new S3 object (expires in one hour)
     this.presignedURL = await this.getPresignedURL();
-    console.log('annotations_response: ', {
-      url: this.presignedURL,
-      count: this.imageCount,
-      meta: {
-        reviewedCount: {
-          reviewed: this.reviewedCount,
-          notReviewed: this.notReviewedCount,
-        },
-      },
-    })
+
     return {
       url: this.presignedURL,
       count: this.imageCount,
@@ -406,6 +398,8 @@ export class AnnotationsExport {
 
   flattenImgTransform(): Transformer {
     return transform((img) => {
+      let catCounts: Record<string, any> = {};
+
       const deployment = this.getDeployment(img);
       const flatImgRecord = {
         _id: img._id,
@@ -426,17 +420,21 @@ export class AnnotationsExport {
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
       };
 
-      // build flattened representation of objects/labels
-      const catCounts: Record<string, any> = {};
       this.categories!.forEach((cat) => (catCounts[cat] = null));
-      for (const obj of img.objects) {
-        const firstValidLabel = this.findFirstValidLabel(obj);
-        if (firstValidLabel) {
-          const cat = this.labelMap!.get(firstValidLabel.labelId).name;
-          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+
+      if (img.reviewed) {
+        // build flattened representation of objects/labels
+        for (const obj of img.objects) {
+          console.log(`obj: `, obj)
+          const firstValidLabel = this.findFirstValidLabel(obj);
+          console.log(`firstValidLabel: `, firstValidLabel)
+          if (firstValidLabel) {
+            const cat = this.labelMap!.get(firstValidLabel.labelId).name;
+            catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          }
         }
       }
-
+      console.log(`flattenImgTransform_result: `, { ...flatImgRecord, ...catCounts })
       return { ...flatImgRecord, ...catCounts };
     });
   }
@@ -592,7 +590,6 @@ export default async function (
   task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed?: boolean }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
-  console.log(`default_fn_task.config: `, task.config)
   const dataExport = new AnnotationsExport(
     {
       projectId: task.projectId,
@@ -606,7 +603,6 @@ export default async function (
   );
 
   await dataExport.init();
-  console.log(`annotations_initated_sandra`)
   if (!task.config.format || task.config.format === 'csv') {
     return await dataExport.toCSV();
   } else if (task.config.format === 'coco') {

@@ -20,7 +20,6 @@ async function handler(event: SQSEvent) {
   await connectToDatabase(config);
 
   for (const record of event.Records) {
-    console.log(`record body: ${record.body}`);
     const task: TaskInput<any> & { _id: string } = parseMessage(JSON.parse(record.body));
 
     let output: Record<any, any> | undefined = {};
@@ -28,7 +27,7 @@ async function handler(event: SQSEvent) {
       { _id: task._id, status: 'RUNNING' },
       { user: { curr_project: task.projectId } as User },
     );
-    console.log('TaskModel task.type:', task.type);
+  
     try {
       if (task.type === 'GetStats') {
         output = await GetStats(task);
