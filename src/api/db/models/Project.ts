@@ -413,7 +413,10 @@ export class ProjectModel {
     try {
       return await retry(
         async () => {
-          console.log('attempting to update automation rules with: ', automationRules);
+          console.log(
+            'attempting to update automation rules with: ',
+            JSON.stringify(automationRules),
+          );
           const [project] = await ProjectModel.getProjects(
             { _ids: [context.user['curr_project']!] },
             context,

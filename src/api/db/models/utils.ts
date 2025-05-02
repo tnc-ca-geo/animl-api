@@ -603,7 +603,8 @@ export function isImageReviewed(image: ImageSchema) {
   // images are considered reviewed if they:
   // have objects,
   // all objects are locked,
-  // AND there are no locked objects with all invalidated labels
+  // AND none of the objects in the image have any labels that are validated: true
+  // (i.e. all labels in all objects are invalidated)
   const hasObjs = image.objects.length > 0;
   const hasUnlockedObjs = image.objects.some((obj) => obj.locked === false);
   const hasAllInvalidatedLabels = !image.objects.some((obj) =>
