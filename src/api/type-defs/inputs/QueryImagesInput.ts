@@ -10,6 +10,7 @@ export default /* GraphQL */ `
     tags: [String!]
     reviewed: Boolean
     custom: String
+    comments: String
   }
 
   input QueryImagesInput {
