@@ -58,7 +58,7 @@ const ssmNames = [
   `/ml/sdzwa-southwestv3-realtime-endpoint-${process.env.STAGE}`,
   `/ml/sdzwa-andesv1-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for andesv1
   `/ml/deepfaune-ne-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for deepfaune-ne
-  `/ml//ml/speciesnetv401a-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/ml/speciesnetv401a-realtime-endpoint-${process.env.STAGE}`,
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
