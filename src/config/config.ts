@@ -58,6 +58,7 @@ const ssmNames = [
   `/ml/sdzwa-southwestv3-realtime-endpoint-${process.env.STAGE}`,
   `/ml/sdzwa-andesv1-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for andesv1
   `/ml/deepfaune-ne-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for deepfaune-ne
+  `/ml//ml/speciesnetv401a-realtime-endpoint-${process.env.STAGE}`,
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -142,6 +143,7 @@ export interface RemoteConfig {
   '/ML/SDZWA_SOUTHWESTV3_REALTIME_ENDPOINT': string;
   '/ML/SDZWA_ANDESV1_BATCH_ENDPOINT': string;
   '/ML/DEEPFAUNE_NE_BATCH_ENDPOINT': string;
+  '/ML/SPECIESNETV401A_REALTIME_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager

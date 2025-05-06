@@ -259,6 +259,39 @@ const deepfaunene: InferenceFunction = async (params) => {
   }
 };
 
+const speciesnet: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const payload = {
+    image_data: imgBuffer.toString('base64'),
+    bbox: bbox,
+  };
+
+  const isBatch = image.batchId;
+  if (isBatch) {
+    throw new Error('speciesnet does not support batch processing');
+  }
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/SPECIESNETV401A_REALTIME_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`speciesnet predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`speciesnet ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
+
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
 modelInterfaces.set('megadetector_v5b', megadetector);
@@ -267,6 +300,7 @@ modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
 modelInterfaces.set('deepfaune-ne', deepfaunene);
+modelInterfaces.set('speciesnet', speciesnet);
 
 export { modelInterfaces };
 
