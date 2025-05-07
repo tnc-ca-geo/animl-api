@@ -260,9 +260,10 @@ const deepfaunene: InferenceFunction = async (params) => {
 };
 
 const speciesnet: InferenceFunction = async (params) => {
+  console.log('speciesnet inference', params);
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image_data: imgBuffer.toString('base64'),
     bbox: bbox,
@@ -282,8 +283,17 @@ const speciesnet: InferenceFunction = async (params) => {
 
     const res = await smr.send(command);
     const body = Buffer.from(res.Body).toString('utf8');
-    const predictions = JSON.parse(body);
+    const response = JSON.parse(body);
     console.log(`speciesnet predictions for image ${image._id}: ${body}`);
+
+    // Transform predictions to match catConfig format using ids from speciesnet
+    const predictions: Record<string, number> = {};
+    response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
+      const uuid = classStr.split(';')[0];  // Get just the id
+      predictions[uuid] = response.predictions[0].classifications.scores[index];
+    });
+
+    console.log('transformed speciesnet predictions:', predictions);
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
     console.log(`speciesnet ERROR on image ${image._id}: ${err}`);

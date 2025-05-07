@@ -12,12 +12,21 @@ interface GetProjectResponse {
   }>;
 }
 
-const GET_PROJECT_RULE = gql`
+  const GET_PROJECT_RULE = gql`
   query GetProject($projectId: String!) {
     projects(input: { _ids: [$projectId] }) {
       automationRules {
         _id
+        name
+        event {
+          type
+          label
+        }
         action {
+          type
+          alertRecipients
+          mlModel
+          confThreshold
           categoryConfig
         }
       }
@@ -64,7 +73,8 @@ async function singleInference(config: Config, record: Record): Promise<void> {
   console.log('rule: ', rule);
   if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
 
-  // Build category config using existing utility
+  // Convert categoryConfig from JSON to Map for buildCatConfig
+  rule.action.categoryConfig = new Map(Object.entries(rule.action.categoryConfig || {}));
   const catConfig = buildCatConfig(modelSource, rule);
 
   // run inference
