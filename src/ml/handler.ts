@@ -13,7 +13,7 @@ interface GetProjectResponse {
 }
 
 const GET_PROJECT_RULE = gql`
-  query GetProject($projectId: ID!) {
+  query GetProject($projectId: String!) {
     projects(input: { _ids: [$projectId] }) {
       automationRules {
         _id
