@@ -2,7 +2,28 @@ import { GraphQLClient, gql } from 'graphql-request';
 import { type Detection, modelInterfaces } from './modelInterfaces.js';
 import { type Config, getConfig } from '../config/config.js';
 import { type GraphQLError } from 'graphql';
+import { type IAutomationRule } from '../api/db/schemas/Project.js';
+import { buildCatConfig } from '../automation/utils.js';
 import * as gqlTypes from '../@types/graphql.js';
+
+interface GetProjectResponse {
+  projects: Array<{
+    automationRules: Array<Pick<IAutomationRule, '_id' | 'action'>>;
+  }>;
+}
+
+const GET_PROJECT_RULE = gql`
+  query GetProject($projectId: ID!) {
+    projects(input: { _ids: [$projectId] }) {
+      automationRules {
+        _id
+        action {
+          categoryConfig
+        }
+      }
+    }
+  }
+`;
 
 async function requestCreateInternalLabels(
   input: { labels: Detection[] },
@@ -25,9 +46,26 @@ async function requestCreateInternalLabels(
 }
 
 async function singleInference(config: Config, record: Record): Promise<void> {
-  const { modelSource, catConfig, image, label } = JSON.parse(record.body);
+  const { modelSource, image, label, projectId, automationRuleId } = JSON.parse(record.body);
 
   console.log(`message related to image ${image._id}: ${record.body}`);
+
+  // Create GraphQL client
+  const graphQLClient = new GraphQLClient(config['/API/URL'], {
+    headers: { 'x-api-key': config['APIKEY'] },
+  });
+
+  // Fetch project and find specific rule
+  const response = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, { projectId });
+  console.log('response: ', response);
+  const project = response.projects[0];
+  console.log('project: ', project);
+  const rule = project.automationRules.find((r) => r._id.toString() === automationRuleId);
+  console.log('rule: ', rule);
+  if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
+
+  // Build category config using existing utility
+  const catConfig = buildCatConfig(modelSource, rule);
 
   // run inference
   if (modelInterfaces.has(modelSource._id)) {

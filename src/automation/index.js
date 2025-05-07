@@ -14,9 +14,12 @@ const executeRule = {
       const mlModel = rule.action.mlModel;
       const modelSources = await context.models.MLModel.getMLModels({ _ids: [mlModel] });
       const modelSource = modelSources[0];
-      const catConfig = buildCatConfig(modelSource, rule);
-
-      const message = { modelSource, catConfig, ...payload };
+      const message = {
+        modelSource,
+        ...payload,
+        projectId: payload.image.projectId,
+        automationRuleId: rule._id.toString()
+      };
 
       if (payload.image.batchId) {
 
