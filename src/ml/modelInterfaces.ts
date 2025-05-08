@@ -277,7 +277,7 @@ const speciesnet: InferenceFunction = async (params) => {
   const payload = {
     image_data: imgBuffer.toString('base64'),
     bbox: bbox,
-    mode: mode
+    components: mode
   };
 
   const isBatch = image.batchId;
