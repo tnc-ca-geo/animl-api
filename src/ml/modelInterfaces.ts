@@ -263,7 +263,17 @@ const speciesnet: InferenceFunction = async (params) => {
   console.log('speciesnet inference', params);
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
-  const bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
+
+  // By default, speciesnet runs in 'all' mode — detector + classifier
+  let mode = 'all';
+
+  if (label) {
+    // Label is available when a detector is already run on the image
+    // So we'll run speciesnet in the classifier mode
+    mode = 'classifier';
+  }
+
+  let bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
   const payload = {
     image_data: imgBuffer.toString('base64'),
     bbox: bbox,
@@ -285,6 +295,12 @@ const speciesnet: InferenceFunction = async (params) => {
     const body = Buffer.from(res.Body).toString('utf8');
     const response = JSON.parse(body);
     console.log(`speciesnet predictions for image ${image._id}: ${body}`);
+
+    if (mode === 'all' && response.predictions[0].detections.length > 0) {
+      // When in 'all' mode, get bbox from detections if available
+      const detection = response.predictions[0].detections[0];
+      bbox = detection.bbox;
+    }
 
     // Transform predictions to match catConfig format using ids from speciesnet
     const predictions: Record<string, number> = {};
