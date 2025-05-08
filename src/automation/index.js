@@ -1,7 +1,6 @@
 import { InternalServerError } from '../api/errors.js';
 import SQS from '@aws-sdk/client-sqs';
 import {
-  buildCatConfig,
   buildCallstack
 } from './utils.js';
 import { sendEmail } from './alerts.js';
