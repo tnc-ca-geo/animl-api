@@ -33,6 +33,7 @@ const MLModelSchema = new Schema({
         _id: { type: String, required: true },
         name: { type: String, required: true },
         color: { type: String, required: true },
+        taxonomy: { type: String },
       }),
     ],
     required: true,
