@@ -111,6 +111,7 @@ export type Category = {
   _id: Scalars['String']['output'];
   color: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  taxonomy?: Maybe<Scalars['String']['output']>;
 };
 
 export type ClearBatchErrorsInput = {
