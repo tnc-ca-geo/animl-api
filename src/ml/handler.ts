@@ -12,7 +12,16 @@ interface GetProjectResponse {
   }>;
 }
 
-  const GET_PROJECT_RULE = gql`
+interface GetMLModelResponse {
+  mlModels: Array<
+    Pick<
+      gqlTypes.MlModel,
+      '_id' | 'description' | 'version' | 'defaultConfThreshold' | 'categories'
+    >
+  >;
+}
+
+const GET_PROJECT_RULE = gql`
   query GetProject($projectId: String!) {
     projects(input: { _ids: [$projectId] }) {
       automationRules {
@@ -29,6 +38,21 @@ interface GetProjectResponse {
           confThreshold
           categoryConfig
         }
+      }
+    }
+  }
+`;
+
+const GET_ML_MODEL = gql`
+  query GetMLModels($mlModelId: String!) {
+    mlModels(input: { _ids: [$mlModelId] }) {
+      _id
+      description
+      version
+      defaultConfThreshold
+      categories {
+        _id
+        name
       }
     }
   }
@@ -55,7 +79,7 @@ async function requestCreateInternalLabels(
 }
 
 async function singleInference(config: Config, record: Record): Promise<void> {
-  const { modelSource, image, label, projectId, automationRuleId } = JSON.parse(record.body);
+  const { mlModelId, image, label, projectId, automationRuleId } = JSON.parse(record.body);
 
   console.log(`message related to image ${image._id}: ${record.body}`);
 
@@ -65,19 +89,25 @@ async function singleInference(config: Config, record: Record): Promise<void> {
   });
 
   // Fetch project and find specific rule
-  const response = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, { projectId });
-  console.log('response: ', response);
-  const project = response.projects[0];
-  console.log('project: ', project);
+  const getProjectResponse = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, {
+    projectId,
+  });
+  const project = getProjectResponse.projects[0];
   const rule = project.automationRules.find((r) => r._id.toString() === automationRuleId);
-  console.log('rule: ', rule);
   if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
+
+  // Fetch model source
+  const getModelResponse = await graphQLClient.request<GetMLModelResponse>(GET_ML_MODEL, {
+    mlModelId,
+  });
+  const modelSource = getModelResponse.mlModels[0];
+  if (!modelSource) throw new Error(`ML model ${mlModelId} not found`);
 
   // Convert categoryConfig from JSON to Map for buildCatConfig
   rule.action.categoryConfig = new Map(Object.entries(rule.action.categoryConfig || {}));
   const catConfig = buildCatConfig(modelSource, rule);
 
-  // run inference
+  // Run inference
   if (modelInterfaces.has(modelSource._id)) {
     const requestInference = modelInterfaces.get(modelSource._id)!;
 
