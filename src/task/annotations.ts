@@ -72,7 +72,6 @@ export class AnnotationsExport {
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-    // this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
     this.onlyIncludeReviewed = onlyIncludeReviewed; // TODO: move into config or expose as option?
     this.presignedURL = null;
     this.imageCount = 0;
@@ -103,8 +102,6 @@ export class AnnotationsExport {
       }
 
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
-      // this.imageCount = await this.getCount(this.pipeline);
-      // this.reviewedCount = this.imageCount;
 
       const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
@@ -421,20 +418,13 @@ export class AnnotationsExport {
       };
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
-
-      if (img.reviewed) {
-        // build flattened representation of objects/labels
-        for (const obj of img.objects) {
-          console.log(`obj: `, obj)
-          const firstValidLabel = this.findFirstValidLabel(obj);
-          console.log(`firstValidLabel: `, firstValidLabel)
-          if (firstValidLabel) {
-            const cat = this.labelMap!.get(firstValidLabel.labelId).name;
-            catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
-          }
+      for (const obj of img.objects) {
+        const firstValidLabel = this.findFirstValidLabel(obj); // The most representative label only applies to objects who have been reviewed/locked
+        if (firstValidLabel) {
+          const cat = this.labelMap!.get(firstValidLabel.labelId).name;
+          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
       }
-      console.log(`flattenImgTransform_result: `, { ...flatImgRecord, ...catCounts })
       return { ...flatImgRecord, ...catCounts };
     });
   }
@@ -460,6 +450,7 @@ export class AnnotationsExport {
   }
 
   findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+    if (!obj.locked) return null; // If an object hasn't been reviewed and is not locked, the none of the labels would be valid
     return obj.labels.find((label) => label.validation && label.validation.validated) || null;
   }
 
