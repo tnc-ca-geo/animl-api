@@ -5,6 +5,18 @@ import SM from '@aws-sdk/client-sagemaker-runtime';
 import sharp from 'sharp';
 import { Config } from '../config/config.js';
 
+// Convert [y1, x1, y2, x2] to [x, y, width, height]
+const _toSpeciesNetFormat = (bbox: number[]): number[] => {
+  const [y1, x1, y2, x2] = bbox;
+  return [x1, y1, x2 - x1, y2 - y1];
+};
+
+// Convert [x, y, width, height] to [y1, x1, y2, x2]
+const _toMegaDetectorFormat = (bbox: number[]): number[] => {
+  const [x, y, width, height] = bbox;
+  return [y, x, y + height, x + width];
+};
+
 const _getImage = async (image: ImageSchema, config: ModelInterfaceParams['config']) => {
   const url = 'http://' + buildImgUrl(image, config);
 
@@ -274,9 +286,11 @@ const speciesnet: InferenceFunction = async (params) => {
   }
 
   let bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
+  const speciesnetBbox: BBox = label?.bbox ? _toSpeciesNetFormat(label.bbox) : [0, 0, 1, 1];
+
   const payload = {
     image_data: imgBuffer.toString('base64'),
-    bbox: bbox,
+    bbox: speciesnetBbox,
     components: mode
   };
 
@@ -300,7 +314,7 @@ const speciesnet: InferenceFunction = async (params) => {
     if (mode === 'all' && response.predictions[0].detections.length > 0) {
       // When in 'all' mode, get bbox from detections if available
       const detection = response.predictions[0].detections[0];
-      bbox = detection.bbox;
+      bbox = _toMegaDetectorFormat(detection.bbox);
     }
 
     // Transform predictions to match catConfig format using ids from speciesnet
@@ -311,6 +325,7 @@ const speciesnet: InferenceFunction = async (params) => {
     });
 
     console.log('transformed speciesnet predictions:', predictions);
+    // Return with md5 bbox
     return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
   } catch (err) {
     console.log(`speciesnet ERROR on image ${image._id}: ${err}`);
