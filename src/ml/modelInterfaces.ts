@@ -294,16 +294,20 @@ const speciesnet: InferenceFunction = async (params) => {
     components: mode
   };
 
+  // Choose the endpoint based on the mode. Default is realtime.
+  let endpointName = config[`/ML/SPECIESNETV401A_REALTIME_ENDPOINT`];
   const isBatch = image.batchId;
+
   if (isBatch) {
-    throw new Error('speciesnet does not support batch processing');
+    console.log('running speciesnet in batch mode', isBatch);
+    endpointName = config[`/ML/SPECIESNETV401A_BATCH_ENDPOINT`];
   }
 
   try {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config[`/ML/SPECIESNETV401A_REALTIME_ENDPOINT`],
+      EndpointName: endpointName,
     });
 
     const res = await smr.send(command);
