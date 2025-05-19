@@ -263,13 +263,20 @@ export class AnnotationsExport {
       imgString = i === this.imageCount ? imgString : imgString + ', ';
       imagesUpload.streamToS3.write(imgString);
 
+      let objectsToAnnotate = [];
+
       // create COCO annotation record, write to upload stream
-      const reviewedObjects = this.getReviewedObjects(img);
-      for (const [o, obj] of reviewedObjects.entries()) {
+      if (this.onlyIncludeReviewed) {
+        objectsToAnnotate = this.getReviewedObjects(img);
+      } else {
+        objectsToAnnotate = img.objects;
+      }
+
+      for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
         let annoString = JSON.stringify(annoObj, null, 4);
         annoString =
-          i === this.imageCount && o === reviewedObjects.length - 1
+          i === this.imageCount && o === objectsToAnnotate.length - 1
             ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
             : annoString + ', ';
         annotationsUpload.streamToS3.write(annoString);
@@ -348,8 +355,16 @@ export class AnnotationsExport {
       imagesArray.push(imgObj);
 
       // create COCO annotation record, add to in-memory array
-      const reviewedObjects = this.getReviewedObjects(img);
-      for (const obj of reviewedObjects) {
+      let objectsToAnnotate = [];
+
+      // create COCO annotation record, write to upload stream
+      if (this.onlyIncludeReviewed) {
+        objectsToAnnotate = this.getReviewedObjects(img);
+      } else {
+        objectsToAnnotate = img.objects;
+      }
+
+      for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
         annotationsArray.push(annoObj);
       }
@@ -556,7 +571,7 @@ export class AnnotationsExport {
       }
     | undefined {
     let anno;
-    const firstValidLabel = this.findFirstValidLabel(object);
+    const firstValidLabel = this.findRepresentativeLabel(object);
     if (firstValidLabel) {
       const category = catMap.find(
         (cat) => cat.name === this.labelMap!.get(firstValidLabel.labelId).name,
