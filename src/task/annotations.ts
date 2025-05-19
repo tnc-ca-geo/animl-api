@@ -419,7 +419,7 @@ export class AnnotationsExport {
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
-        const firstValidLabel = this.findFirstValidLabel(obj); // The most representative label only applies to objects who have been reviewed/locked
+        const firstValidLabel = this.findRepresentativeLabel(obj); // The most representative label only applies to objects who have been reviewed/locked
         if (firstValidLabel) {
           const cat = this.labelMap!.get(firstValidLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
@@ -450,8 +450,19 @@ export class AnnotationsExport {
   }
 
   findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
-    if (!obj.locked) return null; // If an object hasn't been reviewed and is not locked, the none of the labels would be valid
     return obj.labels.find((label) => label.validation && label.validation.validated) || null;
+  }
+  
+  findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
+    // if object is locked and has at least one validated label, return the first validated label in the labels array
+    // if include reviewed & non-reviewed and the object is unlocked, return the first non-invalidated label in the array
+    let representativeLabel = null;
+    if (obj.locked) {
+      representativeLabel = this.findFirstValidLabel(obj); // return locked object's first label that is validated
+    } else {
+      representativeLabel = obj.labels?.[0] || null // return first label (most recent label added) in list
+    }
+    return representativeLabel;
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
