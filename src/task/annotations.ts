@@ -102,6 +102,7 @@ export class AnnotationsExport {
       }
 
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
+      this.imageCount = await this.getCount(this.pipeline);
 
       const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
@@ -467,7 +468,7 @@ export class AnnotationsExport {
   findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
     return obj.labels.find((label) => label.validation && label.validation.validated) || null;
   }
-  
+
   findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
     // if object is locked and has at least one validated label, return the first validated label in the labels array
     // if include reviewed & non-reviewed and the object is unlocked, return the first non-invalidated label in the array
@@ -475,7 +476,7 @@ export class AnnotationsExport {
     if (obj.locked) {
       representativeLabel = this.findFirstValidLabel(obj); // return locked object's first label that is validated
     } else {
-      representativeLabel = obj.labels?.[0] || null // return first label (most recent label added) in list
+      representativeLabel = obj.labels?.[0] || null; // return first label (most recent label added) in list
     }
     return representativeLabel;
   }
@@ -604,7 +605,12 @@ export class AnnotationsExport {
 }
 
 export default async function (
-  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed: boolean }> & { _id: string },
+  task: TaskInput<{
+    filters: FiltersSchema;
+    format: any;
+    timezone: string;
+    onlyIncludeReviewed: boolean;
+  }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(
@@ -614,7 +620,7 @@ export default async function (
       filters: task.config.filters,
       format: task.config.format,
       timezone: task.config.timezone,
-      onlyIncludeReviewed: task.config.onlyIncludeReviewed
+      onlyIncludeReviewed: task.config.onlyIncludeReviewed,
     },
     config,
   );
