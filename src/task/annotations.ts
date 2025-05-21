@@ -295,7 +295,7 @@ export class AnnotationsExport {
     const res = await Promise.allSettled([imagesUpload.promise, annotationsUpload.promise]);
     console.log('finished uploading all the parts: ', res);
 
-    // concatonate images and annotations .json files via multipart upload copy part
+    // concatenate images and annotations .json files via multipart upload copy part
     const initResponse = await this.s3.send(
       new S3.CreateMultipartUploadCommand({
         Key: this.filename,
@@ -576,21 +576,24 @@ export class AnnotationsExport {
         category_id?: number;
         sequence_level_annotation: boolean;
         bbox: number[];
+        confidence: number | null | undefined;
       }
     | undefined {
     let anno;
-    const firstValidLabel = this.findRepresentativeLabel(object);
-    if (firstValidLabel) {
+    const representativeLabel = this.findRepresentativeLabel(object);
+    if (representativeLabel) {
       const category = catMap.find(
-        (cat) => cat.name === this.labelMap!.get(firstValidLabel.labelId).name,
+        (cat) => cat.name === this.labelMap!.get(representativeLabel.labelId).name,
       );
-      if (!category) throw new InternalServerError('Error finding category for first valid label');
+      if (!category)
+        throw new InternalServerError('Error finding category for representative label');
       anno = {
         id: object._id, // id copied from the object, not the label
         image_id: img._id,
         category_id: category.id,
         sequence_level_annotation: false,
         bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
+        confidence: representativeLabel.conf,
       };
     }
     return anno;
