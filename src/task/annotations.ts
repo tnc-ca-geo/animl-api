@@ -31,7 +31,7 @@ export class AnnotationsExport {
   ext: string;
   filename: string;
   bucket: string;
-  onlyIncludeReviewed?: boolean;
+  onlyIncludeReviewed: boolean;
   presignedURL: string | null;
   imageCount: number;
   imageCountThreshold: number;
@@ -57,7 +57,7 @@ export class AnnotationsExport {
       filters: FiltersSchema;
       format: string;
       timezone: string;
-      onlyIncludeReviewed?: boolean;
+      onlyIncludeReviewed: boolean;
     },
     config: Config,
   ) {
@@ -72,7 +72,7 @@ export class AnnotationsExport {
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-    this.onlyIncludeReviewed = onlyIncludeReviewed; // TODO: move into config or expose as option?
+    this.onlyIncludeReviewed = onlyIncludeReviewed;
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -604,7 +604,7 @@ export class AnnotationsExport {
 }
 
 export default async function (
-  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed?: boolean }> & { _id: string },
+  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string; onlyIncludeReviewed: boolean }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(

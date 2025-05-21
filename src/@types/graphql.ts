@@ -373,7 +373,7 @@ export type ExportErrorsInput = {
 export type ExportInput = {
   filters: FiltersInput;
   format: Format;
-  onlyIncludeReviewed?: InputMaybe<Scalars['Boolean']['input']>;
+  onlyIncludeReviewed: Scalars['Boolean']['input'];
   timezone: Scalars['String']['input'];
 };
 
