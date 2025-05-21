@@ -291,7 +291,7 @@ const speciesnet: InferenceFunction = async (params) => {
   const payload = {
     image_data: imgBuffer.toString('base64'),
     bbox: speciesnetBbox,
-    components: mode
+    components: mode,
   };
 
   // Choose the endpoint based on the mode. Default is realtime.
@@ -324,19 +324,30 @@ const speciesnet: InferenceFunction = async (params) => {
     // Transform predictions to match catConfig format using ids from speciesnet
     const predictions: Record<string, number> = {};
     response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
-      const uuid = classStr.split(';')[0];  // Get just the id
+      const uuid = classStr.split(';')[0]; // Get just the id
       predictions[uuid] = response.predictions[0].classifications.scores[index];
     });
 
     console.log('transformed speciesnet predictions:', predictions);
     // Return with md5 bbox
-    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+    let filteredDets = _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+
+    // add "empty" detection if no detections are found (only relevant when running in 'all' mode)
+    if (filteredDets.length === 0) {
+      filteredDets.push({
+        mlModel: modelSource._id,
+        mlModelVersion: modelSource.version,
+        bbox: [0, 0, 1, 1],
+        labelId: '0',
+      });
+    }
+
+    return filteredDets;
   } catch (err) {
     console.log(`speciesnet ERROR on image ${image._id}: ${err}`);
     throw new Error(err as string);
   }
 };
-
 
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
