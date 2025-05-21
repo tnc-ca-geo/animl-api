@@ -568,6 +568,7 @@ export class AnnotationsExport {
         sequence_level_annotation: boolean;
         bbox: number[];
         confidence: number | null | undefined;
+        validated: boolean;
       }
     | undefined {
     let anno;
@@ -585,6 +586,7 @@ export class AnnotationsExport {
         sequence_level_annotation: false,
         bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
         confidence: representativeLabel.conf,
+        validated: representativeLabel.validation?.validated || false,
       };
     }
     return anno;
