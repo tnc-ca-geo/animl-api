@@ -50,12 +50,14 @@ export class AnnotationsExport {
       filters,
       format,
       timezone,
+      onlyIncludeReviewed,
     }: {
       projectId: string;
       documentId: string;
       filters: FiltersSchema;
       format: string;
       timezone: string;
+      onlyIncludeReviewed: boolean;
     },
     config: Config,
   ) {
@@ -70,7 +72,7 @@ export class AnnotationsExport {
     this.ext = format === 'coco' ? '.json' : '.csv';
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
-    this.onlyIncludeReviewed = true; // TODO: move into config or expose as option?
+    this.onlyIncludeReviewed = onlyIncludeReviewed;
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -86,7 +88,13 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId,
       );
+      const reviewedPipeline = buildPipeline(
+        { ...sanitizedFilters, reviewed: true },
+        this.projectId,
+      );
+
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
+      this.reviewedCount = await this.getCount(reviewedPipeline);
 
       if (this.onlyIncludeReviewed) {
         sanitizedFilters.reviewed = true;
@@ -94,7 +102,6 @@ export class AnnotationsExport {
 
       this.pipeline = buildPipeline(sanitizedFilters, this.projectId);
       this.imageCount = await this.getCount(this.pipeline);
-      this.reviewedCount = this.imageCount;
 
       const [project] = await ProjectModel.getProjects(
         { _ids: [this.projectId] },
@@ -257,12 +264,15 @@ export class AnnotationsExport {
       imagesUpload.streamToS3.write(imgString);
 
       // create COCO annotation record, write to upload stream
-      const reviewedObjects = this.getReviewedObjects(img);
-      for (const [o, obj] of reviewedObjects.entries()) {
+      const objectsToAnnotate = this.onlyIncludeReviewed
+        ? this.getReviewedObjects(img)
+        : img.objects;
+
+      for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
         let annoString = JSON.stringify(annoObj, null, 4);
         annoString =
-          i === this.imageCount && o === reviewedObjects.length - 1
+          i === this.imageCount && o === objectsToAnnotate.length - 1
             ? annoString + '], "categories": ' + catString + ', "info":' + infoString + '}'
             : annoString + ', ';
         annotationsUpload.streamToS3.write(annoString);
@@ -281,7 +291,7 @@ export class AnnotationsExport {
     const res = await Promise.allSettled([imagesUpload.promise, annotationsUpload.promise]);
     console.log('finished uploading all the parts: ', res);
 
-    // concatonate images and annotations .json files via multipart upload copy part
+    // concatenate images and annotations .json files via multipart upload copy part
     const initResponse = await this.s3.send(
       new S3.CreateMultipartUploadCommand({
         Key: this.filename,
@@ -341,8 +351,11 @@ export class AnnotationsExport {
       imagesArray.push(imgObj);
 
       // create COCO annotation record, add to in-memory array
-      const reviewedObjects = this.getReviewedObjects(img);
-      for (const obj of reviewedObjects) {
+      const objectsToAnnotate = this.onlyIncludeReviewed
+        ? this.getReviewedObjects(img)
+        : img.objects;
+
+      for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
         annotationsArray.push(annoObj);
       }
@@ -388,6 +401,8 @@ export class AnnotationsExport {
 
   flattenImgTransform(): Transformer {
     return transform((img) => {
+      let catCounts: Record<string, any> = {};
+
       const deployment = this.getDeployment(img);
       const flatImgRecord = {
         _id: img._id,
@@ -408,17 +423,14 @@ export class AnnotationsExport {
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
       };
 
-      // build flattened representation of objects/labels
-      const catCounts: Record<string, any> = {};
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
-        const firstValidLabel = this.findFirstValidLabel(obj);
-        if (firstValidLabel) {
-          const cat = this.labelMap!.get(firstValidLabel.labelId).name;
+        const representativeLabel = this.findRepresentativeLabel(obj);
+        if (representativeLabel) {
+          const cat = this.labelMap!.get(representativeLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
       }
-
       return { ...flatImgRecord, ...catCounts };
     });
   }
@@ -444,7 +456,27 @@ export class AnnotationsExport {
   }
 
   findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+    // label has validation and is validated true
     return obj.labels.find((label) => label.validation && label.validation.validated) || null;
+  }
+
+  findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
+    // label either has no validation or is validated true
+    return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
+  }
+
+  findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
+    // if object is locked and has at least one validated label, return the first validated label in the labels array
+    // if include reviewed & non-reviewed and the object is unlocked, return the first non-invalidated label in the array
+    let representativeLabel = null;
+    if (obj.locked) {
+      // return locked object's first label that is validated
+      representativeLabel = this.findFirstValidLabel(obj);
+    } else {
+      // return first label (most recent label added) in list that hasn't been invalidated
+      representativeLabel = this.findFirstNonInvalidatedLabel(obj) || null;
+    }
+    return representativeLabel;
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
@@ -535,21 +567,26 @@ export class AnnotationsExport {
         category_id?: number;
         sequence_level_annotation: boolean;
         bbox: number[];
+        confidence: number | null | undefined;
+        validated: boolean;
       }
     | undefined {
     let anno;
-    const firstValidLabel = this.findFirstValidLabel(object);
-    if (firstValidLabel) {
+    const representativeLabel = this.findRepresentativeLabel(object);
+    if (representativeLabel) {
       const category = catMap.find(
-        (cat) => cat.name === this.labelMap!.get(firstValidLabel.labelId).name,
+        (cat) => cat.name === this.labelMap!.get(representativeLabel.labelId).name,
       );
-      if (!category) throw new InternalServerError('Error finding category for first valid label');
+      if (!category)
+        throw new InternalServerError('Error finding category for representative label');
       anno = {
         id: object._id, // id copied from the object, not the label
         image_id: img._id,
         category_id: category.id,
         sequence_level_annotation: false,
         bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
+        confidence: representativeLabel.conf,
+        validated: representativeLabel.validation?.validated || false,
       };
     }
     return anno;
@@ -571,7 +608,12 @@ export class AnnotationsExport {
 }
 
 export default async function (
-  task: TaskInput<{ filters: FiltersSchema; format: any; timezone: string }> & { _id: string },
+  task: TaskInput<{
+    filters: FiltersSchema;
+    format: any;
+    timezone: string;
+    onlyIncludeReviewed: boolean;
+  }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
   const dataExport = new AnnotationsExport(
@@ -581,12 +623,12 @@ export default async function (
       filters: task.config.filters,
       format: task.config.format,
       timezone: task.config.timezone,
+      onlyIncludeReviewed: task.config.onlyIncludeReviewed,
     },
     config,
   );
 
   await dataExport.init();
-
   if (!task.config.format || task.config.format === 'csv') {
     return await dataExport.toCSV();
   } else if (task.config.format === 'coco') {
