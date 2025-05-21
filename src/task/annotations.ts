@@ -263,14 +263,10 @@ export class AnnotationsExport {
       imgString = i === this.imageCount ? imgString : imgString + ', ';
       imagesUpload.streamToS3.write(imgString);
 
-      let objectsToAnnotate = [];
-
       // create COCO annotation record, write to upload stream
-      if (this.onlyIncludeReviewed) {
-        objectsToAnnotate = this.getReviewedObjects(img);
-      } else {
-        objectsToAnnotate = img.objects;
-      }
+      const objectsToAnnotate = this.onlyIncludeReviewed
+        ? this.getReviewedObjects(img)
+        : img.objects;
 
       for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
@@ -355,14 +351,9 @@ export class AnnotationsExport {
       imagesArray.push(imgObj);
 
       // create COCO annotation record, add to in-memory array
-      let objectsToAnnotate = [];
-
-      // create COCO annotation record, write to upload stream
-      if (this.onlyIncludeReviewed) {
-        objectsToAnnotate = this.getReviewedObjects(img);
-      } else {
-        objectsToAnnotate = img.objects;
-      }
+      const objectsToAnnotate = this.onlyIncludeReviewed
+        ? this.getReviewedObjects(img)
+        : img.objects;
 
       for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
@@ -434,9 +425,9 @@ export class AnnotationsExport {
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
-        const firstValidLabel = this.findRepresentativeLabel(obj); // The most representative label only applies to objects who have been reviewed/locked
-        if (firstValidLabel) {
-          const cat = this.labelMap!.get(firstValidLabel.labelId).name;
+        const representativeLabel = this.findRepresentativeLabel(obj);
+        if (representativeLabel) {
+          const cat = this.labelMap!.get(representativeLabel.labelId).name;
           catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
         }
       }
