@@ -2,7 +2,61 @@ import { GraphQLClient, gql } from 'graphql-request';
 import { type Detection, modelInterfaces } from './modelInterfaces.js';
 import { type Config, getConfig } from '../config/config.js';
 import { type GraphQLError } from 'graphql';
+import { type IAutomationRule } from '../api/db/schemas/Project.js';
+import { buildCatConfig } from '../automation/utils.js';
 import * as gqlTypes from '../@types/graphql.js';
+
+interface GetProjectResponse {
+  projects: Array<{
+    automationRules: Array<Pick<IAutomationRule, '_id' | 'action'>>;
+  }>;
+}
+
+interface GetMLModelResponse {
+  mlModels: Array<
+    Pick<
+      gqlTypes.MlModel,
+      '_id' | 'description' | 'version' | 'defaultConfThreshold' | 'categories'
+    >
+  >;
+}
+
+const GET_PROJECT_RULE = gql`
+  query GetProject($projectId: String!) {
+    projects(input: { _ids: [$projectId] }) {
+      automationRules {
+        _id
+        name
+        event {
+          type
+          label
+        }
+        action {
+          type
+          alertRecipients
+          mlModel
+          confThreshold
+          categoryConfig
+        }
+      }
+    }
+  }
+`;
+
+const GET_ML_MODEL = gql`
+  query GetMLModels($mlModelId: String!) {
+    mlModels(input: { _ids: [$mlModelId] }) {
+      _id
+      description
+      version
+      defaultConfThreshold
+      categories {
+        _id
+        name
+      }
+    }
+  }
+`;
 
 async function requestCreateInternalLabels(
   input: { labels: Detection[] },
@@ -25,11 +79,35 @@ async function requestCreateInternalLabels(
 }
 
 async function singleInference(config: Config, record: Record): Promise<void> {
-  const { modelSource, catConfig, image, label } = JSON.parse(record.body);
+  const { mlModelId, image, label, projectId, automationRuleId } = JSON.parse(record.body);
 
   console.log(`message related to image ${image._id}: ${record.body}`);
 
-  // run inference
+  // Create GraphQL client
+  const graphQLClient = new GraphQLClient(config['/API/URL'], {
+    headers: { 'x-api-key': config['APIKEY'] },
+  });
+
+  // Fetch project and find specific rule
+  const getProjectResponse = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, {
+    projectId,
+  });
+  const project = getProjectResponse.projects[0];
+  const rule = project.automationRules.find((r) => r._id.toString() === automationRuleId);
+  if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
+
+  // Fetch model source
+  const getModelResponse = await graphQLClient.request<GetMLModelResponse>(GET_ML_MODEL, {
+    mlModelId,
+  });
+  const modelSource = getModelResponse.mlModels[0];
+  if (!modelSource) throw new Error(`ML model ${mlModelId} not found`);
+
+  // Convert categoryConfig from JSON to Map for buildCatConfig
+  rule.action.categoryConfig = new Map(Object.entries(rule.action.categoryConfig || {}));
+  const catConfig = buildCatConfig(modelSource, rule);
+
+  // Run inference
   if (modelInterfaces.has(modelSource._id)) {
     const requestInference = modelInterfaces.get(modelSource._id)!;
 

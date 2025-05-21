@@ -3,6 +3,7 @@ export default /* GraphQL */ `
     _id: String!
     name: String!
     color: String!
+    taxonomy: String
   }
 
   type MLModel {
