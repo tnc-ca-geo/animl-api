@@ -88,7 +88,6 @@ export class AnnotationsExport {
         { ...sanitizedFilters, reviewed: false },
         this.projectId,
       );
-
       const reviewedPipeline = buildPipeline(
         { ...sanitizedFilters, reviewed: true },
         this.projectId,
@@ -466,7 +465,13 @@ export class AnnotationsExport {
   }
 
   findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+    // label has validation and is validated true
     return obj.labels.find((label) => label.validation && label.validation.validated) || null;
+  }
+
+  findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
+    // label either has no validation or is validated true
+    return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
   }
 
   findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
@@ -474,9 +479,11 @@ export class AnnotationsExport {
     // if include reviewed & non-reviewed and the object is unlocked, return the first non-invalidated label in the array
     let representativeLabel = null;
     if (obj.locked) {
-      representativeLabel = this.findFirstValidLabel(obj); // return locked object's first label that is validated
+      // return locked object's first label that is validated
+      representativeLabel = this.findFirstValidLabel(obj);
     } else {
-      representativeLabel = obj.labels?.[0] || null; // return first label (most recent label added) in list
+      // return first label (most recent label added) in list that hasn't been invalidated
+      representativeLabel = this.findFirstNonInvalidatedLabel(obj) || null;
     }
     return representativeLabel;
   }
