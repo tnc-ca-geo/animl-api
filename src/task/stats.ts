@@ -13,7 +13,8 @@ export default async function (
   let reviewed = 0;
   let notReviewed = 0;
   const reviewerList: Array<Reviewer> = [];
-  const labelList: Record<string, number> = {};
+  const objectLabelList: Record<string, number> = {};
+  const imageLabelList: Record<string, number> = {};
   // NOTE: just curious how many images get touched
   // by more than one reviewer. can remove later
   let multiReviewerCount = 0;
@@ -47,6 +48,7 @@ export default async function (
     // order reviewer list by reviewed count
     reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
 
+    const imageLabels: string[] = [];
     // build label list
     for (const obj of img.objects) {
       if (obj.locked) {
@@ -56,11 +58,22 @@ export default async function (
         if (firstValidLabel) {
           const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
           const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-          labelList[labelName] = Object.prototype.hasOwnProperty.call(labelList, labelName)
-            ? labelList[labelName] + 1
+          objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(objectLabelList, labelName)
+            ? objectLabelList[labelName] + 1
             : 1;
+
+          if (!imageLabels.includes(labelName)) {
+            imageLabels.push(labelName);
+          }
         }
       }
+    }
+
+    // Build image label list
+    for (const label of imageLabels) {
+      imageLabelList[label] = Object.prototype.hasOwnProperty.call(imageLabelList, label)
+        ? imageLabelList[label] + 1
+        : 1;
     }
   }
 
@@ -68,7 +81,8 @@ export default async function (
     imageCount,
     reviewedCount: { reviewed, notReviewed },
     reviewerList,
-    labelList,
+    labelList: objectLabelList,
+    imageLabelList,
     multiReviewerCount
   };
 }
@@ -78,6 +92,7 @@ interface GetStatsOutput {
   reviewedCount: { reviewed: number; notReviewed: number };
   reviewerList: Reviewer[];
   labelList: Record<string, number>;
+  imageLabelList: Record<string, number>;
   multiReviewerCount: number;
 }
 
