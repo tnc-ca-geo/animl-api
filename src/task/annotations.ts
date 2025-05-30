@@ -271,6 +271,8 @@ export class AnnotationsExport {
 
       for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        // skip if no representative label found (i.e. object has all invalidated labels)
+        if (!annoObj) continue;
         let annoString = JSON.stringify(annoObj, null, 4);
         annoString =
           i === this.imageCount && o === objectsToAnnotate.length - 1
@@ -358,6 +360,7 @@ export class AnnotationsExport {
 
       for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        if (!annoObj) continue; // skip if no representative label found
         annotationsArray.push(annoObj);
       }
     }
@@ -537,19 +540,17 @@ export class AnnotationsExport {
     object: ObjectSchema,
     img: ImageSchema,
     catMap: Category[],
-  ):
-    | {
-        id: Types.ObjectId;
-        image_id: string;
-        category_id?: number;
-        sequence_level_annotation: boolean;
-        bbox: number[];
-        confidence: number | null | undefined;
-        validated: boolean;
-      }
-    | undefined {
-    let anno;
-    const representativeLabel = findRepresentativeLabel(object);
+  ): {
+    id: Types.ObjectId;
+    image_id: string;
+    category_id?: number;
+    sequence_level_annotation: boolean;
+    bbox: number[];
+    confidence: number | null | undefined;
+    validated: boolean;
+  } | null {
+    let anno = null;
+    const representativeLabel = this.findRepresentativeLabel(object);
     if (representativeLabel) {
       const category = catMap.find(
         (cat) => cat.name === this.labelMap!.get(representativeLabel.labelId).name,
