@@ -4,15 +4,40 @@ import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
+import { LabelSchema, ObjectSchema } from '../api/db/schemas/shared/index.js';
+
+function findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+  // label has validation and is validated true
+  return obj.labels.find((label) => label.validation && label.validation.validated) || null;
+}
+
+function findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
+  // label either has no validation or is validated true
+  return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
+}
+
+function findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
+  if (obj.locked) {
+    // return locked object's first label that is validated
+    return findFirstValidLabel(obj);
+  } else {
+    // return first label (most recent label added) in list that hasn't been invalidated
+    return findFirstNonInvalidatedLabel(obj) || null;
+  }
+}
 
 export default async function (
   task: TaskInput<{ filters: FiltersSchema }>,
 ): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
-  let reviewed = 0;
-  let notReviewed = 0;
-  const reviewerList: Array<Reviewer> = [];
+  let imagesReviewed = 0;
+  let imagesNotReviewed = 0;
+  let objectCount = 0;
+  let objectsReviewed = 0;
+  let objectsNotReviewed = 0;
+  const imageReviewerList: Array<Reviewer> = [];
+  const objectReviewerList: Array<Reviewer> = [];
   const objectLabelList: Record<string, number> = {};
   const imageLabelList: Record<string, number> = {};
   // NOTE: just curious how many images get touched
@@ -28,43 +53,52 @@ export default async function (
     imageCount++;
 
     // increment reviewedCount
-    img.reviewed ? reviewed++ : notReviewed++;
+    img.reviewed ? imagesReviewed++ : imagesNotReviewed++;
 
     // build reviwer list
-    let reviewers = [];
+    let imageReviewers = [];
     for (const obj of img.objects) {
+      let objectReviewers = [];
       for (const lbl of obj.labels) {
-        if (lbl.validation) reviewers.push(lbl.validation.userId);
+        if (lbl.validation) {
+          objectReviewers.push(lbl.validation.userId)
+          imageReviewers.push(lbl.validation.userId)
+        };
+      }
+      objectReviewers = _.uniq(objectReviewers);
+      for (const userId of objectReviewers) {
+        const usr = objectReviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
+        !usr ? objectReviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
       }
     }
-    reviewers = _.uniq(reviewers);
-    if (reviewers.length > 1) multiReviewerCount++;
+    imageReviewers = _.uniq(imageReviewers);
+    if (imageReviewers.length > 1) multiReviewerCount++;
 
-    for (const userId of reviewers) {
-      const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
-      !usr ? reviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
+    for (const userId of imageReviewers) {
+      const usr = imageReviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
+      !usr ? imageReviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
     }
 
     // order reviewer list by reviewed count
-    reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
+    imageReviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
+    objectReviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
 
-    const imageLabels: string[] = [];
     // build label list
+    const imageLabels: string[] = [];
     for (const obj of img.objects) {
-      if (obj.locked) {
-        const firstValidLabel = obj.labels.find(
-          (label) => label.validation && label.validation.validated,
-        );
-        if (firstValidLabel) {
-          const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
-          const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-          objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(objectLabelList, labelName)
-            ? objectLabelList[labelName] + 1
-            : 1;
+      objectCount++;
+      obj.locked ? objectsReviewed++ : objectsNotReviewed++;
 
-          if (!imageLabels.includes(labelName)) {
-            imageLabels.push(labelName);
-          }
+      const representativeLabel = findRepresentativeLabel(obj);
+      if (representativeLabel) {
+        const projLabel = project.labels.find((lbl) => idMatch(lbl._id, representativeLabel.labelId));
+        const labelName = projLabel?.name || 'ERROR FINDING LABEL';
+        objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(objectLabelList, labelName)
+          ? objectLabelList[labelName] + 1
+          : 1;
+
+        if (!imageLabels.includes(labelName)) {
+          imageLabels.push(labelName);
         }
       }
     }
@@ -79,19 +113,25 @@ export default async function (
 
   return {
     imageCount,
-    reviewedCount: { reviewed, notReviewed },
-    reviewerList,
-    labelList: objectLabelList,
+    imageReviewCount: { reviewed: imagesReviewed, notReviewed: imagesNotReviewed }, // TODO: Rename to imageReviewCount
     imageLabelList,
+    objectCount,
+    objectReviewCount: { reviewed: objectsReviewed, notReviewed: objectsNotReviewed },
+    objectLabelList,
+    imageReviewerList,
+    objectReviewerList,
     multiReviewerCount
   };
 }
 
 interface GetStatsOutput {
   imageCount: number;
-  reviewedCount: { reviewed: number; notReviewed: number };
-  reviewerList: Reviewer[];
-  labelList: Record<string, number>;
+  imageReviewCount: { reviewed: number; notReviewed: number };
+  objectCount: number;
+  objectReviewCount: { reviewed: number; notReviewed: number };
+  imageReviewerList: Reviewer[];
+  objectReviewerList: Reviewer[];
+  objectLabelList: Record<string, number>;
   imageLabelList: Record<string, number>;
   multiReviewerCount: number;
 }
