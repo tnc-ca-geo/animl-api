@@ -158,7 +158,7 @@ export class AnnotationsExport {
       });
 
       // create a Mongoose aggregation cursor to read in documents one at a time
-      const cursor = Image.aggregate(this.pipeline).cursor({ batchSize: 1000 });
+      const cursor = Image.aggregate(this.pipeline).cursor();
 
       // pipe together aggregation cursor, transform and write streams
       await stream.pipeline(cursor, flattenImg, createRow, logMemoryUsage, streamToS3);
