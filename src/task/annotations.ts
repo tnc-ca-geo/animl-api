@@ -138,6 +138,7 @@ export class AnnotationsExport {
     console.log('exporting to CSV');
 
     try {
+      console.time('CSV export time');
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
       const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
@@ -158,7 +159,7 @@ export class AnnotationsExport {
       });
 
       // create a Mongoose aggregation cursor to read in documents one at a time
-      const cursor = Image.aggregate(this.pipeline).cursor();
+      const cursor = Image.aggregate(this.pipeline).cursor({ batchSize: 1000 });
 
       // pipe together aggregation cursor, transform and write streams
       await stream.pipeline(cursor, flattenImg, createRow, logMemoryUsage, streamToS3);
@@ -166,6 +167,7 @@ export class AnnotationsExport {
       // wait for upload complete
       await promise;
       console.log('upload complete');
+      console.timeEnd('CSV export time');
     } catch (err) {
       throw new InternalServerError('Error exporting to CSV: ' + (err as Error).message);
     }
@@ -281,7 +283,7 @@ export class AnnotationsExport {
         annotationsUpload.streamToS3.write(annoString);
       }
 
-      if (i % 1000 === 0) {
+      if (i % 10000 === 0) {
         console.log(
           `processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`,
         );
