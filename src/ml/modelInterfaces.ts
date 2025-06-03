@@ -333,7 +333,7 @@ const speciesnet: InferenceFunction = async (params) => {
     let filteredDets = _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
 
     // add "empty" detection if no detections are found (only relevant when running in 'all' mode)
-    if (filteredDets.length === 0) {
+    if (filteredDets.length === 0 && mode === 'all') {
       filteredDets.push({
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
