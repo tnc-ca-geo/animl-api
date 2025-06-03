@@ -26,11 +26,16 @@ export function idMatch(
   return idA.toString() === idB.toString();
 }
 
-export function buildImgUrl(image: ImageSchema, config: Config, size = 'original') {
+export function buildImgUrl(image: ImageSchema, config: Config, size = 'original'): string {
   const url = config['/IMAGES/URL'];
   const id = image._id;
   const ext = image.fileTypeExtension;
   return url + '/' + size + '/' + id + '-' + size + '.' + ext;
+}
+
+export function signUrl(url: string, privateKey: string): string {
+  // TODO: Implement this
+  return url;
 }
 
 export function buildTagPipeline(tags: string[]): PipelineStage[] {
