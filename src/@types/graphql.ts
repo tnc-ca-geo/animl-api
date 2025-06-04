@@ -372,6 +372,7 @@ export type ExportErrorsInput = {
 };
 
 export type ExportInput = {
+  aggregateObjects: Scalars['Boolean']['input'];
   filters: FiltersInput;
   format: Format;
   onlyIncludeReviewed: Scalars['Boolean']['input'];
