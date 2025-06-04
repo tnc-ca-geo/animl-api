@@ -38,6 +38,7 @@ export class AnnotationsExport {
   imageCountThreshold: number;
   reviewedCount: number;
   notReviewedCount: number;
+  aggregateObjects: boolean;
 
   pipeline?: PipelineStage[];
   project?: HydratedDocument<ProjectSchema>;
@@ -52,6 +53,7 @@ export class AnnotationsExport {
       format,
       timezone,
       onlyIncludeReviewed,
+      aggregateObjects,
     }: {
       projectId: string;
       documentId: string;
@@ -59,6 +61,7 @@ export class AnnotationsExport {
       format: string;
       timezone: string;
       onlyIncludeReviewed: boolean;
+      aggregateObjects: boolean;
     },
     config: Config,
   ) {
@@ -74,6 +77,7 @@ export class AnnotationsExport {
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     this.onlyIncludeReviewed = onlyIncludeReviewed;
+    this.aggregateObjects = aggregateObjects;
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -428,13 +432,17 @@ export class AnnotationsExport {
         }),
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
       };
-
+      
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
           const cat = this.labelMap!.get(representativeLabel.labelId).name;
-          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          if (this.aggregateObjects) {
+            catCounts[cat] = 1;
+          } else {
+            catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          }
         }
       }
       return { ...flatImgRecord, ...catCounts };
@@ -593,6 +601,7 @@ export default async function (
     format: any;
     timezone: string;
     onlyIncludeReviewed: boolean;
+    aggregateObjects: boolean;
   }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
@@ -604,6 +613,7 @@ export default async function (
       format: task.config.format,
       timezone: task.config.timezone,
       onlyIncludeReviewed: task.config.onlyIncludeReviewed,
+      aggregateObjects: task.config.aggregateObjects,
     },
     config,
   );
