@@ -276,13 +276,17 @@ const speciesnet: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
 
-  // By default, speciesnet runs in 'all' mode — detector + classifier
   let mode = 'all';
 
-  if (label) {
-    // Label is available when a detector is already run on the image
-    // So we'll run speciesnet in the classifier mode
+  // Select the model mode based on modelSource._id
+  if (modelSource._id == 'speciesnet-classifier') {
+    console.log('running speciesnet in classifier mode');
     mode = 'classifier';
+  }
+
+  if (modelSource._id == 'speciesnet-all') {
+    console.log('running speciesnet in all mode');
+    mode = 'all';
   }
 
   let bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
@@ -292,6 +296,7 @@ const speciesnet: InferenceFunction = async (params) => {
     image_data: imgBuffer.toString('base64'),
     bbox: speciesnetBbox,
     components: mode,
+    // ...(mode === 'all' && params.country && { country: params.country }) TODO: wire up after country code is added to params
   };
 
   // Choose the endpoint based on the mode. Default is realtime.
@@ -315,18 +320,24 @@ const speciesnet: InferenceFunction = async (params) => {
     const response = JSON.parse(body);
     console.log(`speciesnet predictions for image ${image._id}: ${body}`);
 
+    let predictions: Record<string, number> = {};
     if (mode === 'all' && response.predictions[0].detections.length > 0) {
       // When in 'all' mode, get bbox from detections if available
       const detection = response.predictions[0].detections[0];
       bbox = _toMegaDetectorFormat(detection.bbox);
+
+      // Get results from the prediction
+      const uuid = response.predictions[0].prediction.split(';')[0];
+      predictions[uuid] = response.predictions[0].prediction_score;
     }
 
-    // Transform predictions to match catConfig format using ids from speciesnet
-    const predictions: Record<string, number> = {};
-    response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
-      const uuid = classStr.split(';')[0]; // Get just the id
-      predictions[uuid] = response.predictions[0].classifications.scores[index];
-    });
+    if (mode === 'classifier' && response.predictions[0].classifications.classes.length > 0) {
+      // Use classification results. Transform predictions to match catConfig format using ids from speciesnet
+      response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
+        const uuid = classStr.split(';')[0]; // Get just the id
+        predictions[uuid] = response.predictions[0].classifications.scores[index];
+      });
+    }
 
     console.log('transformed speciesnet predictions:', predictions);
     // Return with md5 bbox
@@ -357,7 +368,8 @@ modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
 modelInterfaces.set('deepfaune-ne', deepfaunene);
-modelInterfaces.set('speciesnet', speciesnet);
+modelInterfaces.set('speciesnet-classifier', speciesnet);
+modelInterfaces.set('speciesnet-all', speciesnet);
 
 export { modelInterfaces };
 
