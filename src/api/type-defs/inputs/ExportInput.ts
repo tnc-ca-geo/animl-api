@@ -9,5 +9,6 @@ export default /* GraphQL */ `
     timezone: String!
     filters: FiltersInput!
     onlyIncludeReviewed: Boolean!
+    aggregateObjects: Boolean!
   }
 `;
