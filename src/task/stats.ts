@@ -66,6 +66,10 @@ export default async function (
     // build label list
     const imageLabels: string[] = [];
     for (const obj of img.objects) {
+      if (obj.labels.some(label => label.validation && label.validation.validated)) {
+        // exlude objects where all labels are invalidated
+        continue
+      }
       objectCount++;
       obj.locked ? objectsReviewed++ : objectsNotReviewed++;
 
