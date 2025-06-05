@@ -4,27 +4,7 @@ import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
-import { LabelSchema, ObjectSchema } from '../api/db/schemas/shared/index.js';
-
-function findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
-  // label has validation and is validated true
-  return obj.labels.find((label) => label.validation && label.validation.validated) || null;
-}
-
-function findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
-  // label either has no validation or is validated true
-  return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
-}
-
-function findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
-  if (obj.locked) {
-    // return locked object's first label that is validated
-    return findFirstValidLabel(obj);
-  } else {
-    // return first label (most recent label added) in list that hasn't been invalidated
-    return findFirstNonInvalidatedLabel(obj) || null;
-  }
-}
+import { findRepresentativeLabel } from './utils.js';
 
 export default async function (
   task: TaskInput<{ filters: FiltersSchema }>,
