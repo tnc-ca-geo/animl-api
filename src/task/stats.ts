@@ -66,7 +66,10 @@ export default async function (
     // build label list
     const imageLabels: string[] = [];
     for (const obj of img.objects) {
-      objectCount++;
+      if (obj.labels.some(label => label.validation && label.validation.validated)) {
+        // exlude objects where all labels are invalidated
+        objectCount++;
+      }
       obj.locked ? objectsReviewed++ : objectsNotReviewed++;
 
       const representativeLabel = findRepresentativeLabel(obj);
