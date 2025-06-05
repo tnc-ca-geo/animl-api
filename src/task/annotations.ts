@@ -88,14 +88,12 @@ export class AnnotationsExport {
     console.log('initializing Export');
     try {
       const sanitizedFilters = this.sanitizeFilters();
-      const notReviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: false },
-        this.projectId,
-      );
-      const reviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: true },
-        this.projectId,
-      );
+      const pipeline = buildPipeline(sanitizedFilters, this.projectId);
+
+      let notReviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      notReviewedPipeline.push({ $match: { reviewed: false } });
+      let reviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      reviewedPipeline.push({ $match: { reviewed: true } });
 
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
       this.reviewedCount = await this.getCount(reviewedPipeline);
@@ -431,7 +429,7 @@ export class AnnotationsExport {
         }),
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
       };
-      
+
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
         const representativeLabel = this.findRepresentativeLabel(obj);
