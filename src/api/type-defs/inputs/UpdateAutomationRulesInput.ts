@@ -7,6 +7,8 @@ export default /* GraphQL */ `
   input AutomationActionInput {
     type: String!
     mlModel: String
+    country: String
+    admin1Region: String
     alertRecipients: [String!]
     confThreshold: Float
     categoryConfig: JSONObject
