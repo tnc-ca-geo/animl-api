@@ -22,6 +22,8 @@ const AutomationRuleSchema = new Schema<IAutomationRule>({
     },
     alertRecipients: { type: [String] },
     mlModel: { type: String, ref: 'MLModel' },
+    country: { type: String },
+    admin1Region: { type: String },
     categoryConfig: {
       type: Map,
       of: new Schema({
@@ -134,6 +136,8 @@ export interface IAutomationRule {
     type: 'run-inference' | 'send-alert';
     alertRecipients: string[];
     mlModel: string;
+    country: string;
+    admin1Region: string;
     categoryConfig: Map<string, { confThreshold: number; disabled: boolean }>;
   };
 }
