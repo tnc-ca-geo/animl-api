@@ -296,7 +296,8 @@ const speciesnet: InferenceFunction = async (params) => {
     image_data: imgBuffer.toString('base64'),
     bbox: speciesnetBbox,
     components: mode,
-    // ...(mode === 'all' && params.country && { country: params.country }) TODO: wire up after country code is added to params
+    ...(mode === 'all' && params.country && { country: params.country }),
+    ...(mode === 'all' && params.admin1Region && { admin1Region: params.admin1Region }),
   };
 
   // Choose the endpoint based on the mode. Default is realtime.
@@ -393,6 +394,8 @@ interface ModelInterfaceParams {
   image: ImageSchema;
   label: LabelSchema;
   config: Config;
+  country?: string; // Optional country code for speciesnet-all
+  admin1Region?: string; // Optional admin1 region for speciesnet-all
 }
 
 interface InferenceFunction {
