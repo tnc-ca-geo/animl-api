@@ -1123,8 +1123,15 @@ export type QueryProjectsInput = {
   _ids?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export enum AggregationLevel {
+  imageAndObject = "imageAndObject",
+  burst = "burst",
+  independentDetection = "independentDetection",
+}
+
 export type QueryStatsInput = {
   filters: FiltersInput;
+  aggregationLevel?: AggregationLevel
 };
 
 export type QueryTaskInput = {
