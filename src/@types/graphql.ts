@@ -465,6 +465,7 @@ export type Image = {
   path?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
   reviewed?: Maybe<Scalars['Boolean']['output']>;
+  signedImageUrl?: Maybe<SignedImageUrl>;
   tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
   userSetData?: Maybe<Scalars['JSONObject']['output']>;
@@ -1176,6 +1177,12 @@ export type RegisterCameraPayload = {
 
 export type ResendTempPasswordInput = {
   username: Scalars['String']['input'];
+};
+
+export type SignedImageUrl = {
+  __typename?: 'SignedImageUrl';
+  thumbUrl: Scalars['String']['output'];
+  url: Scalars['String']['output'];
 };
 
 export type StandardErrorPayload = {
