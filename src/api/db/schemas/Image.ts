@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { LocationSchema, ObjectSchema } from './shared/index.js';
-import { buildImgUrl, signUrl } from '../models/utils.js';
-import { getConfig } from '../../../config/config.js';
 
 const Schema = mongoose.Schema;
 
