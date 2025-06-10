@@ -26,11 +26,15 @@ export function idMatch(
   return idA.toString() === idB.toString();
 }
 
+export function buildImgKey(image: ImageSchema, size = 'original'): string {
+  return `${size}/${image._id}-${size}.${image.fileTypeExtension}`;
+}
+
 export function buildImgUrl(image: ImageSchema, config: Config, size = 'original'): string {
-  const url = config['/IMAGES/URL'];
-  const id = image._id;
-  const ext = image.fileTypeExtension;
-  return url + '/' + size + '/' + id + '-' + size + '.' + ext;
+  const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
+
+  // TODO: Sign the url with the private key
+  return `${config['/IMAGES/URL']}/${buildImgKey(image, size)}`;
 }
 
 export function signUrl(url: string, privateKey: string): string {
