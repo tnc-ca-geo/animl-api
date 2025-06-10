@@ -138,6 +138,7 @@ export class AnnotationsExport {
     console.log('exporting to CSV');
 
     try {
+      console.time('CSV export time');
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
       const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
@@ -166,6 +167,7 @@ export class AnnotationsExport {
       // wait for upload complete
       await promise;
       console.log('upload complete');
+      console.timeEnd('CSV export time');
     } catch (err) {
       throw new InternalServerError('Error exporting to CSV: ' + (err as Error).message);
     }
@@ -271,6 +273,8 @@ export class AnnotationsExport {
 
       for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        // skip if no representative label found (i.e. object has all invalidated labels)
+        if (!annoObj) continue;
         let annoString = JSON.stringify(annoObj, null, 4);
         annoString =
           i === this.imageCount && o === objectsToAnnotate.length - 1
@@ -279,7 +283,7 @@ export class AnnotationsExport {
         annotationsUpload.streamToS3.write(annoString);
       }
 
-      if (i % 1000 === 0) {
+      if (i % 10000 === 0) {
         console.log(
           `processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`,
         );
@@ -358,6 +362,7 @@ export class AnnotationsExport {
 
       for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        if (!annoObj) continue; // skip if no representative label found
         annotationsArray.push(annoObj);
       }
     }
@@ -537,18 +542,16 @@ export class AnnotationsExport {
     object: ObjectSchema,
     img: ImageSchema,
     catMap: Category[],
-  ):
-    | {
-        id: Types.ObjectId;
-        image_id: string;
-        category_id?: number;
-        sequence_level_annotation: boolean;
-        bbox: number[];
-        confidence: number | null | undefined;
-        validated: boolean;
-      }
-    | undefined {
-    let anno;
+  ): {
+    id: Types.ObjectId;
+    image_id: string;
+    category_id?: number;
+    sequence_level_annotation: boolean;
+    bbox: number[];
+    confidence: number | null | undefined;
+    validated: boolean;
+  } | null {
+    let anno = null;
     const representativeLabel = findRepresentativeLabel(object);
     if (representativeLabel) {
       const category = catMap.find(

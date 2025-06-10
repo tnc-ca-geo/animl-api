@@ -177,6 +177,7 @@ functions:
               - taskQueue
               - Arn
           batchSize: 1
+    memorySize: 3008
     timeout: 900
 
 resources:
