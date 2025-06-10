@@ -29,6 +29,7 @@ const localConfig = {
     'deploymentLong',
     'comments',
   ],
+  IMAGES_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
 };
 
 /*
@@ -44,6 +45,7 @@ const ssmNames = [
   `/frontend/url-${process.env.STAGE}`,
   `/api/url-${process.env.STAGE}`,
   `/images/url-${process.env.STAGE}`,
+  `/images/cloudfront-distribution-privatekey-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/tasks/task-queue-url-${process.env.STAGE}`,
@@ -131,6 +133,7 @@ export interface RemoteConfig {
   '/EXPORTS/EXPORTED_DATA_BUCKET': string;
   '/FRONTEND/URL': string;
   '/IMAGES/URL': string;
+  '/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY': string;
   '/ML/INFERENCE_QUEUE_URL': string;
   '/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT': string;
   '/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT': string;
