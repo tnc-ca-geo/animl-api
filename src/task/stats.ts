@@ -5,10 +5,40 @@ import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
 import { findRepresentativeLabel } from './utils.js';
+import { AggregationLevel } from '../@types/graphql.js';
+import getBurstStats, { BurstsTask, GetBurstOutput } from './getBursts.js';
 
-export default async function (
-  task: TaskInput<{ filters: FiltersSchema }>,
-): Promise<GetStatsOutput> {
+type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
+type ImageAndObjectsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.imageAndObject }>;
+
+interface Reviewer {
+  userId: string;
+  reviewedCount: number;
+}
+
+interface ReviewCount {
+  reviewed: number;
+  notReviewed: number;
+}
+
+interface GetStatsOutput {
+  imageCount: number;
+  imageReviewCount: ReviewCount;
+  objectCount: number;
+  objectReviewCount: ReviewCount;
+  imageReviewerList: Reviewer[];
+  objectReviewerList: Reviewer[];
+  objectLabelList: Record<string, number>;
+  imageLabelList: Record<string, number>;
+  multiReviewerCount: number;
+}
+
+type Return<T extends Task> =
+  T extends ImageAndObjectsTask ? GetStatsOutput :
+  T extends BurstsTask ? GetBurstOutput :
+  GetStatsOutput;
+
+async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
   let imagesReviewed = 0;
@@ -107,19 +137,16 @@ export default async function (
   };
 }
 
-interface GetStatsOutput {
-  imageCount: number;
-  imageReviewCount: { reviewed: number; notReviewed: number };
-  objectCount: number;
-  objectReviewCount: { reviewed: number; notReviewed: number };
-  imageReviewerList: Reviewer[];
-  objectReviewerList: Reviewer[];
-  objectLabelList: Record<string, number>;
-  imageLabelList: Record<string, number>;
-  multiReviewerCount: number;
-}
+export default async function<T extends Task> (task: T): Promise<Return<T>> {
+  switch(task.config.aggregationLevel) {
+    case AggregationLevel.imageAndObject:
+      return getImageAndObjectStats(task) as Promise<Return<T>>;
+    case AggregationLevel.burst:
+      return getBurstStats(task) as Promise<Return<T>>;
+    case AggregationLevel.independentDetection:
+      // TODO independent detections
+      break;
+    }
 
-interface Reviewer {
-  userId: string;
-  reviewedCount: number;
+  return getImageAndObjectStats(task) as Promise<Return<T>>;
 }
