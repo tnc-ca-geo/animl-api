@@ -1,6 +1,7 @@
-import { buildImgUrl } from '../api/db/models/utils.js';
+import { buildImgKey } from '../api/db/models/utils.js';
 import type { LabelSchema } from '../api/db/schemas/shared/index.js';
 import type { ImageSchema } from '../api/db/schemas/Image.js';
+import S3 from '@aws-sdk/client-s3';
 import SM from '@aws-sdk/client-sagemaker-runtime';
 import sharp from 'sharp';
 import { Config } from '../config/config.js';
@@ -18,12 +19,14 @@ const _toMegaDetectorFormat = (bbox: number[]): number[] => {
 };
 
 const _getImage = async (image: ImageSchema, config: ModelInterfaceParams['config']) => {
-  const url = 'http://' + buildImgUrl(image, config);
+  const bucket = config.IMAGES_BUCKET;
+  const key = buildImgKey(image);
 
+  const s3 = new S3.S3Client();
   try {
-    const res = await fetch(url);
-    const body = await res.arrayBuffer();
-    let imgBuffer = Buffer.from(body);
+    const res = await s3.send(new S3.GetObjectCommand({ Bucket: bucket, Key: key }));
+    const body = await res.Body?.transformToByteArray();
+    let imgBuffer = Buffer.from(body!);
 
     // resize image if it's over 2.8 MB
     if (image.imageBytes! > 2800000) {
