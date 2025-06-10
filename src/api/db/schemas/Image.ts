@@ -19,50 +19,33 @@ const ImageCommentSchema = new Schema({
   comment: { type: String, required: true },
 });
 
-const ImageSchema = new Schema(
-  {
-    _id: { type: String, required: true },
-    bucket: { type: String, required: true },
-    batchId: { type: String },
-    fileTypeExtension: { type: String, required: true },
-    path: { type: String },
-    dateAdded: { type: Date, default: Date.now, required: true },
-    dateTimeOriginal: { type: Date, required: true },
-    timezone: { type: String, required: true },
-    make: { type: String, default: 'unknown', required: true },
-    cameraId: { type: String, required: true, ref: 'Camera' },
-    deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
-    projectId: { type: String, required: true, ref: 'Project' },
-    originalFileName: { type: String },
-    imageWidth: { type: Number },
-    imageHeight: { type: Number },
-    imageBytes: { type: Number },
-    mimeType: { type: String },
-    userSetData: { type: Map, of: String },
-    model: { type: String },
-    location: { type: LocationSchema },
-    triggerSource: { type: String },
-    reviewed: { type: Boolean },
-    objects: { type: [ObjectSchema] },
-    comments: { type: [ImageCommentSchema] },
-    tags: { type: [mongoose.Schema.Types.ObjectId] },
-  },
-  {
-    virtuals: {
-      signedImageUrl: {
-        // TODO: Verify that this works async...
-        async get(): Promise<{ url: string; thumbUrl: string }> {
-          const config = await getConfig();
-          const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
-          return {
-            url: signUrl(buildImgUrl(this, config, 'original'), privateKey),
-            thumbUrl: signUrl(buildImgUrl(this, config, 'small'), privateKey),
-          };
-        },
-      },
-    },
-  },
-);
+const ImageSchema = new Schema({
+  _id: { type: String, required: true },
+  bucket: { type: String, required: true },
+  batchId: { type: String },
+  fileTypeExtension: { type: String, required: true },
+  path: { type: String },
+  dateAdded: { type: Date, default: Date.now, required: true },
+  dateTimeOriginal: { type: Date, required: true },
+  timezone: { type: String, required: true },
+  make: { type: String, default: 'unknown', required: true },
+  cameraId: { type: String, required: true, ref: 'Camera' },
+  deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
+  projectId: { type: String, required: true, ref: 'Project' },
+  originalFileName: { type: String },
+  imageWidth: { type: Number },
+  imageHeight: { type: Number },
+  imageBytes: { type: Number },
+  mimeType: { type: String },
+  userSetData: { type: Map, of: String },
+  model: { type: String },
+  location: { type: LocationSchema },
+  triggerSource: { type: String },
+  reviewed: { type: Boolean },
+  objects: { type: [ObjectSchema] },
+  comments: { type: [ImageCommentSchema] },
+  tags: { type: [mongoose.Schema.Types.ObjectId] },
+});
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
