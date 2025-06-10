@@ -4,16 +4,22 @@ import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
 import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
+import { findRepresentativeLabel } from './utils.js';
 
 export default async function (
   task: TaskInput<{ filters: FiltersSchema }>,
 ): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   let imageCount = 0;
-  let reviewed = 0;
-  let notReviewed = 0;
-  const reviewerList: Array<Reviewer> = [];
-  const labelList: Record<string, number> = {};
+  let imagesReviewed = 0;
+  let imagesNotReviewed = 0;
+  let objectCount = 0;
+  let objectsReviewed = 0;
+  let objectsNotReviewed = 0;
+  const imageReviewerList: Array<Reviewer> = [];
+  const objectReviewerList: Array<Reviewer> = [];
+  const objectLabelList: Record<string, number> = {};
+  const imageLabelList: Record<string, number> = {};
   // NOTE: just curious how many images get touched
   // by more than one reviewer. can remove later
   let multiReviewerCount = 0;
@@ -27,57 +33,90 @@ export default async function (
     imageCount++;
 
     // increment reviewedCount
-    img.reviewed ? reviewed++ : notReviewed++;
+    img.reviewed ? imagesReviewed++ : imagesNotReviewed++;
 
     // build reviwer list
-    let reviewers = [];
+    let imageReviewers = [];
     for (const obj of img.objects) {
+      let objectReviewers = [];
       for (const lbl of obj.labels) {
-        if (lbl.validation) reviewers.push(lbl.validation.userId);
+        if (lbl.validation) {
+          objectReviewers.push(lbl.validation.userId)
+          imageReviewers.push(lbl.validation.userId)
+        };
+      }
+      objectReviewers = _.uniq(objectReviewers);
+      for (const userId of objectReviewers) {
+        const usr = objectReviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
+        !usr ? objectReviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
       }
     }
-    reviewers = _.uniq(reviewers);
-    if (reviewers.length > 1) multiReviewerCount++;
+    imageReviewers = _.uniq(imageReviewers);
+    if (imageReviewers.length > 1) multiReviewerCount++;
 
-    for (const userId of reviewers) {
-      const usr = reviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
-      !usr ? reviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
+    for (const userId of imageReviewers) {
+      const usr = imageReviewerList.find((reviewer) => idMatch(reviewer.userId, userId!));
+      !usr ? imageReviewerList.push({ userId: userId!, reviewedCount: 1 }) : usr.reviewedCount++;
     }
 
     // order reviewer list by reviewed count
-    reviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
+    imageReviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
+    objectReviewerList.sort((a, b) => b.reviewedCount - a.reviewedCount);
 
     // build label list
+    const imageLabels: string[] = [];
     for (const obj of img.objects) {
-      if (obj.locked) {
-        const firstValidLabel = obj.labels.find(
-          (label) => label.validation && label.validation.validated,
-        );
-        if (firstValidLabel) {
-          const projLabel = project.labels.find((lbl) => idMatch(lbl._id, firstValidLabel.labelId));
-          const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-          labelList[labelName] = Object.prototype.hasOwnProperty.call(labelList, labelName)
-            ? labelList[labelName] + 1
-            : 1;
+      if (obj.labels.some(label => label.validation && label.validation.validated)) {
+        // exlude objects where all labels are invalidated
+        continue
+      }
+      objectCount++;
+      obj.locked ? objectsReviewed++ : objectsNotReviewed++;
+
+      const representativeLabel = findRepresentativeLabel(obj);
+      if (representativeLabel) {
+        const projLabel = project.labels.find((lbl) => idMatch(lbl._id, representativeLabel.labelId));
+        const labelName = projLabel?.name || 'ERROR FINDING LABEL';
+        objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(objectLabelList, labelName)
+          ? objectLabelList[labelName] + 1
+          : 1;
+
+        if (!imageLabels.includes(labelName)) {
+          imageLabels.push(labelName);
         }
       }
+    }
+
+    // Build image label list
+    for (const label of imageLabels) {
+      imageLabelList[label] = Object.prototype.hasOwnProperty.call(imageLabelList, label)
+        ? imageLabelList[label] + 1
+        : 1;
     }
   }
 
   return {
     imageCount,
-    reviewedCount: { reviewed, notReviewed },
-    reviewerList,
-    labelList,
+    imageReviewCount: { reviewed: imagesReviewed, notReviewed: imagesNotReviewed }, // TODO: Rename to imageReviewCount
+    imageLabelList,
+    objectCount,
+    objectReviewCount: { reviewed: objectsReviewed, notReviewed: objectsNotReviewed },
+    objectLabelList,
+    imageReviewerList,
+    objectReviewerList,
     multiReviewerCount
   };
 }
 
 interface GetStatsOutput {
   imageCount: number;
-  reviewedCount: { reviewed: number; notReviewed: number };
-  reviewerList: Reviewer[];
-  labelList: Record<string, number>;
+  imageReviewCount: { reviewed: number; notReviewed: number };
+  objectCount: number;
+  objectReviewCount: { reviewed: number; notReviewed: number };
+  imageReviewerList: Reviewer[];
+  objectReviewerList: Reviewer[];
+  objectLabelList: Record<string, number>;
+  imageLabelList: Record<string, number>;
   multiReviewerCount: number;
 }
 
