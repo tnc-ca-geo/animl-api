@@ -38,6 +38,7 @@ export class AnnotationsExport {
   imageCountThreshold: number;
   reviewedCount: number;
   notReviewedCount: number;
+  aggregateObjects: boolean;
 
   pipeline?: PipelineStage[];
   project?: HydratedDocument<ProjectSchema>;
@@ -52,6 +53,7 @@ export class AnnotationsExport {
       format,
       timezone,
       onlyIncludeReviewed,
+      aggregateObjects,
     }: {
       projectId: string;
       documentId: string;
@@ -59,6 +61,7 @@ export class AnnotationsExport {
       format: string;
       timezone: string;
       onlyIncludeReviewed: boolean;
+      aggregateObjects: boolean;
     },
     config: Config,
   ) {
@@ -74,6 +77,7 @@ export class AnnotationsExport {
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     this.onlyIncludeReviewed = onlyIncludeReviewed;
+    this.aggregateObjects = aggregateObjects;
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -85,14 +89,12 @@ export class AnnotationsExport {
     console.log('initializing Export');
     try {
       const sanitizedFilters = this.sanitizeFilters();
-      const notReviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: false },
-        this.projectId,
-      );
-      const reviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: true },
-        this.projectId,
-      );
+      const pipeline = buildPipeline(sanitizedFilters, this.projectId);
+
+      let notReviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      notReviewedPipeline.push({ $match: { reviewed: false } });
+      let reviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      reviewedPipeline.push({ $match: { reviewed: true } });
 
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
       this.reviewedCount = await this.getCount(reviewedPipeline);
@@ -434,7 +436,11 @@ export class AnnotationsExport {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
           const cat = this.labelMap!.get(representativeLabel.labelId).name;
-          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          if (this.aggregateObjects) {
+            catCounts[cat] = 1;
+          } else {
+            catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          }
         }
       }
       return { ...flatImgRecord, ...catCounts };
@@ -593,6 +599,7 @@ export default async function (
     format: any;
     timezone: string;
     onlyIncludeReviewed: boolean;
+    aggregateObjects: boolean;
   }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
@@ -604,6 +611,7 @@ export default async function (
       format: task.config.format,
       timezone: task.config.timezone,
       onlyIncludeReviewed: task.config.onlyIncludeReviewed,
+      aggregateObjects: task.config.aggregateObjects,
     },
     config,
   );
