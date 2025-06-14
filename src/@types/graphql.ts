@@ -20,17 +20,21 @@ export type Scalars = {
 
 export type AutomationAction = {
   __typename?: 'AutomationAction';
+  admin1Region?: Maybe<Scalars['String']['output']>;
   alertRecipients?: Maybe<Array<Scalars['String']['output']>>;
   categoryConfig?: Maybe<Scalars['JSONObject']['output']>;
   confThreshold?: Maybe<Scalars['Float']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
   mlModel?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
 };
 
 export type AutomationActionInput = {
+  admin1Region?: InputMaybe<Scalars['String']['input']>;
   alertRecipients?: InputMaybe<Array<Scalars['String']['input']>>;
   categoryConfig?: InputMaybe<Scalars['JSONObject']['input']>;
   confThreshold?: InputMaybe<Scalars['Float']['input']>;
+  country?: InputMaybe<Scalars['String']['input']>;
   mlModel?: InputMaybe<Scalars['String']['input']>;
   type: Scalars['String']['input'];
 };

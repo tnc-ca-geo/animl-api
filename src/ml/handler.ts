@@ -37,6 +37,8 @@ const GET_PROJECT_RULE = gql`
           mlModel
           confThreshold
           categoryConfig
+          country
+          admin1Region
         }
       }
     }
@@ -117,6 +119,8 @@ async function singleInference(config: Config, record: Record): Promise<void> {
       image,
       label,
       config,
+      ...(rule.action.country && { country: rule.action.country }),
+      ...(rule.action.admin1Region && { admin1Region: rule.action.admin1Region }),
     });
 
     // if successful, make create label request
