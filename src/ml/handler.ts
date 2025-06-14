@@ -37,6 +37,8 @@ const GET_PROJECT_RULE = gql`
           mlModel
           confThreshold
           categoryConfig
+          country
+          admin1Region
         }
       }
     }
