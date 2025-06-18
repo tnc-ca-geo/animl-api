@@ -298,7 +298,7 @@ const speciesnet: InferenceFunction = async (params) => {
     components: mode,
     ...(mode === 'all' && params.country && { country: params.country }),
     ...(mode === 'all' &&
-      params.admin1Region && { admin1Region: params.admin1Region.split('-')[1] }),
+      params.admin1Region && { admin1_region: params.admin1Region.split('-')[1] }),
   };
 
   // Choose the endpoint based on the mode. Default is realtime.
