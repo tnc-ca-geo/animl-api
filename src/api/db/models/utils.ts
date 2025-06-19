@@ -32,8 +32,7 @@ export function buildImgKey(image: ImageSchema, size = 'original'): string {
 }
 
 export function buildImgUrl(image: ImageSchema, config: Config, size = 'original'): string {
-  // const distributionDomain = config['/IMAGES/URL'];
-  const distributionDomain = 'd3do515rxodd1e.cloudfront.net';
+  const distributionDomain = config['/IMAGES/URL'];
   const url = `https://${distributionDomain}/${buildImgKey(image, size)}`;
   const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
   const keyPairId = config[`/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID`];
