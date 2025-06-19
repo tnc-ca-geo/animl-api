@@ -1,3 +1,4 @@
+import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
@@ -31,15 +32,17 @@ export function buildImgKey(image: ImageSchema, size = 'original'): string {
 }
 
 export function buildImgUrl(image: ImageSchema, config: Config, size = 'original'): string {
+  // const distributionDomain = config['/IMAGES/URL'];
+  const distributionDomain = 'd3do515rxodd1e.cloudfront.net';
+  const url = `https://${distributionDomain}/${buildImgKey(image, size)}`;
   const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
-
-  // TODO: Sign the url with the private key
-  return `${config['/IMAGES/URL']}/${buildImgKey(image, size)}`;
-}
-
-export function signUrl(url: string, privateKey: string): string {
-  // TODO: Implement this
-  return url;
+  const keyPairId = config[`/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID`];
+  return getSignedUrl({
+    url,
+    keyPairId,
+    privateKey,
+    dateLessThan: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+  });
 }
 
 export function buildTagPipeline(tags: string[]): PipelineStage[] {
@@ -651,8 +654,8 @@ export class BaseAuthedModel {
 }
 
 // NOTE: This is a bit of magic to let TS infer what the arguments for a method (T) are.
-// We do that so we can tell TS “hey, this method is using the same arguments as whatever
-// method we pass in to MethodParams<,,,>” to avoid having us type them twice
+// We do that so we can tell TS "hey, this method is using the same arguments as whatever
+// method we pass in to MethodParams<,,,>" to avoid having us type them twice
 // (e.g. see usage in AuthedProjectModel class methods)
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 
