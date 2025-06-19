@@ -31,16 +31,20 @@ export function buildImgKey(image: ImageSchema, size = 'original'): string {
   return `${size}/${image._id}-${size}.${image.fileTypeExtension}`;
 }
 
-export function buildImgUrl(image: ImageSchema, config: Config, size = 'original'): string {
+export function buildImgUrl(
+  image: ImageSchema,
+  config: Config,
+  size = 'original',
+  ttlMinutes = 15,
+): string {
   const distributionDomain = config['/IMAGES/URL'];
-  const url = `https://${distributionDomain}/${buildImgKey(image, size)}`;
   const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
   const keyPairId = config[`/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID`];
   return getSignedUrl({
-    url,
+    url: `https://${distributionDomain}/${buildImgKey(image, size)}`,
+    dateLessThan: new Date(ttlMinutes * 60 * 1000 + Date.now()),
     keyPairId,
     privateKey,
-    dateLessThan: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
   });
 }
 
