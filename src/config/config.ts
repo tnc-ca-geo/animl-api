@@ -46,6 +46,7 @@ const ssmNames = [
   `/api/url-${process.env.STAGE}`,
   `/images/url-${process.env.STAGE}`,
   `/images/cloudfront-distribution-privatekey-${process.env.STAGE}`,
+  `/images/cloudfront-public-key-id-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/tasks/task-queue-url-${process.env.STAGE}`,
@@ -134,6 +135,7 @@ export interface RemoteConfig {
   '/FRONTEND/URL': string;
   '/IMAGES/URL': string;
   '/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY': string;
+  '/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID': string;
   '/ML/INFERENCE_QUEUE_URL': string;
   '/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT': string;
   '/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT': string;
