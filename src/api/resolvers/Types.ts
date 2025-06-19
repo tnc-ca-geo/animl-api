@@ -4,9 +4,12 @@ import { buildImgUrl } from '../db/models/utils.js';
 
 export default {
   Image: {
-    signedImageUrl: async (parent: ImageSchema, _: unknown, context: Context) => ({
-      url: buildImgUrl(parent, context.config, 'original'),
-      thumbUrl: buildImgUrl(parent, context.config, 'small'),
-    }),
+    url: (parent: ImageSchema, _: unknown, context: Context) =>
+      Object.fromEntries(
+        ['original', 'medium', 'small'].map((size) => [
+          size,
+          buildImgUrl(parent, context.config, size),
+        ]),
+      ),
   },
 };
