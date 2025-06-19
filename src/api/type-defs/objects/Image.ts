@@ -1,7 +1,8 @@
 export default /* GraphQL */ `
   type SignedImageUrl {
-    url: String!
-    thumbUrl: String!
+    original: String!
+    medium: String!
+    small: String!
   }
 
   type Image {
@@ -30,6 +31,6 @@ export default /* GraphQL */ `
     objects: [Object!]
     comments: [ImageComment!]
     tags: [ID!]
-    signedImageUrl: SignedImageUrl
+    url: SignedImageUrl
   }
 `;
