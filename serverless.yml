@@ -106,6 +106,7 @@ provider:
                   - '/*'
         - Effect: 'Allow'
           Action:
+            - 's3:GetObject'
             - 's3:DeleteObject'
           Resource:
             - Fn::Join:
