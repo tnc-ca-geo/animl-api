@@ -1,9 +1,9 @@
 import tape from 'tape';
 import fs from 'node:fs';
-import { MockAgent, setGlobalDispatcher } from 'undici';
 import path from 'node:path';
 import Sinon from 'sinon';
 import SM from '@aws-sdk/client-sagemaker-runtime';
+import S3 from '@aws-sdk/client-s3';
 
 import { modelInterfaces } from '../.build/ml/modelInterfaces.js';
 
@@ -13,15 +13,20 @@ process.env.REGION = 'us-east-2';
 process.env.STAGE = 'dev';
 
 tape('ML-Inference Megadetector', async (t) => {
-  const mockAgent = new MockAgent();
-  setGlobalDispatcher(mockAgent);
-
-  const mockPool = mockAgent.get('http://example.com');
-
-  mockPool.intercept({
-    path: '/original/1-original.png',
-    method: 'GET'
-  }).reply(200, fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')));
+  // Mock S3 client instead of HTTP requests
+  Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
+    if (command instanceof S3.GetObjectCommand) {
+      t.equals(command.input.Bucket, 'test-bucket');
+      t.equals(command.input.Key, 'original/1-original.png');
+      return Promise.resolve({
+        Body: {
+          transformToByteArray: () => Promise.resolve(fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')))
+        }
+      });
+    } else {
+      throw new Error('Unknown S3 Command');
+    }
+  });
 
   Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
     if (command instanceof SM.InvokeEndpointCommand) {
@@ -92,15 +97,20 @@ tape('ML-Inference Megadetector', async (t) => {
 });
 
 tape('ML-Inference Megadetector - Batch Image', async (t) => {
-  const mockAgent = new MockAgent();
-  setGlobalDispatcher(mockAgent);
-
-  const mockPool = mockAgent.get('http://example.com');
-
-  mockPool.intercept({
-    path: '/original/1-original.png',
-    method: 'GET'
-  }).reply(200, fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')));
+  // Mock S3 client instead of HTTP requests
+  Sinon.stub(S3.S3Client.prototype, 'send').callsFake((command) => {
+    if (command instanceof S3.GetObjectCommand) {
+      t.equals(command.input.Bucket, 'test-bucket');
+      t.equals(command.input.Key, 'original/1-original.png');
+      return Promise.resolve({
+        Body: {
+          transformToByteArray: () => Promise.resolve(fs.readFileSync(path.resolve(base, './fixtures/cat.jpg')))
+        }
+      });
+    } else {
+      throw new Error('Unknown S3 Command');
+    }
+  });
 
   Sinon.stub(SM.SageMakerRuntimeClient.prototype, 'send').callsFake((command) => {
     if (command instanceof SM.InvokeEndpointCommand) {
