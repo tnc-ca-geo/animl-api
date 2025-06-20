@@ -7,6 +7,7 @@ import { type FiltersSchema } from '../api/db/schemas/Project.js';
 import { findRepresentativeLabel } from './utils.js';
 import { AggregationLevel } from '../@types/graphql.js';
 import getBurstStats, { BurstsTask, GetBurstOutput } from './getBursts.js';
+import getIndependentDetectionStats, { GetIndependentDetectionsOutput, IndependentDetectionsTask } from './getIndependentDetections.js';
 
 type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
 type ImageAndObjectsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.imageAndObject }>;
@@ -36,6 +37,7 @@ interface GetStatsOutput {
 type Return<T extends Task> =
   T extends ImageAndObjectsTask ? GetStatsOutput :
   T extends BurstsTask ? GetBurstOutput :
+  T extends IndependentDetectionsTask ? GetIndependentDetectionsOutput :
   GetStatsOutput;
 
 async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
@@ -144,8 +146,7 @@ export default async function<T extends Task> (task: T): Promise<Return<T>> {
     case AggregationLevel.burst:
       return getBurstStats(task) as Promise<Return<T>>;
     case AggregationLevel.independentDetection:
-      // TODO independent detections
-      break;
+      return getIndependentDetectionStats(task) as Promise<Return<T>>;
     }
 
   return getImageAndObjectStats(task) as Promise<Return<T>>;
