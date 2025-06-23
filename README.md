@@ -112,6 +112,18 @@ npm run seed-db-dev
 npm run seed-db-prod
 ```
 
+### Creating a comments index
+
+The comments field on images requires an [Atlas Search Index](https://www.mongodb.com/docs/atlas/atlas-search) to be searchable.  A script for creating the index can be found in `src/scripts/createCommentsIndex.js`.  The script requires you to set `DB_CONNECTION_STRING`, `DB_NAME`, and `DB_COLLECTION` in the environment.  An example is below:
+
+```bash
+export DB_COLLECTION_STRING="fake connection string"
+export DB_NAME="animl-dev"
+export DB_COLLECTION="images"
+
+node src/scripts/createCommentsIndex.js
+```
+
 ### Local testing and dev deployment
 
 - To test the Lambda locally with serverless-offline, run:

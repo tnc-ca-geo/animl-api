@@ -406,6 +406,7 @@ export type Filters = {
   addedEnd?: Maybe<Scalars['Date']['output']>;
   addedStart?: Maybe<Scalars['Date']['output']>;
   cameras?: Maybe<Array<Scalars['String']['output']>>;
+  comments?: Maybe<Scalars['String']['output']>;
   createdEnd?: Maybe<Scalars['Date']['output']>;
   createdStart?: Maybe<Scalars['Date']['output']>;
   custom?: Maybe<Scalars['String']['output']>;
@@ -420,6 +421,7 @@ export type FiltersInput = {
   addedEnd?: InputMaybe<Scalars['Date']['input']>;
   addedStart?: InputMaybe<Scalars['Date']['input']>;
   cameras?: InputMaybe<Array<Scalars['String']['input']>>;
+  comments?: InputMaybe<Scalars['String']['input']>;
   createdEnd?: InputMaybe<Scalars['Date']['input']>;
   createdStart?: InputMaybe<Scalars['Date']['input']>;
   custom?: InputMaybe<Scalars['String']['input']>;

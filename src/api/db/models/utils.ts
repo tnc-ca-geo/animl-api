@@ -147,10 +147,19 @@ export function buildPipeline(
     tags,
     reviewed,
     custom,
+    comments
   }: gql.Filters,
   projectId?: string,
 ): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
+
+  if (comments) {
+    pipeline.push({ 
+      $search: {
+        $text: `"${comments}"`
+      }
+    })
+  }
 
   // match current project
   if (projectId) {
@@ -235,6 +244,7 @@ export function buildPipeline(
   if (custom) {
     pipeline.push({ $match: isFilterValid(custom) });
   }
+
 
   console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
   return pipeline;

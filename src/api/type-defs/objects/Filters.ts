@@ -11,5 +11,6 @@ export default /* GraphQL */ `
     reviewed: Boolean
     notReviewed: Boolean
     custom: String
+    comments: String
   }
 `;
