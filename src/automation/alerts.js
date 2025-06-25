@@ -17,7 +17,8 @@ const makeEmail = async (rule, image, context) => {
     const projId = image.projectId;
     const [project] = await context.models.Project.getProjects({ _ids: [projId] }, context);
     const frontendUrl = await buildFrontendUrl(image, project, context.config);
-    const imageUrl = buildImgUrl(image, context.config, 'medium');
+    const ttlYears = 50;
+    const imageUrl = buildImgUrl(image, context.config, 'medium', ttlYears * 365 * 24 * 60);
 
     let deployment;
     for (const camConfig of project.cameraConfigs) {
