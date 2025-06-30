@@ -219,7 +219,7 @@ export class BatchModel {
       const s3 = new S3.S3Client();
       await s3.send(
         new S3.CompleteMultipartUploadCommand({
-          Bucket: context.config.IMAGES_BUCKET,
+          Bucket: context.config.INGESTION_BUCKET,
           Key: `${input.batchId}.zip`,
           UploadId: input.multipartUploadId,
           MultipartUpload: { Parts: input.parts },
@@ -255,7 +255,7 @@ export class BatchModel {
       );
 
       const params = {
-        Bucket: context.config.IMAGES_BUCKET,
+        Bucket: context.config.INGESTION_BUCKET,
         Key: `${id}.zip`,
         ContentType: 'application/zip',
       };
@@ -277,7 +277,7 @@ export class BatchModel {
             getSignedUrl(
               s3,
               new S3.UploadPartCommand({
-                Bucket: context.config.IMAGES_BUCKET,
+                Bucket: context.config.INGESTION_BUCKET,
                 Key: `${id}.zip`,
                 UploadId: upload.UploadId,
                 PartNumber: index + 1,
