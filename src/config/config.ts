@@ -29,7 +29,7 @@ const localConfig = {
     'deploymentLong',
     'comments',
   ],
-  IMAGES_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
+  INGESTION_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
 };
 
 /*
