@@ -75,7 +75,7 @@ tape('ML-Inference Megadetector', async (t) => {
         fileTypeExtension: 'png'
       },
       config: {
-        INGEST_BUCKET: 'test-bucket',
+        INGESTION_BUCKET: 'test-bucket',
         '/IMAGES/URL': 'example.com',
         '/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT': 'http://sagemaker-realtime-dev-endpoint.amazon.com'
       }
@@ -160,7 +160,7 @@ tape('ML-Inference Megadetector - Batch Image', async (t) => {
         batchId: 1
       },
       config: {
-        INGEST_BUCKET: 'test-bucket',
+        INGESTION_BUCKET: 'test-bucket',
         '/IMAGES/URL': 'example.com',
         '/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT': 'http://sagemaker-batch-dev-endpoint.amazon.com'
       }
