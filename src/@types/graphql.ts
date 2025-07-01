@@ -467,7 +467,7 @@ export type Image = {
   reviewed?: Maybe<Scalars['Boolean']['output']>;
   tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
-  url: SignedImageUrl;
+  url?: Maybe<SignedImageUrl>;
   userSetData?: Maybe<Scalars['JSONObject']['output']>;
 };
 
