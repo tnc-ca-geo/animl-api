@@ -31,6 +31,6 @@ export default /* GraphQL */ `
     objects: [Object!]
     comments: [ImageComment!]
     tags: [ID!]
-    url: SignedImageUrl!
+    url: SignedImageUrl
   }
 `;
