@@ -19,7 +19,7 @@ const _toMegaDetectorFormat = (bbox: number[]): number[] => {
 };
 
 const _getImage = async (image: ImageSchema, config: ModelInterfaceParams['config']) => {
-  const bucket = config.INGESTION_BUCKET;
+  const bucket = config.SERVING_BUCKET;
   const key = buildImgKey(image);
 
   const s3 = new S3.S3Client();
