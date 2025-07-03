@@ -47,7 +47,7 @@ export default {
     { input }: gql.MutationCloseUploadArgs,
     context: Context,
   ): Promise<gql.StandardPayload> => {
-    return context.models.Batch.closeUpload(input);
+    return context.models.Batch.closeUpload(input, context);
   },
 
   createUser: async (

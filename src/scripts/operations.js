@@ -157,7 +157,7 @@ const operations = {
       console.log('Adding image dimensions to all images...');
 
       const _getImageSize = async (image, config) => {
-        const url = 'http://' + buildImgUrl(image, config);
+        const url = buildImgUrl(image, config);
         try {
           const res = await fetch(url);
           const body = await res.arrayBuffer();

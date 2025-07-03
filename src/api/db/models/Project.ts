@@ -442,7 +442,7 @@ export class ProjectModel {
     camConfig,
   }: {
     projId: string;
-    camConfig: HydratedDocument<CameraConfigSchema>;
+    camConfig: CameraConfigSchema;
   }) {
     try {
       console.time('reMapImagesToDeps');
@@ -578,7 +578,7 @@ export class ProjectModel {
   static async updateDeployment(
     input: gql.UpdateDeploymentInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<CameraConfigSchema>> {
+  ): Promise<CameraConfigSchema> {
     const { cameraId, deploymentId, diffs } = input;
     try {
       const { project, camConfig } = await retry(
@@ -638,7 +638,7 @@ export class ProjectModel {
   static async deleteDeployment(
     { cameraId, deploymentId }: gql.DeleteDeploymentInput,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<CameraConfigSchema>> {
+  ): Promise<CameraConfigSchema> {
     try {
       const { project, camConfig } = await retry(
         async () => {
