@@ -35,14 +35,14 @@ export function buildImgUrl(
   image: ImageSchema,
   config: Config,
   size = 'original',
-  ttlMinutes = 15,
+  ttlYears = 50,
 ): string {
   const distributionDomain = config['/IMAGES/URL'];
   const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
   const keyPairId = config[`/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID`];
   return getSignedUrl({
     url: `https://${distributionDomain}/${buildImgKey(image, size)}`,
-    dateLessThan: new Date(ttlMinutes * 60 * 1000 + Date.now()),
+    dateLessThan: new Date(Date.now() + ttlYears * 365 * 24 * 60 * 60 * 1000),
     keyPairId,
     privateKey,
   });
