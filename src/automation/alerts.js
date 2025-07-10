@@ -1,6 +1,6 @@
 import { InternalServerError } from '../api/errors.js';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
+import { buildImgUrl, Duration, idMatch } from '../api/db/models/utils.js';
 
 const ses = new SESClient({ apiVersion: '2010-12-01' });
 
@@ -16,8 +16,7 @@ const makeEmail = async (rule, image, context) => {
     const projId = image.projectId;
     const [project] = await context.models.Project.getProjects({ _ids: [projId] }, context);
     const frontendUrl = await buildFrontendUrl(image, project, context.config);
-    const ttlYears = 50;
-    const imageUrl = buildImgUrl(image, context.config, 'medium', ttlYears * 365 * 24 * 60);
+    const imageUrl = buildImgUrl(image, context.config, 'medium', Duration.fromYears(50));
 
     let deployment;
     for (const camConfig of project.cameraConfigs) {
