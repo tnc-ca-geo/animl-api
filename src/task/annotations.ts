@@ -558,7 +558,7 @@ export class AnnotationsExport {
     validated: boolean;
   } | null {
     let anno = null;
-    const representativeLabel = this.findRepresentativeLabel(object);
+    const representativeLabel = findRepresentativeLabel(object);
     if (representativeLabel) {
       const category = catMap.find(
         (cat) => cat.name === this.labelMap!.get(representativeLabel.labelId).name,
