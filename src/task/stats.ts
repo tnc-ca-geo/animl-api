@@ -7,10 +7,16 @@ import { type FiltersSchema } from '../api/db/schemas/Project.js';
 import { findRepresentativeLabel } from './utils.js';
 import { AggregationLevel } from '../@types/graphql.js';
 import getBurstStats, { BurstsTask, GetBurstOutput } from './getBursts.js';
-import getIndependentDetectionStats, { GetIndependentDetectionsOutput, IndependentDetectionsTask } from './getIndependentDetections.js';
+import getIndependentDetectionStats, {
+  GetIndependentDetectionsOutput,
+  IndependentDetectionsTask,
+} from './getIndependentDetections.js';
 
-type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-type ImageAndObjectsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.ImageAndObject }>;
+type Task = TaskInput<{ filters: FiltersSchema; aggregationLevel: AggregationLevel }>;
+type ImageAndObjectsTask = TaskInput<{
+  filters: FiltersSchema;
+  aggregationLevel: AggregationLevel.ImageAndObject;
+}>;
 
 interface Reviewer {
   userId: string;
@@ -34,11 +40,13 @@ interface GetStatsOutput {
   multiReviewerCount: number;
 }
 
-type Return<T extends Task> =
-  T extends ImageAndObjectsTask ? GetStatsOutput :
-  T extends BurstsTask ? GetBurstOutput :
-  T extends IndependentDetectionsTask ? GetIndependentDetectionsOutput :
-  GetStatsOutput;
+type Return<T extends Task> = T extends ImageAndObjectsTask
+  ? GetStatsOutput
+  : T extends BurstsTask
+  ? GetBurstOutput
+  : T extends IndependentDetectionsTask
+  ? GetIndependentDetectionsOutput
+  : GetStatsOutput;
 
 async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
@@ -73,9 +81,9 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
       let objectReviewers = [];
       for (const lbl of obj.labels) {
         if (lbl.validation) {
-          objectReviewers.push(lbl.validation.userId)
-          imageReviewers.push(lbl.validation.userId)
-        };
+          objectReviewers.push(lbl.validation.userId);
+          imageReviewers.push(lbl.validation.userId);
+        }
       }
       objectReviewers = _.uniq(objectReviewers);
       for (const userId of objectReviewers) {
@@ -98,18 +106,23 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
     // build label list
     const imageLabels: string[] = [];
     for (const obj of img.objects) {
-      if (obj.labels.some(label => label.validation && label.validation.validated)) {
-        // exlude objects where all labels are invalidated
-        continue
+      if (obj.labels.every((label) => label.validation && label.validation.validated === false)) {
+        // exclude objects where all labels are invalidated
+        continue;
       }
       objectCount++;
       obj.locked ? objectsReviewed++ : objectsNotReviewed++;
 
       const representativeLabel = findRepresentativeLabel(obj);
       if (representativeLabel) {
-        const projLabel = project.labels.find((lbl) => idMatch(lbl._id, representativeLabel.labelId));
+        const projLabel = project.labels.find((lbl) =>
+          idMatch(lbl._id, representativeLabel.labelId),
+        );
         const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-        objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(objectLabelList, labelName)
+        objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(
+          objectLabelList,
+          labelName,
+        )
           ? objectLabelList[labelName] + 1
           : 1;
 
@@ -136,19 +149,19 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
     objectLabelList,
     imageReviewerList,
     objectReviewerList,
-    multiReviewerCount
+    multiReviewerCount,
   };
 }
 
-export default async function<T extends Task> (task: T): Promise<Return<T>> {
-  switch(task.config.aggregationLevel) {
+export default async function <T extends Task>(task: T): Promise<Return<T>> {
+  switch (task.config.aggregationLevel) {
     case AggregationLevel.ImageAndObject:
       return getImageAndObjectStats(task) as Promise<Return<T>>;
     case AggregationLevel.Burst:
       return getBurstStats(task) as Promise<Return<T>>;
     case AggregationLevel.IndependentDetection:
       return getIndependentDetectionStats(task) as Promise<Return<T>>;
-    }
+  }
 
   return getImageAndObjectStats(task) as Promise<Return<T>>;
 }
