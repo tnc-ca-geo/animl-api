@@ -57,7 +57,7 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
     const detections: DetectionsTracker = {};
 
     for await (const img of Image.aggregate<ImageSchema>(depPipeline)) {
-      const imgDateAdded = DateTime.fromJSDate(img.dateTimeOriginal);
+      const imgDateCreated = DateTime.fromJSDate(img.dateTimeOriginal);
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
@@ -65,18 +65,18 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
           const labelName = projLabel?.name || 'ERROR FINDING LABEL';
 
           if (Object.prototype.hasOwnProperty.call(detections, labelName)) {
-            const diff = detections[labelName].lastSeen.diff(imgDateAdded, 'seconds').toObject();
+            const diff = detections[labelName].lastSeen.diff(imgDateCreated, 'seconds').toObject();
             const delta = Math.abs(diff.seconds || 0);
 
             if (delta > MAX_SEQUENCE_DELTA) {
               detections[labelName] = {
-                lastSeen: imgDateAdded,
+                lastSeen: imgDateCreated,
                 count: detections[labelName].count + 1
               }
             }
           } else {
             detections[labelName] = {
-              lastSeen: imgDateAdded,
+              lastSeen: imgDateCreated,
               count: 1
             }
           }
