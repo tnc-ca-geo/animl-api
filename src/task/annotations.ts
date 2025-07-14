@@ -38,6 +38,7 @@ export class AnnotationsExport {
   imageCountThreshold: number;
   reviewedCount: number;
   notReviewedCount: number;
+  aggregateObjects: boolean;
 
   pipeline?: PipelineStage[];
   project?: HydratedDocument<ProjectSchema>;
@@ -52,6 +53,7 @@ export class AnnotationsExport {
       format,
       timezone,
       onlyIncludeReviewed,
+      aggregateObjects,
     }: {
       projectId: string;
       documentId: string;
@@ -59,6 +61,7 @@ export class AnnotationsExport {
       format: string;
       timezone: string;
       onlyIncludeReviewed: boolean;
+      aggregateObjects: boolean;
     },
     config: Config,
   ) {
@@ -74,6 +77,7 @@ export class AnnotationsExport {
     this.filename = `${documentId}_${format}${this.ext}`;
     this.bucket = config['/EXPORTS/EXPORTED_DATA_BUCKET'];
     this.onlyIncludeReviewed = onlyIncludeReviewed;
+    this.aggregateObjects = aggregateObjects;
     this.presignedURL = null;
     this.imageCount = 0;
     this.imageCountThreshold = 18000; // TODO: Move to config?
@@ -85,14 +89,12 @@ export class AnnotationsExport {
     console.log('initializing Export');
     try {
       const sanitizedFilters = this.sanitizeFilters();
-      const notReviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: false },
-        this.projectId,
-      );
-      const reviewedPipeline = buildPipeline(
-        { ...sanitizedFilters, reviewed: true },
-        this.projectId,
-      );
+      const pipeline = buildPipeline(sanitizedFilters, this.projectId);
+
+      let notReviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      notReviewedPipeline.push({ $match: { reviewed: false } });
+      let reviewedPipeline = pipeline.map((stage) => ({ ...stage }));
+      reviewedPipeline.push({ $match: { reviewed: true } });
 
       this.notReviewedCount = await this.getCount(notReviewedPipeline);
       this.reviewedCount = await this.getCount(reviewedPipeline);
@@ -138,6 +140,7 @@ export class AnnotationsExport {
     console.log('exporting to CSV');
 
     try {
+      console.time('CSV export time');
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
       const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
@@ -166,6 +169,7 @@ export class AnnotationsExport {
       // wait for upload complete
       await promise;
       console.log('upload complete');
+      console.timeEnd('CSV export time');
     } catch (err) {
       throw new InternalServerError('Error exporting to CSV: ' + (err as Error).message);
     }
@@ -271,6 +275,8 @@ export class AnnotationsExport {
 
       for (const [o, obj] of objectsToAnnotate.entries()) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        // skip if no representative label found (i.e. object has all invalidated labels)
+        if (!annoObj) continue;
         let annoString = JSON.stringify(annoObj, null, 4);
         annoString =
           i === this.imageCount && o === objectsToAnnotate.length - 1
@@ -279,7 +285,7 @@ export class AnnotationsExport {
         annotationsUpload.streamToS3.write(annoString);
       }
 
-      if (i % 1000 === 0) {
+      if (i % 10000 === 0) {
         console.log(
           `processed img count: ${i}. remaining memory: ${JSON.stringify(process.memoryUsage())}`,
         );
@@ -358,6 +364,7 @@ export class AnnotationsExport {
 
       for (const obj of objectsToAnnotate) {
         const annoObj = this.createCOCOAnnotation(obj, img, catMap);
+        if (!annoObj) continue; // skip if no representative label found
         annotationsArray.push(annoObj);
       }
     }
@@ -429,7 +436,11 @@ export class AnnotationsExport {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
           const cat = this.labelMap!.get(representativeLabel.labelId).name;
-          catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          if (this.aggregateObjects) {
+            catCounts[cat] = 1;
+          } else {
+            catCounts[cat] = catCounts[cat] ? catCounts[cat] + 1 : 1;
+          }
         }
       }
       return { ...flatImgRecord, ...catCounts };
@@ -537,18 +548,16 @@ export class AnnotationsExport {
     object: ObjectSchema,
     img: ImageSchema,
     catMap: Category[],
-  ):
-    | {
-        id: Types.ObjectId;
-        image_id: string;
-        category_id?: number;
-        sequence_level_annotation: boolean;
-        bbox: number[];
-        confidence: number | null | undefined;
-        validated: boolean;
-      }
-    | undefined {
-    let anno;
+  ): {
+    id: Types.ObjectId;
+    image_id: string;
+    category_id?: number;
+    sequence_level_annotation: boolean;
+    bbox: number[];
+    confidence: number | null | undefined;
+    validated: boolean;
+  } | null {
+    let anno = null;
     const representativeLabel = findRepresentativeLabel(object);
     if (representativeLabel) {
       const category = catMap.find(
@@ -590,6 +599,7 @@ export default async function (
     format: any;
     timezone: string;
     onlyIncludeReviewed: boolean;
+    aggregateObjects: boolean;
   }> & { _id: string },
   config: Config,
 ): Promise<AnnotationOutput> {
@@ -601,6 +611,7 @@ export default async function (
       format: task.config.format,
       timezone: task.config.timezone,
       onlyIncludeReviewed: task.config.onlyIncludeReviewed,
+      aggregateObjects: task.config.aggregateObjects,
     },
     config,
   );

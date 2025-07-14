@@ -1,6 +1,6 @@
 import { InternalServerError } from '../api/errors.js';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { buildImgUrl, idMatch } from '../api/db/models/utils.js';
+import { buildImgUrl, Duration, idMatch } from '../api/db/models/utils.js';
 
 const ses = new SESClient({ apiVersion: '2010-12-01' });
 
@@ -12,12 +12,11 @@ const buildFrontendUrl = async (image, project, config) => {
 };
 
 const makeEmail = async (rule, image, context) => {
-
   try {
     const projId = image.projectId;
     const [project] = await context.models.Project.getProjects({ _ids: [projId] }, context);
     const frontendUrl = await buildFrontendUrl(image, project, context.config);
-    const imageUrl = buildImgUrl(image, context.config, 'medium');
+    const imageUrl = buildImgUrl(image, context.config, 'medium', Duration.fromYears(50));
 
     let deployment;
     for (const camConfig of project.cameraConfigs) {
@@ -30,26 +29,26 @@ const makeEmail = async (rule, image, context) => {
 
     const body =
       '<div>' +
-        `<a href=${frontendUrl}>View image in Animl</a>` +
+      `<a href=${frontendUrl}>View image in Animl</a>` +
       '</div>' +
       '<div>' +
-        `<img src="https://${imageUrl}" alt="detected ${rule.event.label}"/>` +
+      `<img src="${imageUrl}" alt="detected ${rule.event.label}"/>` +
       '</div>';
 
     return {
       Destination: {
-        ToAddresses: rule.action.alertRecipients
+        ToAddresses: rule.action.alertRecipients,
       },
       Message: {
         Body: {
-          Html: { Charset: 'UTF-8', Data: body }
+          Html: { Charset: 'UTF-8', Data: body },
         },
         Subject: {
           Charset: 'UTF-8',
-          Data: `${rule.event.label} detected at ${deployment.name}`
-        }
+          Data: `${rule.event.label} detected at ${deployment.name}`,
+        },
       },
-      Source: context.config['EMAIL_ALERT_SENDER']
+      Source: context.config['EMAIL_ALERT_SENDER'],
     };
   } catch (err) {
     throw new InternalServerError(err instanceof Error ? err.message : String(err));
@@ -67,6 +66,4 @@ const sendEmail = async (rule, image, context) => {
   }
 };
 
-export {
-  sendEmail
-};
+export { sendEmail };

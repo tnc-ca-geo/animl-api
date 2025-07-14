@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import MongoPaging from 'mongo-cursor-pagination';
 import { LocationSchema, ObjectSchema } from './shared/index.js';
-import { randomUUID } from 'node:crypto';
 
 const Schema = mongoose.Schema;
 

@@ -1,3 +1,4 @@
+import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { isFilterValid } from 'mongodb-query-parser';
@@ -26,11 +27,61 @@ export function idMatch(
   return idA.toString() === idB.toString();
 }
 
-export function buildImgUrl(image: ImageSchema, config: Config, size = 'original') {
-  const url = config['/IMAGES/URL'];
-  const id = image._id;
-  const ext = image.fileTypeExtension;
-  return url + '/' + size + '/' + id + '-' + size + '.' + ext;
+export function buildImgKey(image: ImageSchema, size = 'original'): string {
+  return `${size}/${image._id}-${size}.${image.fileTypeExtension}`;
+}
+
+export function buildImgUrl(
+  image: ImageSchema,
+  config: Config,
+  size: keyof gql.SignedImageUrl = 'original',
+  ttl: Duration = Duration.fromWeeks(2),
+): string {
+  const distributionDomain = config['/IMAGES/URL'];
+  const privateKey = config[`/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY`];
+  const keyPairId = config[`/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID`];
+  return getSignedUrl({
+    url: `https://${distributionDomain}/${buildImgKey(image, size)}`,
+    dateLessThan: new Date(Date.now() + ttl.milliseconds),
+    keyPairId,
+    privateKey,
+  });
+}
+
+export class Duration {
+  readonly milliseconds: number;
+
+  private constructor(ms: number) {
+    this.milliseconds = ms;
+  }
+
+  static fromMilliseconds(ms: number): Duration {
+    return new Duration(ms);
+  }
+
+  static fromSeconds(seconds: number): Duration {
+    return new Duration(seconds * 1000);
+  }
+
+  static fromMinutes(minutes: number): Duration {
+    return new Duration(minutes * 60 * 1000);
+  }
+
+  static fromHours(hours: number): Duration {
+    return new Duration(hours * 60 * 60 * 1000);
+  }
+
+  static fromDays(days: number): Duration {
+    return new Duration(days * 24 * 60 * 60 * 1000);
+  }
+
+  static fromWeeks(weeks: number): Duration {
+    return new Duration(weeks * 7 * 24 * 60 * 60 * 1000);
+  }
+
+  static fromYears(years: number): Duration {
+    return new Duration(years * 365.25 * 24 * 60 * 60 * 1000);
+  }
 }
 
 export function buildTagPipeline(tags: string[]): PipelineStage[] {
@@ -642,8 +693,8 @@ export class BaseAuthedModel {
 }
 
 // NOTE: This is a bit of magic to let TS infer what the arguments for a method (T) are.
-// We do that so we can tell TS “hey, this method is using the same arguments as whatever
-// method we pass in to MethodParams<,,,>” to avoid having us type them twice
+// We do that so we can tell TS "hey, this method is using the same arguments as whatever
+// method we pass in to MethodParams<,,,>" to avoid having us type them twice
 // (e.g. see usage in AuthedProjectModel class methods)
 export type MethodParams<T> = T extends (...args: infer P) => any ? P : never;
 

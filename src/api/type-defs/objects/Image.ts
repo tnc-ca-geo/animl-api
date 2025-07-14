@@ -1,4 +1,10 @@
 export default /* GraphQL */ `
+  type SignedImageUrl {
+    original: String!
+    medium: String!
+    small: String!
+  }
+
   type Image {
     _id: ID!
     batchId: String
@@ -25,5 +31,6 @@ export default /* GraphQL */ `
     objects: [Object!]
     comments: [ImageComment!]
     tags: [ID!]
+    url: SignedImageUrl
   }
 `;

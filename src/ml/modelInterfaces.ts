@@ -1,6 +1,7 @@
-import { buildImgUrl } from '../api/db/models/utils.js';
+import { buildImgKey } from '../api/db/models/utils.js';
 import type { LabelSchema } from '../api/db/schemas/shared/index.js';
 import type { ImageSchema } from '../api/db/schemas/Image.js';
+import S3 from '@aws-sdk/client-s3';
 import SM from '@aws-sdk/client-sagemaker-runtime';
 import sharp from 'sharp';
 import { Config } from '../config/config.js';
@@ -18,12 +19,14 @@ const _toMegaDetectorFormat = (bbox: number[]): number[] => {
 };
 
 const _getImage = async (image: ImageSchema, config: ModelInterfaceParams['config']) => {
-  const url = 'http://' + buildImgUrl(image, config);
+  const bucket = config.SERVING_BUCKET;
+  const key = buildImgKey(image);
 
+  const s3 = new S3.S3Client();
   try {
-    const res = await fetch(url);
-    const body = await res.arrayBuffer();
-    let imgBuffer = Buffer.from(body);
+    const res = await s3.send(new S3.GetObjectCommand({ Bucket: bucket, Key: key }));
+    const body = await res.Body?.transformToByteArray();
+    let imgBuffer = Buffer.from(body!);
 
     // resize image if it's over 2.8 MB
     if (image.imageBytes! > 2800000) {
@@ -276,13 +279,17 @@ const speciesnet: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
 
-  // By default, speciesnet runs in 'all' mode — detector + classifier
   let mode = 'all';
 
-  if (label) {
-    // Label is available when a detector is already run on the image
-    // So we'll run speciesnet in the classifier mode
+  // Select the model mode based on modelSource._id
+  if (modelSource._id == 'speciesnet-classifier') {
+    console.log('running speciesnet in classifier mode');
     mode = 'classifier';
+  }
+
+  if (modelSource._id == 'speciesnet-all') {
+    console.log('running speciesnet in all mode');
+    mode = 'all';
   }
 
   let bbox: BBox = label?.bbox ? label.bbox : [0, 0, 1, 1];
@@ -292,6 +299,9 @@ const speciesnet: InferenceFunction = async (params) => {
     image_data: imgBuffer.toString('base64'),
     bbox: speciesnetBbox,
     components: mode,
+    ...(mode === 'all' && params.country && { country: params.country }),
+    ...(mode === 'all' &&
+      params.admin1Region && { admin1_region: params.admin1Region.split('-')[1] }),
   };
 
   // Choose the endpoint based on the mode. Default is realtime.
@@ -315,25 +325,31 @@ const speciesnet: InferenceFunction = async (params) => {
     const response = JSON.parse(body);
     console.log(`speciesnet predictions for image ${image._id}: ${body}`);
 
+    let predictions: Record<string, number> = {};
     if (mode === 'all' && response.predictions[0].detections.length > 0) {
       // When in 'all' mode, get bbox from detections if available
       const detection = response.predictions[0].detections[0];
       bbox = _toMegaDetectorFormat(detection.bbox);
+
+      // Get results from the prediction
+      const uuid = response.predictions[0].prediction.split(';')[0];
+      predictions[uuid] = response.predictions[0].prediction_score;
     }
 
-    // Transform predictions to match catConfig format using ids from speciesnet
-    const predictions: Record<string, number> = {};
-    response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
-      const uuid = classStr.split(';')[0]; // Get just the id
-      predictions[uuid] = response.predictions[0].classifications.scores[index];
-    });
+    if (mode === 'classifier' && response.predictions[0].classifications.classes.length > 0) {
+      // Use classification results. Transform predictions to match catConfig format using ids from speciesnet
+      response.predictions[0].classifications.classes.forEach((classStr: string, index: number) => {
+        const uuid = classStr.split(';')[0]; // Get just the id
+        predictions[uuid] = response.predictions[0].classifications.scores[index];
+      });
+    }
 
     console.log('transformed speciesnet predictions:', predictions);
     // Return with md5 bbox
     let filteredDets = _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
 
     // add "empty" detection if no detections are found (only relevant when running in 'all' mode)
-    if (filteredDets.length === 0) {
+    if (filteredDets.length === 0 && mode === 'all') {
       filteredDets.push({
         mlModel: modelSource._id,
         mlModelVersion: modelSource.version,
@@ -357,7 +373,8 @@ modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
 modelInterfaces.set('deepfaune-ne', deepfaunene);
-modelInterfaces.set('speciesnet', speciesnet);
+modelInterfaces.set('speciesnet-classifier', speciesnet);
+modelInterfaces.set('speciesnet-all', speciesnet);
 
 export { modelInterfaces };
 
@@ -381,6 +398,8 @@ interface ModelInterfaceParams {
   image: ImageSchema;
   label: LabelSchema;
   config: Config;
+  country?: string; // Optional country code for speciesnet-all
+  admin1Region?: string; // Optional admin1 region for speciesnet-all
 }
 
 interface InferenceFunction {

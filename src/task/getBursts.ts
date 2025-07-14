@@ -13,7 +13,7 @@ import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 const MAX_BURST_DELTA = 2;
 
 type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-export type BurstsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.burst }>;
+export type BurstsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.Burst }>;
 export interface GetBurstOutput {
   burstCount: number;
   burstLabelList: Record<string, number>;

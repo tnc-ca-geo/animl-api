@@ -211,12 +211,15 @@ export class BatchModel {
     }
   }
 
-  static async closeUpload(input: gql.CloseUploadInput): Promise<gql.StandardPayload> {
+  static async closeUpload(
+    input: gql.CloseUploadInput,
+    context: Pick<Context, 'config'>,
+  ): Promise<gql.StandardPayload> {
     try {
       const s3 = new S3.S3Client();
       await s3.send(
         new S3.CompleteMultipartUploadCommand({
-          Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+          Bucket: context.config.INGESTION_BUCKET,
           Key: `${input.batchId}.zip`,
           UploadId: input.multipartUploadId,
           MultipartUpload: { Parts: input.parts },
@@ -232,7 +235,7 @@ export class BatchModel {
 
   static async createUpload(
     input: gql.CreateUploadInput,
-    context: Pick<Context, 'user'>,
+    context: Pick<Context, 'user' | 'config'>,
   ): Promise<gql.CreateUploadPayload> {
     try {
       const id = `batch-${randomUUID()}`;
@@ -252,7 +255,7 @@ export class BatchModel {
       );
 
       const params = {
-        Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+        Bucket: context.config.INGESTION_BUCKET,
         Key: `${id}.zip`,
         ContentType: 'application/zip',
       };
@@ -274,7 +277,7 @@ export class BatchModel {
             getSignedUrl(
               s3,
               new S3.UploadPartCommand({
-                Bucket: `animl-images-ingestion-${process.env.STAGE}`,
+                Bucket: context.config.INGESTION_BUCKET,
                 Key: `${id}.zip`,
                 UploadId: upload.UploadId,
                 PartNumber: index + 1,
