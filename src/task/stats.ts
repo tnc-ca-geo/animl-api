@@ -100,8 +100,9 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
     for (const obj of img.objects) {
       if (obj.labels.some(label => label.validation && label.validation.validated)) {
         // exlude objects where all labels are invalidated
-        objectCount++;
+        continue
       }
+      objectCount++;
       obj.locked ? objectsReviewed++ : objectsNotReviewed++;
 
       const representativeLabel = findRepresentativeLabel(obj);
