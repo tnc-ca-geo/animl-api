@@ -52,6 +52,7 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
         deploymentId: dep._id,
       }
     });
+    depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
 
     const detections: DetectionsTracker = {};
 
