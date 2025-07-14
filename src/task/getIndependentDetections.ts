@@ -11,7 +11,7 @@ import { findRepresentativeLabel } from './utils.js';
 
 
 type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-export type IndependentDetectionsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.independentDetection }>;
+export type IndependentDetectionsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.IndependentDetection }>;
 export interface GetIndependentDetectionsOutput {
   detectionsCount: number;
   detectionsLabelList: Record<string, number>;

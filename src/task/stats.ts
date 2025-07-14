@@ -10,7 +10,7 @@ import getBurstStats, { BurstsTask, GetBurstOutput } from './getBursts.js';
 import getIndependentDetectionStats, { GetIndependentDetectionsOutput, IndependentDetectionsTask } from './getIndependentDetections.js';
 
 type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-type ImageAndObjectsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.imageAndObject }>;
+type ImageAndObjectsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.ImageAndObject }>;
 
 interface Reviewer {
   userId: string;
@@ -141,11 +141,11 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
 
 export default async function<T extends Task> (task: T): Promise<Return<T>> {
   switch(task.config.aggregationLevel) {
-    case AggregationLevel.imageAndObject:
+    case AggregationLevel.ImageAndObject:
       return getImageAndObjectStats(task) as Promise<Return<T>>;
-    case AggregationLevel.burst:
+    case AggregationLevel.Burst:
       return getBurstStats(task) as Promise<Return<T>>;
-    case AggregationLevel.independentDetection:
+    case AggregationLevel.IndependentDetection:
       return getIndependentDetectionStats(task) as Promise<Return<T>>;
     }
 
