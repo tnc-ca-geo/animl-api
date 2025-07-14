@@ -12,6 +12,7 @@ import AuthedTaskModel from './db/models/Task.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
+import Fields from './resolvers/Fields.js';
 import typeDefs from './type-defs/index.js';
 import { Config, getConfig } from '../config/config.js';
 import { connectToDatabase } from './db/connect.js';
@@ -23,6 +24,7 @@ const resolvers = {
   Query,
   Mutation,
   ...Scalars,
+  ...Fields,
 };
 
 const corsMiddleware = async () => {

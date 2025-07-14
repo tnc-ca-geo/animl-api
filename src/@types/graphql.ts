@@ -18,19 +18,29 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
+export enum AggregationLevel {
+  Burst = 'burst',
+  ImageAndObject = 'imageAndObject',
+  IndependentDetection = 'independentDetection'
+}
+
 export type AutomationAction = {
   __typename?: 'AutomationAction';
+  admin1Region?: Maybe<Scalars['String']['output']>;
   alertRecipients?: Maybe<Array<Scalars['String']['output']>>;
   categoryConfig?: Maybe<Scalars['JSONObject']['output']>;
   confThreshold?: Maybe<Scalars['Float']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
   mlModel?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
 };
 
 export type AutomationActionInput = {
+  admin1Region?: InputMaybe<Scalars['String']['input']>;
   alertRecipients?: InputMaybe<Array<Scalars['String']['input']>>;
   categoryConfig?: InputMaybe<Scalars['JSONObject']['input']>;
   confThreshold?: InputMaybe<Scalars['Float']['input']>;
+  country?: InputMaybe<Scalars['String']['input']>;
   mlModel?: InputMaybe<Scalars['String']['input']>;
   type: Scalars['String']['input'];
 };
@@ -463,6 +473,7 @@ export type Image = {
   reviewed?: Maybe<Scalars['Boolean']['output']>;
   tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
+  url?: Maybe<SignedImageUrl>;
   userSetData?: Maybe<Scalars['JSONObject']['output']>;
 };
 
@@ -1125,6 +1136,7 @@ export type QueryProjectsInput = {
 };
 
 export type QueryStatsInput = {
+  aggregationLevel: AggregationLevel;
   filters: FiltersInput;
 };
 
@@ -1165,6 +1177,13 @@ export type RegisterCameraPayload = {
 
 export type ResendTempPasswordInput = {
   username: Scalars['String']['input'];
+};
+
+export type SignedImageUrl = {
+  __typename?: 'SignedImageUrl';
+  medium: Scalars['String']['output'];
+  original: Scalars['String']['output'];
+  small: Scalars['String']['output'];
 };
 
 export type StandardErrorPayload = {

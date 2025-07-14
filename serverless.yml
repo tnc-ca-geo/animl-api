@@ -65,6 +65,7 @@ provider:
           Action:
             - 's3:PutObject'
             - 's3:GetObject'
+            - 's3:ListBucket'
           Resource:
             - Fn::Join:
                 - ''
@@ -106,6 +107,7 @@ provider:
                   - '/*'
         - Effect: 'Allow'
           Action:
+            - 's3:GetObject'
             - 's3:DeleteObject'
           Resource:
             - Fn::Join:

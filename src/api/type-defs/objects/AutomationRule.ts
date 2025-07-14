@@ -8,6 +8,8 @@ export default /* GraphQL */ `
     type: String!
     alertRecipients: [String!]
     mlModel: String
+    country: String
+    admin1Region: String
     confThreshold: Float
     categoryConfig: JSONObject
   }
