@@ -18,6 +18,12 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
+export enum AggregationLevel {
+  Burst = 'burst',
+  ImageAndObject = 'imageAndObject',
+  IndependentDetection = 'independentDetection'
+}
+
 export type AutomationAction = {
   __typename?: 'AutomationAction';
   admin1Region?: Maybe<Scalars['String']['output']>;
@@ -1130,7 +1136,9 @@ export type QueryProjectsInput = {
 };
 
 export type QueryStatsInput = {
+  aggregationLevel: AggregationLevel;
   filters: FiltersInput;
+  independenceInterval?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryTaskInput = {

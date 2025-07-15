@@ -18,6 +18,7 @@ import type { ObjectSchema, LabelSchema } from '../api/db/schemas/shared/index.j
 import type { HydratedDocument, PipelineStage, Types } from 'mongoose';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { ImageComment } from '../@types/graphql.js';
+import { findRepresentativeLabel } from './utils.js';
 
 export class AnnotationsExport {
   config: Config;
@@ -432,7 +433,7 @@ export class AnnotationsExport {
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
       for (const obj of img.objects) {
-        const representativeLabel = this.findRepresentativeLabel(obj);
+        const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
           const cat = this.labelMap!.get(representativeLabel.labelId).name;
           if (this.aggregateObjects) {
@@ -464,30 +465,6 @@ export class AnnotationsExport {
       }
     }
     return sanitizedFilters;
-  }
-
-  findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
-    // label has validation and is validated true
-    return obj.labels.find((label) => label.validation && label.validation.validated) || null;
-  }
-
-  findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
-    // label either has no validation or is validated true
-    return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
-  }
-
-  findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
-    // if object is locked and has at least one validated label, return the first validated label in the labels array
-    // if include reviewed & non-reviewed and the object is unlocked, return the first non-invalidated label in the array
-    let representativeLabel = null;
-    if (obj.locked) {
-      // return locked object's first label that is validated
-      representativeLabel = this.findFirstValidLabel(obj);
-    } else {
-      // return first label (most recent label added) in list that hasn't been invalidated
-      representativeLabel = this.findFirstNonInvalidatedLabel(obj) || null;
-    }
-    return representativeLabel;
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
@@ -581,7 +558,7 @@ export class AnnotationsExport {
     validated: boolean;
   } | null {
     let anno = null;
-    const representativeLabel = this.findRepresentativeLabel(object);
+    const representativeLabel = findRepresentativeLabel(object);
     if (representativeLabel) {
       const category = catMap.find(
         (cat) => cat.name === this.labelMap!.get(representativeLabel.labelId).name,

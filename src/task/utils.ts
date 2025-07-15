@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { DateTime } from 'luxon';
+import { LabelSchema, ObjectSchema } from '../api/db/schemas/shared/index.js';
 
 const flattenObj = (ob: Record<any, any>): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -25,7 +26,7 @@ const isValidISOString = (str: string): boolean => {
 // This is necessary because dates are serialized as ISO strings in SQS messages
 // and must be converted to DateTime objects before being used in the app
 // https://github.com/tnc-ca-geo/animl-api/issues/166
-const parseMessage = <T extends Record<string, any>>(msg: T): T => {
+export const parseMessage = <T extends Record<string, any>>(msg: T): T => {
   const msgCopy = _.cloneDeep(msg);
   const flatMsg = flattenObj(msg);
 
@@ -57,4 +58,22 @@ const parseMessage = <T extends Record<string, any>>(msg: T): T => {
   return msgCopy;
 };
 
-export { parseMessage };
+function findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
+  // label has validation and is validated true
+  return obj.labels.find((label) => label.validation && label.validation.validated) || null;
+}
+
+function findFirstNonInvalidatedLabel(obj: ObjectSchema): LabelSchema | null {
+  // label either has no validation or is validated true
+  return obj.labels.find((label) => !label.validation || label.validation.validated) || null;
+}
+
+export function findRepresentativeLabel(obj: ObjectSchema): LabelSchema | null {
+  if (obj.locked) {
+    // return locked object's first label that is validated
+    return findFirstValidLabel(obj);
+  } else {
+    // return first label (most recent label added) in list that hasn't been invalidated
+    return findFirstNonInvalidatedLabel(obj) || null;
+  }
+}
