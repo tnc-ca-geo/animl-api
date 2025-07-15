@@ -10,8 +10,16 @@ import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import { findRepresentativeLabel } from './utils.js';
 
 
-type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-export type IndependentDetectionsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.IndependentDetection }>;
+type Task = TaskInput<{
+  filters: FiltersSchema,
+  aggregationLevel: AggregationLevel,
+  independenceInterval: number,
+}>
+export type IndependentDetectionsTask = TaskInput<{
+  filters: FiltersSchema,
+  aggregationLevel: AggregationLevel.IndependentDetection,
+  independenceInterval: number
+}>;
 export interface GetIndependentDetectionsOutput {
   detectionsCount: number;
   detectionsLabelList: Record<string, number>;
@@ -24,13 +32,11 @@ type DetectionsTracker = {
   }
 }
 
-const MAX_SEQUENCE_DELTA = 30 * 60; // 30 Minutes
-
 export default async function getIndependentDetectionStats(task: Task): Promise<GetIndependentDetectionsOutput> {
-
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   const project = await ProjectModel.queryById(context.user['curr_project']);
   const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
+  const MAX_SEQUENCE_DELTA = task.config.independenceInterval * 60;
 
   const cameraConfigs = project.cameraConfigs;
   const deployments: Array<DeploymentSchema> = cameraConfigs.reduce(
