@@ -12,7 +12,11 @@ import getIndependentDetectionStats, {
   IndependentDetectionsTask,
 } from './getIndependentDetections.js';
 
-type Task = TaskInput<{ filters: FiltersSchema; aggregationLevel: AggregationLevel }>;
+type Task = TaskInput<{
+  filters: FiltersSchema;
+  aggregationLevel: AggregationLevel;
+  independenceInterval: number;
+}>;
 type ImageAndObjectsTask = TaskInput<{
   filters: FiltersSchema;
   aggregationLevel: AggregationLevel.ImageAndObject;

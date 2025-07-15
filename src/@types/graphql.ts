@@ -1138,6 +1138,7 @@ export type QueryProjectsInput = {
 export type QueryStatsInput = {
   aggregationLevel: AggregationLevel;
   filters: FiltersInput;
+  independenceInterval?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryTaskInput = {
