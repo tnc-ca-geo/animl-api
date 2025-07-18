@@ -31,7 +31,7 @@ export default /* GraphQL */ `
     deleteProjectTag(input: DeleteProjectTagInput!): ProjectTagsPayload
     updateProjectTag(input: UpdateProjectTagInput!): ProjectTagsPayload
 
-    createImageTag(input: CreateImageTagInput!): ImageTagsPayload
+    createImageTags(input: CreateImageTagsInput!): StandardPayload
     deleteImageTag(input: DeleteImageTagInput!): ImageTagsPayload
 
     createBatchError(input: CreateBatchErrorInput!): BatchError

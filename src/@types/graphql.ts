@@ -173,9 +173,8 @@ export type CreateImagePayload = {
   imageAttempt?: Maybe<ImageAttempt>;
 };
 
-export type CreateImageTagInput = {
-  imageId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
+export type CreateImageTagsInput = {
+  tags: Array<CreateTagInput>;
 };
 
 export type CreateInternalLabelInput = {
@@ -234,6 +233,11 @@ export type CreateProjectLabelInput = {
 export type CreateProjectTagInput = {
   color: Scalars['String']['input'];
   name: Scalars['String']['input'];
+};
+
+export type CreateTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type CreateUploadInput = {
@@ -621,7 +625,7 @@ export type Mutation = {
   createImage?: Maybe<CreateImagePayload>;
   createImageComment?: Maybe<ImageCommentsPayload>;
   createImageError?: Maybe<ImageError>;
-  createImageTag?: Maybe<ImageTagsPayload>;
+  createImageTags?: Maybe<StandardPayload>;
   createInternalLabels?: Maybe<StandardPayload>;
   createLabels?: Maybe<StandardPayload>;
   createObjects?: Maybe<StandardPayload>;
@@ -703,8 +707,8 @@ export type MutationCreateImageErrorArgs = {
 };
 
 
-export type MutationCreateImageTagArgs = {
-  input: CreateImageTagInput;
+export type MutationCreateImageTagsArgs = {
+  input: CreateImageTagsInput;
 };
 
 

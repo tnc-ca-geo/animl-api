@@ -540,22 +540,65 @@ export class ImageModel {
     }
   }
 
-  static async createTag(
-    input: gql.CreateImageTagInput,
+  static async createTags(
+    input: gql.CreateImageTagsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+  ): Promise<gql.StandardPayload> {
+    console.log('ImageModel.createTags - new tag count: ', JSON.stringify(input.tags.length));
+    console.time('total-time');
+
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      console.time('creating-tags');
+      const project = await ProjectModel.queryById(context.user['curr_project']);
 
-      if (!image.tags) {
-        image.tags = [] as any as mongoose.Types.DocumentArray<mongoose.Types.ObjectId>;
-      }
+      const images = await Image.find({
+        projectId: context.user['curr_project'],
+        _id: { $in: input.tags.map((t) => t.imageId) },
+      });
+      const imageMap = new Map(images.map((image) => [image._id, image]));
 
-      image.tags.push(new mongoose.Types.ObjectId(input.tagId));
-      await image.save();
+      const res = await retry(
+        async () => {
+          let operations = [];
 
-      return { tags: image.tags };
+          for (const tag of input.tags) {
+            const image = imageMap.get(tag.imageId);
+            if (!image) throw new NotFoundError('Image not found');
+
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: {
+                  $push: { tags: new ObjectId(tag.tagId) }, // TODO: test what happens if Image.tags is undefined
+                },
+              },
+            });
+          }
+          console.log('ImageModel.createTags - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+
+      console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
+      console.timeEnd('creating-labels');
+      console.timeEnd('total-time');
+      return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
+
+      // const image = await ImageModel.queryById(input.imageId, context);
+
+      // if (!image.tags) {
+      //   image.tags = [] as any as mongoose.Types.DocumentArray<mongoose.Types.ObjectId>;
+      // }
+
+      // image.tags.push(new mongoose.Types.ObjectId(input.tagId));
+      // await image.save();
+
+      // return { isOk: true };
     } catch (err) {
+      console.log(
+        `Image.createTags() ERROR on images ${input.tags.map((t) => t.imageId).join(', ')}: ${err}`,
+      );
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -1453,8 +1496,8 @@ export default class AuthedImageModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_TAGS_ROLES)
-  createTag(...args: MethodParams<typeof ImageModel.createTag>) {
-    return ImageModel.createTag(...args);
+  createTags(...args: MethodParams<typeof ImageModel.createTags>) {
+    return ImageModel.createTags(...args);
   }
 
   @roleCheck(WRITE_TAGS_ROLES)
