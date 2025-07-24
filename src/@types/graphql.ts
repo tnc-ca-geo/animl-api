@@ -285,9 +285,8 @@ export type DeleteImageCommentInput = {
   imageId: Scalars['ID']['input'];
 };
 
-export type DeleteImageTagInput = {
-  imageId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
+export type DeleteImageTagsInput = {
+  tags: Array<DeleteTagInput>;
 };
 
 export type DeleteImagesByFilterInput = {
@@ -335,6 +334,11 @@ export type DeleteProjectLabelPayload = {
 
 export type DeleteProjectTagInput = {
   _id: Scalars['ID']['input'];
+};
+
+export type DeleteTagInput = {
+  imageId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type DeleteViewInput = {
@@ -638,7 +642,7 @@ export type Mutation = {
   deleteCameraConfig?: Maybe<Task>;
   deleteDeployment?: Maybe<Task>;
   deleteImageComment?: Maybe<ImageCommentsPayload>;
-  deleteImageTag?: Maybe<ImageTagsPayload>;
+  deleteImageTags?: Maybe<StandardPayload>;
   deleteImages?: Maybe<StandardErrorPayload>;
   deleteImagesByFilterTask?: Maybe<Task>;
   deleteImagesTask?: Maybe<Task>;
@@ -772,8 +776,8 @@ export type MutationDeleteImageCommentArgs = {
 };
 
 
-export type MutationDeleteImageTagArgs = {
-  input: DeleteImageTagInput;
+export type MutationDeleteImageTagsArgs = {
+  input: DeleteImageTagsInput;
 };
 
 

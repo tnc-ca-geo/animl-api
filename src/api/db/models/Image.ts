@@ -569,7 +569,7 @@ export class ImageModel {
               updateOne: {
                 filter: { _id: image._id },
                 update: {
-                  $push: { tags: new ObjectId(tag.tagId) }, // TODO: test what happens if Image.tags is undefined
+                  $push: { tags: new ObjectId(tag.tagId) },
                 },
               },
             });
@@ -580,21 +580,10 @@ export class ImageModel {
         { retries: 2 },
       );
 
-      console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
-      console.timeEnd('creating-labels');
+      console.log('ImageModel.createTags - res: ', JSON.stringify(res.getRawResponse()));
+      console.timeEnd('creating-tags');
       console.timeEnd('total-time');
       return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
-
-      // const image = await ImageModel.queryById(input.imageId, context);
-
-      // if (!image.tags) {
-      //   image.tags = [] as any as mongoose.Types.DocumentArray<mongoose.Types.ObjectId>;
-      // }
-
-      // image.tags.push(new mongoose.Types.ObjectId(input.tagId));
-      // await image.save();
-
-      // return { isOk: true };
     } catch (err) {
       console.log(
         `Image.createTags() ERROR on images ${input.tags.map((t) => t.imageId).join(', ')}: ${err}`,
@@ -604,22 +593,55 @@ export class ImageModel {
     }
   }
 
-  static async deleteTag(
-    input: gql.DeleteImageTagInput,
+  static async deleteTags(
+    input: gql.DeleteImageTagsInput,
     context: Pick<Context, 'user'>,
-  ): Promise<{ tags: mongoose.Types.ObjectId[] }> {
+  ): Promise<gql.StandardPayload> {
+    console.log('ImageModel.deleteTags - tag count: ', JSON.stringify(input.tags.length));
+    console.time('total-time');
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      console.time('deleting-tags');
 
-      const tag = image.tags?.filter((t) => idMatch(t, input.tagId))[0];
-      if (!tag) throw new NotFoundError('Tag not found on image');
+      const project = await ProjectModel.queryById(context.user['curr_project']);
+      const images = await Image.find({
+        projectId: context.user['curr_project'],
+        _id: { $in: input.tags.map((t) => t.imageId) },
+      });
+      const imageMap = new Map(images.map((image) => [image._id, image]));
 
-      image.tags = image.tags.filter((t) => !idMatch(t, input.tagId)) as mongoose.Types.ObjectId[];
+      const res = await retry(
+        async () => {
+          let operations = [];
 
-      await image.save();
+          for (const tag of input.tags) {
+            const image = imageMap.get(tag.imageId);
+            if (!image) throw new NotFoundError('Image not found');
 
-      return { tags: image.tags };
+            const tagExists = image.tags?.some((t) => idMatch(t, tag.tagId));
+            if (!tagExists) {
+              throw new NotFoundError(`Tag ${tag.tagId} not found on image ${tag.imageId}`);
+            }
+
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: { $pull: { tags: new ObjectId(tag.tagId) } },
+              },
+            });
+          }
+          console.log('ImageModel.deleteTags - operations: ', JSON.stringify(operations));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+      console.log('ImageModel.deleteTags - res: ', JSON.stringify(res.getRawResponse()));
+      console.timeEnd('deleting-tags');
+      console.timeEnd('total-time');
+      return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
+      console.log(
+        `Image.deleteTags() ERROR on images ${input.tags.map((t) => t.imageId).join(', ')}: ${err}`,
+      );
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -1501,8 +1523,8 @@ export default class AuthedImageModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_TAGS_ROLES)
-  deleteTag(...args: MethodParams<typeof ImageModel.deleteTag>) {
-    return ImageModel.deleteTag(...args);
+  deleteTags(...args: MethodParams<typeof ImageModel.deleteTags>) {
+    return ImageModel.deleteTags(...args);
   }
 
   @roleCheck(WRITE_COMMENTS_ROLES)
