@@ -123,20 +123,20 @@ export default {
     return context.models.Image.createComment(input, context);
   },
 
-  createImageTag: async (
+  createImageTags: async (
     _: unknown,
-    { input }: gql.MutationCreateImageTagArgs,
+    { input }: gql.MutationCreateImageTagsArgs,
     context: Context,
-  ): Promise<gql.ImageTagsPayload> => {
-    return context.models.Image.createTag(input, context);
+  ): Promise<gql.StandardPayload> => {
+    return context.models.Image.createTags(input, context);
   },
 
-  deleteImageTag: async (
+  deleteImageTags: async (
     _: unknown,
-    { input }: gql.MutationDeleteImageTagArgs,
+    { input }: gql.MutationDeleteImageTagsArgs,
     context: Context,
-  ): Promise<gql.ImageTagsPayload> => {
-    return context.models.Image.deleteTag(input, context);
+  ): Promise<gql.StandardPayload> => {
+    return context.models.Image.deleteTags(input, context);
   },
 
   createImage: async (

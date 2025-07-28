@@ -105,6 +105,17 @@ export class DeleteTagError extends GraphQLError {
   }
 }
 
+export class ApplyTagError extends GraphQLError {
+  constructor(message = 'ApplyTagError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'APPLY_TAG_FAILED',
+        ...properties,
+      },
+    });
+  }
+}
+
 export class CameraRegistrationError extends GraphQLError {
   constructor(message = 'CameraRegistrationError', properties = {}) {
     super(message, {
