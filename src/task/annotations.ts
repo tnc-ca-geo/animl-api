@@ -407,6 +407,16 @@ export class AnnotationsExport {
     return joinedComments;
   }
 
+  // Lookup Project Tags and join tag names to single string
+  flattenTags(imageTags: string[]): string {
+    if (!this.project) throw new InternalServerError('Project not initialized for tag flattening');
+    const imageTagIds = imageTags.map((tag) => tag.toString());
+    const tagNames = this.project.tags
+      .filter((projectTag) => imageTagIds.includes(projectTag._id.toString()))
+      .map((projectTag) => projectTag.name);
+    return tagNames.join(', ');
+  }
+
   flattenImgTransform(): Transformer {
     return transform((img) => {
       let catCounts: Record<string, any> = {};
@@ -429,6 +439,7 @@ export class AnnotationsExport {
           deploymentLong: deployment.location.geometry.coordinates[0],
         }),
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
+        ...(img.tags && { tags: this.flattenTags(img.tags) }),
       };
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
