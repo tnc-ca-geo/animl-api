@@ -565,6 +565,9 @@ export class ImageModel {
             const image = imageMap.get(tag.imageId);
             if (!image) throw new NotFoundError('Image not found');
 
+            const tagExists = image.tags?.some((t) => idMatch(t, tag.tagId));
+            if (tagExists) continue;
+
             operations.push({
               updateOne: {
                 filter: { _id: image._id },
@@ -574,7 +577,7 @@ export class ImageModel {
               },
             });
           }
-          console.log('ImageModel.createTags - operations: ', JSON.stringify(operations));
+
           return await Image.bulkWrite(operations);
         },
         { retries: 2 },
