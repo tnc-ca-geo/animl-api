@@ -7,6 +7,7 @@ import GraphQLError, {
   DuplicateLabelError,
   DBValidationError,
   NotFoundError,
+  ApplyTagError,
 } from '../../errors.js';
 import { BulkWriteResult } from 'mongodb';
 import mongoose, { HydratedDocument, UpdateWriteOpResult } from 'mongoose';
@@ -58,6 +59,7 @@ const ObjectId = mongoose.Types.ObjectId;
 // The lambda will timeout around 30,000 operations.
 // This is a safe limit with a nice number.
 const MAX_LABEL_REMOVE_COUNT = 25000;
+const MAX_TAG_ADD_COUNT = 20000;
 
 export class ImageModel {
   static readonly DELETE_IMAGES_BATCH_SIZE = 300;
@@ -578,6 +580,11 @@ export class ImageModel {
             });
           }
 
+          if (operations.length > MAX_TAG_ADD_COUNT) {
+            throw new ApplyTagError(
+              `Cannot add more than ${MAX_TAG_ADD_COUNT} tags at a time. Please select fewer images and try again.`,
+            );
+          }
           return await Image.bulkWrite(operations);
         },
         { retries: 2 },
