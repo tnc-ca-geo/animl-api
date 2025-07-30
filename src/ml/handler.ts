@@ -60,6 +60,14 @@ const GET_ML_MODEL = gql`
   }
 `;
 
+const SET_PREDICTION_STATUS = gql`
+  mutation SetPredictionStatus($input: UpdatePredictionStatusInput!) {
+    updatePredictionStatus(input: $input) {
+      isOk
+    }
+  }
+`;
+
 async function requestCreateInternalLabels(
   input: { labels: Detection[] },
   config: Config,
@@ -111,8 +119,10 @@ async function singleInference(config: Config, record: Record): Promise<void> {
 
   // Run inference
   if (modelInterfaces.has(modelSource._id)) {
-    image.awaitingPrediction = true;
-    await image.save();
+    // Set image to awaiting prediction
+    await graphQLClient.request(SET_PREDICTION_STATUS, {
+      input: { imageId: image._id, status: true },
+    });
 
     const requestInference = modelInterfaces.get(modelSource._id)!;
 
@@ -149,8 +159,9 @@ async function singleInference(config: Config, record: Record): Promise<void> {
         }
       } finally {
         // Update image to not awaiting prediction
-        image.awaitingPrediction = false;
-        await image.save();
+        await graphQLClient.request(SET_PREDICTION_STATUS, {
+          input: { imageId: image._id, status: false },
+        });
       }
     }
   } else {

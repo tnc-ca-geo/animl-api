@@ -457,6 +457,7 @@ export type IPageInfo = {
 export type Image = {
   __typename?: 'Image';
   _id: Scalars['ID']['output'];
+  awaitingPrediction?: Maybe<Scalars['Boolean']['output']>;
   batchId?: Maybe<Scalars['String']['output']>;
   bucket: Scalars['String']['output'];
   cameraId: Scalars['String']['output'];
@@ -662,6 +663,7 @@ export type Mutation = {
   updateImageComment?: Maybe<ImageCommentsPayload>;
   updateLabels?: Maybe<StandardPayload>;
   updateObjects?: Maybe<StandardPayload>;
+  updatePredictionStatus?: Maybe<StandardPayload>;
   updateProject?: Maybe<ProjectPayload>;
   updateProjectLabel?: Maybe<ProjectLabelPayload>;
   updateProjectTag?: Maybe<ProjectTagsPayload>;
@@ -877,6 +879,11 @@ export type MutationUpdateLabelsArgs = {
 
 export type MutationUpdateObjectsArgs = {
   input: UpdateObjectsInput;
+};
+
+
+export type MutationUpdatePredictionStatusArgs = {
+  input: UpdatePredictionStatusInput;
 };
 
 
@@ -1281,6 +1288,11 @@ export type UpdateLabelsInput = {
 
 export type UpdateObjectsInput = {
   updates: Array<ObjectUpdate>;
+};
+
+export type UpdatePredictionStatusInput = {
+  imageId: Scalars['ID']['input'];
+  status: Scalars['Boolean']['input'];
 };
 
 export type UpdateProjectInput = {
