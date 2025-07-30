@@ -425,7 +425,6 @@ export type Filters = {
   custom?: Maybe<Scalars['String']['output']>;
   deployments?: Maybe<Array<Scalars['String']['output']>>;
   labels?: Maybe<Array<Scalars['String']['output']>>;
-  notReviewed?: Maybe<Scalars['Boolean']['output']>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
   tags?: Maybe<Array<Scalars['String']['output']>>;
 };

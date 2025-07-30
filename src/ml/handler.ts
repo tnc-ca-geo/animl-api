@@ -111,6 +111,9 @@ async function singleInference(config: Config, record: Record): Promise<void> {
 
   // Run inference
   if (modelInterfaces.has(modelSource._id)) {
+    image.awaitingPrediction = true;
+    await image.save();
+
     const requestInference = modelInterfaces.get(modelSource._id)!;
 
     const detections = await requestInference({
@@ -144,6 +147,10 @@ async function singleInference(config: Config, record: Record): Promise<void> {
         if (!hasDuplicateLabelErrors) {
           throw err;
         }
+      } finally {
+        // Update image to not awaiting prediction
+        image.awaitingPrediction = false;
+        await image.save();
       }
     }
   } else {
