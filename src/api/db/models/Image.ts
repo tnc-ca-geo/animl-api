@@ -1009,6 +1009,10 @@ export class ImageModel {
     }
   }
 
+  /*
+    * This endpoint is used only by the ML Handler to lock images on the frontend to
+    * prevent users to make changes to images while predictions are in progress.
+    */
   static async updatePredictionStatus(
     input: gql.UpdatePredictionStatusInput,
     context: Pick<Context, 'user'>,
@@ -1618,6 +1622,7 @@ export default class AuthedImageModel extends BaseAuthedModel {
   }
 
   updatePredictionStatus(...args: MethodParams<typeof ImageModel.updatePredictionStatus>) {
+    if (!this.user.is_superuser) throw new ForbiddenError();
     return ImageModel.updatePredictionStatus(...args);
   }
 
