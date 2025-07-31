@@ -68,6 +68,10 @@ const SET_PREDICTION_STATUS = gql`
   }
 `;
 
+// Maximum number of retries for processing a record,
+// this value probably needs to be shared across services but currently isn't, since it is in the serverless.yaml
+const MAX_RETRIES = 5;
+
 async function requestCreateInternalLabels(
   input: { labels: Detection[] },
   config: Config,
@@ -119,11 +123,6 @@ async function singleInference(config: Config, record: Record): Promise<void> {
 
   // Run inference
   if (modelInterfaces.has(modelSource._id)) {
-    // Set image to awaiting prediction
-    await graphQLClient.request(SET_PREDICTION_STATUS, {
-      input: { imageId: image._id, status: true },
-    });
-
     const requestInference = modelInterfaces.get(modelSource._id)!;
 
     const detections = await requestInference({
@@ -155,18 +154,24 @@ async function singleInference(config: Config, record: Record): Promise<void> {
           (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
         );
         if (!hasDuplicateLabelErrors) {
+          if (parseInt(record.attributes.ApproximateReceiveCount) === MAX_RETRIES) {
+            console.log(`Max retries reached for record: ${record.attributes.ApproximateReceiveCount}`);
+            // Update image to not awaiting prediction
+            await graphQLClient.request(SET_PREDICTION_STATUS, {
+              input: { imageId: image._id, status: false },
+            });
+          }
           throw err;
         }
-      } finally {
-        // Update image to not awaiting prediction
-        await graphQLClient.request(SET_PREDICTION_STATUS, {
-          input: { imageId: image._id, status: false },
-        });
       }
     }
   } else {
     // TODO: gracefully handle model not found
   }
+  // Update image to not awaiting prediction
+  await graphQLClient.request(SET_PREDICTION_STATUS, {
+    input: { imageId: image._id, status: false },
+  });
 }
 
 async function inference(event: InferenceEvent): Promise<InferenceOutput> {
@@ -206,6 +211,9 @@ export { inference };
 
 interface Record {
   messageId: string;
+  attributes: {
+    ApproximateReceiveCount: string;
+  };
   body: string;
 }
 interface InferenceEvent {
