@@ -102,72 +102,78 @@ async function singleInference(config: Config, record: Record): Promise<void> {
     headers: { 'x-api-key': config['APIKEY'] },
   });
 
-  // Fetch project and find specific rule
-  const getProjectResponse = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, {
-    projectId,
-  });
-  const project = getProjectResponse.projects[0];
-  const rule = project.automationRules.find((r) => r._id.toString() === automationRuleId);
-  if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
-
-  // Fetch model source
-  const getModelResponse = await graphQLClient.request<GetMLModelResponse>(GET_ML_MODEL, {
-    mlModelId,
-  });
-  const modelSource = getModelResponse.mlModels[0];
-  if (!modelSource) throw new Error(`ML model ${mlModelId} not found`);
-
-  // Convert categoryConfig from JSON to Map for buildCatConfig
-  rule.action.categoryConfig = new Map(Object.entries(rule.action.categoryConfig || {}));
-  const catConfig = buildCatConfig(modelSource, rule);
-
-  // Run inference
-  if (modelInterfaces.has(modelSource._id)) {
-    const requestInference = modelInterfaces.get(modelSource._id)!;
-
-    const detections = await requestInference({
-      modelSource,
-      catConfig,
-      image,
-      label,
-      config,
-      ...(rule.action.country && { country: rule.action.country }),
-      ...(rule.action.admin1Region && { admin1Region: rule.action.admin1Region }),
+  try {
+    // Fetch project and find specific rule
+    const getProjectResponse = await graphQLClient.request<GetProjectResponse>(GET_PROJECT_RULE, {
+      projectId,
     });
+    const project = getProjectResponse.projects[0];
+    const rule = project.automationRules.find((r) => r._id.toString() === automationRuleId);
+    if (!rule) throw new Error(`Automation rule ${automationRuleId} not found`);
 
-    // if successful, make create label request
-    if (detections.length) {
-      try {
-        await requestCreateInternalLabels(
-          {
-            labels: detections.map((det) => ({ ...det, imageId: image._id })),
-          },
-          config,
-        );
-      } catch (err) {
-        console.log(`requestCreateInternalLabels() ERROR on image ${image._id}: ${err}`);
-        // don't fail messages that produce duplicate label errors
-        // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
-        // https://github.com/jasonkuhrt/graphql-request/issues/201
-        const errParsed = JSON.parse(JSON.stringify(err));
-        const hasDuplicateLabelErrors = errParsed.response.errors.some(
-          (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
-        );
-        if (!hasDuplicateLabelErrors) {
-          if (parseInt(record.attributes.ApproximateReceiveCount) === MAX_RETRIES) {
-            console.log(`Max retries reached for record: ${record.attributes.ApproximateReceiveCount}`);
-            // Update image to not awaiting prediction
-            await graphQLClient.request(SET_PREDICTION_STATUS, {
-              input: { imageId: image._id, status: false },
-            });
+    // Fetch model source
+    const getModelResponse = await graphQLClient.request<GetMLModelResponse>(GET_ML_MODEL, {
+      mlModelId,
+    });
+    const modelSource = getModelResponse.mlModels[0];
+    if (!modelSource) throw new Error(`ML model ${mlModelId} not found`);
+
+    // Convert categoryConfig from JSON to Map for buildCatConfig
+    rule.action.categoryConfig = new Map(Object.entries(rule.action.categoryConfig || {}));
+    const catConfig = buildCatConfig(modelSource, rule);
+
+    // Run inference
+    if (modelInterfaces.has(modelSource._id)) {
+      const requestInference = modelInterfaces.get(modelSource._id)!;
+
+      const detections = await requestInference({
+        modelSource,
+        catConfig,
+        image,
+        label,
+        config,
+        ...(rule.action.country && { country: rule.action.country }),
+        ...(rule.action.admin1Region && { admin1Region: rule.action.admin1Region }),
+      });
+
+      // if successful, make create label request
+      if (detections.length) {
+        try {
+          await requestCreateInternalLabels(
+            {
+              labels: detections.map((det) => ({ ...det, imageId: image._id })),
+            },
+            config,
+          );
+        } catch (err) {
+          console.log(`requestCreateInternalLabels() ERROR on image ${image._id}: ${err}`);
+          // don't fail messages that produce duplicate label errors
+          // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
+          // https://github.com/jasonkuhrt/graphql-request/issues/201
+          const errParsed = JSON.parse(JSON.stringify(err));
+          const hasDuplicateLabelErrors = errParsed.response.errors.some(
+            (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
+          );
+          if (!hasDuplicateLabelErrors) {
+            throw err;
           }
-          throw err;
         }
       }
+    } else {
+      // TODO: gracefully handle model not found
     }
-  } else {
-    // TODO: gracefully handle model not found
   }
+  catch (err) {
+    if (parseInt(record.attributes.ApproximateReceiveCount) === MAX_RETRIES) {
+      console.log(`Max retries reached for record: ${record.attributes.ApproximateReceiveCount}`);
+      // Update image to not awaiting prediction
+      await graphQLClient.request(SET_PREDICTION_STATUS, {
+        input: { imageId: image._id, status: false },
+      });
+    }
+    throw err;
+  }
+
   // Update image to not awaiting prediction
   await graphQLClient.request(SET_PREDICTION_STATUS, {
     input: { imageId: image._id, status: false },
