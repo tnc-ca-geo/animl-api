@@ -55,6 +55,7 @@ export default /* GraphQL */ `
     deleteObjects(input: DeleteObjectsInput!): StandardPayload
 
     createInternalLabels(input: CreateInternalLabelsInput!): StandardPayload
+    updatePredictionStatus(input: UpdatePredictionStatusInput!): StandardPayload
 
     createLabels(input: CreateLabelsInput!): StandardPayload
     updateLabels(input: UpdateLabelsInput!): StandardPayload

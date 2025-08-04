@@ -1,5 +1,5 @@
-import { InternalServerError } from '../api/errors.js';
 import SQS from '@aws-sdk/client-sqs';
+import { InternalServerError } from '../api/errors.js';
 import { buildCallstack } from './utils.js';
 import { sendEmail } from './alerts.js';
 
@@ -15,6 +15,8 @@ const executeRule = {
         projectId: payload.image.projectId,
         automationRuleId: rule._id.toString(),
       };
+      payload.image.awaitingPrediction = true;
+      payload.image.save();
 
       if (payload.image.batchId) {
         return await sqs.send(
