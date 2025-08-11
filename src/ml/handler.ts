@@ -138,40 +138,37 @@ async function singleInference(config: Config, record: Record): Promise<void> {
 
       // if successful, make create label request
       if (detections.length) {
-        try {
-          await requestCreateInternalLabels(
-            {
-              labels: detections.map((det) => ({ ...det, imageId: image._id })),
-            },
-            config,
-          );
-        } catch (err) {
-          console.log(`requestCreateInternalLabels() ERROR on image ${image._id}: ${err}`);
-          // don't fail messages that produce duplicate label errors
-          // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
-          // https://github.com/jasonkuhrt/graphql-request/issues/201
-          const errParsed = JSON.parse(JSON.stringify(err));
-          const hasDuplicateLabelErrors = errParsed.response.errors.some(
-            (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
-          );
-          if (!hasDuplicateLabelErrors) {
-            throw err;
-          }
-        }
+        await requestCreateInternalLabels(
+          {
+            labels: detections.map((det) => ({ ...det, imageId: image._id })),
+          },
+          config,
+        );
       }
     } else {
       // TODO: gracefully handle model not found
     }
   }
   catch (err) {
-    if (parseInt(record.attributes.ApproximateReceiveCount) === MAX_RETRIES) {
+    if (parseInt(record.attributes.ApproximateReceiveCount) >= MAX_RETRIES) {
       console.log(`Max retries reached for record: ${record.attributes.ApproximateReceiveCount}`);
       // Update image to not awaiting prediction
       await graphQLClient.request(SET_PREDICTION_STATUS, {
         input: { imageId: image._id, status: false },
       });
     }
-    throw err;
+    console.log(`ERROR on image ${image._id}: ${err}`);
+
+    // don't fail messages that produce duplicate label errors
+    // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
+    // https://github.com/jasonkuhrt/graphql-request/issues/201
+    const errParsed = JSON.parse(JSON.stringify(err));
+    const hasDuplicateLabelErrors = errParsed.response.errors.some(
+      (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
+    );
+    if (!hasDuplicateLabelErrors) {
+      throw err;
+    }
   }
 
   // Update image to not awaiting prediction
