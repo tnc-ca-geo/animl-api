@@ -150,14 +150,15 @@ async function singleInference(config: Config, record: Record): Promise<void> {
     }
   }
   catch (err) {
+    console.log(`ERROR on image ${image._id}: ${err}`);
+
     if (parseInt(record.attributes.ApproximateReceiveCount) >= MAX_RETRIES) {
-      console.log(`Max retries reached for record: ${record.attributes.ApproximateReceiveCount}`);
+      console.log(`Max retries reached for image: ${image._id}`);
       // Update image to not awaiting prediction
       await graphQLClient.request(SET_PREDICTION_STATUS, {
         input: { imageId: image._id, status: false },
       });
     }
-    console.log(`ERROR on image ${image._id}: ${err}`);
 
     // don't fail messages that produce duplicate label errors
     // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
