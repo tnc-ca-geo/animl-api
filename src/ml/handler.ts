@@ -154,7 +154,8 @@ async function singleInference(config: Config, record: Record): Promise<void> {
 
     if (parseInt(record.attributes.ApproximateReceiveCount) >= MAX_RETRIES) {
       console.log(`Max retries reached for image: ${image._id}`);
-      // Update image to not awaiting prediction
+      // Update image to not awaiting prediction, this message has reached the maximum number of
+      // retries and will be moved to the redrive queue
       await graphQLClient.request(SET_PREDICTION_STATUS, {
         input: { imageId: image._id, status: false },
       });

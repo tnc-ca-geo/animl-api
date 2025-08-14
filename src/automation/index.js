@@ -2,6 +2,7 @@ import SQS from '@aws-sdk/client-sqs';
 import { InternalServerError } from '../api/errors.js';
 import { buildCallstack } from './utils.js';
 import { sendEmail } from './alerts.js';
+import Image from '../api/db/models/Image.js';
 
 const sqs = new SQS.SQSClient();
 
@@ -15,8 +16,7 @@ const executeRule = {
         projectId: payload.image.projectId,
         automationRuleId: rule._id.toString(),
       };
-      payload.image.awaitingPrediction = true;
-      payload.image.save();
+      await Image.UpdatePredictionStatus(payload.image._id, { awaitingPrediction: true });
 
       if (payload.image.batchId) {
         return await sqs.send(
@@ -34,6 +34,7 @@ const executeRule = {
         );
       }
     } catch (err) {
+      await Image.UpdatePredictionStatus(payload.image._id, { awaitingPrediction: false });
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }
   },
