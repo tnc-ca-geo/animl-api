@@ -32,5 +32,6 @@ export default /* GraphQL */ `
     comments: [ImageComment!]
     tags: [ID!]
     url: SignedImageUrl
+    awaitingPrediction: Boolean
   }
 `;
