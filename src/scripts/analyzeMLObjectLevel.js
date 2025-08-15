@@ -205,20 +205,20 @@ async function analyze() {
         })
         return validObjs.length > 0
       }
-      const earliestMlImage = aggregateImages.find((img) => isValidStartEndToMlDeployment(img));
-      const latestMlImage = aggregateImages.findLast((img) => isValidStartEndToMlDeployment(img));
+      const earliestMlImage = aggregateImages.findIndex((img) => isValidStartEndToMlDeployment(img));
+      const latestMlImage = aggregateImages.findLastIndex((img) => isValidStartEndToMlDeployment(img));
 
       if (earliestMlImage > latestMlImage) {
         throw new Error(`The evaluation script found an incorrect range.  Found start: ${earliestMlImage}, Found end: ${latestMlImage}`)
       }
 
-      if (!earliestMlImage) {
+      if (earliestMlImage < 0) {
         throw new Error(`The deployment window, ${START_DATE} - ${END_DATE}, does not include any images evaluated by ${ML_MODEL}`);
       }
 
-      console.log(`a more accurate start date was found: ${earliestMlImage.dateAdded}`)
-      if (latestMlImage) {
-        console.log(`a more accurate end date was found: ${latestMlImage.dateAdded}`)
+      console.log(`a more accurate start date was found: ${aggregateImages[earliestMlImage].dateAdded}`)
+      if (latestMlImage >= 0) {
+        console.log(`a more accurate end date was found: ${aggregateImages[latestMlImage].dateAdded}`)
       }
 
       aggregateImages = aggregateImages.slice(earliestMlImage, latestMlImage);
