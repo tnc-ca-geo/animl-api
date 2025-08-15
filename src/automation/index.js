@@ -2,13 +2,18 @@ import SQS from '@aws-sdk/client-sqs';
 import { InternalServerError } from '../api/errors.js';
 import { buildCallstack } from './utils.js';
 import { sendEmail } from './alerts.js';
-import Image from '../api/db/models/Image.js';
+import { ImageModel } from '../api/db/models/Image.js';
 
 const sqs = new SQS.SQSClient();
 
 const executeRule = {
   'run-inference': async (rule, payload, context) => {
     try {
+      await ImageModel.updatePredictionStatus(
+        { imageId: payload.image._id, awaitingPrediction: true },
+        context,
+      );
+
       const mlModelId = rule.action.mlModel;
       const message = {
         mlModelId,
@@ -16,7 +21,6 @@ const executeRule = {
         projectId: payload.image.projectId,
         automationRuleId: rule._id.toString(),
       };
-      await Image.UpdatePredictionStatus(payload.image._id, { awaitingPrediction: true });
 
       if (payload.image.batchId) {
         return await sqs.send(
@@ -34,7 +38,10 @@ const executeRule = {
         );
       }
     } catch (err) {
-      await Image.UpdatePredictionStatus(payload.image._id, { awaitingPrediction: false });
+      await ImageModel.updatePredictionStatus(
+        { imageId: payload.image._id, awaitingPrediction: false },
+        context,
+      );
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }
   },
