@@ -37,7 +37,7 @@ import { ProjectModel } from '../../.build/api/db/models/Project.js';
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLObjectLevel.js
  */
 
-const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
+const { ADJUSTABLE_WINDOW, ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
 
 const TARGET_CLASSES = analysisConfig.TARGET_CLASSES.map((tc) => ({
   predicted_id: tc.predicted.split(':')[1],
@@ -193,10 +193,41 @@ async function analyze() {
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
+
+    let aggregateImages = await Image.aggregate(aggPipeline);
+    if (ADJUSTABLE_WINDOW) {
+      const isValidStartEndToMlDeployment = (img) => {
+        if (!img.objects) return false;
+        const validObjs = img.objects.filter((obj) => {
+          return !obj.locked 
+            || !obj.labels 
+            || !obj.labels.some((lbl) => lbl.mlModel === ML_MODEL);
+        })
+        return validObjs.length > 0
+      }
+      const earliestMlImage = aggregateImages.find((img) => isValidStartEndToMlDeployment(img));
+      const latestMlImage = aggregateImages.findLast((img) => isValidStartEndToMlDeployment(img));
+
+      if (earliestMlImage > latestMlImage) {
+        throw new Error(`The evaluation script found an incorrect range.  Found start: ${earliestMlImage}, Found end: ${latestMlImage}`)
+      }
+
+      if (!earliestMlImage) {
+        throw new Error(`The deployment window, ${START_DATE} - ${END_DATE}, does not include any images evaluated by ${ML_MODEL}`);
+      }
+
+      console.log(`a more accurate start date was found: ${earliestMlImage.dateAdded}`)
+      if (latestMlImage) {
+        console.log(`a more accurate end date was found: ${latestMlImage.dateAdded}`)
+      }
+
+      aggregateImages = aggregateImages.slice(earliestMlImage, latestMlImage);
+    }
+
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
 
-    for await (const img of Image.aggregate(aggPipeline)) {
+    for (const img of aggregateImages) {
       // skip default deployments
       const imgDep = getDeployment(img, cameraConfigs);
       if (imgDep.name === 'default') continue;
