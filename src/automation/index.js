@@ -10,9 +10,10 @@ const executeRule = {
   'run-inference': async (rule, payload, context) => {
     try {
       await ImageModel.updatePredictionStatus(
-        { imageId: payload.image._id, awaitingPrediction: true },
+        { imageId: payload.image._id, status: true },
         context,
       );
+      // throw new Error('test automation error');
 
       const mlModelId = rule.action.mlModel;
       const message = {
@@ -39,7 +40,7 @@ const executeRule = {
       }
     } catch (err) {
       await ImageModel.updatePredictionStatus(
-        { imageId: payload.image._id, awaitingPrediction: false },
+        { imageId: payload.image._id, status: false },
         context,
       );
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
