@@ -13,7 +13,6 @@ const executeRule = {
         { imageId: payload.image._id, status: true },
         context,
       );
-      // throw new Error('test automation error');
 
       const mlModelId = rule.action.mlModel;
       const message = {
