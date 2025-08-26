@@ -196,6 +196,32 @@ async function analyze() {
 
     let aggregateImages = await Image.aggregate(aggPipeline);
     if (ADJUSTABLE_WINDOW) {
+      const firstMlLabelAfterStartQuery = {
+        $match: { 
+          projectId: PROJECT_ID,
+          dateAdded: {
+            $gte: new Date(START_DATE),
+            $lt: new Date(END_DATE),
+          },
+          reviewed: true,
+          objects: {
+            $elemMatch: {
+              labels: {
+                $elemMatch: {
+                  mlModel: ML_MODEL
+                }
+              }
+            }
+          }
+        },
+      }
+
+      const firstMlLabelAterStart = await Image.aggregate([
+        firstMlLabelAfterStartQuery,
+        { $sort: { dateAdded: 1 }},
+        { $limit: 1 },
+      ]))
+
       const isValidStartEndToMlDeployment = (img) => {
         if (!img.objects) return false;
         const validObjs = img.objects.filter((obj) => {
@@ -205,6 +231,7 @@ async function analyze() {
         })
         return validObjs.length > 0
       }
+      return
       const earliestMlImage = aggregateImages.findIndex((img) => isValidStartEndToMlDeployment(img));
       const latestMlImage = aggregateImages.findLastIndex((img) => isValidStartEndToMlDeployment(img));
 
