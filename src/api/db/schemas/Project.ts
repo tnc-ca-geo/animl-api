@@ -44,6 +44,7 @@ const FiltersSchema = new Schema({
   addedStart: { type: Date },
   addedEnd: { type: Date },
   reviewed: { type: Boolean },
+  notReviewed: { type: Boolean },
   custom: { type: String },
 });
 

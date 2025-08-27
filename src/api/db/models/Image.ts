@@ -1009,30 +1009,6 @@ export class ImageModel {
     }
   }
 
-  /*
-    * This endpoint is used only by the ML Handler to lock images on the frontend to
-    * prevent users to make changes to images while predictions are in progress.
-    */
-  static async updatePredictionStatus(
-    input: gql.UpdatePredictionStatusInput,
-    context: Pick<Context, 'user'>,
-  ): Promise<gql.StandardPayload> {
-    console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
-
-    try {
-      const image = await ImageModel.queryById(input.imageId, context);
-      if (!image) throw new NotFoundError('Image not found');
-
-      image.awaitingPrediction = input.status;
-      await image.save();
-
-      return { isOk: true };
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
-  }
-
   /**
    * This endpoint is only used by human reviewers editing labels via the frontend.
    * All ML-generated labels use createInternalLabels
@@ -1619,11 +1595,6 @@ export default class AuthedImageModel extends BaseAuthedModel {
   createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
     return ImageModel.createInternalLabels(...args);
-  }
-
-  updatePredictionStatus(...args: MethodParams<typeof ImageModel.updatePredictionStatus>) {
-    if (!this.user.is_superuser) throw new ForbiddenError();
-    return ImageModel.updatePredictionStatus(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)

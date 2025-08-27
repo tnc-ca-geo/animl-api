@@ -1,4 +1,3 @@
-import { update } from 'lodash';
 import type * as gql from '../../@types/graphql.js';
 import { Context } from '../handler.js';
 
@@ -365,14 +364,6 @@ export default {
     context: Context,
   ): Promise<gql.StandardPayload> => {
     return await context.models.Image.createInternalLabels(input, context);
-  },
-
-  updatePredictionStatus: async (
-    _: unknown,
-    { input }: gql.MutationUpdatePredictionStatusArgs,
-    context: Context,
-  ): Promise<gql.StandardPayload> => {
-    return await context.models.Image.updatePredictionStatus(input, context);
   },
 
   createLabels: async (
