@@ -139,10 +139,10 @@ function FVLValidatesPrediction(obj, tClass) {
 }
 
 async function tryAdjustAutomationWindow() {
-  console.log("attempting to adjust automation window...")
+  console.log('attempting to adjust automation window...');
   const imagesInAutomationWindow = await Image.aggregate([
     {
-      $match: { 
+      $match: {
         projectId: PROJECT_ID,
         dateAdded: {
           $gte: new Date(START_DATE),
@@ -160,34 +160,34 @@ async function tryAdjustAutomationWindow() {
         }
       },
     },
-    { $sort: { dateAdded: 1 }}
-  ])
+    { $sort: { dateAdded: 1 } }
+  ]);
 
-  const firstMlLabelAfterStart = imagesInAutomationWindow.shift()
-  const lastMlLabelAterStart = imagesInAutomationWindow.pop()
+  const firstMlLabelAfterStart = imagesInAutomationWindow.shift();
+  const lastMlLabelAterStart = imagesInAutomationWindow.pop();
 
   if (!firstMlLabelAfterStart || !lastMlLabelAterStart) {
-    throw new Error("unable to find a valid first and last image in automation window.")
+    throw new Error('unable to find a valid first and last image in automation window.');
   }
 
-  const newStart = firstMlLabelAfterStart.dateAdded > (new Date(START_DATE)) 
-    ? firstMlLabelAfterStart.dateAdded.toISOString().split("T")[0]
-    : undefined
+  const newStart = firstMlLabelAfterStart.dateAdded > (new Date(START_DATE))
+    ? firstMlLabelAfterStart.dateAdded.toISOString().split('T')[0]
+    : undefined;
 
   const newEnd = lastMlLabelAterStart.dateAdded < (new Date(END_DATE))
-    ? lastMlLabelAterStart.dateAdded.toISOString().split("T")[0]
-    : undefined
+    ? lastMlLabelAterStart.dateAdded.toISOString().split('T')[0]
+    : undefined;
 
   return {
     newStart: newStart,
     newEnd: newEnd
-  }
+  };
 }
 
 // main function
 async function analyze() {
-  let startDate = START_DATE
-  let endDate = END_DATE
+  let startDate = START_DATE;
+  let endDate = END_DATE;
 
   console.log(
     `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate}...`,
@@ -239,15 +239,15 @@ async function analyze() {
     stringifier.on('error', (err) => console.error(err.message));
 
     if (ADJUSTABLE_WINDOW) {
-      const { newStart, newEnd } = await tryAdjustAutomationWindow()
+      const { newStart, newEnd } = await tryAdjustAutomationWindow();
       if (newStart) {
-        console.log(`found a more likely start to the automation window: ${newStart}`)
+        console.log(`found a more likely start to the automation window: ${newStart}`);
       }
       if (newEnd) {
-        console.log(`found a more likely end to the automation window: ${newEnd}`)
+        console.log(`found a more likely end to the automation window: ${newEnd}`);
       }
-      startDate = newStart ?? startDate
-      endDate = newEnd ?? endDate
+      startDate = newStart ?? startDate;
+      endDate = newEnd ?? endDate;
     }
 
     // stream in images from MongoDB
@@ -255,7 +255,7 @@ async function analyze() {
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
 
-    let aggregateImages = await Image.aggregate(aggPipeline);
+    const aggregateImages = await Image.aggregate(aggPipeline);
 
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
