@@ -188,7 +188,6 @@ async function tryAdjustAutomationWindow() {
 async function analyze() {
   let startDate = START_DATE;
   let endDate = END_DATE;
-
   console.log(
     `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate}...`,
   );
@@ -198,6 +197,19 @@ async function analyze() {
   const dbClient = await connectToDatabase(config);
 
   try {
+    // adjust analysis window to try and avoid false negatives
+    if (ADJUSTABLE_WINDOW) {
+      const { newStart, newEnd } = await tryAdjustAutomationWindow();
+      if (newStart) {
+        console.log(`found a more likely start to the automation window: ${newStart}`);
+      }
+      if (newEnd) {
+        console.log(`found a more likely end to the automation window: ${newEnd}`);
+      }
+      startDate = newStart ?? startDate;
+      endDate = newEnd ?? endDate;
+    }
+
     // set up data structure to hold results
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
@@ -237,18 +249,6 @@ async function analyze() {
     const writableStream = fs.createWriteStream(csvFilename);
     const stringifier = stringify({ header: true, columns: reportColumns });
     stringifier.on('error', (err) => console.error(err.message));
-
-    if (ADJUSTABLE_WINDOW) {
-      const { newStart, newEnd } = await tryAdjustAutomationWindow();
-      if (newStart) {
-        console.log(`found a more likely start to the automation window: ${newStart}`);
-      }
-      if (newEnd) {
-        console.log(`found a more likely end to the automation window: ${newEnd}`);
-      }
-      startDate = newStart ?? startDate;
-      endDate = newEnd ?? endDate;
-    }
 
     // stream in images from MongoDB
     const aggPipeline = buildBasePipeline(PROJECT_ID, startDate, endDate);
