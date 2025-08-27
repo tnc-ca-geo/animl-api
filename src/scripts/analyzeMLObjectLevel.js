@@ -138,10 +138,59 @@ function FVLValidatesPrediction(obj, tClass) {
   }
 }
 
+async function tryAdjustAutomationWindow() {
+  console.log("attempting to adjust automation window...")
+  const imagesInAutomationWindow = await Image.aggregate([
+    {
+      $match: { 
+        projectId: PROJECT_ID,
+        dateAdded: {
+          $gte: new Date(START_DATE),
+          $lt: new Date(END_DATE),
+        },
+        reviewed: true,
+        objects: {
+          $elemMatch: {
+            labels: {
+              $elemMatch: {
+                mlModel: ML_MODEL
+              }
+            }
+          }
+        }
+      },
+    },
+    { $sort: { dateAdded: 1 }}
+  ])
+
+  const firstMlLabelAfterStart = imagesInAutomationWindow.shift()
+  const lastMlLabelAterStart = imagesInAutomationWindow.pop()
+
+  if (!firstMlLabelAfterStart || !lastMlLabelAterStart) {
+    throw new Error("unable to find a valid first and last image in automation window.")
+  }
+
+  const newStart = firstMlLabelAfterStart.dateAdded > (new Date(START_DATE)) 
+    ? firstMlLabelAfterStart.dateAdded.toISOString().split("T")[0]
+    : undefined
+
+  const newEnd = lastMlLabelAterStart.dateAdded < (new Date(END_DATE))
+    ? lastMlLabelAterStart.dateAdded.toISOString().split("T")[0]
+    : undefined
+
+  return {
+    newStart: newStart,
+    newEnd: newEnd
+  }
+}
+
 // main function
 async function analyze() {
+  let startDate = START_DATE
+  let endDate = END_DATE
+
   console.log(
-    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE}...`,
+    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate}...`,
   );
   console.log('Getting config...');
   const config = await getConfig();
@@ -181,7 +230,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_object-level_${dt}`;
+    const root = `${PROJECT_ID}_${ML_MODEL}_${startDate}--${endDate}_object-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
@@ -189,67 +238,24 @@ async function analyze() {
     const stringifier = stringify({ header: true, columns: reportColumns });
     stringifier.on('error', (err) => console.error(err.message));
 
+    if (ADJUSTABLE_WINDOW) {
+      const { newStart, newEnd } = await tryAdjustAutomationWindow()
+      if (newStart) {
+        console.log(`found a more likely start to the automation window: ${newStart}`)
+      }
+      if (newEnd) {
+        console.log(`found a more likely end to the automation window: ${newEnd}`)
+      }
+      startDate = newStart ?? startDate
+      endDate = newEnd ?? endDate
+    }
+
     // stream in images from MongoDB
-    const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
+    const aggPipeline = buildBasePipeline(PROJECT_ID, startDate, endDate);
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
 
     let aggregateImages = await Image.aggregate(aggPipeline);
-    if (ADJUSTABLE_WINDOW) {
-      const firstMlLabelAfterStartQuery = {
-        $match: { 
-          projectId: PROJECT_ID,
-          dateAdded: {
-            $gte: new Date(START_DATE),
-            $lt: new Date(END_DATE),
-          },
-          reviewed: true,
-          objects: {
-            $elemMatch: {
-              labels: {
-                $elemMatch: {
-                  mlModel: ML_MODEL
-                }
-              }
-            }
-          }
-        },
-      }
-
-      const firstMlLabelAterStart = await Image.aggregate([
-        firstMlLabelAfterStartQuery,
-        { $sort: { dateAdded: 1 }},
-        { $limit: 1 },
-      ]))
-
-      const isValidStartEndToMlDeployment = (img) => {
-        if (!img.objects) return false;
-        const validObjs = img.objects.filter((obj) => {
-          return !obj.locked 
-            || !obj.labels 
-            || !obj.labels.some((lbl) => lbl.mlModel === ML_MODEL);
-        })
-        return validObjs.length > 0
-      }
-      return
-      const earliestMlImage = aggregateImages.findIndex((img) => isValidStartEndToMlDeployment(img));
-      const latestMlImage = aggregateImages.findLastIndex((img) => isValidStartEndToMlDeployment(img));
-
-      if (earliestMlImage > latestMlImage) {
-        throw new Error(`The evaluation script found an incorrect range.  Found start: ${earliestMlImage}, Found end: ${latestMlImage}`)
-      }
-
-      if (earliestMlImage < 0) {
-        throw new Error(`The deployment window, ${START_DATE} - ${END_DATE}, does not include any images evaluated by ${ML_MODEL}`);
-      }
-
-      console.log(`a more accurate start date was found: ${aggregateImages[earliestMlImage].dateAdded}`)
-      if (latestMlImage >= 0) {
-        console.log(`a more accurate end date was found: ${aggregateImages[latestMlImage].dateAdded}`)
-      }
-
-      aggregateImages = aggregateImages.slice(earliestMlImage, latestMlImage);
-    }
 
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
