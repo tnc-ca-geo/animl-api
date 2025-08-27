@@ -251,8 +251,8 @@ async function tryAdjustAutomationWindow() {
 
 // main function
 async function analyze() {
-  let startDate = START_DATE
-  let endDate = END_DATE
+  let startDate = START_DATE;
+  let endDate = END_DATE;
   console.log(
     `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate} at the sequence level...`,
   );
