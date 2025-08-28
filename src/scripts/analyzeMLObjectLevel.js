@@ -37,7 +37,7 @@ import { ProjectModel } from '../../.build/api/db/models/Project.js';
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLObjectLevel.js
  */
 
-const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
+const { ADJUSTABLE_WINDOW, ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
 
 const TARGET_CLASSES = analysisConfig.TARGET_CLASSES.map((tc) => ({
   predicted_id: tc.predicted.split(':')[1],
@@ -138,10 +138,58 @@ function FVLValidatesPrediction(obj, tClass) {
   }
 }
 
+async function tryAdjustAutomationWindow() {
+  console.log('attempting to adjust automation window...');
+  const imagesInAutomationWindow = await Image.aggregate([
+    {
+      $match: {
+        projectId: PROJECT_ID,
+        dateAdded: {
+          $gte: new Date(START_DATE),
+          $lt: new Date(END_DATE),
+        },
+        reviewed: true,
+        objects: {
+          $elemMatch: {
+            labels: {
+              $elemMatch: {
+                mlModel: ML_MODEL
+              }
+            }
+          }
+        }
+      },
+    },
+    { $sort: { dateAdded: 1 } }
+  ]);
+
+  const firstMlLabelAfterStart = imagesInAutomationWindow.shift();
+  const lastMlLabelAterStart = imagesInAutomationWindow.pop();
+
+  if (!firstMlLabelAfterStart || !lastMlLabelAterStart) {
+    throw new Error('unable to find a valid first and last image in automation window.');
+  }
+
+  const newStart = firstMlLabelAfterStart.dateAdded > (new Date(START_DATE))
+    ? firstMlLabelAfterStart.dateAdded.toISOString().split('T')[0]
+    : undefined;
+
+  const newEnd = lastMlLabelAterStart.dateAdded < (new Date(END_DATE))
+    ? lastMlLabelAterStart.dateAdded.toISOString().split('T')[0]
+    : undefined;
+
+  return {
+    newStart: newStart,
+    newEnd: newEnd
+  };
+}
+
 // main function
 async function analyze() {
+  let startDate = START_DATE;
+  let endDate = END_DATE;
   console.log(
-    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE}...`,
+    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate}...`,
   );
   console.log('Getting config...');
   const config = await getConfig();
@@ -149,6 +197,19 @@ async function analyze() {
   const dbClient = await connectToDatabase(config);
 
   try {
+    // adjust analysis window to try and avoid false negatives
+    if (ADJUSTABLE_WINDOW) {
+      const { newStart, newEnd } = await tryAdjustAutomationWindow();
+      if (newStart) {
+        console.log(`found a more likely start to the automation window: ${newStart}`);
+      }
+      if (newEnd) {
+        console.log(`found a more likely end to the automation window: ${newEnd}`);
+      }
+      startDate = newStart ?? startDate;
+      endDate = newEnd ?? endDate;
+    }
+
     // set up data structure to hold results
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
@@ -181,7 +242,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_object-level_${dt}`;
+    const root = `${PROJECT_ID}_${ML_MODEL}_${startDate}--${endDate}_object-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
@@ -190,13 +251,16 @@ async function analyze() {
     stringifier.on('error', (err) => console.error(err.message));
 
     // stream in images from MongoDB
-    const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
+    const aggPipeline = buildBasePipeline(PROJECT_ID, startDate, endDate);
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
+
+    const aggregateImages = await Image.aggregate(aggPipeline);
+
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
 
-    for await (const img of Image.aggregate(aggPipeline)) {
+    for (const img of aggregateImages) {
       // skip default deployments
       const imgDep = getDeployment(img, cameraConfigs);
       if (imgDep.name === 'default') continue;
