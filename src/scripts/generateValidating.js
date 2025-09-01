@@ -1,4 +1,4 @@
-import { analysisConfig } from "./analysisConfig.js"
+import { analysisConfig } from './analysisConfig.js';
 import { getConfig } from '../../.build/config/config.js';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
 import Image from '../../.build/api/db/schemas/Image.js';
@@ -11,7 +11,7 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
   await connectToDatabase(config);
 
   const validatingLabels = predictedLabels.reduce((acc, lbl) => {
-    return { ...acc, [lbl]: [] }
+    return { ...acc, [lbl]: [] };
   }, {});
 
   console.log('collecting images...');
@@ -48,12 +48,12 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
       }, []);
 
       validatingLabels[mlLabel.labelId] = new Set([...validating, ...ids]);
-    })
+    });
     return imgAcc;
   }, validatingLabels);
 
   return validationLists;
-}
+};
 
 // Example
 console.log(generateValidationList(analysisConfig, ['rodent', 'skunk']));
