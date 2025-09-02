@@ -1,3 +1,9 @@
+//Original code by Jesse Leung
+//  Updated by CoPilot to read all predicted labels, crosswalk to human label, keep array for preserving duplicates
+//  in order to report the count of each validation label.
+//  This version maintains the original structure but allows for multiple instances of the same label
+
+
 import { analysisConfig } from './analysisConfig.js';
 import { getConfig } from '../../.build/config/config.js';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
