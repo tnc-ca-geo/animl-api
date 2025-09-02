@@ -10,7 +10,7 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
   const dbClient = await connectToDatabase(config);
 
   try {
-    const { PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
+    const { PROJECT_ID, START_DATE, END_DATE } = analysisConfig;
 
     // Prepare map { labelId: [validatingLabelId] }
     const validatingLabels = predictedLabels.reduce((acc, lbl) => {
@@ -19,6 +19,7 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
 
     console.log('Collecting images...');
     const imageDbTimer = performance.now();
+
     const images = await Image.aggregate([{
       $match: {
         projectId: PROJECT_ID,
@@ -32,34 +33,25 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
         }
       },
     }]);
+
     console.log(`Image db query time: ${(performance.now() - imageDbTimer) / 1000}`);
 
     console.log('Building validation lists...');
     const processTimer = performance.now();
+
     const validationLists = images.reduce((imgAcc, img) => {
       img.objects.forEach((obj) => {
-        const mlLabel = obj.labels.find((lbl) => lbl.mlModel === ML_MODEL);
-        if (!mlLabel) {
-          return;
-        }
+        const labelIds = obj.labels.map((lbl) => lbl.labelId);
+        const existingPredicted = predictedLabels.filter((lblId) => labelIds.indexOf(lblId) >= 0);
 
-        const validating = validatingLabels[mlLabel.labelId];
-
-        if (!validating) {
-          return;
-        }
-
-        const ids = obj.labels.reduce((acc, lbl) => {
-          if (lbl.mlModel === 'megadetector') {
-            return acc;
-          }
-          return acc.concat(lbl.labelId);
-        }, []);
-
-        validatingLabels[mlLabel.labelId] = new Set([...validating, ...ids]);
+        existingPredicted.forEach((predicted) => {
+          const curr = validatingLabels[predicted];
+          validatingLabels[predicted] = new Set([...curr, ...labelIds]);
+        });
       });
       return imgAcc;
     }, validatingLabels);
+
     console.log(`Validation list generation time: ${(performance.now() - processTimer) / 1000}`);
 
     const projectDbTime = performance.now();
@@ -70,12 +62,13 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
 
     console.log('Mapping label IDs to label names...');
     const nameTimer = performance.now();
+
     const labelNames = project.labels.reduce((acc, lbl) => {
       acc[lbl._id] = lbl.name;
       return acc;
     }, {});
 
-    const validationListWithNames = Object.entries(validationLists).map(([labelId, validations]) => {
+    const validationListsWithNames = Object.entries(validationLists).map(([labelId, validations]) => {
       const labelName = labelNames[labelId];
 
       const validationNames = Array.from(validations).map((validation) => {
@@ -86,9 +79,10 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
         [`${labelName}:${labelId}`]: validationNames
       };
     });
+
     console.log(`Label name mapping time: ${(performance.now() - nameTimer) / 1000}`);
 
-    return validationListWithNames;
+    return validationListsWithNames;
   } catch (err) {
     console.error(`An error occurred while generating the validation lists: ${err}`);
   } finally {
