@@ -979,6 +979,7 @@ export class ImageModel {
           );
         }
       }
+      await this.updatePredictionStatus({ imageId: input.labels[0].imageId, status: false }, context);
       return { isOk: true };
     } catch (err) {
       console.log(
