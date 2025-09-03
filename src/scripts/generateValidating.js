@@ -98,7 +98,7 @@ export const generateValidationList = async (genConfig) => {
                         $and: [
                           { $ne: ['$$obj.firstValidLabel.labelId', null] },
                           { $eq: ['$$label.validation.validated', true] },
-                          { $ne: ['$$label.mlModel', { $in: ['$$label.mlModel', SKIP_MODELS]} ]},
+                          { $ne: ['$$label.mlModel', { $in: ['$$label.mlModel', SKIP_MODELS] }] },
                           ...( SKIP_EMPTY && [{ $ne: ['$$label.labelId', 'empty'] }])
                         ]
                       },
