@@ -1,38 +1,117 @@
-import { analysisConfig } from './analysisConfig.js';
 import { getConfig } from '../../.build/config/config.js';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
 import Image from '../../.build/api/db/schemas/Image.js';
 import Project from '../../.build/api/db/schemas/Project.js';
 
-export const generateValidationList = async (analysisConfig, predictedLabels) => {
+const generateValidationListConfig = {
+  PROJECT_ID: 'sci_biosecurity',
+  START_DATE: '2023-4-28',
+  END_DATE: '2024-5-29',
+  // END_DATE: '2023-4-29',
+  SKIP_MODELS: ['megadetector'],
+  SKIP_EMPTY: true
+};
+
+export const generateValidationList = async (genConfig) => {
   const config = await getConfig();
   console.log('Connecting to db...');
   const dbClient = await connectToDatabase(config);
 
   try {
-    const { PROJECT_ID, START_DATE, END_DATE } = analysisConfig;
+    const { PROJECT_ID, START_DATE, END_DATE, SKIP_MODELS, SKIP_EMPTY } = genConfig;
+
+    const projectDbTime = performance.now();
+    const project = await Project.findOne({
+      _id: PROJECT_ID
+    });
+    console.log(`Project db query time: ${(performance.now() - projectDbTime) / 1000}`);
+
+    const projectLabels = project.labels.reduce((acc, lbl) => {
+      acc[lbl._id] = lbl.name;
+      return acc;
+    }, {});
+    const projectLabelIds = Object.keys(projectLabels);
 
     // Prepare map { labelId: [validatingLabelId] }
-    const validatingLabels = predictedLabels.reduce((acc, lbl) => {
+    const validatingLabels = projectLabelIds.reduce((acc, lbl) => {
       return { ...acc, [lbl]: [] };
     }, {});
 
     console.log('Collecting images...');
     const imageDbTimer = performance.now();
 
-    const images = await Image.aggregate([{
-      $match: {
-        projectId: PROJECT_ID,
-        dateAdded: {
-          $gte: new Date(START_DATE),
-          $lte: new Date(END_DATE),
+    const images = await Image.aggregate([
+      {
+        $match: {
+          projectId: PROJECT_ID,
+          dateAdded: {
+            $gte: new Date(START_DATE),
+            $lte: new Date(END_DATE),
+          },
+          reviewed: true,
+          'objects.labels.labelId': {
+            $in: projectLabelIds
+          },
+          'objects.labels.validation.validated': true,
         },
-        reviewed: true,
-        'objects.labels.labelId': {
-          $in: predictedLabels
-        }
       },
-    }]);
+      {
+        $set: {
+          objects: {
+            $map: {
+              input: '$objects',
+              as: 'obj',
+              in: {
+                $setField: {
+                  field: 'firstValidLabel',
+                  input: '$$obj',
+                  value: {
+                    $filter: {
+                      input: '$$obj.labels',
+                      as: 'label',
+                      cond: {
+                        $eq: ['$$label.validation.validated', true],
+                      },
+                      limit: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $set: {
+          objects: {
+            $map: {
+              input: '$objects',
+              as: 'obj',
+              in: {
+                $setField: {
+                  field: 'filteredLabels',
+                  input: '$$obj',
+                  value: {
+                    $filter: {
+                      input: '$$obj.labels',
+                      as: 'label',
+                      cond: {
+                        $and: [
+                          { $ne: ['$$obj.firstValidLabel.labelId', null] },
+                          { $eq: ['$$label.validation.validated', true] },
+                          { $ne: ['$$label.mlModel', SKIP_MODELS] },
+                          ...( SKIP_EMPTY && [{ $ne: ['$$label.labelId', 'empty'] }])
+                        ]
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
 
     console.log(`Image db query time: ${(performance.now() - imageDbTimer) / 1000}`);
 
@@ -41,38 +120,28 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
 
     const validationLists = images.reduce((imgAcc, img) => {
       img.objects.forEach((obj) => {
-        const labelIds = obj.labels.map((lbl) => lbl.labelId);
-        const existingPredicted = predictedLabels.filter((lblId) => labelIds.indexOf(lblId) >= 0);
+        if (!obj.firstValidLabel || obj.firstValidLabel.length < 1) {
+          return;
+        }
 
-        existingPredicted.forEach((predicted) => {
-          const curr = validatingLabels[predicted];
-          validatingLabels[predicted] = new Set([...curr, ...labelIds]);
-        });
+        const labelIds = obj.filteredLabels.map((lbl) => lbl.labelId);
+        const firstValidLabelId = obj.firstValidLabel.shift().labelId;
+        const curr = validatingLabels[firstValidLabelId];
+        validatingLabels[firstValidLabelId] = new Set([...curr, ...labelIds]);
       });
       return imgAcc;
     }, validatingLabels);
 
     console.log(`Validation list generation time: ${(performance.now() - processTimer) / 1000}`);
 
-    const projectDbTime = performance.now();
-    const project = await Project.findOne({
-      _id: PROJECT_ID
-    });
-    console.log(`Project db query time: ${(performance.now() - projectDbTime) / 1000}`);
-
     console.log('Mapping label IDs to label names...');
     const nameTimer = performance.now();
 
-    const labelNames = project.labels.reduce((acc, lbl) => {
-      acc[lbl._id] = lbl.name;
-      return acc;
-    }, {});
-
     const validationListsWithNames = Object.entries(validationLists).map(([labelId, validations]) => {
-      const labelName = labelNames[labelId];
+      const labelName = projectLabels[labelId];
 
       const validationNames = Array.from(validations).map((validation) => {
-        return `${labelNames[validation]}:${validation}`;
+        return `${projectLabels[validation]}:${validation}`;
       });
 
       return {
@@ -94,9 +163,7 @@ export const generateValidationList = async (analysisConfig, predictedLabels) =>
 // Example
 const startTimer = performance.now();
 
-const validationIdLists = await generateValidationList(analysisConfig, [
-  'rodent', 'skunk', 'lizard', 'fox', 'bird'
-]);
+const validationIdLists = await generateValidationList(generateValidationListConfig);
 
 const endTimer = performance.now();
 console.log(`Overall execution time: ${(endTimer - startTimer) / 1000} seconds`);
