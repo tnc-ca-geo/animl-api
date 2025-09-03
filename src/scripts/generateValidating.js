@@ -7,7 +7,6 @@ const generateValidationListConfig = {
   PROJECT_ID: 'sci_biosecurity',
   START_DATE: '2023-4-28',
   END_DATE: '2024-5-29',
-  // END_DATE: '2023-4-29',
   SKIP_MODELS: ['megadetector'],
   SKIP_EMPTY: true
 };
