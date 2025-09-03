@@ -24,7 +24,7 @@ export const generateValidationList = async (genConfig) => {
     const project = await Project.findOne({
       _id: PROJECT_ID
     });
-    console.log(`Project db query time: ${(performance.now() - projectDbTime) / 1000}`);
+    console.log(`Project db query time: ${(performance.now() - projectDbTime) / 1000} seconds`);
 
     const projectLabels = project.labels.reduce((acc, lbl) => {
       acc[lbl._id] = lbl.name;
@@ -99,7 +99,7 @@ export const generateValidationList = async (genConfig) => {
                         $and: [
                           { $ne: ['$$obj.firstValidLabel.labelId', null] },
                           { $eq: ['$$label.validation.validated', true] },
-                          { $ne: ['$$label.mlModel', SKIP_MODELS] },
+                          { $ne: ['$$label.mlModel', { $in: ['$$label.mlModel', SKIP_MODELS]} ]},
                           ...( SKIP_EMPTY && [{ $ne: ['$$label.labelId', 'empty'] }])
                         ]
                       },
@@ -113,7 +113,7 @@ export const generateValidationList = async (genConfig) => {
       },
     ]);
 
-    console.log(`Image db query time: ${(performance.now() - imageDbTimer) / 1000}`);
+    console.log(`Image db query time: ${(performance.now() - imageDbTimer) / 1000} seconds`);
 
     console.log('Building validation lists...');
     const processTimer = performance.now();
@@ -132,7 +132,7 @@ export const generateValidationList = async (genConfig) => {
       return imgAcc;
     }, validatingLabels);
 
-    console.log(`Validation list generation time: ${(performance.now() - processTimer) / 1000}`);
+    console.log(`Validation list generation time: ${(performance.now() - processTimer) / 1000} seconds`);
 
     console.log('Mapping label IDs to label names...');
     const nameTimer = performance.now();
@@ -149,7 +149,7 @@ export const generateValidationList = async (genConfig) => {
       };
     });
 
-    console.log(`Label name mapping time: ${(performance.now() - nameTimer) / 1000}`);
+    console.log(`Label name mapping time: ${(performance.now() - nameTimer) / 1000} seconds`);
 
     return validationListsWithNames;
   } catch (err) {
