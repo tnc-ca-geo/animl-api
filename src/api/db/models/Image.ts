@@ -979,7 +979,13 @@ export class ImageModel {
           );
         }
       }
-      await this.updatePredictionStatus({ imageId: input.labels[0].imageId, status: false }, context);
+      await this.updatePredictionStatus(
+        {
+          imageId: input.labels[0].imageId,
+          status: false
+        },
+        context
+      );
       return { isOk: true };
     } catch (err) {
       console.log(
@@ -1021,12 +1027,14 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
-      if (!image) throw new NotFoundError('Image not found');
+      console.time(`updatePredictionStatus ${input.imageId} - ${input.status}`);
 
-      image.awaitingPrediction = input.status;
-      await image.save();
+      await Image.findOneAndUpdate(
+        { _id: input.imageId },
+        { awaitingPrediction: input.status }
+      );
 
+      console.timeEnd(`updatePredictionStatus ${input.imageId} - ${input.status}`);
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
