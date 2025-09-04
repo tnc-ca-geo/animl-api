@@ -968,6 +968,7 @@ export class ImageModel {
           },
           { retries: 2 },
         );
+
         console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(

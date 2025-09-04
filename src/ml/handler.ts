@@ -173,7 +173,12 @@ async function singleInference(config: Config, record: Record): Promise<void> {
     const hasDuplicateLabelErrors = errParsed.response.errors.some(
       (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
     );
-    if (!hasDuplicateLabelErrors) {
+    if (hasDuplicateLabelErrors) {
+      // if image has duplicate labels, then we are done processing
+      await graphQLClient.request(SET_PREDICTION_STATUS, {
+        input: { imageId: image._id, status: false },
+      });
+    } else {
       throw err;
     }
   }
