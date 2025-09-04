@@ -94,7 +94,6 @@ async function requestCreateInternalLabels(
 
 async function singleInference(config: Config, record: Record): Promise<void> {
   const { mlModelId, image, label, projectId, automationRuleId } = JSON.parse(record.body);
-  console.time(`singleInference - image ${image._id}`);
   console.log(`message related to image ${image._id}: ${record.body}`);
 
   // Create GraphQL client
@@ -145,6 +144,12 @@ async function singleInference(config: Config, record: Record): Promise<void> {
           config,
         );
       }
+      else {
+        // Update image to not awaiting prediction if not creating any labels
+        await graphQLClient.request(SET_PREDICTION_STATUS, {
+          input: { imageId: image._id, status: false },
+        });
+      }
     } else {
       // TODO: gracefully handle model not found
     }
@@ -172,12 +177,6 @@ async function singleInference(config: Config, record: Record): Promise<void> {
       throw err;
     }
   }
-
-  // Update image to not awaiting prediction
-  // await graphQLClient.request(SET_PREDICTION_STATUS, {
-  //   input: { imageId: image._id, status: false },
-  // });
-  console.timeEnd(`singleInference - image ${image._id}`);
 }
 
 async function inference(event: InferenceEvent): Promise<InferenceOutput> {

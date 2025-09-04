@@ -962,6 +962,7 @@ export class ImageModel {
 
             // set image as unreviewed due to new labels
             image.reviewed = false;
+            image.awaitingPrediction = false;
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -979,13 +980,7 @@ export class ImageModel {
           );
         }
       }
-      await this.updatePredictionStatus(
-        {
-          imageId: input.labels[0].imageId,
-          status: false
-        },
-        context
-      );
+
       return { isOk: true };
     } catch (err) {
       console.log(
@@ -1027,14 +1022,10 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      console.time(`updatePredictionStatus ${input.imageId} - ${input.status}`);
-
       await Image.findOneAndUpdate(
         { _id: input.imageId },
         { awaitingPrediction: input.status }
       );
-
-      console.timeEnd(`updatePredictionStatus ${input.imageId} - ${input.status}`);
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
