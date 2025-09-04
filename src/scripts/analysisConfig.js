@@ -7,7 +7,19 @@ const analysisConfig = {
   PROJECT_ID: 'sci_biosecurity',
   START_DATE: '2023-4-28',
   END_DATE: '2024-5-29',
-  ADJUSTABLE_WINDOW: true,
+
+  // Attempt to find a start and end date for automation rule applications.
+  // Starts at earliest image and looks for the first instance of an object
+  // with a label from the target ML model.
+  // Repeats the process in the reverse direction to find the latest image.
+  //
+  // Use this option if you do not know when the automation rule applied
+  // and want to ensure you're analyzing all images that have been processed
+  // by your target model.
+  //
+  // This can override START_DATE and END_DATE
+  AUTO_ADJUST_TIME_WINDOW: true,
+
   ML_MODEL: 'mirav2', // first use of 'mirav2' was 2023-4-28
   TARGET_CLASSES: [
     // class naming convention: '<label.name>:<label._id>'
