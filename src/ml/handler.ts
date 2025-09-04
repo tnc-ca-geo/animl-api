@@ -73,7 +73,7 @@ const SET_PREDICTION_STATUS = gql`
 const MAX_RETRIES = 5;
 
 async function requestCreateInternalLabels(
-  input: { labels: Detection[] },
+  input: { imageId: string, labels: Detection[] },
   config: Config,
 ): Promise<gqlTypes.StandardPayload> {
   const variables = { input: input };
@@ -139,7 +139,8 @@ async function singleInference(config: Config, record: Record): Promise<void> {
       if (detections.length) {
         await requestCreateInternalLabels(
           {
-            labels: detections.map((det) => ({ ...det, imageId: image._id })),
+            imageId: image._id,
+            labels: detections.map((det) => ({ ...det  })),
           },
           config,
         );
