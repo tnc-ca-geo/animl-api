@@ -962,11 +962,13 @@ export class ImageModel {
 
             // set image as unreviewed due to new labels
             image.reviewed = false;
+            image.awaitingPrediction = false;
             await image.save();
             return { image, newLabel: labelRecord };
           },
           { retries: 2 },
         );
+
         console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(
@@ -979,6 +981,7 @@ export class ImageModel {
           );
         }
       }
+
       return { isOk: true };
     } catch (err) {
       console.log(
@@ -1004,6 +1007,28 @@ export class ImageModel {
           await proj.save();
         }
       }
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /*
+    * This endpoint is used only by the ML Handler to lock images on the frontend to
+    * prevent users to make changes to images while predictions are in progress.
+    */
+  static async updatePredictionStatus(
+    input: gql.UpdatePredictionStatusInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
+
+    try {
+      await Image.findOneAndUpdate(
+        { _id: input.imageId },
+        { awaitingPrediction: input.status }
+      );
+      return { isOk: true };
+    } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
@@ -1595,6 +1620,11 @@ export default class AuthedImageModel extends BaseAuthedModel {
   createInternalLabels(...args: MethodParams<typeof ImageModel.createInternalLabels>) {
     if (!this.user.is_superuser) throw new ForbiddenError();
     return ImageModel.createInternalLabels(...args);
+  }
+
+  updatePredictionStatus(...args: MethodParams<typeof ImageModel.updatePredictionStatus>) {
+    if (!this.user.is_superuser) throw new ForbiddenError();
+    return ImageModel.updatePredictionStatus(...args);
   }
 
   @roleCheck(WRITE_OBJECTS_ROLES)
