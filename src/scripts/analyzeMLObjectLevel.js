@@ -255,12 +255,10 @@ async function analyze() {
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
 
-    const aggregateImages = await Image.aggregate(aggPipeline);
-
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
 
-    for (const img of aggregateImages) {
+    for await (const img of Image.aggregate(aggPipeline)) {
       // skip default deployments
       const imgDep = getDeployment(img, cameraConfigs);
       if (imgDep.name === 'default') continue;
