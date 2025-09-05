@@ -37,7 +37,7 @@ import cliProgress from 'cli-progress';
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLSequenceLevel.js
  */
 
-const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA, ADJUSTABLE_WINDOW } =
+const { AUTO_ADJUST_TIME_WINDOW, ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA } =
   analysisConfig;
 
 const TARGET_CLASSES = analysisConfig.TARGET_CLASSES.map((tc) => ({
@@ -205,42 +205,53 @@ function processSequence(sequence, deployment, data) {
 
 async function tryAdjustAutomationWindow() {
   console.log('attempting to adjust automation window...');
-  const imagesInAutomationWindow = await Image.aggregate([
-    {
-      $match: {
-        projectId: PROJECT_ID,
-        dateAdded: {
-          $gte: new Date(START_DATE),
-          $lt: new Date(END_DATE),
-        },
-        reviewed: true,
-        objects: {
-          $elemMatch: {
-            labels: {
-              $elemMatch: {
-                mlModel: ML_MODEL
-              }
+  const imageQuery = {
+    $match: {
+      projectId: PROJECT_ID,
+      reviewed: true,
+      objects: {
+        $elemMatch: {
+          labels: {
+            $elemMatch: {
+              mlModel: ML_MODEL
             }
           }
         }
-      },
+      }
     },
-    { $sort: { dateAdded: 1 } }
+  };
+  const firstMlLabelAfterStart = await Image.aggregate([
+    imageQuery,
+    { $sort: { dateAdded: 1 } },
+    { $limit: 1 }
+  ]);
+  const lastMlLabelAfterStart = await Image.aggregate([
+    imageQuery,
+    { $sort: { dateAdded: -1 } },
+    { $limit: 1 }
   ]);
 
-  const firstMlLabelAfterStart = imagesInAutomationWindow.shift();
-  const lastMlLabelAterStart = imagesInAutomationWindow.pop();
-
-  if (!firstMlLabelAfterStart || !lastMlLabelAterStart) {
+  if (
+    !firstMlLabelAfterStart ||
+    firstMlLabelAfterStart.length < 1 ||
+    !lastMlLabelAfterStart ||
+    lastMlLabelAfterStart.length < 1
+  ) {
     throw new Error('unable to find a valid first and last image in automation window.');
   }
 
-  const newStart = firstMlLabelAfterStart.dateAdded > (new Date(START_DATE))
-    ? firstMlLabelAfterStart.dateAdded.toISOString().split('T')[0]
+  const dateOfFirstMlLabelAfterStart = new Date(firstMlLabelAfterStart[0].dateAdded);
+  dateOfFirstMlLabelAfterStart.setDate(dateOfFirstMlLabelAfterStart.getDate() + 1);
+
+  const dateOfLastMlLabelAfterStart = new Date(lastMlLabelAfterStart[0].dateAdded);
+  dateOfLastMlLabelAfterStart.setDate(dateOfLastMlLabelAfterStart.getDate() - 1);
+
+  const newStart = dateOfFirstMlLabelAfterStart.toDateString() !== (new Date(START_DATE)).toDateString()
+    ? dateOfFirstMlLabelAfterStart.toISOString().split('T')[0]
     : undefined;
 
-  const newEnd = lastMlLabelAterStart.dateAdded < (new Date(END_DATE))
-    ? lastMlLabelAterStart.dateAdded.toISOString().split('T')[0]
+  const newEnd = dateOfLastMlLabelAfterStart.toDateString() !== (new Date(END_DATE)).toDateString()
+    ? dateOfLastMlLabelAfterStart.toISOString().split('T')[0]
     : undefined;
 
   return {
@@ -263,7 +274,7 @@ async function analyze() {
 
   try {
     // adjust analysis window to try and avoid excessive false negatives
-    if (ADJUSTABLE_WINDOW) {
+    if (AUTO_ADJUST_TIME_WINDOW) {
       const { newStart, newEnd } = await tryAdjustAutomationWindow();
       if (newStart) {
         console.log(`found a more likely start to the automation window: ${newStart}`);
