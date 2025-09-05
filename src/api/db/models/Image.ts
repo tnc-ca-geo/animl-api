@@ -961,6 +961,7 @@ export class ImageModel {
             }
             // set image as unreviewed due to new labels
             image.reviewed = false;
+            image.awaitingPrediction = false;
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -979,8 +980,6 @@ export class ImageModel {
           );
         }
       }
-      image.awaitingPrediction = false;
-      await image.save();
 
       return { isOk: true };
     } catch (err) {
@@ -1014,7 +1013,7 @@ export class ImageModel {
 
   /*
     * This endpoint is used only by the ML Handler to lock images on the frontend to
-    * prevent users to make changes to images while predictions are in progress.
+    * prevent users from making changes to images while predictions are in progress.
     */
   static async updatePredictionStatus(
     input: gql.UpdatePredictionStatusInput,
