@@ -848,6 +848,7 @@ export class ImageModel {
     let projectId: string = '';
 
     try {
+      const image = await ImageModel.queryById(input.imageId, context)
       // NOTE: this could probably be optimized to use a single bulkWrite operation
       // (see example in createLabels() below), but it's not a high priority since
       // but at most this will receive 10 labels at a time, so there's no risk of timeouts
@@ -864,7 +865,6 @@ export class ImageModel {
             (label as any).type = 'ml';
 
             // find image, create label record
-            const image = await ImageModel.queryById(label.imageId, context);
             projectId = image.projectId;
             // TODO: Pair with Natty on the shape of the label
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
@@ -959,7 +959,6 @@ export class ImageModel {
                 labels: [labelRecord],
               });
             }
-
             // set image as unreviewed due to new labels
             image.reviewed = false;
             image.awaitingPrediction = false;
@@ -986,7 +985,7 @@ export class ImageModel {
     } catch (err) {
       console.log(
         `Image.createInternalLabels() ERROR on image ${input.labels
-          .map((l) => l.imageId)
+          .map(() => input.imageId)
           .join(', ')}: ${err}`,
       );
 
@@ -1014,7 +1013,7 @@ export class ImageModel {
 
   /*
     * This endpoint is used only by the ML Handler to lock images on the frontend to
-    * prevent users to make changes to images while predictions are in progress.
+    * prevent users from making changes to images while predictions are in progress.
     */
   static async updatePredictionStatus(
     input: gql.UpdatePredictionStatusInput,
