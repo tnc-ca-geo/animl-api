@@ -76,6 +76,7 @@ export const generateValidationList = async (genConfig) => {
   try {
     const { PROJECT_ID, MODEL } = genConfig;
 
+    console.log('fetching project labels...');
     const project = await Project.findOne({
       _id: PROJECT_ID
     });
@@ -84,13 +85,19 @@ export const generateValidationList = async (genConfig) => {
       return acc;
     }, {});
 
+    console.log('fetching model labels...');
     const model = await MLModel.findOne({
       _id: MODEL
     });
-    const modelLabelIds = model.categories.map((category) => {
+
+    const modelLabelIds = model.categories.reduce((acc, category) => {
       const projectLabel = project.labels.find((lbl) => lbl.name === category.name);
-      return projectLabel._id;
-    });
+      if (!projectLabel) {
+        return acc;
+      }
+      acc.push(projectLabel._id);
+      return acc;
+    }, []);
 
     const validationLabels = modelLabelIds.reduce((acc, lblId) => {
       acc[lblId] = new Set();
@@ -169,8 +176,8 @@ const writeToFile = (config, output) => {
 // ```
 const generateValidationListConfig = {
   ANALYSIS_DIR: '/analysis',
-  PROJECT_ID: 'sci_biosecurity',
-  MODEL: 'mirav2',
+  PROJECT_ID: 'palmyra_bucket_test',
+  MODEL: 'speciesnet-classifier',
 };
 const validationIdLists = await generateValidationList(generateValidationListConfig);
 writeToFile(generateValidationListConfig, util.inspect(validationIdLists));
