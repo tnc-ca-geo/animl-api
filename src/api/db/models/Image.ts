@@ -98,7 +98,7 @@ export class ImageModel {
   static async queryById(
     _id: string,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] }> {
+  ): Promise<HydratedDocument<ImageSchema>> {
     const query = !context.user['is_superuser']
       ? { _id, projectId: context.user['curr_project']! }
       : { _id };
@@ -106,11 +106,7 @@ export class ImageModel {
       const image = await Image.findOne(query);
       if (!image) throw new NotFoundError('Image not found');
 
-      const epipeline = [];
-      epipeline.push({ $match: { image: image._id } });
-      (image as any).errors = await ImageError.aggregate<ImageErrorSchema>(epipeline); // Avoid TS issues with collision on `image.errors` propertyF;
-
-      return image as HydratedDocument<ImageSchema> & { errors: ImageErrorSchema[] };
+      return image as HydratedDocument<ImageSchema>;
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
