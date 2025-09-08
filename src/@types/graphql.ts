@@ -465,7 +465,6 @@ export type Image = {
   dateAdded: Scalars['Date']['output'];
   dateTimeOriginal: Scalars['Date']['output'];
   deploymentId: Scalars['ID']['output'];
-  errors?: Maybe<Array<ImageError>>;
   fileTypeExtension: Scalars['String']['output'];
   imageBytes?: Maybe<Scalars['Int']['output']>;
   imageHeight?: Maybe<Scalars['Int']['output']>;
