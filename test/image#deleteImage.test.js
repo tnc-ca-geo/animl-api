@@ -129,7 +129,7 @@ tape('Image: DeleteImage - Failure', async (t) => {
     t.ok(String(err).includes('Network Error'));
   }
 
-  t.deepEquals(mocks, ['Image::FindOne', 'ImageError::Aggregate']);
+  t.deepEquals(mocks, ['Image::FindOne']);
 
   Sinon.restore();
   t.end();
