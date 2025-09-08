@@ -8,7 +8,6 @@ export default /* GraphQL */ `
   type Image {
     _id: ID!
     batchId: String
-    errors: [ImageError!]
     bucket: String!
     fileTypeExtension: String!
     path: String
