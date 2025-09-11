@@ -113,13 +113,15 @@ export const generateValidationList = async (genConfig) => {
     for await (const img of Image.aggregate(baseImagePipeline)) {
       for (const obj of img.objects) {
         const firstValidated = obj.firstValidLabel.shift();
-        const predicted = obj.labels.find((lbl) => lbl.mlModel === MODEL);
+        const predictedLabels = obj.labels.filter((lbl) => lbl.mlModel === MODEL);
 
-        if (!firstValidated || !predicted) {
+        if (!firstValidated || !predictedLabels || predictedLabels.length <= 0) {
           continue;
         }
 
-        validationLabels[predicted.labelId].add(firstValidated.labelId);
+        for (const predicted of predictedLabels) {
+          validationLabels[predicted.labelId].add(firstValidated.labelId);
+        }
       }
 
       progress.increment();
