@@ -14,7 +14,7 @@ import Image from '../../.build/api/db/schemas/Image.js';
 
 // The taxonomy field from speciesnet only shows ancestors
 // This adds each speciesnet label used in the project to
-// the child set of it's ancestors
+// the child set of its ancestors
 const buildLocalTree = (project, model) => {
   const tree = {};
   for (const projectLabel of project.labels) {
@@ -36,7 +36,7 @@ const buildLocalTree = (project, model) => {
 
 // Returns a custom label object which includes the label ID, name, and
 // taxonomic child set.
-// { name: string, labelId: string, taxonomicChildren: [label name] }
+// { name: string, labelId: string, taxonomicChildren: [label name, label id] }
 const getMlLabels = (project, model, localTree) => {
   const modelLabels = [];
   for (const projectLabel of project.labels) {
@@ -125,7 +125,6 @@ const getDeployment = (img, cameraConfigs) => {
 };
 
 const getCount = async (pipeline) => {
-  console.log('getting image count');
   let count = null;
   try {
     const pipelineCopy = structuredClone(pipeline);
@@ -267,7 +266,6 @@ const analyze = async (analysisConfig) => {
   const dbClient = await connectToDatabase(config);
 
   try {
-
     console.log('Getting project...');
     const project = await Project.findOne({
       _id: PROJECT_ID
@@ -285,10 +283,10 @@ const analyze = async (analysisConfig) => {
     console.log('Setting up results structure...');
     const data = setupResultsStructure(project, mlLabels);
 
-    // analyze loop
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
+    console.log('Counting images...');
     const imgCount = await getCount(aggPipeline);
-    console.log(`Starting analysis on: ${imgCount} images...`);
+    console.log(`Starting analysis on ${imgCount} images...`);
 
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
@@ -320,7 +318,7 @@ const analyze = async (analysisConfig) => {
           // TRUE POSITIVE - object must be:
           // (a) locked, (b) has an ml-predicted label of the target class, and
           // (c) has a first valid label that validates the prediction/target class,
-          // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+          // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
           if (
             obj.locked &&
             objectLabelsHaveTargetLabel &&
@@ -342,7 +340,7 @@ const analyze = async (analysisConfig) => {
 
           // FALSE NEGATIVE - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
-          // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
+          // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
           // and (c) does NOT have an ml-predicted label of the target class
           if (
             obj.locked &&
