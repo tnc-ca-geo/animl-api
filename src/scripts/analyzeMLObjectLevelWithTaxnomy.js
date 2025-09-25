@@ -16,7 +16,7 @@ import Image from '../../.build/api/db/schemas/Image.js';
 // This adds each speciesnet label used in the project to
 // the child set of it's ancestors
 const buildLocalTree = (project, model) => {
-  const tree = {}
+  const tree = {};
   for (const projectLabel of project.labels) {
     const mlCategory = model.categories.find((category) => category.name === projectLabel.name);
     if (!mlCategory || !mlCategory.taxonomy) {
@@ -27,12 +27,12 @@ const buildLocalTree = (project, model) => {
 
     for (const taxonomicAncestor of taxonomicAncestors) {
       const children = tree[taxonomicAncestor] ?? new Set();
-      tree[taxonomicAncestor] = new Set([...children, mlCategory.name])
+      tree[taxonomicAncestor] = new Set([...children, mlCategory.name]);
     }
   }
 
   return tree;
-}
+};
 
 // Returns a custom label object which includes the label ID, name, and
 // taxonomic child set.
@@ -50,17 +50,17 @@ const getMlLabels = (project, model, localTree) => {
     const taxonomicChildrenIds = Array.from(taxonomicChildren).reduce((acc, taxonomicName) => {
       const projectLabelForChild = project.labels.find((lbl) => lbl.name === taxonomicName);
       return [...acc, taxonomicName, projectLabelForChild._id];
-    }, [])
+    }, []);
 
     modelLabels.push({
       name: mlCategory.name,
       labelId: projectLabel._id,
       taxonomicChildren: taxonomicChildrenIds
-    })
+    });
   }
 
   return modelLabels;
-}
+};
 
 const writeConfigToFile = async (filename, analysisPath, config) => {
   const jsonFilename = path.join(analysisPath, `${filename}_config.json`);
@@ -122,7 +122,7 @@ const getDeployment = (img, cameraConfigs) => {
     .find((cc) => cc._id.toString() === img.cameraId.toString())
     .deployments
     .find((dep) => dep._id.toString() === img.deploymentId.toString());
-}
+};
 
 const getCount = async (pipeline) => {
   console.log('getting image count');
@@ -136,7 +136,7 @@ const getCount = async (pipeline) => {
     console.log('error counting Image: ', err);
   }
   return count;
-}
+};
 
 const setupResultsStructure = (project, mlLabels) => {
   const cameraConfigs = project.cameraConfigs;
@@ -163,7 +163,7 @@ const setupResultsStructure = (project, mlLabels) => {
   });
 
   return data;
-}
+};
 
 const calculateStats = (data) => {
   return Object.values(data).map((value) => {
@@ -183,9 +183,9 @@ const calculateStats = (data) => {
       precision: Number.parseFloat(precision * 100).toFixed(2),
       recall: Number.parseFloat(recall * 100).toFixed(2),
       f1: Number.parseFloat(f1).toFixed(2),
-    }
-  })
-}
+    };
+  });
+};
 
 const calculateTotals = (stats, mlLabels) => {
   return mlLabels.map((mlLabel) => {
@@ -211,9 +211,9 @@ const calculateTotals = (stats, mlLabels) => {
       precision: Number.parseFloat(precision * 100).toFixed(2),
       recall: Number.parseFloat(recall * 100).toFixed(2),
       f1: Number.parseFloat(f1).toFixed(2),
-    }
-  })
-}
+    };
+  });
+};
 
 const writeToFile = async (stats, totals, analysisDir, projectId, mlModel, startDate, endDate, analysisConfig) => {
   // init reports
@@ -243,7 +243,7 @@ const writeToFile = async (stats, totals, analysisDir, projectId, mlModel, start
 
   stringifier.end();
   await stream.pipeline(stringifier, writableStream);
-}
+};
 
 const FVLValidatesPrediction = (obj, mlLabel, mlModel) => {
   // if no firstValidLabel, all labels have been invalidated, so return false
@@ -255,10 +255,9 @@ const FVLValidatesPrediction = (obj, mlLabel, mlModel) => {
   if (mlModel.includes('megadetector') && mlLabel.labelId === '1') {
     return fvl !== '2' && fvl !== '3' && fvl !== 'empty';
   } else {
-    console.log(fvl, mlLabel, (fvl === mlLabel.name || fvl === mlLabel.labelId || mlLabel.taxonomicChildren.includes(fvl)))
     return mlLabel.name === fvl || mlLabel.labelId === fvl || mlLabel.taxonomicChildren.includes(fvl);
   }
-}
+};
 
 const analyze = async (analysisConfig) => {
   const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL } = analysisConfig;
@@ -303,10 +302,18 @@ const analyze = async (analysisConfig) => {
         for (const mlLabel of mlLabels) {
           const key = `${imgDep._id}_${mlLabel.name}`;
 
+          const objectLabelsHaveTargetLabel = obj.labels.some((label) => (
+            label.type === 'ml' &&
+            label.mlModel === ML_MODEL &&
+            (label.labelId === mlLabel.labelId || label.labelId === mlLabel.name)
+          ));
+
+          const fvlValidatesPrediction = FVLValidatesPrediction(obj, mlLabel, ML_MODEL);
+
           // ACTUAL - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
           // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
-          if (obj.locked && FVLValidatesPrediction(obj, mlLabel, ML_MODEL)) {
+          if (obj.locked && fvlValidatesPrediction) {
             data[key].allActuals++;
           }
 
@@ -316,10 +323,8 @@ const analyze = async (analysisConfig) => {
           // (i.e., for "rodent" prediction, a firstValidLabel of ["rodent", "mouse, "rat"]),
           if (
             obj.locked &&
-            obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === mlLabel.labelId,
-            ) &&
-            FVLValidatesPrediction(obj, mlLabel, ML_MODEL)
+            objectLabelsHaveTargetLabel &&
+            fvlValidatesPrediction
           ) {
             data[key].truePositives++;
           }
@@ -329,10 +334,8 @@ const analyze = async (analysisConfig) => {
           // (c) DOES NOT have a first valid label that validates the prediction/target class
           if (
             obj.locked &&
-            obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === mlLabel.labelId,
-            ) &&
-            !FVLValidatesPrediction(obj, mlLabel, ML_MODEL)
+            objectLabelsHaveTargetLabel &&
+            !fvlValidatesPrediction
           ) {
             data[key].falsePositives++;
           }
@@ -343,10 +346,8 @@ const analyze = async (analysisConfig) => {
           // and (c) does NOT have an ml-predicted label of the target class
           if (
             obj.locked &&
-            FVLValidatesPrediction(obj, mlLabel, ML_MODEL) &&
-            !obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === mlLabel.labelId,
-            )
+            fvlValidatesPrediction &&
+            !objectLabelsHaveTargetLabel
           ) {
             data[key].falseNegatives++;
           }
@@ -357,13 +358,13 @@ const analyze = async (analysisConfig) => {
     }
 
     progress.stop();
-    
-    console.log("Calculating stats...")
+
+    console.log('Calculating stats...');
     const stats = calculateStats(data);
-    console.log("Summing totals...")
+    console.log('Summing totals...');
     const totals = calculateTotals(stats, mlLabels);
-    
-    console.log("Writing results to file...")
+
+    console.log('Writing results to file...');
     await writeToFile(stats, totals, ANALYSIS_DIR, PROJECT_ID, ML_MODEL, START_DATE, END_DATE, analysisConfig);
 
     dbClient.connection.close();
@@ -372,6 +373,6 @@ const analyze = async (analysisConfig) => {
     dbClient.connection.close();
     console.log(err);
   }
-}
+};
 
 analyze(CONFIG);
