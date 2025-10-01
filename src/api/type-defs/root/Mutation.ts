@@ -4,6 +4,8 @@ export default /* GraphQL */ `
     deleteImages(input: DeleteImagesInput!): StandardErrorPayload
     deleteImagesTask(input: DeleteImagesInput!): Task
     deleteImagesByFilterTask(input: DeleteImagesByFilterTaskInput!): Task
+    setTimestampOffsetBatchTask(input: SetTimestampOffsetBatchTaskInput!): Task
+    setTimestampOffsetByFilterTask(input: SetTimestampOffsetByFilterTaskInput!): Task
 
     createImageComment(input: CreateImageCommentInput!): ImageCommentsPayload
     updateImageComment(input: UpdateImageCommentInput!): ImageCommentsPayload
