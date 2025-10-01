@@ -26,6 +26,7 @@ const ImageSchema = new Schema({
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
   timezone: { type: String, required: true },
+  dateTimeOffsetMs: { type: Number },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
   deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },
@@ -44,6 +45,13 @@ const ImageSchema = new Schema({
   comments: { type: [ImageCommentSchema] },
   tags: { type: [mongoose.Schema.Types.ObjectId] },
   awaitingPrediction: { type: Boolean },
+});
+
+ImageSchema.virtual('dateTimeAdjusted').get(function() {
+  if (this.dateTimeOffsetMs) {
+    return new Date(this.dateTimeOriginal.getTime() + this.dateTimeOffsetMs);
+  }
+  return this.dateTimeOriginal;
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
