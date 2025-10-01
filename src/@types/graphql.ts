@@ -655,6 +655,8 @@ export type Mutation = {
   registerCamera?: Maybe<RegisterCameraPayload>;
   resendTempPassword?: Maybe<StandardPayload>;
   setTimestampOffset?: Maybe<StandardPayload>;
+  setTimestampOffsetBatchTask?: Maybe<Task>;
+  setTimestampOffsetByFilterTask?: Maybe<Task>;
   stopBatch?: Maybe<StandardPayload>;
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
@@ -840,6 +842,16 @@ export type MutationResendTempPasswordArgs = {
 
 export type MutationSetTimestampOffsetArgs = {
   input: SetTimestampOffsetInput;
+};
+
+
+export type MutationSetTimestampOffsetBatchTaskArgs = {
+  input: SetTimestampOffsetBatchTaskInput;
+};
+
+
+export type MutationSetTimestampOffsetByFilterTaskArgs = {
+  input: SetTimestampOffsetByFilterTaskInput;
 };
 
 
@@ -1198,6 +1210,16 @@ export type RegisterCameraPayload = {
 
 export type ResendTempPasswordInput = {
   username: Scalars['String']['input'];
+};
+
+export type SetTimestampOffsetBatchTaskInput = {
+  imageIds: Array<Scalars['ID']['input']>;
+  offsetMs: Scalars['Int']['input'];
+};
+
+export type SetTimestampOffsetByFilterTaskInput = {
+  filters: FiltersInput;
+  offsetMs: Scalars['Int']['input'];
 };
 
 export type SetTimestampOffsetInput = {

@@ -1511,6 +1511,52 @@ export class ImageModel {
   }
 
   /**
+   * Set timestamp offset for an array of images by ID
+   */
+  static async setTimestampOffsetBatchTask(
+    input: gql.SetTimestampOffsetBatchTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetBatch',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
+   * Set timestamp offset for all images matching a filter
+   */
+  static async setTimestampOffsetByFilterTask(
+    input: gql.SetTimestampOffsetByFilterTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetByFilter',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * A custom middleware-like method that is used to update the reviewed status of
    * images that should only be ran by operations that would affect the reviewed status.
    *
@@ -1615,6 +1661,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(DELETE_IMAGES_ROLES)
   deleteImagesByFilterTask(...args: MethodParams<typeof ImageModel.deleteImagesByFilterTask>) {
     return ImageModel.deleteImagesByFilterTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetBatchTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetBatchTask>) {
+    return ImageModel.setTimestampOffsetBatchTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetByFilterTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetByFilterTask>) {
+    return ImageModel.setTimestampOffsetByFilterTask(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
