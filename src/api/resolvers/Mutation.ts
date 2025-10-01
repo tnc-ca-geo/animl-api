@@ -132,6 +132,22 @@ export default {
     return context.models.Image.setTimestampOffset(input, context);
   },
 
+  setTimestampOffsetBatchTask: async (
+    _: unknown,
+    { input }: gql.MutationSetTimestampOffsetBatchTaskArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    return context.models.Image.setTimestampOffsetBatchTask(input, context);
+  },
+
+  setTimestampOffsetByFilterTask: async (
+    _: unknown,
+    { input }: gql.MutationSetTimestampOffsetByFilterTaskArgs,
+    context: Context,
+  ): Promise<gql.Task> => {
+    return context.models.Image.setTimestampOffsetByFilterTask(input, context);
+  },
+
   createImageTags: async (
     _: unknown,
     { input }: gql.MutationCreateImageTagsArgs,
