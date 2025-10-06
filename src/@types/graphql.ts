@@ -1147,6 +1147,7 @@ export type QueryMlModelsInput = {
 
 export type QueryProjectsInput = {
   _ids?: InputMaybe<Array<Scalars['String']['input']>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryStatsInput = {

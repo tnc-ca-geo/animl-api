@@ -69,10 +69,14 @@ export class ProjectModel {
       query = { _id: { $in: filteredIds || availIds } };
     }
 
+    console.log('Project.getProjects - query: ', query);
+
     try {
-      const projects = await Project.find(query);
+      const projects = await Project.find(query).limit(input?.limit || 100);
+      console.log('Project.getProjects - projects: ', projects);
       return projects;
     } catch (err) {
+      console.log('Project.getProjects - err: ', err);
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
