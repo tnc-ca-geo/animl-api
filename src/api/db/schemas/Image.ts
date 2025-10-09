@@ -45,18 +45,25 @@ const ImageSchema = new Schema({
   comments: { type: [ImageCommentSchema] },
   tags: { type: [mongoose.Schema.Types.ObjectId] },
   awaitingPrediction: { type: Boolean },
-});
-
-ImageSchema.virtual('dateTimeAdjusted').get(function() {
-  if (this.dateTimeOffsetMs) {
-    return new Date(this.dateTimeOriginal.getTime() + this.dateTimeOffsetMs);
+}, {
+  virtuals: {
+    dateTimeAdjusted: {
+      get() {
+        if (this.dateTimeOffsetMs) {
+          return new Date(this.dateTimeOriginal.getTime() + this.dateTimeOffsetMs);
+        }
+        return this.dateTimeOriginal;
+      }
+    }
   }
-  return this.dateTimeOriginal;
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
 
 export default mongoose.model('Image', ImageSchema);
 
-export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
+// manually include virtuals since they're not included in the inferred type
+export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema> & {
+  dateTimeAdjusted: Date;
+};
 export type ImageCommentSchema = mongoose.InferSchemaType<typeof ImageCommentSchema>;

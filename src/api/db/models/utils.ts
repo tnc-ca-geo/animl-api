@@ -711,6 +711,7 @@ export type Pagination<T = {}> = T & {
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
   dateTimeOriginal: Date | DateTime<true> | DateTime<false>;
+  dateTimeAdjusted: Date | DateTime<true> | DateTime<false>;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId
