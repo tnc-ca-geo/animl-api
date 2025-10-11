@@ -67,7 +67,7 @@ tape('Image: dateTimeAdjusted - Various offsets', async (t) => {
       },
       {
         offsetMs: 86400000 * 365,
-        expectedISO: '2025-01-14T10:30:00.000Z',
+        expectedISO: '2025-01-14T10:30:00.000Z', // leap year
         description: '+365 days (31536000000ms)',
       },
       {
