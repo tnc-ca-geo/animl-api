@@ -3,9 +3,6 @@ import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import ImageSchema from '../.build/api/db/schemas/Image.js';
 
-process.env.AWS_REGION = process.env.REGION = 'us-east-2';
-process.env.STAGE = 'dev';
-
 tape('Image: dateTimeAdjusted - No offset', async (t) => {
   try {
     MockConfig(t);

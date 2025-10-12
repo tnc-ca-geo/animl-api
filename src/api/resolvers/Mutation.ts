@@ -124,6 +124,14 @@ export default {
     return context.models.Image.createComment(input, context);
   },
 
+  setTimestampOffset: async (
+    _: unknown,
+    { input }: gql.MutationSetTimestampOffsetArgs,
+    context: Context,
+  ): Promise<gql.StandardPayload> => {
+    return context.models.Image.setTimestampOffset(input, context);
+  },
+
   createImageTags: async (
     _: unknown,
     { input }: gql.MutationCreateImageTagsArgs,

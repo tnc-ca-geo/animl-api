@@ -5,9 +5,6 @@ import ImageModel from '../.build/api/db/models/Image.js';
 import ImageSchema from '../.build/api/db/schemas/Image.js';
 import ImageErrorSchema from '../.build/api/db/schemas/ImageError.js';
 
-process.env.AWS_REGION = process.env.REGION = 'us-east-2';
-process.env.STAGE = 'dev';
-
 tape('Image: setTimestampOffset - Success', async (t) => {
   const mocks = [];
 
