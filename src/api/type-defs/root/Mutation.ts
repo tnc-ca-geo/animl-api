@@ -8,6 +8,7 @@ export default /* GraphQL */ `
     createImageComment(input: CreateImageCommentInput!): ImageCommentsPayload
     updateImageComment(input: UpdateImageCommentInput!): ImageCommentsPayload
     deleteImageComment(input: DeleteImageCommentInput!): ImageCommentsPayload
+    setTimestampOffset(input: SetTimestampOffsetInput!): StandardPayload
 
     createUser(input: CreateUserInput!): StandardPayload
     updateUser(input: UpdateUserInput!): StandardPayload

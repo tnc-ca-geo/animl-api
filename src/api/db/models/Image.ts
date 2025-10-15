@@ -1491,6 +1491,31 @@ export class ImageModel {
   }
 
   /**
+   * Sets the timestamp offset for a single image
+   *
+   * @param {object} input - Contains imageId and offsetMs
+   * @param {object} context - User context
+   */
+  static async setTimestampOffset(
+    input: { imageId: string; offsetMs: number },
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.StandardPayload> {
+    try {
+      const image = await ImageModel.queryById(input.imageId, context);
+
+      await Image.updateOne(
+        { _id: input.imageId },
+        { $set: { dateTimeOffsetMs: input.offsetMs } }
+      );
+
+      return { isOk: true };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * A custom middleware-like method that is used to update the reviewed status of
    * images that should only be ran by operations that would affect the reviewed status.
    *
@@ -1649,5 +1674,10 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(EXPORT_DATA_ROLES)
   exportAnnotations(...args: MethodParams<typeof ImageModel.exportAnnotationsTask>) {
     return ImageModel.exportAnnotationsTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffset(...args: MethodParams<typeof ImageModel.setTimestampOffset>) {
+    return ImageModel.setTimestampOffset(...args);
   }
 }

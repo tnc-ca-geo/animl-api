@@ -463,6 +463,7 @@ export type Image = {
   cameraId: Scalars['String']['output'];
   comments?: Maybe<Array<ImageComment>>;
   dateAdded: Scalars['Date']['output'];
+  dateTimeAdjusted: Scalars['Date']['output'];
   dateTimeOriginal: Scalars['Date']['output'];
   deploymentId: Scalars['ID']['output'];
   errors?: Maybe<Array<ImageError>>;
@@ -654,6 +655,7 @@ export type Mutation = {
   redriveBatch?: Maybe<StandardPayload>;
   registerCamera?: Maybe<RegisterCameraPayload>;
   resendTempPassword?: Maybe<StandardPayload>;
+  setTimestampOffset?: Maybe<StandardPayload>;
   stopBatch?: Maybe<StandardPayload>;
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
@@ -834,6 +836,11 @@ export type MutationRegisterCameraArgs = {
 
 export type MutationResendTempPasswordArgs = {
   input: ResendTempPasswordInput;
+};
+
+
+export type MutationSetTimestampOffsetArgs = {
+  input: SetTimestampOffsetInput;
 };
 
 
@@ -1192,6 +1199,11 @@ export type RegisterCameraPayload = {
 
 export type ResendTempPasswordInput = {
   username: Scalars['String']['input'];
+};
+
+export type SetTimestampOffsetInput = {
+  imageId: Scalars['ID']['input'];
+  offsetMs: Scalars['Int']['input'];
 };
 
 export type SignedImageUrl = {
