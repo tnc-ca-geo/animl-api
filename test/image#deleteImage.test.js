@@ -56,13 +56,16 @@ tape('Image: DeleteImage', async (t) => {
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    const res = await imageModel.deleteImage({
-      imageId: 'project:123'
-    }, {
-      user: {
-        curr_project: 'project'
-      }
-    });
+    const res = await imageModel.deleteImage(
+      {
+        imageId: 'project:123',
+      },
+      {
+        user: {
+          curr_project: 'project',
+        },
+      },
+    );
 
     t.deepEquals(res, { isOk: true });
   } catch (err) {
@@ -71,13 +74,12 @@ tape('Image: DeleteImage', async (t) => {
 
   t.deepEquals(mocks, [
     'Image::FindOne',
-    'ImageError::Aggregate',
     'S3::DeleteObjectCommand::animl-images-serving-dev/medium/project:123-medium.jpg',
     'S3::DeleteObjectCommand::animl-images-serving-dev/original/project:123-original.jpg',
     'S3::DeleteObjectCommand::animl-images-serving-dev/small/project:123-small.jpg',
     'Image::DeleteOne',
     'ImageAttempt::DeleteOne',
-    'ImageError::DeleteMany'
+    'ImageError::DeleteMany',
   ]);
 
   Sinon.restore();
@@ -111,23 +113,23 @@ tape('Image: DeleteImage - Failure', async (t) => {
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    await imageModel.deleteImage({
-      imageId: 'project:123'
-    }, {
-      user: {
-        curr_project: 'project'
-      }
-    });
+    await imageModel.deleteImage(
+      {
+        imageId: 'project:123',
+      },
+      {
+        user: {
+          curr_project: 'project',
+        },
+      },
+    );
 
     t.fail();
   } catch (err) {
     t.ok(String(err).includes('Network Error'));
   }
 
-  t.deepEquals(mocks, [
-    'Image::FindOne',
-    'ImageError::Aggregate'
-  ]);
+  t.deepEquals(mocks, ['Image::FindOne']);
 
   Sinon.restore();
   t.end();
