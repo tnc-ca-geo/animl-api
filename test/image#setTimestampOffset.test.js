@@ -3,7 +3,6 @@ import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import ImageModel from '../.build/api/db/models/Image.js';
 import ImageSchema from '../.build/api/db/schemas/Image.js';
-import ImageErrorSchema from '../.build/api/db/schemas/ImageError.js';
 
 tape('Image: setTimestampOffset - Success', async (t) => {
   const mocks = [];
