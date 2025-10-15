@@ -16,6 +16,5 @@ export default {
           buildImgUrl(parent, context.config, size),
         ]),
       ),
-    dateTimeAdjusted: (parent: ImageSchema) => parent.dateTimeAdjusted,
   },
 };
