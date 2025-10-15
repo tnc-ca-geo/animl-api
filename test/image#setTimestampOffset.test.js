@@ -18,12 +18,6 @@ tape('Image: setTimestampOffset - Success', async (t) => {
       return { _id: 'project:123', projectId: 'project' };
     });
 
-    Sinon.stub(ImageErrorSchema, 'aggregate').callsFake((command) => {
-      t.deepEquals(command, [{ $match: { image: 'project:123' } }]);
-      mocks.push('ImageError::Aggregate');
-      return [];
-    });
-
     Sinon.stub(ImageSchema, 'updateOne').callsFake((filter, update) => {
       t.deepEquals(filter, { _id: 'project:123' });
       t.deepEquals(update, { $set: { dateTimeOffsetMs: 3600000 } });
@@ -33,25 +27,24 @@ tape('Image: setTimestampOffset - Success', async (t) => {
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    const res = await imageModel.setTimestampOffset({
-      imageId: 'project:123',
-      offsetMs: 3600000
-    }, {
-      user: {
-        curr_project: 'project'
-      }
-    });
+    const res = await imageModel.setTimestampOffset(
+      {
+        imageId: 'project:123',
+        offsetMs: 3600000,
+      },
+      {
+        user: {
+          curr_project: 'project',
+        },
+      },
+    );
 
     t.deepEquals(res, { isOk: true });
   } catch (err) {
     t.error(err);
   }
 
-  t.deepEquals(mocks, [
-    'Image::FindOne',
-    'ImageError::Aggregate',
-    'Image::UpdateOne'
-  ]);
+  t.deepEquals(mocks, ['Image::FindOne', 'Image::UpdateOne']);
 
   Sinon.restore();
   t.end();
@@ -71,23 +64,24 @@ tape('Image: setTimestampOffset - Image not found', async (t) => {
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    await imageModel.setTimestampOffset({
-      imageId: 'project:999',
-      offsetMs: 3600000
-    }, {
-      user: {
-        curr_project: 'project'
-      }
-    });
+    await imageModel.setTimestampOffset(
+      {
+        imageId: 'project:999',
+        offsetMs: 3600000,
+      },
+      {
+        user: {
+          curr_project: 'project',
+        },
+      },
+    );
 
     t.fail('Should have thrown an error');
   } catch (err) {
     t.ok(String(err).includes('Image not found'));
   }
 
-  t.deepEquals(mocks, [
-    'Image::FindOne'
-  ]);
+  t.deepEquals(mocks, ['Image::FindOne']);
 
   Sinon.restore();
   t.end();
