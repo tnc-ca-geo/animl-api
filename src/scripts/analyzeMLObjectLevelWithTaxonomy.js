@@ -35,7 +35,7 @@ const buildValidatingTaxonomicSets = (project, model) => {
 };
 
 // Returns a list of predicted labels and validating labels
-// [{ predicted: <label name>:<label id>, validating: [<label name>:<label id>] }]
+// [{ predicted: <label name>:<label id>, validation: [<label name>:<label id>] }]
 const enrichValidatingSets = (project, model, validatingSets) => {
   const enrichedValiatingSets = [];
   for (const projectLabel of project.labels) {
