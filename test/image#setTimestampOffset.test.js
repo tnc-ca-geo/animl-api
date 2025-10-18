@@ -11,17 +11,14 @@ tape('Image: setTimestampOffset - Success', async (t) => {
     Sinon.restore(); // FIXME: There are mocks leaking from other tests
     MockConfig(t);
 
-    Sinon.stub(ImageSchema, 'findOne').callsFake((command) => {
-      t.deepEquals(command, { _id: 'project:123', projectId: 'project' });
-      mocks.push('Image::FindOne');
-      return { _id: 'project:123', projectId: 'project' };
-    });
-
-    Sinon.stub(ImageSchema, 'updateOne').callsFake((filter, update) => {
-      t.deepEquals(filter, { _id: 'project:123' });
-      t.deepEquals(update, { $set: { dateTimeOffsetMs: 3600000 } });
-      mocks.push('Image::UpdateOne');
-      return { acknowledged: true };
+    Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
+      t.equals(operations.length, 1);
+      t.deepEquals(operations[0].updateOne.filter, {
+        _id: 'project:123',
+      });
+      t.deepEquals(operations[0].updateOne.update, { $set: { dateTimeOffsetMs: 3600000 } });
+      mocks.push('Image::BulkWrite');
+      return { modifiedCount: 1, acknowledged: true };
     });
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
@@ -43,7 +40,7 @@ tape('Image: setTimestampOffset - Success', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['Image::FindOne', 'Image::UpdateOne']);
+  t.deepEquals(mocks, ['Image::BulkWrite']);
 
   Sinon.restore();
   t.end();
@@ -55,15 +52,15 @@ tape('Image: setTimestampOffset - Image not found', async (t) => {
   try {
     MockConfig(t);
 
-    Sinon.stub(ImageSchema, 'findOne').callsFake((command) => {
-      t.deepEquals(command, { _id: 'project:999', projectId: 'project' });
-      mocks.push('Image::FindOne');
-      return null;
+    Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
+      t.equals(operations.length, 1);
+      mocks.push('Image::BulkWrite');
+      return { modifiedCount: 0, acknowledged: true };
     });
 
     const imageModel = new ImageModel({ curr_project_roles: ['project_manager'] });
 
-    await imageModel.setTimestampOffset(
+    const res = await imageModel.setTimestampOffset(
       {
         imageId: 'project:999',
         offsetMs: 3600000,
@@ -75,12 +72,12 @@ tape('Image: setTimestampOffset - Image not found', async (t) => {
       },
     );
 
-    t.fail('Should have thrown an error');
+    t.deepEquals(res, { isOk: false });
   } catch (err) {
-    t.ok(String(err).includes('Image not found'));
+    t.error(err);
   }
 
-  t.deepEquals(mocks, ['Image::FindOne']);
+  t.deepEquals(mocks, ['Image::BulkWrite']);
 
   Sinon.restore();
   t.end();

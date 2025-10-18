@@ -74,26 +74,26 @@ export async function SetTimestampOffsetBatch(
    * * @param {String[]} input.config.imageIds
    * * @param {number} input.config.offsetMs
    */
+  const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
   const imagesToUpdate = task.config.imageIds?.slice() ?? [];
   let totalModified = 0;
+  let failedCount = 0;
   const errors = [];
   const BATCH_SIZE = 500;
 
   while (imagesToUpdate.length > 0) {
     const batch = imagesToUpdate.splice(0, BATCH_SIZE);
-    const operations = batch.map((imageId) => ({
-      updateOne: {
-        filter: { _id: imageId },
-        update: { dateTimeOffsetMs: task.config.offsetMs },
-      },
-    }));
+    const res = await ImageModel.setTimestampOffsetBatch(
+      { imageIds: batch, offsetMs: task.config.offsetMs },
+      context,
+    );
 
-    try {
-      const result = await Image.bulkWrite(operations);
-      totalModified += result.modifiedCount;
-    } catch (error) {
-      errors.push(error);
-    }
+    totalModified += res.modifiedCount;
+    failedCount += batch.length - res.modifiedCount;
+  }
+
+  if (failedCount > 0) {
+    errors.push(`Failed to update ${failedCount} images`);
   }
 
   return { imageIds: task.config.imageIds as String[], modifiedCount: totalModified, errors: errors };
@@ -109,34 +109,31 @@ export async function SetTimestampOffsetByFilter(
    * * @param {number} input.config.offsetMs
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
+  const queryPageSize = 500;
   let images = await ImageModel.queryByFilter(
-    { filters: task.config.filters, limit: 500 },
+    { filters: task.config.filters, limit: queryPageSize },
     context,
   );
 
   let totalModified = 0;
+  let failedCount = 0;
   const errors = [];
 
   while (images.results.length > 0) {
-    const operations = images.results.map((image) => ({
-      updateOne: {
-        filter: { _id: image._id },
-        update: { dateTimeOffsetMs: task.config.offsetMs },
-      },
-    }));
+    const batch = images.results.map((image) => String(image._id));
+    const res = await ImageModel.setTimestampOffsetBatch(
+      { imageIds: batch, offsetMs: task.config.offsetMs },
+      context,
+    );
 
-    try {
-      const result = await Image.bulkWrite(operations);
-      totalModified += result.modifiedCount;
-    } catch (error) {
-      errors.push(error);
-    }
+    totalModified += res.modifiedCount;
+    failedCount += batch.length - res.modifiedCount;
 
     if (images.hasNext) {
       images = await ImageModel.queryByFilter(
         {
           filters: task.config.filters,
-          limit: 500,
+          limit: queryPageSize,
           next: images.next,
         },
         context,
@@ -146,5 +143,8 @@ export async function SetTimestampOffsetByFilter(
     }
   }
 
+  if (failedCount > 0) {
+    errors.push(`Failed to update ${failedCount} images`);
+  }
   return { filters: task.config.filters, modifiedCount: totalModified, errors: errors };
 }

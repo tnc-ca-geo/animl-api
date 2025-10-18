@@ -1486,6 +1486,42 @@ export class ImageModel {
   }
 
   /**
+   * Sets timestamp offsets for multiple images in batch
+   *
+   * @param {object} input - Contains imageIds array and offsetMs
+   * @param {object} context - User context
+   */
+  static async setTimestampOffsetBatch(
+    input: { imageIds: string[]; offsetMs: number },
+    context: Pick<Context, 'user'>,
+  ): Promise<BulkWriteResult> {
+    try {
+      const res = await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying setTimestampOffsetBatch operation! Try #: ${attempt}`);
+          }
+
+          const operations = input.imageIds.map((imageId) => ({
+            updateOne: {
+              filter: {
+                _id: imageId,
+              },
+              update: { $set: { dateTimeOffsetMs: input.offsetMs } },
+            },
+          }));
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+      return res;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * Sets the timestamp offset for a single image
    *
    * @param {object} input - Contains imageId and offsetMs
@@ -1495,23 +1531,15 @@ export class ImageModel {
     input: { imageId: string; offsetMs: number },
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
-    try {
-      const image = await ImageModel.queryById(input.imageId, context);
-
-      await Image.updateOne(
-        { _id: input.imageId },
-        { $set: { dateTimeOffsetMs: input.offsetMs } }
-      );
-
-      return { isOk: true };
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
+    const result = await ImageModel.setTimestampOffsetBatch(
+      { imageIds: [input.imageId], offsetMs: input.offsetMs },
+      context,
+    );
+    return { isOk: result.modifiedCount === 1 };
   }
 
   /**
-   * Set timestamp offset for an array of images by ID
+   * Set timestamp offset for an array of images by ID asynchronously
    */
   static async setTimestampOffsetBatchTask(
     input: gql.SetTimestampOffsetBatchTaskInput,
