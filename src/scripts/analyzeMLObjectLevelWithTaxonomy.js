@@ -14,31 +14,30 @@ import Image from '../../.build/api/db/schemas/Image.js';
 
 // The taxonomy field from speciesnet only shows ancestors
 // This adds each speciesnet label used in the project to
-// the child set of its ancestors
-const buildLocalTree = (project, model) => {
-  const tree = {};
+// the validating set of its ancestors and itself
+const buildValidatingTaxonomicSets = (project, model) => {
+  const validatingSets = {};
   for (const projectLabel of project.labels) {
     const mlCategory = model.categories.find((category) => category.name === projectLabel.name);
     if (!mlCategory || !mlCategory.taxonomy) {
       continue;
     }
 
-    const taxonomicAncestors = mlCategory.taxonomy.split(';').filter((ancestor) => ancestor !== '');
+    const taxonomicAncestorsAndSelf = mlCategory.taxonomy.split(';').filter((taxon) => taxon !== '');
 
-    for (const taxonomicAncestor of taxonomicAncestors) {
-      const children = tree[taxonomicAncestor] ?? new Set();
-      tree[taxonomicAncestor] = new Set([...children, mlCategory.name]);
+    for (const taxon of taxonomicAncestorsAndSelf) {
+      const validatingTaxons = validatingSets[taxon] ?? new Set();
+      validatingSets[taxon] = new Set([...validatingTaxons, mlCategory.name]);
     }
   }
 
-  return tree;
+  return validatingSets;
 };
 
-// Returns a custom label object which includes the label ID, name, and
-// taxonomic child set.
-// { name: string, labelId: string, taxonomicChildren: [label name, label id] }
-const getMlLabels = (project, model, localTree) => {
-  const modelLabels = [];
+// Returns a list of predicted labels and validating labels
+// [{ predicted: <label name>:<label id>, validating: [<label name>:<label id>] }]
+const enrichValidatingSets = (project, model, validatingSets) => {
+  const enrichedValiatingSets = [];
   for (const projectLabel of project.labels) {
     const mlCategory = model.categories.find((category) => category.name === projectLabel.name);
     if (!mlCategory || !mlCategory.taxonomy) {
@@ -46,20 +45,19 @@ const getMlLabels = (project, model, localTree) => {
     }
 
     const taxonomicName = mlCategory.taxonomy.split(';').filter((ancestor) => ancestor !== '').pop();
-    const taxonomicChildren = localTree[mlCategory.name] ?? localTree[taxonomicName] ?? new Set();
-    const taxonomicChildrenIds = Array.from(taxonomicChildren).reduce((acc, taxonomicName) => {
-      const projectLabelForChild = project.labels.find((lbl) => lbl.name === taxonomicName);
-      return [...acc, taxonomicName, projectLabelForChild._id];
+    const validatingTaxons = validatingSets[mlCategory.name] ?? validatingSets[taxonomicName] ?? new Set();
+    const validatingTaxonsIds = Array.from(validatingTaxons).reduce((acc, taxonomicName) => {
+      const projectLabelForValidatingTaxon = project.labels.find((lbl) => lbl.name === taxonomicName);
+      return [...acc, `${taxonomicName}:${projectLabelForValidatingTaxon._id}`];
     }, []);
 
-    modelLabels.push({
-      name: mlCategory.name,
-      labelId: projectLabel._id,
-      taxonomicChildren: taxonomicChildrenIds
+    enrichedValiatingSets.push({
+      predicted: `${mlCategory.name}:${projectLabel._id}`,
+      validation: validatingTaxonsIds
     });
   }
 
-  return modelLabels;
+  return enrichedValiatingSets;
 };
 
 const writeConfigToFile = async (filename, analysisPath, config) => {
@@ -144,11 +142,12 @@ const setupResultsStructure = (project, mlLabels) => {
     for (const dep of cc.deployments) {
       // if (dep.name === 'default') continue; // skip default deployments
       for (const mlLabel of mlLabels) {
-        data[`${dep._id}_${mlLabel.name}`] = {
+        const [mlLabelName, mlLabelId] = mlLabel.predicted.split(':');
+        data[`${dep._id}_${mlLabelName}`] = {
           cameraId: cc._id,
           deploymentName: dep.name,
-          targetClass: `${mlLabel.name}:${mlLabel.labelId}`,
-          validationClasses: mlLabel.taxonomicChildren.join(', '),
+          targetClass: `${mlLabelName}:${mlLabelId}`,
+          validationClasses: mlLabel.validation.join(', '),
           allActuals: 0,
           truePositives: 0,
           falsePositives: 0,
@@ -188,7 +187,8 @@ const calculateStats = (data) => {
 
 const calculateTotals = (stats, mlLabels) => {
   return mlLabels.map((mlLabel) => {
-    const mlLabelRows = Object.values(stats).filter((v) => v.targetClass === mlLabel.name);
+    const mlLabelName = mlLabel.predicted.split(':').pop();
+    const mlLabelRows = Object.values(stats).filter((v) => v.targetClass === mlLabelName);
 
     const totalActuals = mlLabelRows.reduce((acc, v) => acc + v.allActuals, 0);
     const totalTP = mlLabelRows.reduce((acc, v) => acc + v.truePositives, 0);
@@ -201,8 +201,8 @@ const calculateTotals = (stats, mlLabels) => {
     return {
       cameraId: 'total',
       deploymentName: 'total',
-      targetClass: mlLabel.name,
-      validationClasses: mlLabel.taxonomicChildren.join(', '),
+      targetClass: mlLabelName,
+      validationClasses: mlLabel.validation.join(', '),
       allActuals: totalActuals,
       truePositives: totalTP,
       falsePositives: totalFP,
@@ -251,10 +251,12 @@ const FVLValidatesPrediction = (obj, mlLabel, mlModel) => {
   // if the ml model is megadetector and the target class is '1' (animal),
   // any firstValidLabel that is not is a person or vehicle or 'empty'
   // would validate the prediction
-  if (mlModel.includes('megadetector') && mlLabel.labelId === '1') {
+  const [mlLabelName, mlLabelId] = mlLabel.predicted.split(':');
+  const validatingIdsAndNames = mlLabel.validation.map((validation) => validation.split(':')).flat();
+  if (mlModel.includes('megadetector') && mlLabelId === '1') {
     return fvl !== '2' && fvl !== '3' && fvl !== 'empty';
   } else {
-    return mlLabel.name === fvl || mlLabel.labelId === fvl || mlLabel.taxonomicChildren.includes(fvl);
+    return mlLabelName === fvl || mlLabelId === fvl || validatingIdsAndNames.includes(fvl);
   }
 };
 
@@ -277,11 +279,11 @@ const analyze = async (analysisConfig) => {
     });
 
     console.log('Getting model labels...');
-    const localTree = buildLocalTree(project, model);
-    const mlLabels = getMlLabels(project, model, localTree);
+    const validatingSets = buildValidatingTaxonomicSets(project, model);
+    const enrichedValidatingSets = enrichValidatingSets(project, model, validatingSets);
 
     console.log('Setting up results structure...');
-    const data = setupResultsStructure(project, mlLabels);
+    const data = setupResultsStructure(project, enrichedValidatingSets);
 
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
     console.log('Counting images...');
@@ -297,16 +299,19 @@ const analyze = async (analysisConfig) => {
 
       // iterate over objects and count up TPs, FPs, and FNs for all target classes
       for (const obj of img.objects) {
-        for (const mlLabel of mlLabels) {
-          const key = `${imgDep._id}_${mlLabel.name}`;
+        for (const predictedLabel of enrichedValidatingSets) {
+          const [predictedName, predictedId] = predictedLabel.predicted.split(':');
+          const validatingIdsAndNames = predictedLabel.validation.map((idNamePair) => idNamePair.split(':')).flat();
+
+          const key = `${imgDep._id}_${predictedName}`;
 
           const objectLabelsHaveTargetLabel = obj.labels.some((label) => (
             label.type === 'ml' &&
             label.mlModel === ML_MODEL &&
-            (label.labelId === mlLabel.labelId || label.labelId === mlLabel.name)
+            (label.labelId === predictedId || label.labelId === predictedName || validatingIdsAndNames.includes(label.labelId))
           ));
 
-          const fvlValidatesPrediction = FVLValidatesPrediction(obj, mlLabel, ML_MODEL);
+          const fvlValidatesPrediction = FVLValidatesPrediction(obj, predictedLabel, ML_MODEL);
 
           // ACTUAL - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
@@ -360,7 +365,7 @@ const analyze = async (analysisConfig) => {
     console.log('Calculating stats...');
     const stats = calculateStats(data);
     console.log('Summing totals...');
-    const totals = calculateTotals(stats, mlLabels);
+    const totals = calculateTotals(stats, enrichedValidatingSets);
 
     console.log('Writing results to file...');
     await writeToFile(stats, totals, ANALYSIS_DIR, PROJECT_ID, ML_MODEL, START_DATE, END_DATE, analysisConfig);
@@ -373,4 +378,8 @@ const analyze = async (analysisConfig) => {
   }
 };
 
-analyze(CONFIG);
+// This builds its own predicted and validation classes so remove them from the
+// output config file to avoid confusion
+// eslint-disable-next-line no-unused-vars
+const { TARGET_CLASSES, MAX_SEQUENCE_DELTA, ...configWithoutTargetClasses } = CONFIG;
+analyze(configWithoutTargetClasses);
