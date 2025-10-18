@@ -46,7 +46,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
 
     const res = await SetTimestampOffsetByFilter(task);
 
-    t.deepEquals(res.filters, filters, 'Should return the input filters');
+    t.deepEquals(res.filters, filters);
     t.equal(res.modifiedCount, 3, 'Should have modified 3 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
   } catch (err) {
@@ -105,7 +105,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
 
     const res = await SetTimestampOffsetByFilter(task);
 
-    t.deepEquals(res.filters, filters, 'Should return the input filters');
+    t.deepEquals(res.filters, filters);
     t.equal(res.modifiedCount, 800, 'Should have modified 800 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
   } catch (err) {
@@ -160,9 +160,10 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
 
     const res = await SetTimestampOffsetByFilter(task);
 
-    t.deepEquals(res.filters, filters, 'Should return the input filters');
-    t.equal(res.modifiedCount, 2, 'Should have modified only 2 images');
-    t.equal(res.errors.length, 0, 'Should have no errors (count mismatch is not an error)');
+    t.deepEquals(res.filters, filters);
+    t.equal(res.modifiedCount, 2, 'Should have modified 2 images');
+    t.equal(res.errors.length, 1, 'Should have 1 error for failed updates');
+    t.ok(res.errors[0].includes('Failed to update 1 images'));
   } catch (err) {
     t.error(err);
   }
@@ -200,7 +201,7 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
 
     const res = await SetTimestampOffsetByFilter(task);
 
-    t.deepEquals(res.filters, filters, 'Should return the input filters');
+    t.deepEquals(res.filters, filters);
     t.equal(res.modifiedCount, 0, 'Should have modified 0 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
   } catch (err) {
