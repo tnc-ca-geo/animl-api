@@ -305,7 +305,7 @@ const analyze = async (analysisConfig) => {
 
           const key = `${imgDep._id}_${predictedName}`;
 
-          const objectLabelsHaveTargetLabel = obj.labels.some((label) => (
+          const objectLabelsHaveValidatingLabel = obj.labels.some((label) => (
             label.type === 'ml' &&
             label.mlModel === ML_MODEL &&
             (label.labelId === predictedId || label.labelId === predictedName || validatingIdsAndNames.includes(label.labelId))
@@ -326,7 +326,7 @@ const analyze = async (analysisConfig) => {
           // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
           if (
             obj.locked &&
-            objectLabelsHaveTargetLabel &&
+            objectLabelsHaveValidatingLabel &&
             fvlValidatesPrediction
           ) {
             data[key].truePositives++;
@@ -337,7 +337,7 @@ const analyze = async (analysisConfig) => {
           // (c) DOES NOT have a first valid label that validates the prediction/target class
           if (
             obj.locked &&
-            objectLabelsHaveTargetLabel &&
+            objectLabelsHaveValidatingLabel &&
             !fvlValidatesPrediction
           ) {
             data[key].falsePositives++;
@@ -350,7 +350,7 @@ const analyze = async (analysisConfig) => {
           if (
             obj.locked &&
             fvlValidatesPrediction &&
-            !objectLabelsHaveTargetLabel
+            !objectLabelsHaveValidatingLabel
           ) {
             data[key].falseNegatives++;
           }
