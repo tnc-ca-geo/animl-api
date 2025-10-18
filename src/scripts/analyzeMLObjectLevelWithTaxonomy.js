@@ -187,7 +187,7 @@ const calculateStats = (data) => {
 
 const calculateTotals = (stats, mlLabels) => {
   return mlLabels.map((mlLabel) => {
-    const mlLabelName = mlLabel.predicted.split(':').pop();
+    const mlLabelName = mlLabel.predicted.split(':').shift();
     const mlLabelRows = Object.values(stats).filter((v) => v.targetClass === mlLabelName);
 
     const totalActuals = mlLabelRows.reduce((acc, v) => acc + v.allActuals, 0);
@@ -201,7 +201,7 @@ const calculateTotals = (stats, mlLabels) => {
     return {
       cameraId: 'total',
       deploymentName: 'total',
-      targetClass: mlLabelName,
+      targetClass: mlLabel.predicted,
       validationClasses: mlLabel.validation.join(', '),
       allActuals: totalActuals,
       truePositives: totalTP,
