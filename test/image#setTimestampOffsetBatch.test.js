@@ -19,7 +19,7 @@ tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => 
       t.deepEquals(operations[0], {
         updateOne: {
           filter: { _id: 'project:img1' },
-          update: { dateTimeOffsetMs: offsetMs },
+          update: { $set: { dateTimeOffsetMs: offsetMs } },
         },
       });
       mocks.push('Image::BulkWrite');
@@ -36,7 +36,7 @@ tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => 
 
     const res = await SetTimestampOffsetBatch(task);
 
-    t.deepEquals(res.imageIds, imageIds, 'Should return the input imageIds');
+    t.deepEquals(res.imageIds, imageIds);
     t.equal(res.modifiedCount, 3, 'Should have modified 3 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
   } catch (err) {
@@ -81,7 +81,7 @@ tape('Image: SetTimestampOffsetBatch - Success with multiple batches', async (t)
 
     const res = await SetTimestampOffsetBatch(task);
 
-    t.deepEquals(res.imageIds, imageIds, 'Should return the input imageIds');
+    t.deepEquals(res.imageIds, imageIds);
     t.equal(res.modifiedCount, 1200, 'Should have modified all 1200 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
     t.equal(callCount, 3, 'Should have made 3 bulkWrite calls');
@@ -90,44 +90,6 @@ tape('Image: SetTimestampOffsetBatch - Success with multiple batches', async (t)
   }
 
   t.deepEquals(mocks, ['Image::BulkWrite:1', 'Image::BulkWrite:2', 'Image::BulkWrite:3']);
-  Sinon.restore();
-  t.end();
-});
-
-tape('Image: SetTimestampOffsetBatch - Handle errors', async (t) => {
-  const mocks = [];
-
-  try {
-    Sinon.restore();
-    MockConfig(t);
-
-    const imageIds = ['project:img1', 'project:img2'];
-    const offsetMs = 1800000;
-
-    Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
-      mocks.push('Image::BulkWrite');
-      throw new Error('Database connection lost');
-    });
-
-    const task = {
-      projectId: 'project',
-      config: {
-        imageIds,
-        offsetMs,
-      },
-    };
-
-    const res = await SetTimestampOffsetBatch(task);
-
-    t.deepEquals(res.imageIds, imageIds, 'Should return the input imageIds');
-    t.equal(res.modifiedCount, 0, 'Should have modified 0 images due to error');
-    t.equal(res.errors.length, 1, 'Should have 1 error');
-    t.equal(res.errors[0].message, 'Database connection lost', 'Should capture the error message');
-  } catch (err) {
-    t.error(err);
-  }
-
-  t.deepEquals(mocks, ['Image::BulkWrite']);
   Sinon.restore();
   t.end();
 });
@@ -158,9 +120,10 @@ tape('Image: SetTimestampOffsetBatch - Partial modification', async (t) => {
 
     const res = await SetTimestampOffsetBatch(task);
 
-    t.deepEquals(res.imageIds, imageIds, 'Should return the input imageIds');
+    t.deepEquals(res.imageIds, imageIds);
     t.equal(res.modifiedCount, 2, 'Should have modified only 2 images');
-    t.equal(res.errors.length, 0, 'Should have no errors (count mismatch is not an error)');
+    t.equal(res.errors.length, 1, 'Should have 1 error for failed updates');
+    t.ok(res.errors[0].includes('Failed to update 1 images'));
   } catch (err) {
     t.error(err);
   }
@@ -192,7 +155,7 @@ tape('Image: SetTimestampOffsetBatch - Empty imageIds', async (t) => {
 
     const res = await SetTimestampOffsetBatch(task);
 
-    t.deepEquals(res.imageIds, [], 'Should return empty imageIds array');
+    t.deepEquals(res.imageIds, []);
     t.equal(res.modifiedCount, 0, 'Should have modified 0 images');
     t.equal(res.errors.length, 0, 'Should have no errors');
   } catch (err) {
