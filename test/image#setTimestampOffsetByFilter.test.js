@@ -69,7 +69,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
     const offsetMs = -7200000;
 
     let queryCallCount = 0;
-    Sinon.stub(ImageModel, 'queryByFilter').callsFake((input, context) => {
+    Sinon.stub(ImageModel, 'queryByFilter').callsFake((input) => {
       queryCallCount++;
       mocks.push(`ImageModel::QueryByFilter:${queryCallCount}`);
 
