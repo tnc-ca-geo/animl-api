@@ -1,11 +1,10 @@
 import { GraphQLClient, gql } from 'graphql-request';
 import { type Detection, modelInterfaces } from './modelInterfaces.js';
 import { type Config, getConfig } from '../config/config.js';
-import { GraphQLError } from 'graphql';
+import { type GraphQLError } from 'graphql';
 import { type IAutomationRule } from '../api/db/schemas/Project.js';
 import { buildCatConfig } from '../automation/utils.js';
 import * as gqlTypes from '../@types/graphql.js';
-import { DuplicateLabelError } from '../api/errors.js';
 
 interface GetProjectResponse {
   projects: Array<{
