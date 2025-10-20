@@ -1,10 +1,11 @@
 import { GraphQLClient, gql } from 'graphql-request';
 import { type Detection, modelInterfaces } from './modelInterfaces.js';
 import { type Config, getConfig } from '../config/config.js';
-import { type GraphQLError } from 'graphql';
+import { GraphQLError } from 'graphql';
 import { type IAutomationRule } from '../api/db/schemas/Project.js';
 import { buildCatConfig } from '../automation/utils.js';
 import * as gqlTypes from '../@types/graphql.js';
+import { DuplicateLabelError } from '../api/errors.js';
 
 interface GetProjectResponse {
   projects: Array<{
@@ -171,17 +172,19 @@ async function singleInference(config: Config, record: Record): Promise<void> {
     // Note: hacky JSON parsing below due to odd error objects created by graphql-request client
     // https://github.com/jasonkuhrt/graphql-request/issues/201
     const errParsed = JSON.parse(JSON.stringify(err));
-    const hasDuplicateLabelErrors = errParsed.response.errors.some(
-      (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
-    );
-    if (hasDuplicateLabelErrors) {
-      // if image has duplicate labels, then we are done processing
-      await graphQLClient.request(SET_PREDICTION_STATUS, {
-        input: { imageId: image._id, status: false },
-      });
-    } else {
-      throw err;
+    if (errParsed.response && errParsed.response.errors) {
+      const hasDuplicateLabelErrors = errParsed.response.errors.some(
+        (e: GraphQLError) => e.extensions.code === 'DUPLICATE_LABEL',
+      );
+      if (hasDuplicateLabelErrors) {
+        // if image has duplicate labels, then we are done processing
+        await graphQLClient.request(SET_PREDICTION_STATUS, {
+          input: { imageId: image._id, status: false },
+        });
+        return;
+      }
     }
+    throw err;
   }
 }
 
