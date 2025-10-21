@@ -287,6 +287,19 @@ export function buildPipeline(
     pipeline.push({ $match: isFilterValid(custom) });
   }
 
+  // Mongoose virtuals are not available in aggregations since they are computed in mongo
+  pipeline.push({
+    $addFields: {
+      dateTimeAdjusted: {
+        $cond: {
+          if: { $ifNull: ['$dateTimeOffsetMs', false] },
+          then: { $add: ['$dateTimeOriginal', '$dateTimeOffsetMs'] },
+          else: '$dateTimeOriginal',
+        },
+      },
+    },
+  });
+
   console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
   return pipeline;
 }
