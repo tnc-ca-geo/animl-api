@@ -1008,7 +1008,7 @@ export class ImageModel {
   }
 
   /*
-    * This endpoint is used only by the ML Handler to lock images on the frontend to
+    * This endpoint is used only by the ML Handler to lock/unlock images on the frontend to
     * prevent users from making changes to images while predictions are in progress.
     */
   static async updatePredictionStatus(
