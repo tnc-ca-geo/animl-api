@@ -15,29 +15,31 @@ import Image from '../../.build/api/db/schemas/Image.js';
 // The taxonomy field from speciesnet only shows ancestors
 // This adds each speciesnet label used in the project to
 // the validating set of its ancestors and itself
-const buildValidatingTaxonomicSets = (project, model) => {
-  const validatingSets = {};
+const buildTaxonomicDescendentSets = (project, model) => {
+  const taxonomicDescendents = {};
   for (const projectLabel of project.labels) {
     const mlCategory = model.categories.find((category) => category.name === projectLabel.name);
     if (!mlCategory || !mlCategory.taxonomy) {
       continue;
     }
 
-    const taxonomicAncestorsAndSelf = mlCategory.taxonomy.split(';').filter((taxon) => taxon !== '');
+    const taxonomicAncestors = mlCategory.taxonomy
+      .split(';')
+      .filter((taxon) => taxon !== '' && taxon !== mlCategory.name);
 
-    for (const taxon of taxonomicAncestorsAndSelf) {
-      const validatingTaxons = validatingSets[taxon] ?? new Set();
-      validatingSets[taxon] = new Set([...validatingTaxons, mlCategory.name]);
+    for (const taxon of taxonomicAncestors) {
+      const descendents = taxonomicDescendents[taxon] ?? new Set();
+      taxonomicDescendents[taxon] = new Set([...descendents, mlCategory.name]);
     }
   }
 
-  return validatingSets;
+  return taxonomicDescendents;
 };
 
-// Returns a list of predicted labels and validating labels
-// [{ predicted: <label name>:<label id>, validation: [<label name>:<label id>] }]
-const enrichValidatingSets = (project, model, validatingSets) => {
-  const enrichedValiatingSets = [];
+// Returns a list of target classes and taxonomic descedent classes
+// [{ targetClass: <label name>:<label id>, taxonomicDescedentClasses: [<label name>:<label id>] }]
+const enrichTaxonomicDescendentSets = (project, model, taxonomicDescendentSets) => {
+  const enrichedTaxonomicDescendentSets = [];
   for (const projectLabel of project.labels) {
     const mlCategory = model.categories.find((category) => category.name === projectLabel.name);
     if (!mlCategory || !mlCategory.taxonomy) {
@@ -45,19 +47,19 @@ const enrichValidatingSets = (project, model, validatingSets) => {
     }
 
     const taxonomicName = mlCategory.taxonomy.split(';').filter((ancestor) => ancestor !== '').pop();
-    const validatingTaxons = validatingSets[mlCategory.name] ?? validatingSets[taxonomicName] ?? new Set();
-    const validatingTaxonsIds = Array.from(validatingTaxons).reduce((acc, taxonomicName) => {
-      const projectLabelForValidatingTaxon = project.labels.find((lbl) => lbl.name === taxonomicName);
-      return [...acc, `${taxonomicName}:${projectLabelForValidatingTaxon._id}`];
+    const descendentTaxa = taxonomicDescendentSets[mlCategory.name] ?? taxonomicDescendentSets[taxonomicName] ?? new Set();
+    const descendentTaxaIds = Array.from(descendentTaxa).reduce((acc, taxonomicName) => {
+      const projectLabelForDescendentTaxon = project.labels.find((lbl) => lbl.name === taxonomicName);
+      return [...acc, `${taxonomicName}:${projectLabelForDescendentTaxon._id}`];
     }, []);
 
-    enrichedValiatingSets.push({
-      predicted: `${mlCategory.name}:${projectLabel._id}`,
-      validation: validatingTaxonsIds
+    enrichedTaxonomicDescendentSets.push({
+      targetClass: `${mlCategory.name}:${projectLabel._id}`,
+      taxonomicDescendentClasses: descendentTaxaIds
     });
   }
 
-  return enrichedValiatingSets;
+  return enrichedTaxonomicDescendentSets;
 };
 
 const writeConfigToFile = async (filename, analysisPath, config) => {
@@ -142,12 +144,12 @@ const setupResultsStructure = (project, mlLabels) => {
     for (const dep of cc.deployments) {
       // if (dep.name === 'default') continue; // skip default deployments
       for (const mlLabel of mlLabels) {
-        const [mlLabelName, mlLabelId] = mlLabel.predicted.split(':');
+        const [mlLabelName, mlLabelId] = mlLabel.targetClass.split(':');
         data[`${dep._id}_${mlLabelName}`] = {
           cameraId: cc._id,
           deploymentName: dep.name,
           targetClass: `${mlLabelName}:${mlLabelId}`,
-          validationClasses: mlLabel.validation.join(', '),
+          validationClasses: mlLabel.taxonomicDescendentClasses.join(', '),
           allActuals: 0,
           truePositives: 0,
           falsePositives: 0,
@@ -187,8 +189,7 @@ const calculateStats = (data) => {
 
 const calculateTotals = (stats, mlLabels) => {
   return mlLabels.map((mlLabel) => {
-    const mlLabelName = mlLabel.predicted.split(':').shift();
-    const mlLabelRows = Object.values(stats).filter((v) => v.targetClass === mlLabelName);
+    const mlLabelRows = Object.values(stats).filter((v) => v.targetClass === mlLabel.targetClass);
 
     const totalActuals = mlLabelRows.reduce((acc, v) => acc + v.allActuals, 0);
     const totalTP = mlLabelRows.reduce((acc, v) => acc + v.truePositives, 0);
@@ -201,8 +202,8 @@ const calculateTotals = (stats, mlLabels) => {
     return {
       cameraId: 'total',
       deploymentName: 'total',
-      targetClass: mlLabel.predicted,
-      validationClasses: mlLabel.validation.join(', '),
+      targetClass: mlLabel.targetClass,
+      validationClasses: mlLabel.taxonomicDescendentClasses.join(', '),
       allActuals: totalActuals,
       truePositives: totalTP,
       falsePositives: totalFP,
@@ -251,12 +252,12 @@ const FVLValidatesPrediction = (obj, mlLabel, mlModel) => {
   // if the ml model is megadetector and the target class is '1' (animal),
   // any firstValidLabel that is not is a person or vehicle or 'empty'
   // would validate the prediction
-  const [mlLabelName, mlLabelId] = mlLabel.predicted.split(':');
-  const validatingIdsAndNames = mlLabel.validation.map((validation) => validation.split(':')).flat();
+  const [mlLabelName, mlLabelId] = mlLabel.targetClass.split(':');
+  const descendentTaxaIdsAndNames = mlLabel.taxonomicDescendentClasses.map((taxon) => taxon.split(':')).flat();
   if (mlModel.includes('megadetector') && mlLabelId === '1') {
     return fvl !== '2' && fvl !== '3' && fvl !== 'empty';
   } else {
-    return mlLabelName === fvl || mlLabelId === fvl || validatingIdsAndNames.includes(fvl);
+    return mlLabelName === fvl || mlLabelId === fvl || descendentTaxaIdsAndNames.includes(fvl);
   }
 };
 
@@ -279,11 +280,11 @@ const analyze = async (analysisConfig) => {
     });
 
     console.log('Getting model labels...');
-    const validatingSets = buildValidatingTaxonomicSets(project, model);
-    const enrichedValidatingSets = enrichValidatingSets(project, model, validatingSets);
+    const taxonomicDescendentSets = buildTaxonomicDescendentSets(project, model);
+    const enrichedTaxonomicDescendentSets = enrichTaxonomicDescendentSets(project, model, taxonomicDescendentSets);
 
     console.log('Setting up results structure...');
-    const data = setupResultsStructure(project, enrichedValidatingSets);
+    const data = setupResultsStructure(project, enrichedTaxonomicDescendentSets);
 
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
     console.log('Counting images...');
@@ -299,19 +300,19 @@ const analyze = async (analysisConfig) => {
 
       // iterate over objects and count up TPs, FPs, and FNs for all target classes
       for (const obj of img.objects) {
-        for (const predictedLabel of enrichedValidatingSets) {
-          const [predictedName, predictedId] = predictedLabel.predicted.split(':');
-          const validatingIdsAndNames = predictedLabel.validation.map((idNamePair) => idNamePair.split(':')).flat();
+        for (const targetClassAndDescendentClasses of enrichedTaxonomicDescendentSets) {
+          const [targetClassName, targetClassId] = targetClassAndDescendentClasses.targetClass.split(':');
+          const descendentTaxaIds = targetClassAndDescendentClasses.taxonomicDescendentClasses.map((idNamePair) => idNamePair.split(':')).flat();
 
-          const key = `${imgDep._id}_${predictedName}`;
+          const key = `${imgDep._id}_${targetClassName}`;
 
-          const objectLabelsHaveValidatingLabel = obj.labels.some((label) => (
+          const objectLabelsHaveTargetOrDescendentClass = obj.labels.some((label) => (
             label.type === 'ml' &&
             label.mlModel === ML_MODEL &&
-            (label.labelId === predictedId || label.labelId === predictedName || validatingIdsAndNames.includes(label.labelId))
+            (label.labelId === targetClassId || label.labelId === targetClassName || descendentTaxaIds.includes(label.labelId))
           ));
 
-          const fvlValidatesPrediction = FVLValidatesPrediction(obj, predictedLabel, ML_MODEL);
+          const fvlValidatesPrediction = FVLValidatesPrediction(obj, targetClassAndDescendentClasses, ML_MODEL);
 
           // ACTUAL - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
@@ -321,23 +322,24 @@ const analyze = async (analysisConfig) => {
           }
 
           // TRUE POSITIVE - object must be:
-          // (a) locked, (b) has an ml-predicted label of the target class, and
-          // (c) has a first valid label that validates the prediction/target class,
+          // (a) locked, (b) has an ml-predicted label of the target class or any descendent taxa of the
+          // target class, and (c) has a first valid label that validates the prediction/target class,
           // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
           if (
             obj.locked &&
-            objectLabelsHaveValidatingLabel &&
+            objectLabelsHaveTargetOrDescendentClass &&
             fvlValidatesPrediction
           ) {
             data[key].truePositives++;
           }
 
           // FALSE POSITIVE - object must be:
-          // (a) locked, (b) has an ml-predicted label of the target class, and
-          // (c) DOES NOT have a first valid label that validates the prediction/target class
+          // (a) locked, (b) has an ml-predicted label of the target class or any descendent taxa of the
+          // target class, and (c) DOES NOT have a first valid label that validates the prediction/target
+          // class
           if (
             obj.locked &&
-            objectLabelsHaveValidatingLabel &&
+            objectLabelsHaveTargetOrDescendentClass &&
             !fvlValidatesPrediction
           ) {
             data[key].falsePositives++;
@@ -346,11 +348,12 @@ const analyze = async (analysisConfig) => {
           // FALSE NEGATIVE - object must be:
           // (a) locked, (b) has a first valid label that validates the prediction/target class,
           // (i.e., for "rodent" prediction, a firstValidLabel of "rodent" or any of its taxonomic children),
-          // and (c) does NOT have an ml-predicted label of the target class
+          // and (c) does NOT have an ml-predicted label of the target class or any of the descendent taxa
+          // of the target class
           if (
             obj.locked &&
             fvlValidatesPrediction &&
-            !objectLabelsHaveValidatingLabel
+            !objectLabelsHaveTargetOrDescendentClass
           ) {
             data[key].falseNegatives++;
           }
@@ -365,7 +368,7 @@ const analyze = async (analysisConfig) => {
     console.log('Calculating stats...');
     const stats = calculateStats(data);
     console.log('Summing totals...');
-    const totals = calculateTotals(stats, enrichedValidatingSets);
+    const totals = calculateTotals(stats, enrichedTaxonomicDescendentSets);
 
     console.log('Writing results to file...');
     await writeToFile(stats, totals, ANALYSIS_DIR, PROJECT_ID, ML_MODEL, START_DATE, END_DATE, analysisConfig);
