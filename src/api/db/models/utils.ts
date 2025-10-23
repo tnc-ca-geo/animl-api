@@ -601,9 +601,9 @@ export function findDeployment(
   // 7 hours of that more recent deployment's start date, it would mistakenly
   // get associated with that more recent deployment
 
-  let imgCreated = !DateTime.isDateTime(img.dateTimeAdjusted)
-    ? DateTime.fromISO(img.dateTimeAdjusted.toString())
-    : img.dateTimeAdjusted;
+  let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
+    ? DateTime.fromISO(img.dateTimeOriginal.toString())
+    : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
 
@@ -724,7 +724,6 @@ export type Pagination<T = {}> = T & {
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
   dateTimeOriginal: Date | DateTime<true> | DateTime<false>;
-  dateTimeAdjusted: Date | DateTime<true> | DateTime<false>;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId

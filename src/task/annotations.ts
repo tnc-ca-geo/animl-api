@@ -425,7 +425,7 @@ export class AnnotationsExport {
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
-        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeAdjusted).setZone(this.timezone).toISO(),
+        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -548,7 +548,7 @@ export class AnnotationsExport {
       file_name: destPath,
       original_file_name: img.originalFileName,
       serving_bucket_key: servingPath,
-      datetime: img.dateTimeAdjusted,
+      datetime: img.dateTimeOriginal,
       location: deployment.name === 'default' ? `${img.cameraId}-default` : deployment.name,
       ...(img.imageWidth && { width: img.imageWidth }),
       ...(img.imageHeight && { height: img.imageHeight }),
