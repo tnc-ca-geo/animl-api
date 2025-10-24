@@ -287,19 +287,6 @@ export function buildPipeline(
     pipeline.push({ $match: isFilterValid(custom) });
   }
 
-  // Mongoose virtuals are not available in aggregations since they are computed in mongo
-  pipeline.push({
-    $addFields: {
-      dateTimeAdjusted: {
-        $cond: {
-          if: { $ifNull: ['$dateTimeOffsetMs', false] },
-          then: { $add: ['$dateTimeOriginal', '$dateTimeOffsetMs'] },
-          else: '$dateTimeOriginal',
-        },
-      },
-    },
-  });
-
   console.log('utils.buildPipeline() - pipeline: ', JSON.stringify(pipeline));
   return pipeline;
 }
@@ -601,9 +588,9 @@ export function findDeployment(
   // 7 hours of that more recent deployment's start date, it would mistakenly
   // get associated with that more recent deployment
 
-  let imgCreated = !DateTime.isDateTime(img.dateTimeAdjusted)
-    ? DateTime.fromISO(img.dateTimeAdjusted.toString())
-    : img.dateTimeAdjusted;
+  let imgCreated = !DateTime.isDateTime(img.dateTimeOriginal)
+    ? DateTime.fromISO(img.dateTimeOriginal.toString())
+    : img.dateTimeOriginal;
   imgCreated = imgCreated.setZone(projTimeZone, { keepLocalTime: true });
   const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
 
@@ -724,7 +711,6 @@ export type Pagination<T = {}> = T & {
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
   dateTimeOriginal: Date | DateTime<true> | DateTime<false>;
-  dateTimeAdjusted: Date | DateTime<true> | DateTime<false>;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId

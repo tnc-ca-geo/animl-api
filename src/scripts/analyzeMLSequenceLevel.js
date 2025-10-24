@@ -284,8 +284,8 @@ async function analyze() {
         }
 
         const lastImg = sequence[sequence.length - 1];
-        const imgDateAdded = DateTime.fromJSDate(img.dateTimeAdjusted);
-        const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeAdjusted);
+        const imgDateAdded = DateTime.fromJSDate(img.dateTimeOriginal);
+        const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeOriginal);
         const diff = lastImgDateAdded.diff(imgDateAdded, 'seconds').toObject();
         const delta = Math.abs(diff.seconds);
 
