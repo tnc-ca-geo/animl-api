@@ -20,6 +20,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
   profile: animl
+  versionFunctions: false
   environment:
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
