@@ -14,6 +14,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
 
     const filters = { cameras: ['camera1'] };
     const offsetMs = 3600000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
 
     Sinon.stub(ImageModel, 'queryByFilter').callsFake((input, context) => {
       t.deepEquals(input.filters, filters);
@@ -28,6 +29,15 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
         ],
         hasNext: false,
       };
+    });
+
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return [
+        { _id: 'project:img1', dateTimeOriginal: originalDate },
+        { _id: 'project:img2', dateTimeOriginal: originalDate },
+        { _id: 'project:img3', dateTimeOriginal: originalDate },
+      ];
     });
 
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
@@ -53,7 +63,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::BulkWrite']);
+  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::Find', 'Image::BulkWrite']);
   Sinon.restore();
   t.end();
 });
@@ -67,6 +77,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
 
     const filters = { deployments: ['deployment1'] };
     const offsetMs = -7200000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
 
     let queryCallCount = 0;
     Sinon.stub(ImageModel, 'queryByFilter').callsFake((input) => {
@@ -86,6 +97,17 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
           hasNext: false,
         };
       }
+    });
+
+    let findCallCount = 0;
+    Sinon.stub(ImageSchema, 'find').callsFake((query) => {
+      findCallCount++;
+      mocks.push(`Image::Find:${findCallCount}`);
+      // Return images for the batch that was requested
+      return query._id.$in.map((id) => ({
+        _id: id,
+        dateTimeOriginal: originalDate,
+      }));
     });
 
     let bulkWriteCallCount = 0;
@@ -114,8 +136,10 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
 
   t.deepEquals(mocks, [
     'ImageModel::QueryByFilter:1',
+    'Image::Find:1',
     'Image::BulkWrite:1',
     'ImageModel::QueryByFilter:2',
+    'Image::Find:2',
     'Image::BulkWrite:2',
   ]);
   Sinon.restore();
@@ -131,6 +155,7 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
 
     const filters = { cameras: ['camera1'] };
     const offsetMs = 1800000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
 
     Sinon.stub(ImageModel, 'queryByFilter').callsFake(() => {
       mocks.push('ImageModel::QueryByFilter');
@@ -142,6 +167,15 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
         ],
         hasNext: false,
       };
+    });
+
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return [
+        { _id: 'project:img1', dateTimeOriginal: originalDate },
+        { _id: 'project:img2', dateTimeOriginal: originalDate },
+        { _id: 'project:img3', dateTimeOriginal: originalDate },
+      ];
     });
 
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
@@ -168,7 +202,7 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::BulkWrite']);
+  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::Find', 'Image::BulkWrite']);
   Sinon.restore();
   t.end();
 });
@@ -191,6 +225,17 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
       };
     });
 
+    // Since there are no results, find and bulkWrite should not be called
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return [];
+    });
+
+    Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
+      mocks.push('Image::BulkWrite');
+      return { modifiedCount: 0, matchedCount: 0 };
+    });
+
     const task = {
       projectId: 'project',
       config: {
@@ -208,6 +253,7 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
     t.error(err);
   }
 
+  // When there are no results, setTimestampOffsetBatch is still called but with empty array
   t.deepEquals(mocks, ['ImageModel::QueryByFilter']);
   Sinon.restore();
   t.end();
