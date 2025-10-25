@@ -13,15 +13,20 @@ tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => 
 
     const imageIds = ['project:img1', 'project:img2', 'project:img3'];
     const offsetMs = 3600000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
+
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return imageIds.map((id) => ({
+        _id: id,
+        dateTimeOriginal: originalDate,
+      }));
+    });
 
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
       t.equal(operations.length, 3, 'Should have 3 operations');
-      t.deepEquals(operations[0], {
-        updateOne: {
-          filter: { _id: 'project:img1' },
-          update: { $set: { dateTimeOffsetMs: offsetMs } },
-        },
-      });
+      t.equal(operations[0].updateOne.filter._id, 'project:img1');
+      t.ok(operations[0].updateOne.update.$set.dateTimeAdjusted instanceof Date);
       mocks.push('Image::BulkWrite');
       return { modifiedCount: 3, matchedCount: 3 };
     });
@@ -43,7 +48,7 @@ tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => 
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['Image::BulkWrite']);
+  t.deepEquals(mocks, ['Image::Find', 'Image::BulkWrite']);
   Sinon.restore();
   t.end();
 });
@@ -58,6 +63,18 @@ tape('Image: SetTimestampOffsetBatch - Success with multiple batches', async (t)
     // Create 1200 image IDs (should result in 3 batches of 500 each)
     const imageIds = Array.from({ length: 1200 }, (_, i) => `project:img${i}`);
     const offsetMs = -7200000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
+
+    let findCallCount = 0;
+    Sinon.stub(ImageSchema, 'find').callsFake((query) => {
+      findCallCount++;
+      mocks.push(`Image::Find:${findCallCount}`);
+      // Return images for the batch that was requested
+      return query._id.$in.map((id) => ({
+        _id: id,
+        dateTimeOriginal: originalDate,
+      }));
+    });
 
     let callCount = 0;
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
@@ -89,7 +106,14 @@ tape('Image: SetTimestampOffsetBatch - Success with multiple batches', async (t)
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['Image::BulkWrite:1', 'Image::BulkWrite:2', 'Image::BulkWrite:3']);
+  t.deepEquals(mocks, [
+    'Image::Find:1',
+    'Image::BulkWrite:1',
+    'Image::Find:2',
+    'Image::BulkWrite:2',
+    'Image::Find:3',
+    'Image::BulkWrite:3',
+  ]);
   Sinon.restore();
   t.end();
 });
@@ -103,6 +127,15 @@ tape('Image: SetTimestampOffsetBatch - Partial modification', async (t) => {
 
     const imageIds = ['project:img1', 'project:img2', 'project:img3'];
     const offsetMs = 1800000;
+    const originalDate = new Date('2024-01-01T12:00:00Z');
+
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return imageIds.map((id) => ({
+        _id: id,
+        dateTimeOriginal: originalDate,
+      }));
+    });
 
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
       mocks.push('Image::BulkWrite');
@@ -128,7 +161,7 @@ tape('Image: SetTimestampOffsetBatch - Partial modification', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['Image::BulkWrite']);
+  t.deepEquals(mocks, ['Image::Find', 'Image::BulkWrite']);
   Sinon.restore();
   t.end();
 });
@@ -139,6 +172,11 @@ tape('Image: SetTimestampOffsetBatch - Empty imageIds', async (t) => {
   try {
     Sinon.restore();
     MockConfig(t);
+
+    Sinon.stub(ImageSchema, 'find').callsFake(() => {
+      mocks.push('Image::Find');
+      return [];
+    });
 
     Sinon.stub(ImageSchema, 'bulkWrite').callsFake(() => {
       mocks.push('Image::BulkWrite');
@@ -162,7 +200,7 @@ tape('Image: SetTimestampOffsetBatch - Empty imageIds', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, [], 'Should not call bulkWrite');
+  t.deepEquals(mocks, [], 'Should not call find or bulkWrite');
   Sinon.restore();
   t.end();
 });

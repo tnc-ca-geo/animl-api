@@ -27,7 +27,6 @@ const ImageSchema = new Schema({
   dateTimeOriginal: { type: Date, required: true },
   dateTimeAdjusted: { type: Date },
   timezone: { type: String, required: true },
-  dateTimeOffsetMs: { type: Number },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },
   deploymentId: { type: Schema.Types.ObjectId, ref: 'Deployment', required: true },

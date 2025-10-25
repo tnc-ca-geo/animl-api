@@ -1502,14 +1502,26 @@ export class ImageModel {
             console.log(`Retrying setTimestampOffsetBatch operation! Try #: ${attempt}`);
           }
 
-          const operations = input.imageIds.map((imageId) => ({
-            updateOne: {
-              filter: {
-                _id: imageId,
+          // Fetch images to get their dateTimeOriginal values
+          const images = await Image.find({ _id: { $in: input.imageIds } });
+
+          const operations = images.map((image) => {
+            // Calculate dateTimeAdjusted = dateTimeOriginal + offsetMs
+            const dateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
+
+            return {
+              updateOne: {
+                filter: {
+                  _id: image._id,
+                },
+                update: {
+                  $set: {
+                    dateTimeAdjusted: dateTimeAdjusted,
+                  }
+                },
               },
-              update: { $set: { dateTimeOffsetMs: input.offsetMs } },
-            },
-          }));
+            };
+          });
           return await Image.bulkWrite(operations);
         },
         { retries: 2 },

@@ -69,7 +69,7 @@ export async function SetTimestampOffsetBatch(
   task: TaskInput<gql.SetTimestampOffsetBatchTaskInput>,
 ): Promise<{ imageIds: String[]; modifiedCount: number; errors: any[] }> {
   /**
-   * Sets dateTimeOffsetMs for a list of images by their IDs in batches.
+   * Sets dateTimeAdjusted for a list of images by their IDs in batches.
    * * @param {Object} input
    * * @param {String[]} input.config.imageIds
    * * @param {number} input.config.offsetMs
@@ -89,7 +89,8 @@ export async function SetTimestampOffsetBatch(
     );
 
     totalModified += res.modifiedCount;
-    failedCount += batch.length - res.modifiedCount;
+    // count match as success, even if dateTimeAdjusted was already set
+    failedCount += batch.length - (res.matchedCount || 0);
   }
 
   if (failedCount > 0) {
@@ -103,7 +104,7 @@ export async function SetTimestampOffsetByFilter(
   task: TaskInput<gql.SetTimestampOffsetByFilterTaskInput>,
 ): Promise<{ filters: gql.FiltersInput; modifiedCount: number; errors: any[] }> {
   /**
-   * Sets dateTimeOffsetMs for images that match the input filters in batches
+   * Sets dateTimeAdjusted for images that match the input filters in batches
    * * @param {Object} input
    * * @param {gql.FiltersInput} input.config.filters
    * * @param {number} input.config.offsetMs
@@ -127,7 +128,8 @@ export async function SetTimestampOffsetByFilter(
     );
 
     totalModified += res.modifiedCount;
-    failedCount += batch.length - res.modifiedCount;
+    // count match as success, even if dateTimeAdjusted was already set
+    failedCount += batch.length - (res.matchedCount || 0);
 
     if (images.hasNext) {
       images = await ImageModel.queryByFilter(
