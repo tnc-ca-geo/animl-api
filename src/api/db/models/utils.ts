@@ -50,7 +50,6 @@ export function buildImgUrl(
 
 /**
  * Returns adjusted datetime for an image, falling back to original datetime.
- * Always returns a Luxon DateTime object.
  */
 export function getAdjustedDateTime(image: {
   dateTimeOriginal: Date | DateTime;

@@ -1502,11 +1502,9 @@ export class ImageModel {
             console.log(`Retrying setTimestampOffsetBatch operation! Try #: ${attempt}`);
           }
 
-          // Fetch images to get their dateTimeOriginal values
           const images = await Image.find({ _id: { $in: input.imageIds } });
 
           const operations = images.map((image) => {
-            // Calculate dateTimeAdjusted = dateTimeOriginal + offsetMs
             const dateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
 
             return {
