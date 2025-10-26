@@ -48,8 +48,16 @@ export function buildImgUrl(
   });
 }
 
-export function getAdjustedDateTime(image: ImageMetadata): Date | DateTime<true> | DateTime<false> {
-  return image.dateTimeAdjusted || image.dateTimeOriginal;
+/**
+ * Returns adjusted datetime for an image, falling back to original datetime.
+ * Always returns a Luxon DateTime object.
+ */
+export function getAdjustedDateTime(image: {
+  dateTimeOriginal: Date | DateTime;
+  dateTimeAdjusted?: Date | null;
+}): DateTime {
+  const dateTime = image.dateTimeAdjusted || image.dateTimeOriginal;
+  return DateTime.isDateTime(dateTime) ? dateTime : DateTime.fromJSDate(dateTime);
 }
 
 export class Duration {
