@@ -1215,12 +1215,12 @@ export type ResendTempPasswordInput = {
 
 export type SetTimestampOffsetBatchTaskInput = {
   imageIds: Array<Scalars['ID']['input']>;
-  offsetMs: Scalars['Int']['input'];
+  offsetMs: Scalars['Float']['input'];
 };
 
 export type SetTimestampOffsetByFilterTaskInput = {
   filters: FiltersInput;
-  offsetMs: Scalars['Int']['input'];
+  offsetMs: Scalars['Float']['input'];
 };
 
 export type SetTimestampOffsetInput = {
