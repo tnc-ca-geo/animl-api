@@ -65,6 +65,7 @@ const ssmNames = [
   `/ml/deepfaune-ne-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for deepfaune-ne
   `/ml/speciesnetv401a-realtime-endpoint-${process.env.STAGE}`,
   `/ml/speciesnetv401a-batch-endpoint-${process.env.STAGE}`,
+  `/ml/ircv2-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for ircv2
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -153,6 +154,7 @@ export interface RemoteConfig {
   '/ML/DEEPFAUNE_NE_BATCH_ENDPOINT': string;
   '/ML/SPECIESNETV401A_REALTIME_ENDPOINT': string;
   '/ML/SPECIESNETV401A_BATCH_ENDPOINT': string;
+  '/ML/IRCV2_BATCH_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager

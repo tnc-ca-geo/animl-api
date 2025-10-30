@@ -365,6 +365,39 @@ const speciesnet: InferenceFunction = async (params) => {
   }
 };
 
+const ircv2: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: bbox,
+  };
+
+  const isBatch = image.batchId;
+  if (!isBatch) {
+    throw new Error('ircv2 does not support realtime processing');
+  }
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      ContentType: 'application/json', // NOTE: ContentType required to satisfy FastAPI/Pydantic input validation
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/IRCV2_BATCH_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`ircv2 predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`ircv2 ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
 modelInterfaces.set('megadetector_v5b', megadetector);
@@ -373,6 +406,7 @@ modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
 modelInterfaces.set('deepfaune-ne', deepfaunene);
+modelInterfaces.set('ircv2', ircv2);
 modelInterfaces.set('speciesnet-classifier', speciesnet);
 modelInterfaces.set('speciesnet-all', speciesnet);
 
