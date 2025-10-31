@@ -22,6 +22,8 @@ const TaskSchema = new Schema({
       'DeleteImagesByFilter',
       'DeleteCamera',
       'DeleteProjectLabel',
+      'SetTimestampOffsetBatch',
+      'SetTimestampOffsetByFilter',
     ],
   },
   status: {

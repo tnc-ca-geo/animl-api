@@ -11,7 +11,7 @@ import { parseMessage } from './utils.js';
 import { type TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 import { type User } from '../api/auth/authorization.js';
-import { DeleteImages, DeleteImagesByFilter } from './image.js';
+import { DeleteImages, DeleteImagesByFilter, SetTimestampOffsetBatch, SetTimestampOffsetByFilter } from './image.js';
 import { DeleteProjectLabel } from './project.js';
 
 async function handler(event: SQSEvent) {
@@ -47,6 +47,10 @@ async function handler(event: SQSEvent) {
         output = await DeleteImages(task);
       } else if (task.type === 'DeleteImagesByFilter') {
         output = await DeleteImagesByFilter(task);
+      } else if (task.type === 'SetTimestampOffsetBatch') {
+        output = await SetTimestampOffsetBatch(task);
+      } else if (task.type === 'SetTimestampOffsetByFilter') {
+        output = await SetTimestampOffsetByFilter(task);
       } else if (task.type === 'DeleteCamera') {
         output = await DeleteCamera(task);
       } else if (task.type === 'DeleteProjectLabel') {

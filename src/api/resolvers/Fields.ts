@@ -1,6 +1,6 @@
 import { Context } from '../handler.js';
 import type { ImageSchema } from '../db/schemas/Image.js';
-import { buildImgUrl } from '../db/models/utils.js';
+import { buildImgUrl, getAdjustedDateTime } from '../db/models/utils.js';
 import type { SignedImageUrl } from '../../@types/graphql.js';
 
 // Field level resolvers
@@ -16,5 +16,7 @@ export default {
           buildImgUrl(parent, context.config, size),
         ]),
       ),
+    dateTimeAdjusted: (parent: ImageSchema) =>
+      getAdjustedDateTime(parent).toJSDate(),
   },
 };
