@@ -398,6 +398,38 @@ const ircv2: InferenceFunction = async (params) => {
   }
 };
 
+const cameraTrapVehicleClassifier: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: bbox,
+  };
+
+  const isBatch = image.batchId;
+  if (!isBatch) {
+    throw new Error('camera-trap-vehicle-classifier does not support realtime processing');
+  }
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/CAMERA_TRAP_VEHICLE_CLASSIFIER_BATCH_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`camera-trap-vehicle-classifier predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`camera-trap-vehicle-classifier ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
 modelInterfaces.set('megadetector_v5b', megadetector);
@@ -407,6 +439,7 @@ modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
 modelInterfaces.set('sdzwa-andesv1', sdzwaandesv1);
 modelInterfaces.set('deepfaune-ne', deepfaunene);
 modelInterfaces.set('ircv2', ircv2);
+modelInterfaces.set('camera-trap-vehicle-classifier', cameraTrapVehicleClassifier);
 modelInterfaces.set('speciesnet-classifier', speciesnet);
 modelInterfaces.set('speciesnet-all', speciesnet);
 
