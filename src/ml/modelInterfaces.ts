@@ -416,7 +416,7 @@ const cameraTrapVehicleClassifier: InferenceFunction = async (params) => {
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({
       Body: JSON.stringify(payload),
-      EndpointName: config[`/ML/CAMERA_TRAP_VEHICLE_BATCH_ENDPOINT`],
+      EndpointName: config[`/ML/CAMERA_TRAP_VEHICLE_CLASSIFIER_BATCH_ENDPOINT`],
     });
 
     const res = await smr.send(command);
