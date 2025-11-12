@@ -48,6 +48,17 @@ export function buildImgUrl(
   });
 }
 
+/**
+ * Returns adjusted datetime for an image, falling back to original datetime.
+ */
+export function getAdjustedDateTime(image: {
+  dateTimeOriginal: Date | DateTime;
+  dateTimeAdjusted?: Date | null;
+}): DateTime {
+  const dateTime = image.dateTimeAdjusted || image.dateTimeOriginal;
+  return DateTime.isDateTime(dateTime) ? dateTime : DateTime.fromJSDate(dateTime);
+}
+
 export class Duration {
   readonly milliseconds: number;
 
@@ -711,6 +722,7 @@ export type Pagination<T = {}> = T & {
 // export interface ImageMetadata extends WithRequired<ImageMetadataSchema, 'dateTimeOriginal'> {
 export interface ImageMetadata {
   dateTimeOriginal: Date | DateTime<true> | DateTime<false>;
+  dateTimeAdjusted?: Date;
   imageId: string;
   prodBucket: string;
   serialNumber: string; // Used as cameraId
