@@ -251,7 +251,10 @@ const operations = {
           const op = {
             updateOne: {
               filter: { _id: img._id },
-              update: { dateTimeOriginal: newDT },
+              update: {
+                dateTimeOriginal: newDT,
+                dateTimeAdjusted: newDT,
+              },
             },
           };
           operations.push(op);
