@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { DateTime } from 'luxon';
 
 import { ProjectModel } from '../api/db/models/Project.js';
-import { buildPipeline, idMatch, getAdjustedDateTime } from '../api/db/models/utils.js';
+import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import { findRepresentativeLabel } from './utils.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/schemas/Project.js';
@@ -70,7 +70,7 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
         deploymentId: dep._id,
       }
     });
-    depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
+    depPipeline.push({ $sort: { dateTimeAdjusted: 1 } });
 
     let burst: ImageSchema[] = [];
 
@@ -81,8 +81,8 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
       }
 
       const lastImg = burst[burst.length - 1];
-      const imgDateAdded = getAdjustedDateTime(img);
-      const lastImgDateAdded = getAdjustedDateTime(lastImg);
+      const imgDateAdded = DateTime.fromJSDate(img.dateTimeAdjusted);
+      const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeAdjusted);
       const diff = lastImgDateAdded.diff(imgDateAdded, 'seconds').toObject();
       const delta = Math.abs(diff.seconds || 0);
 

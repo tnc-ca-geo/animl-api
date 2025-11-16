@@ -25,7 +25,7 @@ const ImageSchema = new Schema({
   path: { type: String },
   dateAdded: { type: Date, default: Date.now, required: true },
   dateTimeOriginal: { type: Date, required: true },
-  dateTimeAdjusted: { type: Date },
+  dateTimeAdjusted: { type: Date, required: true },
   timezone: { type: String, required: true },
   make: { type: String, default: 'unknown', required: true },
   cameraId: { type: String, required: true, ref: 'Camera' },

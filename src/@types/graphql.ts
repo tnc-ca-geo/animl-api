@@ -463,7 +463,7 @@ export type Image = {
   cameraId: Scalars['String']['output'];
   comments?: Maybe<Array<ImageComment>>;
   dateAdded: Scalars['Date']['output'];
-  dateTimeAdjusted?: Maybe<Scalars['Date']['output']>;
+  dateTimeAdjusted: Scalars['Date']['output'];
   dateTimeOriginal: Scalars['Date']['output'];
   deploymentId: Scalars['ID']['output'];
   fileTypeExtension: Scalars['String']['output'];

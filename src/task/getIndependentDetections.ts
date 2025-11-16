@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 
 import { ProjectModel } from '../api/db/models/Project.js';
-import { buildPipeline, idMatch, getAdjustedDateTime } from '../api/db/models/utils.js';
+import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/schemas/Project.js';
 
 import { AggregationLevel } from "../@types/graphql.js";
@@ -63,7 +63,7 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
     const detections: DetectionsTracker = {};
 
     for await (const img of Image.aggregate<ImageSchema>(depPipeline)) {
-      const imgDateCreated = getAdjustedDateTime(img);
+      const imgDateCreated = DateTime.fromJSDate(img.dateTimeAdjusted);
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
