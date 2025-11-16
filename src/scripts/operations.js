@@ -420,6 +420,40 @@ const operations = {
       return { nModified: doneCount };
     },
   },
+
+  'backfill-datetime-adjusted': {
+    getIds: async () =>
+      await Image.find({ dateTimeAdjusted: { $exists: false } }).select('_id'),
+    update: async () => {
+      console.log('Backfilling dateTimeAdjusted field from dateTimeOriginal...');
+
+      const limit = 5000;
+      let doneCount = 0;
+
+      while (true) {
+        const documents = await Image.find({ dateTimeAdjusted: { $exists: false } }).limit(limit);
+
+        if (documents.length === 0) {
+          console.log('No more documents to process');
+          break;
+        }
+
+        const operations = [];
+        for (const image of documents) {
+          operations.push({
+            updateOne: {
+              filter: { _id: image._id },
+              update: { $set: { dateTimeAdjusted: image.dateTimeOriginal } },
+            },
+          });
+        }
+        await Image.bulkWrite(operations);
+        doneCount += operations.length;
+        console.log('Done: ', doneCount);
+      }
+      return { nModified: doneCount };
+    },
+  },
 };
 
 export { operations };
