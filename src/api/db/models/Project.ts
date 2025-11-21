@@ -478,6 +478,7 @@ export class ProjectModel {
                 );
                 const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
                 update.dateTimeOriginal = newDT.toJSDate();
+                update.dateTimeAdjusted = newDT.toJSDate();
                 update.timezone = dep.timezone;
               }
 

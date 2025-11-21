@@ -448,6 +448,7 @@ export function createImageRecord(md: ImageMetadata) {
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: DateTime.now(),
     dateTimeOriginal: md.dateTimeOriginal,
+    dateTimeAdjusted: md.dateTimeOriginal,
     timezone: md.timezone,
     cameraId: md.serialNumber,
     make: md.make,
