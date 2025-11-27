@@ -67,6 +67,7 @@ const ssmNames = [
   `/ml/speciesnetv401a-batch-endpoint-${process.env.STAGE}`,
   `/ml/ircv2-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for ircv2
   `/ml/camera-trap-vehicle-classifier-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for camera-trap-vehicle-classifier
+  `/ml/alitav3-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for alitav3
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -157,6 +158,7 @@ export interface RemoteConfig {
   '/ML/SPECIESNETV401A_BATCH_ENDPOINT': string;
   '/ML/IRCV2_BATCH_ENDPOINT': string;
   '/ML/CAMERA_TRAP_VEHICLE_CLASSIFIER_BATCH_ENDPOINT': string;
+  '/ML/ALITAV3_BATCH_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager
