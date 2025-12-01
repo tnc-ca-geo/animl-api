@@ -38,6 +38,7 @@ const MLModelSchema = new Schema({
     ],
     required: true,
   },
+  expectsCrops: { type: Boolean, required: true },
   // performance: { type: MLModelPerformanceSchema, required: true },
 });
 

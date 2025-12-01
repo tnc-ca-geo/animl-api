@@ -616,6 +616,7 @@ export type MlModel = {
   categories: Array<Category>;
   defaultConfThreshold?: Maybe<Scalars['Float']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  expectsCrops: Scalars['Boolean']['output'];
   version: Scalars['String']['output'];
 };
 
