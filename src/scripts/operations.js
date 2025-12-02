@@ -432,12 +432,14 @@ const operations = {
 
       const limit = 5000;
       let doneCount = 0;
+      let hasMore = true;
 
-      while (true) {
+      while (hasMore) {
         const documents = await Image.find({ dateTimeAdjusted: { $exists: false } }).limit(limit);
 
         if (documents.length === 0) {
           console.log('No more documents to process');
+          hasMore = false;
           break;
         }
 
