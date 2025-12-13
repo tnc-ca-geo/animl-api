@@ -13,7 +13,7 @@ export default /* GraphQL */ `
     path: String
     dateAdded: Date!
     dateTimeOriginal: Date!
-    dateTimeAdjusted: Date
+    dateTimeAdjusted: Date!
     timezone: String!
     make: String!
     cameraId: String!

@@ -1486,6 +1486,52 @@ export class ImageModel {
   }
 
   /**
+   * Sets timestamp offsets for multiple images in batch
+   *
+   * @param {object} input - Contains imageIds array and offsetMs
+   * @param {object} context - User context
+   */
+  static async setTimestampOffsetBatch(
+    input: { imageIds: string[]; offsetMs: number },
+    context: Pick<Context, 'user'>,
+  ): Promise<BulkWriteResult> {
+    try {
+      const res = await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying setTimestampOffsetBatch operation! Try #: ${attempt}`);
+          }
+
+          const images = await Image.find({ _id: { $in: input.imageIds } });
+
+          const operations = images.map((image) => {
+            const dateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
+
+            return {
+              updateOne: {
+                filter: {
+                  _id: image._id,
+                },
+                update: {
+                  $set: {
+                    dateTimeAdjusted: dateTimeAdjusted,
+                  }
+                },
+              },
+            };
+          });
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+      return res;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * Sets the timestamp offset for a single image
    *
    * @param {object} input - Contains imageId and offsetMs
@@ -1495,15 +1541,53 @@ export class ImageModel {
     input: { imageId: string; offsetMs: number },
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
+    const result = await ImageModel.setTimestampOffsetBatch(
+      { imageIds: [input.imageId], offsetMs: input.offsetMs },
+      context,
+    );
+    return { isOk: result.modifiedCount === 1 };
+  }
+
+  /**
+   * Set timestamp offset for an array of images by ID asynchronously
+   */
+  static async setTimestampOffsetBatchTask(
+    input: gql.SetTimestampOffsetBatchTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
-
-      await Image.updateOne(
-        { _id: input.imageId },
-        { $set: { dateTimeOffsetMs: input.offsetMs } }
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetBatch',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
       );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 
-      return { isOk: true };
+  /**
+   * Set timestamp offset for all images matching a filter
+   */
+  static async setTimestampOffsetByFilterTask(
+    input: gql.SetTimestampOffsetByFilterTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetByFilter',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1615,6 +1699,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(DELETE_IMAGES_ROLES)
   deleteImagesByFilterTask(...args: MethodParams<typeof ImageModel.deleteImagesByFilterTask>) {
     return ImageModel.deleteImagesByFilterTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetBatchTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetBatchTask>) {
+    return ImageModel.setTimestampOffsetBatchTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetByFilterTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetByFilterTask>) {
+    return ImageModel.setTimestampOffsetByFilterTask(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
