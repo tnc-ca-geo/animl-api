@@ -2,7 +2,6 @@ import { Context } from '../handler.js';
 import type { ImageSchema } from '../db/schemas/Image.js';
 import { buildImgUrl } from '../db/models/utils.js';
 import type { SignedImageUrl } from '../../@types/graphql.js';
-import { DateTime } from 'luxon';
 
 // Field level resolvers
 // NOTE: For more information on resolver chains and when to use field-level resolvers, see:
