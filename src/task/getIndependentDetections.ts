@@ -63,7 +63,7 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
     const detections: DetectionsTracker = {};
 
     for await (const img of Image.aggregate<ImageSchema>(depPipeline)) {
-      const imgDateCreated = DateTime.fromJSDate(img.dateTimeOriginal);
+      const imgDateCreated = DateTime.fromJSDate(img.dateTimeAdjusted);
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
