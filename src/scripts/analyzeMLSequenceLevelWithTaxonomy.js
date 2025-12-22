@@ -468,7 +468,13 @@ const analyze = async (analysisConfig) => {
   }
 };
 
-// Remove TARGET_CLASSES from config to avoid confusion
-// eslint-disable-next-line no-unused-vars
-const { TARGET_CLASSES, ...configWithoutTargetClasses } = CONFIG;
-analyze(configWithoutTargetClasses);
+// Export functions for testing
+export { processSequence, isActual, isTruePositive, isFalsePositive };
+
+// Only run if this file is executed directly, not when imported
+if (import.meta.url === `file://${process.argv[1]}`) {
+  // Remove TARGET_CLASSES from config to avoid confusion
+  // eslint-disable-next-line no-unused-vars
+  const { TARGET_CLASSES, ...configWithoutTargetClasses } = CONFIG;
+  analyze(configWithoutTargetClasses);
+}
