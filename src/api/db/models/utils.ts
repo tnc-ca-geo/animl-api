@@ -224,7 +224,7 @@ export function buildPipeline(
   if (createdStart || createdEnd) {
     pipeline.push({
       $match: {
-        dateTimeOriginal: {
+        dateTimeAdjusted: {
           ...(createdStart && { $gte: createdStart.toJSDate() }),
           ...(createdEnd && { $lt: createdEnd.toJSDate() }),
         },

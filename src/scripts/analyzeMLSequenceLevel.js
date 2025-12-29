@@ -271,7 +271,7 @@ async function analyze() {
       // create aggregation pipeline
       const depPipeline = structuredClone(aggPipeline);
       depPipeline[0].$match.deploymentId = dep._id;
-      depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
+      depPipeline.push({ $sort: { dateTimeAdjusted: 1 } });
 
       let sequence = [];
       const depImageCount = await Image.aggregate(depPipeline);
@@ -284,8 +284,8 @@ async function analyze() {
         }
 
         const lastImg = sequence[sequence.length - 1];
-        const imgDateAdded = DateTime.fromJSDate(img.dateTimeOriginal);
-        const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeOriginal);
+        const imgDateAdded = DateTime.fromJSDate(img.dateTimeAdjusted);
+        const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeAdjusted);
         const diff = lastImgDateAdded.diff(imgDateAdded, 'seconds').toObject();
         const delta = Math.abs(diff.seconds);
 

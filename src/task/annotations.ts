@@ -7,10 +7,9 @@ import { InternalServerError } from '../api/errors.js';
 import { type Transformer, transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
-import { idMatch } from '../api/db/models/utils.js';
+import { idMatch, buildPipeline } from '../api/db/models/utils.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
-import { buildPipeline } from '../api/db/models/utils.js';
 import { type Config } from '../config/config.js';
 import { type User } from '../api/auth/authorization.js';
 import type { DeploymentSchema, FiltersSchema, ProjectSchema } from '../api/db/schemas/Project.js';
@@ -422,10 +421,11 @@ export class AnnotationsExport {
       let catCounts: Record<string, any> = {};
 
       const deployment = this.getDeployment(img);
+      const imgDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
-        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
+        dateTimeOriginal: imgDateTime.setZone(this.timezone).toISO(),
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -527,7 +527,7 @@ export class AnnotationsExport {
     file_name: string;
     original_file_name?: Maybe<string>;
     serving_bucket_key: string;
-    datetime: Date;
+    datetime: string | null;
     location: string;
     width?: number;
     height?: number;
@@ -543,12 +543,13 @@ export class AnnotationsExport {
       '-',
     )}.${img.fileTypeExtension}`;
     const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
+    const adjustedDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
     return {
       id: img._id,
       file_name: destPath,
       original_file_name: img.originalFileName,
       serving_bucket_key: servingPath,
-      datetime: img.dateTimeOriginal,
+      datetime: adjustedDateTime.setZone(this.timezone).toISO(),
       location: deployment.name === 'default' ? `${img.cameraId}-default` : deployment.name,
       ...(img.imageWidth && { width: img.imageWidth }),
       ...(img.imageHeight && { height: img.imageHeight }),
