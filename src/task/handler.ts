@@ -69,10 +69,7 @@ async function handler(event: SQSEvent) {
           _id: task._id,
           status: 'FAIL',
           output: {
-            error: {
-              message: err instanceof Error ? err.message : String(err),
-              code: err instanceof GraphQLError ? err.extensions?.code : 'INTERNAL_SERVER_ERROR',
-            },
+            error: err instanceof GraphQLError ? err : new InternalServerError(err as string),
           },
         },
         { user: { curr_project: task.projectId } as User },

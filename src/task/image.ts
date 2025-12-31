@@ -8,16 +8,18 @@ import { buildPipeline, getMultiTimezoneCameras } from '../api/db/models/utils.j
 import { ForbiddenError } from '../api/errors.js';
 
 /**
- * Validates that a given filter set is eligible to receive a timestamp offset.
- * Currently this means that no images matching the input filter belong to
- * cameras with deployments in multiple timezones, as this would yield ambiguous
+ * Validates that a set of images is eligible to receive a timestamp offset.
+ * Currently this means that no images matching the input belong to cameras
+ * with deployments in multiple timezones, as this would yield ambiguous
  * and potentially unexpected product behavior.
  *
+ * Accepts either filters or imageIds to identify the images to validate.
  * Throws ForbiddenError if validation fails.
  */
 export async function validateTimestampOffsetChangeset(
   projectId: string,
-  filters: gql.FiltersInput,
+  filters?: gql.FiltersInput,
+  imageIds?: string[],
 ): Promise<void> {
   const project = await Project.findById(projectId);
   if (!project) return;
@@ -27,17 +29,29 @@ export async function validateTimestampOffsetChangeset(
   const multiTimezoneCameras = getMultiTimezoneCameras(project.cameraConfigs);
   if (multiTimezoneCameras.size === 0) return;
 
-  // If there are cameras in the input filter, intersect those with multi-timezone cameras
-  const camerasToCheck = filters.cameras
-    ? filters.cameras.filter((c) => multiTimezoneCameras.has(c))
-    : [...multiTimezoneCameras];
-
-  if (camerasToCheck.length === 0) return;
-
   // Use a mongo aggregation to discover whether we have any images that could potentially
   // end up in a new deployment with a new timezone as a result of a timestamp offset
-  const pipeline = buildPipeline({ ...filters, cameras: camerasToCheck }, projectId);
-  pipeline.push({ $count: 'count' });
+  let pipeline;
+  if (imageIds) {
+    pipeline = [
+      { $match: { _id: { $in: imageIds }, projectId } },
+      { $match: { cameraId: { $in: [...multiTimezoneCameras] } } },
+      { $count: 'count' },
+    ];
+  } else if (filters) {
+    // If there are cameras in the input filter, intersect those with multi-timezone cameras
+    const camerasToCheck = filters.cameras
+      ? filters.cameras.filter((c) => multiTimezoneCameras.has(c))
+      : [...multiTimezoneCameras];
+
+    if (camerasToCheck.length === 0) return;
+
+    pipeline = buildPipeline({ ...filters, cameras: camerasToCheck }, projectId);
+    pipeline.push({ $count: 'count' });
+  } else {
+    return;
+  }
+
   const result = await Image.aggregate(pipeline);
   const affectedCount = result[0]?.count ?? 0;
 
@@ -119,6 +133,16 @@ export async function SetTimestampOffsetBatch(
    * * @param {number} input.config.offsetMs
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
+
+  try {
+    await validateTimestampOffsetChangeset(task.projectId, undefined, task.config.imageIds);
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return { imageIds: task.config.imageIds as String[], modifiedCount: 0, errors: [err.message] };
+    }
+    throw err;
+  }
+
   const imagesToUpdate = task.config.imageIds?.slice() ?? [];
   let totalModified = 0;
   let failedCount = 0;
