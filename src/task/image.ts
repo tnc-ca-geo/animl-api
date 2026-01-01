@@ -5,7 +5,7 @@ import Project from '../api/db/schemas/Project.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
 import { buildPipeline, getMultiTimezoneCameras } from '../api/db/models/utils.js';
-import { ForbiddenError } from '../api/errors.js';
+import { TimestampOffsetValidationError } from '../api/errors.js';
 
 /**
  * Validates that a set of images is eligible to receive a timestamp offset.
@@ -69,7 +69,7 @@ export async function validateTimestampOffsetChangeset(
   const affectedCount = result[0]?.count ?? 0;
 
   if (affectedCount > 0) {
-    throw new ForbiddenError(
+    throw new TimestampOffsetValidationError(
       'Requested offset impacts images from cameras with deployments in multiple timezones. This is not currently supported as it may produce unintended results. Please reach out to animl@tnc.org for guidance.',
     );
   }
@@ -147,14 +147,7 @@ export async function SetTimestampOffsetBatch(
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
 
-  try {
-    await validateTimestampOffsetChangeset(task.projectId, undefined, task.config.imageIds);
-  } catch (err) {
-    if (err instanceof ForbiddenError) {
-      return { imageIds: task.config.imageIds as String[], modifiedCount: 0, errors: [err.message] };
-    }
-    throw err;
-  }
+  await validateTimestampOffsetChangeset(task.projectId, undefined, task.config.imageIds);
 
   const imagesToUpdate = task.config.imageIds?.slice() ?? [];
   let totalModified = 0;
@@ -192,14 +185,7 @@ export async function SetTimestampOffsetByFilter(
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
 
-  try {
-    await validateTimestampOffsetChangeset(task.projectId, task.config.filters);
-  } catch (err) {
-    if (err instanceof ForbiddenError) {
-      return { filters: task.config.filters, modifiedCount: 0, errors: [err.message] };
-    }
-    throw err;
-  }
+  await validateTimestampOffsetChangeset(task.projectId, task.config.filters);
 
   const queryPageSize = 500;
   let images = await ImageModel.queryByFilter(
