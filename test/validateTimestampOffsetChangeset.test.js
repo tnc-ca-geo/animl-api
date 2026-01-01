@@ -274,3 +274,57 @@ tape('validateTimestampOffsetChangeset (imageIds) - builds correct pipeline', as
   Sinon.restore();
   t.end();
 });
+
+tape('validateTimestampOffsetChangeset - validates with camera and deployments filters', async (t) => {
+  let aggregatePipeline = null;
+  const dep1Id = new mongoose.Types.ObjectId();
+
+  try {
+    Sinon.restore();
+    MockConfig(t);
+
+    // Both cameras have multiple timezones
+    const multiTzProject = createMockProject([
+      {
+        _id: 'camera1',
+        deployments: [
+          { _id: dep1Id, name: 'default', timezone: 'America/Los_Angeles' },
+          { _id: new mongoose.Types.ObjectId(), name: 'dep1', timezone: 'America/New_York', startDate: new Date('2024-01-01') },
+        ],
+      },
+      {
+        _id: 'camera2',
+        deployments: [
+          { _id: new mongoose.Types.ObjectId(), name: 'default', timezone: 'America/Los_Angeles' },
+          { _id: new mongoose.Types.ObjectId(), name: 'dep1', timezone: 'Europe/London', startDate: new Date('2024-01-01') },
+        ],
+      },
+    ]);
+
+    Sinon.stub(ProjectSchema, 'findById').callsFake(() => multiTzProject);
+    Sinon.stub(ImageSchema, 'aggregate').callsFake((pipeline) => {
+      aggregatePipeline = pipeline;
+      return [];
+    });
+
+    // Filter by both camera2 directly and dep1Id (which maps to camera1)
+    await validateTimestampOffsetChangeset('project', {
+      cameras: ['camera2'],
+      deployments: [dep1Id.toString()]
+    });
+
+    t.ok(aggregatePipeline, 'Should have called aggregate');
+    const cameraMatch = aggregatePipeline.find((stage) => stage.$match?.cameraId);
+    t.ok(cameraMatch, 'Should have camera match stage');
+    t.deepEquals(
+      cameraMatch.$match.cameraId.$in.sort(),
+      ['camera1', 'camera2'].sort(),
+      'Should check both cameras'
+    );
+  } catch (err) {
+    t.error(err);
+  }
+
+  Sinon.restore();
+  t.end();
+});

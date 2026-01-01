@@ -39,10 +39,23 @@ export async function validateTimestampOffsetChangeset(
       { $count: 'count' },
     ];
   } else if (filters) {
-    // If there are cameras in the input filter, intersect those with multi-timezone cameras
-    const camerasToCheck = filters.cameras
-      ? filters.cameras.filter((c) => multiTimezoneCameras.has(c))
-      : [...multiTimezoneCameras];
+    // Get cameras from filters - either directly or by mapping deployments back to cameras
+    const filteredCameras = new Set(filters.cameras ?? []);
+
+    if (filters.deployments) {
+      const deploymentSet = new Set(filters.deployments);
+      for (const camConfig of project.cameraConfigs) {
+        if (camConfig.deployments.some((dep) => deploymentSet.has(dep._id!.toString()))) {
+          filteredCameras.add(camConfig._id);
+        }
+      }
+    }
+
+    // Intersect with multi-timezone cameras
+    const camerasToCheck =
+      filteredCameras.size > 0
+        ? [...filteredCameras].filter((c) => multiTimezoneCameras.has(c))
+        : [...multiTimezoneCameras];
 
     if (camerasToCheck.length === 0) return;
 
