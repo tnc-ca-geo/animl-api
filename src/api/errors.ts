@@ -137,3 +137,14 @@ export class DeleteCameraError extends GraphQLError {
     });
   }
 }
+
+export class TimestampOffsetValidationError extends GraphQLError {
+  constructor(message = 'TimestampOffsetValidationError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'TIMESTAMP_OFFSET_VALIDATION_ERROR',
+        ...properties,
+      },
+    });
+  }
+}

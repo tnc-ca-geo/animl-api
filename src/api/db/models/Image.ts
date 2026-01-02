@@ -43,6 +43,7 @@ import {
   reviewerLabelRecord,
   findActiveProjReg,
   isImageReviewed,
+  findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -1504,19 +1505,37 @@ export class ImageModel {
 
           const images = await Image.find({ _id: { $in: input.imageIds } });
 
+          const projectId = images[0]?.projectId;
+          const project = projectId ? await Project.findById(projectId) : null;
+          const configMap = new Map<string, CameraConfigSchema>(
+            project?.cameraConfigs.map((cc) => [cc._id, cc]) ?? [],
+          );
+
           const operations = images.map((image) => {
-            const dateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
+            const newDateTimeAdjusted = new Date(
+              image.dateTimeOriginal.getTime() + input.offsetMs,
+            );
+            const update: Record<string, any> = { dateTimeAdjusted: newDateTimeAdjusted };
+
+            // Check for deployment remapping only if camera has >1 deployment
+            const camConfig = configMap.get(image.cameraId);
+
+            if (camConfig && camConfig.deployments.length > 1) {
+              const newDeployment = findDeploymentForAdjustedTime(newDateTimeAdjusted, camConfig);
+
+              if (
+                newDeployment &&
+                newDeployment._id!.toString() !== image.deploymentId.toString()
+              ) {
+                update.deploymentId = newDeployment._id;
+                update.timezone = newDeployment.timezone;
+              }
+            }
 
             return {
               updateOne: {
-                filter: {
-                  _id: image._id,
-                },
-                update: {
-                  $set: {
-                    dateTimeAdjusted: dateTimeAdjusted,
-                  }
-                },
+                filter: { _id: image._id },
+                update: { $set: update },
               },
             };
           });

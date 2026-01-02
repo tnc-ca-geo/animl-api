@@ -2,7 +2,13 @@ import tape from 'tape';
 import Sinon from 'sinon';
 import MockConfig from './lib/config.js';
 import ImageSchema from '../.build/api/db/schemas/Image.js';
+import ProjectSchema from '../.build/api/db/schemas/Project.js';
 import { SetTimestampOffsetBatch } from '../.build/task/image.js';
+
+const createMockProject = () => ({
+  _id: 'project',
+  cameraConfigs: [],
+});
 
 tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => {
   const mocks = [];
@@ -14,6 +20,8 @@ tape('Image: SetTimestampOffsetBatch - Success with single batch', async (t) => 
     const imageIds = ['project:img1', 'project:img2', 'project:img3'];
     const offsetMs = 3600000;
     const originalDate = new Date('2024-01-01T12:00:00Z');
+
+    Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
 
     Sinon.stub(ImageSchema, 'find').callsFake(() => {
       mocks.push('Image::Find');
@@ -64,6 +72,8 @@ tape('Image: SetTimestampOffsetBatch - Success with multiple batches', async (t)
     const imageIds = Array.from({ length: 1200 }, (_, i) => `project:img${i}`);
     const offsetMs = -7200000;
     const originalDate = new Date('2024-01-01T12:00:00Z');
+
+    Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
 
     let findCallCount = 0;
     Sinon.stub(ImageSchema, 'find').callsFake((query) => {
@@ -129,6 +139,8 @@ tape('Image: SetTimestampOffsetBatch - Partial modification', async (t) => {
     const offsetMs = 1800000;
     const originalDate = new Date('2024-01-01T12:00:00Z');
 
+    Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
+
     Sinon.stub(ImageSchema, 'find').callsFake(() => {
       mocks.push('Image::Find');
       return imageIds.map((id) => ({
@@ -172,6 +184,8 @@ tape('Image: SetTimestampOffsetBatch - Empty imageIds', async (t) => {
   try {
     Sinon.restore();
     MockConfig(t);
+
+    Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
 
     Sinon.stub(ImageSchema, 'find').callsFake(() => {
       mocks.push('Image::Find');

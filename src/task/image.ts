@@ -1,8 +1,79 @@
 import { type User } from '../api/auth/authorization.js';
 import { ImageModel } from '../api/db/models/Image.js';
 import Image from '../api/db/schemas/Image.js';
+import Project from '../api/db/schemas/Project.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import type * as gql from '../@types/graphql.js';
+import { buildPipeline, getMultiTimezoneCameras } from '../api/db/models/utils.js';
+import { TimestampOffsetValidationError } from '../api/errors.js';
+
+/**
+ * Validates that a set of images is eligible to receive a timestamp offset.
+ * Currently this means that no images matching the input belong to cameras
+ * with deployments in multiple timezones, as this would yield ambiguous
+ * and potentially unexpected product behavior.
+ *
+ * Accepts either filters or imageIds to identify the images to validate.
+ * Throws ForbiddenError if validation fails.
+ */
+export async function validateTimestampOffsetChangeset(
+  projectId: string,
+  filters?: gql.FiltersInput,
+  imageIds?: string[],
+): Promise<void> {
+  const project = await Project.findById(projectId);
+  if (!project) return;
+
+  // We expect most requests to return here, since cameras with deployments in
+  // multiple timezones is rare (read: doesn't exist in production as of 12/2025)
+  const multiTimezoneCameras = getMultiTimezoneCameras(project.cameraConfigs);
+  if (multiTimezoneCameras.size === 0) return;
+
+  // Use a mongo aggregation to discover whether we have any images that could potentially
+  // end up in a new deployment with a new timezone as a result of a timestamp offset
+  let pipeline;
+  if (imageIds) {
+    pipeline = [
+      { $match: { _id: { $in: imageIds }, projectId } },
+      { $match: { cameraId: { $in: [...multiTimezoneCameras] } } },
+      { $count: 'count' },
+    ];
+  } else if (filters) {
+    // Get cameras from filters - either directly or by mapping deployments back to cameras
+    const filteredCameras = new Set(filters.cameras ?? []);
+
+    if (filters.deployments) {
+      const deploymentSet = new Set(filters.deployments);
+      for (const camConfig of project.cameraConfigs) {
+        if (camConfig.deployments.some((dep) => deploymentSet.has(dep._id!.toString()))) {
+          filteredCameras.add(camConfig._id);
+        }
+      }
+    }
+
+    // Intersect with multi-timezone cameras
+    const camerasToCheck =
+      filteredCameras.size > 0
+        ? [...filteredCameras].filter((c) => multiTimezoneCameras.has(c))
+        : [...multiTimezoneCameras];
+
+    if (camerasToCheck.length === 0) return;
+
+    pipeline = buildPipeline({ ...filters, cameras: camerasToCheck }, projectId);
+    pipeline.push({ $count: 'count' });
+  } else {
+    return;
+  }
+
+  const result = await Image.aggregate(pipeline);
+  const affectedCount = result[0]?.count ?? 0;
+
+  if (affectedCount > 0) {
+    throw new TimestampOffsetValidationError(
+      'Requested offset impacts images from cameras with deployments in multiple timezones. This is not currently supported as it may produce unintended results. Please reach out to animl@tnc.org for guidance.',
+    );
+  }
+}
 
 export async function DeleteImagesByFilter(
   task: TaskInput<gql.DeleteImagesByFilterTaskInput>,
@@ -75,6 +146,9 @@ export async function SetTimestampOffsetBatch(
    * * @param {number} input.config.offsetMs
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
+
+  await validateTimestampOffsetChangeset(task.projectId, undefined, task.config.imageIds);
+
   const imagesToUpdate = task.config.imageIds?.slice() ?? [];
   let totalModified = 0;
   let failedCount = 0;
@@ -110,6 +184,9 @@ export async function SetTimestampOffsetByFilter(
    * * @param {number} input.config.offsetMs
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
+
+  await validateTimestampOffsetChangeset(task.projectId, task.config.filters);
+
   const queryPageSize = 500;
   let images = await ImageModel.queryByFilter(
     { filters: task.config.filters, limit: queryPageSize },
