@@ -845,7 +845,7 @@ export class ImageModel {
     let projectId: string = '';
 
     try {
-      const image = await ImageModel.queryById(input.imageId, context)
+      const image = await ImageModel.queryById(input.imageId, context);
       // NOTE: this could probably be optimized to use a single bulkWrite operation
       // (see example in createLabels() below), but it's not a high priority since
       // but at most this will receive 10 labels at a time, so there's no risk of timeouts
@@ -1009,9 +1009,9 @@ export class ImageModel {
   }
 
   /*
-    * This endpoint is used only by the ML Handler to lock/unlock images on the frontend to
-    * prevent users from making changes to images while predictions are in progress.
-    */
+   * This endpoint is used only by the ML Handler to lock/unlock images on the frontend to
+   * prevent users from making changes to images while predictions are in progress.
+   */
   static async updatePredictionStatus(
     input: gql.UpdatePredictionStatusInput,
     context: Pick<Context, 'user'>,
@@ -1019,10 +1019,7 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      await Image.findOneAndUpdate(
-        { _id: input.imageId },
-        { awaitingPrediction: input.status }
-      );
+      await Image.findOneAndUpdate({ _id: input.imageId }, { awaitingPrediction: input.status });
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1512,9 +1509,7 @@ export class ImageModel {
           );
 
           const operations = images.map((image) => {
-            const newDateTimeAdjusted = new Date(
-              image.dateTimeOriginal.getTime() + input.offsetMs,
-            );
+            const newDateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
             const update: Record<string, any> = { dateTimeAdjusted: newDateTimeAdjusted };
 
             // Check for deployment remapping only if camera has >1 deployment
@@ -1721,12 +1716,16 @@ export default class AuthedImageModel extends BaseAuthedModel {
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
-  setTimestampOffsetBatchTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetBatchTask>) {
+  setTimestampOffsetBatchTask(
+    ...args: MethodParams<typeof ImageModel.setTimestampOffsetBatchTask>
+  ) {
     return ImageModel.setTimestampOffsetBatchTask(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)
-  setTimestampOffsetByFilterTask(...args: MethodParams<typeof ImageModel.setTimestampOffsetByFilterTask>) {
+  setTimestampOffsetByFilterTask(
+    ...args: MethodParams<typeof ImageModel.setTimestampOffsetByFilterTask>
+  ) {
     return ImageModel.setTimestampOffsetByFilterTask(...args);
   }
 

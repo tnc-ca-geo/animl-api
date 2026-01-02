@@ -7,6 +7,9 @@ import type * as gql from '../@types/graphql.js';
 import { buildPipeline, getMultiTimezoneCameras } from '../api/db/models/utils.js';
 import { TimestampOffsetValidationError } from '../api/errors.js';
 
+// Max number of images allowed in a timestamp offset changeset
+const TIMESTAMP_SHIFT_MAX_IMAGES = 500000;
+
 /**
  * Validates that a set of images is eligible to receive a timestamp offset.
  * Currently this means that no images matching the input belong to cameras
@@ -20,9 +23,17 @@ export async function validateTimestampOffsetChangeset(
   projectId: string,
   filters?: gql.FiltersInput,
   imageIds?: string[],
+  imageCount?: number,
 ): Promise<void> {
   const project = await Project.findById(projectId);
   if (!project) return;
+
+  // validate image limit
+  if (imageCount && imageCount > TIMESTAMP_SHIFT_MAX_IMAGES) {
+    throw new TimestampOffsetValidationError(
+      `Cannot apply timestamp offset to more than ${TIMESTAMP_SHIFT_MAX_IMAGES} images at once. Apply filters to reduce the number of images and adjust the timestamps in smaller batches.`,
+    );
+  }
 
   // We expect most requests to return here, since cameras with deployments in
   // multiple timezones is rare (read: doesn't exist in production as of 12/2025)
@@ -147,7 +158,12 @@ export async function SetTimestampOffsetBatch(
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
 
-  await validateTimestampOffsetChangeset(task.projectId, undefined, task.config.imageIds);
+  await validateTimestampOffsetChangeset(
+    task.projectId,
+    undefined,
+    task.config.imageIds,
+    task.config.imageIds?.length,
+  );
 
   const imagesToUpdate = task.config.imageIds?.slice() ?? [];
   let totalModified = 0;
@@ -171,7 +187,11 @@ export async function SetTimestampOffsetBatch(
     errors.push(`Failed to update ${failedCount} images`);
   }
 
-  return { imageIds: task.config.imageIds as String[], modifiedCount: totalModified, errors: errors };
+  return {
+    imageIds: task.config.imageIds as String[],
+    modifiedCount: totalModified,
+    errors: errors,
+  };
 }
 
 export async function SetTimestampOffsetByFilter(
@@ -185,7 +205,13 @@ export async function SetTimestampOffsetByFilter(
    */
   const context = { user: { is_superuser: true, curr_project: task.projectId } as User };
 
-  await validateTimestampOffsetChangeset(task.projectId, task.config.filters);
+  const imagesCount = await ImageModel.countImages({ filters: task.config.filters }, context);
+  await validateTimestampOffsetChangeset(
+    task.projectId,
+    task.config.filters,
+    undefined,
+    imagesCount,
+  );
 
   const queryPageSize = 500;
   let images = await ImageModel.queryByFilter(

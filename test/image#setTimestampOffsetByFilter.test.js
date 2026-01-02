@@ -9,14 +9,21 @@ import { SetTimestampOffsetByFilter } from '../.build/task/image.js';
 
 const createMockProject = (cameraConfigs = []) => ({
   _id: 'project',
-  cameraConfigs: cameraConfigs.length > 0 ? cameraConfigs : [
-    {
-      _id: 'camera1',
-      deployments: [
-        { _id: new mongoose.Types.ObjectId(), name: 'default', timezone: 'America/Los_Angeles' },
-      ],
-    },
-  ],
+  cameraConfigs:
+    cameraConfigs.length > 0
+      ? cameraConfigs
+      : [
+          {
+            _id: 'camera1',
+            deployments: [
+              {
+                _id: new mongoose.Types.ObjectId(),
+                name: 'default',
+                timezone: 'America/Los_Angeles',
+              },
+            ],
+          },
+        ],
 });
 
 tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) => {
@@ -33,17 +40,18 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
     // Used by validation and setTimestampOffsetBatch for deployment remapping
     Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
 
+    Sinon.stub(ImageModel, 'countImages').callsFake(() => {
+      mocks.push('ImageModel::CountImages');
+      return 3;
+    });
+
     Sinon.stub(ImageModel, 'queryByFilter').callsFake((input, context) => {
       t.deepEquals(input.filters, filters);
       t.equal(input.limit, 500);
       t.equal(context.user.is_superuser, true);
       mocks.push('ImageModel::QueryByFilter');
       return {
-        results: [
-          { _id: 'project:img1' },
-          { _id: 'project:img2' },
-          { _id: 'project:img3' },
-        ],
+        results: [{ _id: 'project:img1' }, { _id: 'project:img2' }, { _id: 'project:img3' }],
         hasNext: false,
       };
     });
@@ -51,9 +59,24 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
     Sinon.stub(ImageSchema, 'find').callsFake(() => {
       mocks.push('Image::Find');
       return [
-        { _id: 'project:img1', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
-        { _id: 'project:img2', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
-        { _id: 'project:img3', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
+        {
+          _id: 'project:img1',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
+        {
+          _id: 'project:img2',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
+        {
+          _id: 'project:img3',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
       ];
     });
 
@@ -81,6 +104,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
   }
 
   t.deepEquals(mocks, [
+    'ImageModel::CountImages',
     'ImageModel::QueryByFilter',
     'Image::Find',
     'Image::BulkWrite',
@@ -101,6 +125,11 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
     const originalDate = new Date('2024-01-01T12:00:00Z');
 
     Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
+
+    Sinon.stub(ImageModel, 'countImages').callsFake(() => {
+      mocks.push('ImageModel::CountImages');
+      return 800;
+    });
 
     let queryCallCount = 0;
     Sinon.stub(ImageModel, 'queryByFilter').callsFake((input) => {
@@ -155,6 +184,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
   }
 
   t.deepEquals(mocks, [
+    'ImageModel::CountImages',
     'ImageModel::QueryByFilter:1',
     'Image::Find',
     'Image::BulkWrite',
@@ -179,14 +209,15 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
 
     Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
 
+    Sinon.stub(ImageModel, 'countImages').callsFake(() => {
+      mocks.push('ImageModel::CountImages');
+      return 3;
+    });
+
     Sinon.stub(ImageModel, 'queryByFilter').callsFake(() => {
       mocks.push('ImageModel::QueryByFilter');
       return {
-        results: [
-          { _id: 'project:img1' },
-          { _id: 'project:img2' },
-          { _id: 'project:img3' },
-        ],
+        results: [{ _id: 'project:img1' }, { _id: 'project:img2' }, { _id: 'project:img3' }],
         hasNext: false,
       };
     });
@@ -194,9 +225,24 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
     Sinon.stub(ImageSchema, 'find').callsFake(() => {
       mocks.push('Image::Find');
       return [
-        { _id: 'project:img1', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
-        { _id: 'project:img2', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
-        { _id: 'project:img3', projectId: 'project', cameraId: 'camera1', dateTimeOriginal: originalDate },
+        {
+          _id: 'project:img1',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
+        {
+          _id: 'project:img2',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
+        {
+          _id: 'project:img3',
+          projectId: 'project',
+          cameraId: 'camera1',
+          dateTimeOriginal: originalDate,
+        },
       ];
     });
 
@@ -225,6 +271,7 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
   }
 
   t.deepEquals(mocks, [
+    'ImageModel::CountImages',
     'ImageModel::QueryByFilter',
     'Image::Find',
     'Image::BulkWrite',
@@ -244,6 +291,11 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
     const offsetMs = 3600000;
 
     Sinon.stub(ProjectSchema, 'findById').callsFake(() => createMockProject());
+
+    Sinon.stub(ImageModel, 'countImages').callsFake(() => {
+      mocks.push('ImageModel::CountImages');
+      return 0; // No matching images
+    });
 
     Sinon.stub(ImageModel, 'queryByFilter').callsFake(() => {
       mocks.push('ImageModel::QueryByFilter');
@@ -270,87 +322,102 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter']);
+  t.deepEquals(mocks, ['ImageModel::CountImages', 'ImageModel::QueryByFilter']);
   Sinon.restore();
   t.end();
 });
 
-tape('Image: SetTimestampOffsetByFilter - Remaps deployment when offset changes deployment', async (t) => {
-  const mocks = [];
+tape(
+  'Image: SetTimestampOffsetByFilter - Remaps deployment when offset changes deployment',
+  async (t) => {
+    const mocks = [];
 
-  try {
-    Sinon.restore();
-    MockConfig(t);
+    try {
+      Sinon.restore();
+      MockConfig(t);
 
-    const filters = { cameras: ['camera1'] };
-    const offsetMs = 86400000 * 60; // 60 days forward
-    const originalDate = new Date('2024-01-15T12:00:00Z'); // Image originally in default deployment
-    const dep1Id = new mongoose.Types.ObjectId();
-    const defaultDepId = new mongoose.Types.ObjectId();
+      const filters = { cameras: ['camera1'] };
+      const offsetMs = 86400000 * 60; // 60 days forward
+      const originalDate = new Date('2024-01-15T12:00:00Z'); // Image originally in default deployment
+      const dep1Id = new mongoose.Types.ObjectId();
+      const defaultDepId = new mongoose.Types.ObjectId();
 
-    const projectWithDeployments = {
-      _id: 'project',
-      cameraConfigs: [
-        {
-          _id: 'camera1',
-          deployments: [
-            { _id: defaultDepId, name: 'default', timezone: 'America/Los_Angeles' },
-            { _id: dep1Id, name: 'dep1', timezone: 'America/Los_Angeles', startDate: new Date('2024-03-01') },
-          ],
-        },
-      ],
-    };
-
-    Sinon.stub(ProjectSchema, 'findById').callsFake(() => projectWithDeployments);
-
-    Sinon.stub(ImageModel, 'queryByFilter').callsFake(() => {
-      mocks.push('ImageModel::QueryByFilter');
-      return {
-        results: [{ _id: 'project:img1' }],
-        hasNext: false,
+      const projectWithDeployments = {
+        _id: 'project',
+        cameraConfigs: [
+          {
+            _id: 'camera1',
+            deployments: [
+              { _id: defaultDepId, name: 'default', timezone: 'America/Los_Angeles' },
+              {
+                _id: dep1Id,
+                name: 'dep1',
+                timezone: 'America/Los_Angeles',
+                startDate: new Date('2024-03-01'),
+              },
+            ],
+          },
+        ],
       };
-    });
 
-    Sinon.stub(ImageSchema, 'find').callsFake(() => {
-      mocks.push('Image::Find');
-      return [{
-        _id: 'project:img1',
+      Sinon.stub(ProjectSchema, 'findById').callsFake(() => projectWithDeployments);
+
+      Sinon.stub(ImageModel, 'countImages').callsFake(() => {
+        mocks.push('ImageModel::CountImages');
+        return 1;
+      });
+
+      Sinon.stub(ImageModel, 'queryByFilter').callsFake(() => {
+        mocks.push('ImageModel::QueryByFilter');
+        return {
+          results: [{ _id: 'project:img1' }],
+          hasNext: false,
+        };
+      });
+
+      Sinon.stub(ImageSchema, 'find').callsFake(() => {
+        mocks.push('Image::Find');
+        return [
+          {
+            _id: 'project:img1',
+            projectId: 'project',
+            cameraId: 'camera1',
+            deploymentId: defaultDepId,
+            dateTimeOriginal: originalDate,
+          },
+        ];
+      });
+
+      let capturedOperations = null;
+      Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
+        mocks.push('Image::BulkWrite');
+        capturedOperations = operations;
+        return { modifiedCount: 1, matchedCount: 1 };
+      });
+
+      const task = {
         projectId: 'project',
-        cameraId: 'camera1',
-        deploymentId: defaultDepId,
-        dateTimeOriginal: originalDate,
-      }];
-    });
+        config: {
+          filters,
+          offsetMs,
+        },
+      };
 
-    let capturedOperations = null;
-    Sinon.stub(ImageSchema, 'bulkWrite').callsFake((operations) => {
-      mocks.push('Image::BulkWrite');
-      capturedOperations = operations;
-      return { modifiedCount: 1, matchedCount: 1 };
-    });
+      const res = await SetTimestampOffsetByFilter(task);
 
-    const task = {
-      projectId: 'project',
-      config: {
-        filters,
-        offsetMs,
-      },
-    };
+      t.equal(res.modifiedCount, 1);
+      t.ok(capturedOperations, 'Should have captured operations');
+      t.equal(capturedOperations.length, 1);
 
-    const res = await SetTimestampOffsetByFilter(task);
+      const update = capturedOperations[0].updateOne.update.$set;
+      t.ok(update.dateTimeAdjusted, 'Should have dateTimeAdjusted');
+      t.equal(update.deploymentId.toString(), dep1Id.toString(), 'Should remap to dep1');
+      t.equal(update.timezone, 'America/Los_Angeles', 'Should set timezone from new deployment');
+    } catch (err) {
+      t.error(err);
+    }
 
-    t.equal(res.modifiedCount, 1);
-    t.ok(capturedOperations, 'Should have captured operations');
-    t.equal(capturedOperations.length, 1);
-
-    const update = capturedOperations[0].updateOne.update.$set;
-    t.ok(update.dateTimeAdjusted, 'Should have dateTimeAdjusted');
-    t.equal(update.deploymentId.toString(), dep1Id.toString(), 'Should remap to dep1');
-    t.equal(update.timezone, 'America/Los_Angeles', 'Should set timezone from new deployment');
-  } catch (err) {
-    t.error(err);
-  }
-
-  Sinon.restore();
-  t.end();
-});
+    Sinon.restore();
+    t.end();
+  },
+);
