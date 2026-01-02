@@ -103,7 +103,12 @@ tape('Image: SetTimestampOffsetByFilter - Success with single page', async (t) =
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::Find', 'Image::BulkWrite']);
+  t.deepEquals(mocks, [
+    'ImageModel::CountImages',
+    'ImageModel::QueryByFilter',
+    'Image::Find',
+    'Image::BulkWrite',
+  ]);
   Sinon.restore();
   t.end();
 });
@@ -179,6 +184,7 @@ tape('Image: SetTimestampOffsetByFilter - Success with multiple pages', async (t
   }
 
   t.deepEquals(mocks, [
+    'ImageModel::CountImages',
     'ImageModel::QueryByFilter:1',
     'Image::Find',
     'Image::BulkWrite',
@@ -264,7 +270,12 @@ tape('Image: SetTimestampOffsetByFilter - Partial modification', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter', 'Image::Find', 'Image::BulkWrite']);
+  t.deepEquals(mocks, [
+    'ImageModel::CountImages',
+    'ImageModel::QueryByFilter',
+    'Image::Find',
+    'Image::BulkWrite',
+  ]);
   Sinon.restore();
   t.end();
 });
@@ -311,7 +322,7 @@ tape('Image: SetTimestampOffsetByFilter - No matching images', async (t) => {
     t.error(err);
   }
 
-  t.deepEquals(mocks, ['ImageModel::QueryByFilter']);
+  t.deepEquals(mocks, ['ImageModel::CountImages', 'ImageModel::QueryByFilter']);
   Sinon.restore();
   t.end();
 });
