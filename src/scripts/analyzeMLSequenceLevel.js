@@ -37,7 +37,7 @@ import cliProgress from 'cli-progress';
  * STAGE=prod AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/analyzeMLSequenceLevel.js
  */
 
-const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA } =
+const { AUTO_ADJUST_TIME_WINDOW, ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA } =
   analysisConfig;
 
 const TARGET_CLASSES = analysisConfig.TARGET_CLASSES.map((tc) => ({
@@ -203,10 +203,69 @@ function processSequence(sequence, deployment, data) {
   return data;
 }
 
+async function tryAdjustAutomationWindow() {
+  console.log('attempting to adjust automation window...');
+  const imageQuery = {
+    $match: {
+      projectId: PROJECT_ID,
+      reviewed: true,
+      objects: {
+        $elemMatch: {
+          labels: {
+            $elemMatch: {
+              mlModel: ML_MODEL
+            }
+          }
+        }
+      }
+    },
+  };
+  const firstMlLabelAfterStart = await Image.aggregate([
+    imageQuery,
+    { $sort: { dateAdded: 1 } },
+    { $limit: 1 }
+  ]);
+  const lastMlLabelAfterStart = await Image.aggregate([
+    imageQuery,
+    { $sort: { dateAdded: -1 } },
+    { $limit: 1 }
+  ]);
+
+  if (
+    !firstMlLabelAfterStart ||
+    firstMlLabelAfterStart.length < 1 ||
+    !lastMlLabelAfterStart ||
+    lastMlLabelAfterStart.length < 1
+  ) {
+    throw new Error('unable to find a valid first and last image in automation window.');
+  }
+
+  const dateOfFirstMlLabelAfterStart = new Date(firstMlLabelAfterStart[0].dateAdded);
+  dateOfFirstMlLabelAfterStart.setDate(dateOfFirstMlLabelAfterStart.getDate() + 1);
+
+  const dateOfLastMlLabelAfterStart = new Date(lastMlLabelAfterStart[0].dateAdded);
+  dateOfLastMlLabelAfterStart.setDate(dateOfLastMlLabelAfterStart.getDate() - 1);
+
+  const newStart = dateOfFirstMlLabelAfterStart.toDateString() !== (new Date(START_DATE)).toDateString()
+    ? dateOfFirstMlLabelAfterStart.toISOString().split('T')[0]
+    : undefined;
+
+  const newEnd = dateOfLastMlLabelAfterStart.toDateString() !== (new Date(END_DATE)).toDateString()
+    ? dateOfLastMlLabelAfterStart.toISOString().split('T')[0]
+    : undefined;
+
+  return {
+    newStart: newStart,
+    newEnd: newEnd
+  };
+}
+
 // main function
 async function analyze() {
+  let startDate = START_DATE;
+  let endDate = END_DATE;
   console.log(
-    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE} at the sequence level...`,
+    `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${startDate} and ${endDate} at the sequence level...`,
   );
   console.log('Getting config...');
   const config = await getConfig();
@@ -214,6 +273,19 @@ async function analyze() {
   const dbClient = await connectToDatabase(config);
 
   try {
+    // adjust analysis window to try and avoid excessive false negatives
+    if (AUTO_ADJUST_TIME_WINDOW) {
+      const { newStart, newEnd } = await tryAdjustAutomationWindow();
+      if (newStart) {
+        console.log(`found a more likely start to the automation window: ${newStart}`);
+      }
+      if (newEnd) {
+        console.log(`found a more likely end to the automation window: ${newEnd}`);
+      }
+      startDate = newStart ?? startDate;
+      endDate = newEnd ?? endDate;
+    }
+
     // set up data structure to hold results
     const project = await ProjectModel.queryById(PROJECT_ID);
     const cameraConfigs = project.cameraConfigs;
@@ -248,7 +320,7 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_sequence-level_${dt}`;
+    const root = `${PROJECT_ID}_${ML_MODEL}_${startDate}--${endDate}_sequence-level_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
@@ -257,7 +329,7 @@ async function analyze() {
     stringifier.on('error', (err) => console.error(err.message));
 
     // get image count
-    const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
+    const aggPipeline = buildBasePipeline(PROJECT_ID, startDate, endDate);
     const imgCount = await getCount(aggPipeline);
     console.log('image count: ', imgCount);
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
