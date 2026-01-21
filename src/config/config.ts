@@ -19,6 +19,7 @@ const localConfig = {
     'path',
     'dateAdded',
     'dateTimeOriginal',
+    'validatedBy',
     'cameraId',
     'projectId',
     'make',

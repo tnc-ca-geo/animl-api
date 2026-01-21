@@ -143,6 +143,7 @@ export class AnnotationsExport {
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
       const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
+      console.log('DEBUG CSV columns:', columns);
       const createRow = stringify({ header: true, columns });
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
@@ -422,10 +423,13 @@ export class AnnotationsExport {
 
       const deployment = this.getDeployment(img);
       const imgDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
+      const validatedBy = this.getValidatedByForCSV(img);
+      console.log('DEBUG validatedBy value:', validatedBy);
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
         dateTimeOriginal: imgDateTime.setZone(this.timezone).toISO(),
+        validatedBy: validatedBy,
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -476,6 +480,27 @@ export class AnnotationsExport {
       }
     }
     return sanitizedFilters;
+  }
+
+  // Concatenate all users who validated the most representative label for
+  // each object in the image
+  getValidatedByForCSV(img: ImageSchema): string {
+    if (!img.reviewed) {
+      return "Not Reviewed";
+    }
+    const validatedBy = new Set<string>();
+    for (const obj of img.objects) {
+      const representativeLabel = findRepresentativeLabel(obj);
+      if (
+        representativeLabel && 
+        representativeLabel.validation &&
+        representativeLabel.validation.validated &&
+        representativeLabel.validation.userId
+      ) {
+        validatedBy.add(representativeLabel.validation.userId);
+      }
+    }
+    return [...validatedBy].join(";");
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
@@ -568,6 +593,7 @@ export class AnnotationsExport {
     bbox: number[];
     confidence: number | null | undefined;
     validated: boolean;
+    validated_by: string;
   } | null {
     let anno = null;
     const representativeLabel = findRepresentativeLabel(object);
@@ -585,6 +611,7 @@ export class AnnotationsExport {
         bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
         confidence: representativeLabel.conf,
         validated: representativeLabel.validation?.validated || false,
+        validated_by: representativeLabel.validation?.userId || "Not Reviewed",
       };
     }
     return anno;
