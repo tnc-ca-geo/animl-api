@@ -45,6 +45,7 @@ const ImageSchema = new Schema({
   comments: { type: [ImageCommentSchema] },
   tags: { type: [mongoose.Schema.Types.ObjectId] },
   awaitingPrediction: { type: Boolean },
+  labelIds: { type: [String] },
 });
 
 ImageSchema.plugin(MongoPaging.mongoosePlugin);
