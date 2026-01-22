@@ -143,7 +143,6 @@ export class AnnotationsExport {
       // prep transformation and upload streams
       const flattenImg = this.flattenImgTransform();
       const columns = this.config.CSV_EXPORT_COLUMNS.concat(this.categories!);
-      console.log('DEBUG CSV columns:', columns);
       const createRow = stringify({ header: true, columns });
       const { streamToS3, promise } = this.streamToS3(this.filename);
 
@@ -424,7 +423,6 @@ export class AnnotationsExport {
       const deployment = this.getDeployment(img);
       const imgDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
       const validatedBy = this.getValidatedByForCSV(img);
-      console.log('DEBUG validatedBy value:', validatedBy);
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
