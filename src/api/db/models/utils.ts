@@ -256,7 +256,20 @@ export function buildPipeline(
 
   // match labels filter
   if (labels) {
-    pipeline.push(...buildLabelPipeline(labels));
+    // pipeline.push(...buildLabelPipeline(labels));
+    const labelsFilter = labels.includes('none')
+      ? {
+          $match: {
+            $or: [
+              { labelIds: { $in: labels } },
+              {
+                $or: [{ labelIds: { $size: 0 } }, { labelIds: null }],
+              },
+            ],
+          },
+        }
+      : { $match: { labelIds: { $in: labels } } };
+    pipeline.push(labelsFilter);
   }
 
   // match tags filter
