@@ -29,6 +29,7 @@ const localConfig = {
     'deploymentLong',
     'comments',
     'tags',
+    'validatedBy',
   ],
   INGESTION_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
   SERVING_BUCKET: `animl-images-serving-${process.env.STAGE}`,
