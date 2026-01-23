@@ -427,7 +427,6 @@ export class AnnotationsExport {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
         dateTimeOriginal: imgDateTime.setZone(this.timezone).toISO(),
-        validatedBy: validatedBy,
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -442,6 +441,7 @@ export class AnnotationsExport {
         }),
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
         ...(img.tags && { tags: this.flattenTags(img.tags) }),
+        validatedBy: validatedBy,
       };
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
@@ -498,7 +498,7 @@ export class AnnotationsExport {
         validatedBy.add(representativeLabel.validation.userId);
       }
     }
-    return [...validatedBy].join(";");
+    return [...validatedBy].join("; ");
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
