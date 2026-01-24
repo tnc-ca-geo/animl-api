@@ -882,6 +882,10 @@ export class ImageModel {
                 'Models should always produce labels tracked in MLModels.categories',
               );
             const modelLabel = cats[0];
+            console.log(
+              'ImageModel.createInternalLabels - found modelLabel: ',
+              JSON.stringify(modelLabel),
+            );
 
             // Check if Label Exists on Project and if not, add it
             if (
@@ -889,6 +893,9 @@ export class ImageModel {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               })
             ) {
+              console.log(
+                `Label ${modelLabel.name} does not exist on Project ${projectId}, creating...`,
+              );
               await Project.findOneAndUpdate(
                 {
                   _id: projectId,
@@ -927,6 +934,7 @@ export class ImageModel {
                 info: { labelId: labelRecord.labelId },
               });
             } else {
+              console.log(`Label ${modelLabel.name} already exists on Project ${projectId}.`);
               // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
               const [projLabel] = project.labels.filter((l) => {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
