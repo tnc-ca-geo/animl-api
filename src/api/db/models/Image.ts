@@ -866,7 +866,7 @@ export class ImageModel {
 
             // find image, create label record
             projectId = image.projectId;
-            // TODO: Pair with Natty on the shape of the label
+
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
             const project = await ProjectModel.queryById(projectId);
@@ -908,6 +908,7 @@ export class ImageModel {
                                 {
                                   _id: labelRecord.labelId,
                                   name: modelLabel.name,
+                                  taxonomy: modelLabel.taxonomy || null,
                                   color: modelLabel.color,
                                   ml: true,
                                 },
