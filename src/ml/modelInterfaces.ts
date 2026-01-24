@@ -70,11 +70,22 @@ const megadetector: InferenceFunction = async (params) => {
   const Body = await _getImage(image, config);
 
   const isBatch = image.batchId;
-  const version = modelSource.version === 'v5.0a' ? 'V5A' : 'V5B';
+  let version = 'V5B'; 
+  switch (modelSource.version) {
+    case 'v1000.0.0-redwood':
+      version = 'V1000_0_0_REDWOOD';
+      break;
+    case 'v5.0a':
+      version = 'V5A';
+      break;
+    default:
+      version = 'V5B';
+      break;
+  }
 
   try {
-    const EndpointName =
-      config[`/ML/MEGADETECTOR_${version}_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`];
+    const endpointKey = `/ML/MEGADETECTOR_${version}_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT` as keyof Config;
+    const EndpointName: string = config[endpointKey];
     const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
     const command = new SM.InvokeEndpointCommand({ Body, EndpointName });
     const res = await smr.send(command);
@@ -465,6 +476,7 @@ const alitav3: InferenceFunction = async (params) => {
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
 modelInterfaces.set('megadetector_v5b', megadetector);
+modelInterfaces.set('megadetector_v1000.0.0-redwood', megadetector);
 modelInterfaces.set('mirav2', mirav2);
 modelInterfaces.set('nzdoc', nzdoc);
 modelInterfaces.set('sdzwa-southwestv3', sdzwasouthwestv3);
