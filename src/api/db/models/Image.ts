@@ -43,6 +43,7 @@ import {
   reviewerLabelRecord,
   findActiveProjReg,
   isImageReviewed,
+  getLabelIds,
   findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
@@ -959,7 +960,7 @@ export class ImageModel {
             // set image as unreviewed due to new labels
             image.reviewed = false;
             image.awaitingPrediction = false;
-            image.labelIds = ImageModel.getLabelIds(image);
+            image.labelIds = getLabelIds(image);
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -1655,28 +1656,6 @@ export class ImageModel {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
     }
-  }
-
-  static getLabelIds(image: HydratedDocument<ImageSchema>): string[] {
-    const labelIds: Set<string> = new Set();
-    for (const obj of image.objects) {
-      if (obj.locked) {
-        for (const lbl of obj.labels) {
-          if (lbl.validation && lbl.validation.validated){
-            labelIds.add(lbl.labelId);
-            break;
-          }
-        }
-      }
-       else {
-        obj.labels.forEach((lbl) => {
-          if (!lbl.validation || lbl.validation.validated) {
-            labelIds.add(lbl.labelId)};
-          });
-       }
-
-    }
-    return Array.from(labelIds);
   }
 }
 

@@ -68,7 +68,7 @@ async function updateDocuments() {
       if (res.nModified === matchCount) {
         await createLogFile('images', matchingImageIds, op);
       } else {
-        const msg = `There was a discrepency between the number of matching documents 
+        const msg = `There was a discrepency between the number of matching documents
           and the number of modified documents: ${matchCount} vs ${res.nModified}`;
         throw new InternalServerError(msg);
       }

@@ -57,7 +57,8 @@ def main():
         start_time = time.perf_counter()
         res = get_images()
         end_time = time.perf_counter()
-        print(f"Request {i+1} took {end_time - start_time:.4f} seconds and returned status code {res.status_code}")
+        print(f"Request {i+1} took {end_time - start_time:.4f} seconds and "
+              f"returned status code {res.status_code}")
         total_time += (end_time - start_time)
     print(f"Average time per request: {total_time / num_requests:.4f} seconds")
 
