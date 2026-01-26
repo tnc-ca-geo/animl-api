@@ -717,6 +717,28 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
+export function getLabelIds(image: ImageSchema): string[] {
+  const labelIds: Set<string> = new Set();
+  for (const obj of image.objects) {
+    if (obj.locked) {
+      for (const lbl of obj.labels) {
+        if (lbl.validation && lbl.validation.validated){
+          labelIds.add(lbl.labelId);
+          break;
+        }
+      }
+    }
+      else {
+      obj.labels.forEach((lbl) => {
+        if (!lbl.validation || lbl.validation.validated) {
+          labelIds.add(lbl.labelId)};
+        });
+      }
+
+  }
+  return Array.from(labelIds);
+}
+
 /**
  * Decorator to check if user has role before calling underlying method
  * @param roles
