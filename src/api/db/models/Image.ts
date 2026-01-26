@@ -882,10 +882,6 @@ export class ImageModel {
                 'Models should always produce labels tracked in MLModels.categories',
               );
             const modelLabel = cats[0];
-            console.log(
-              'ImageModel.createInternalLabels - found modelLabel: ',
-              JSON.stringify(modelLabel),
-            );
 
             // Check if Label Exists on Project and if not, add it
             if (
@@ -893,9 +889,6 @@ export class ImageModel {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               })
             ) {
-              console.log(
-                `Label ${modelLabel.name} does not exist on Project ${projectId}, creating...`,
-              );
               await Project.findOneAndUpdate(
                 {
                   _id: projectId,
@@ -934,7 +927,6 @@ export class ImageModel {
                 info: { labelId: labelRecord.labelId },
               });
             } else {
-              console.log(`Label ${modelLabel.name} already exists on Project ${projectId}.`);
               // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
               const [projLabel] = project.labels.filter((l) => {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
@@ -955,9 +947,6 @@ export class ImageModel {
               // Note: this is really only to seed older Project labels that were created
               // before we stored taxonomy on them.
               if (modelLabel.taxonomy && projLabel.taxonomy !== modelLabel.taxonomy) {
-                console.log(
-                  `Updating taxonomy for project label ${projLabel._id} from ${projLabel.taxonomy} to ${modelLabel.taxonomy}`,
-                );
                 const oldTaxonomy = projLabel.taxonomy || null;
                 projLabel.taxonomy = modelLabel.taxonomy;
                 await project.save();
@@ -996,7 +985,6 @@ export class ImageModel {
           { retries: 2 },
         );
 
-        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(
             {
@@ -1035,9 +1023,6 @@ export class ImageModel {
         }
         if (op.op === 'label-taxonomy-set') {
           // find project label, reset taxonomy field
-          console.log(
-            `Reverting taxonomy for project label ${op.info.labelId} to ${op.info.oldTaxonomy}`,
-          );
           const proj = await ProjectModel.queryById(projectId);
           const [label] = proj.labels.filter((l) => idMatch(l._id, op.info.labelId));
           label.taxonomy = op.info.oldTaxonomy;
