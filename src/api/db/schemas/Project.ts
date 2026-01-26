@@ -68,6 +68,7 @@ const DeploymentSchema = new Schema({
 const ProjectLabelSchema = new Schema({
   _id: { type: String, required: true, default: randomUUID },
   name: { type: String, required: true },
+  taxonomy: { type: String },
   color: { type: String, required: true },
   reviewerEnabled: { type: Boolean, required: true, default: true },
   ml: { type: Boolean, required: true, default: false },

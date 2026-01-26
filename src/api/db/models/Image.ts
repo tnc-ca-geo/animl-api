@@ -841,7 +841,10 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
-    let successfulOps: Array<{ op: string; info: { labelId: string } }> = [];
+    let successfulOps: Array<{
+      op: string;
+      info: { labelId: string; oldTaxonomy?: string | null };
+    }> = [];
     let projectId: string = '';
 
     try {
@@ -863,7 +866,7 @@ export class ImageModel {
 
             // find image, create label record
             projectId = image.projectId;
-            // TODO: Pair with Natty on the shape of the label
+
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
             const project = await ProjectModel.queryById(projectId);
@@ -905,6 +908,7 @@ export class ImageModel {
                                 {
                                   _id: labelRecord.labelId,
                                   name: modelLabel.name,
+                                  taxonomy: modelLabel.taxonomy || null,
                                   color: modelLabel.color,
                                   ml: true,
                                 },
@@ -924,18 +928,34 @@ export class ImageModel {
               });
             } else {
               // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
-              const [label] = project.labels.filter((l) => {
+              const [projLabel] = project.labels.filter((l) => {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               });
-              labelRecord.labelId = label._id;
+              labelRecord.labelId = projLabel._id;
 
-              // Ensure label.ml is set to true
-              if (!label.ml) {
-                label.ml = true;
+              // Ensure projLabel.ml is set to true
+              if (!projLabel.ml) {
+                projLabel.ml = true;
                 await project.save();
                 successfulOps.push({
                   op: 'label-ml-field-set-true',
                   info: { labelId: labelRecord.labelId },
+                });
+              }
+
+              // Ensure the `project.label.taxonomy` matches the MLModel's taxonomy
+              // Note: this is really only to seed older Project labels that were created
+              // before we stored taxonomy on them.
+              if (modelLabel.taxonomy && projLabel.taxonomy !== modelLabel.taxonomy) {
+                const oldTaxonomy = projLabel.taxonomy || null;
+                projLabel.taxonomy = modelLabel.taxonomy;
+                await project.save();
+                successfulOps.push({
+                  op: 'label-taxonomy-set',
+                  info: {
+                    labelId: labelRecord.labelId,
+                    oldTaxonomy,
+                  },
                 });
               }
             }
@@ -965,7 +985,6 @@ export class ImageModel {
           { retries: 2 },
         );
 
-        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(
             {
@@ -1000,6 +1019,13 @@ export class ImageModel {
           const proj = await ProjectModel.queryById(projectId);
           const [label] = proj.labels.filter((l) => idMatch(l._id, op.info.labelId));
           label.ml = false;
+          await proj.save();
+        }
+        if (op.op === 'label-taxonomy-set') {
+          // find project label, reset taxonomy field
+          const proj = await ProjectModel.queryById(projectId);
+          const [label] = proj.labels.filter((l) => idMatch(l._id, op.info.labelId));
+          label.taxonomy = op.info.oldTaxonomy;
           await proj.save();
         }
       }
