@@ -20,20 +20,16 @@ const ruleApplies = (rule, event, label, project) => {
         return pl._id.toString() === label.labelId.toString();
       });
 
+      // Check for direct label match
       if (rule.event.label.toLowerCase() === projectLabel?.name.toLowerCase()) {
-        console.log(
-          `ruleApplies: matched label name ${projectLabel.name} to rule event label ${rule.event.label}`,
-        );
         return true;
       }
 
+      // Check for taxonomy match
       if (
         projectLabel?.taxonomy &&
-        projectLabel.taxonomy.toLowerCase().includes(rule.event.label.toLowerCase())
+        projectLabel.taxonomy.toLowerCase().split(';').includes(rule.event.label.toLowerCase())
       ) {
-        console.log(
-          `ruleApplies: matched label taxonomy ${projectLabel.taxonomy} to rule event label ${rule.event.label}`,
-        );
         return true;
       }
     }
