@@ -1,0 +1,67 @@
+name: CI/CD ⚙️
+
+on:
+  push:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run deploy'
+        type: environment
+        required: true
+      force:
+        description: 'Deploy even if tests fail'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  test:
+    name: Test 🧪
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha || github.sha}}
+
+      - name: Docker API Build
+        run: docker build -t test -f Dockerfile-test .
+
+      - name: Docker API Test Run
+        run: docker run -e CHECK_CODEGEN=true test
+
+  deploy-to-dev:
+    name: Deploy to Development 🚧
+    needs: test
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    concurrency: dev
+    uses: './.github/workflows/deploy.yml'
+    with:
+      environment: dev
+    secrets: inherit
+
+  deploy-to-prod:
+    name: Deploy to Production 🌟
+    needs: test
+    if: github.event_name == 'release'
+    concurrency: prod
+    uses: './.github/workflows/deploy.yml'
+    with:
+      environment: prod
+    secrets: inherit
+
+  manual-deployment:
+    name: Manual Deployment ‼️
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && (success() || inputs.force == true)
+    concurrency: ${{ inputs.environment }}
+    uses: './.github/workflows/deploy.yml'
+    with:
+      environment: ${{ inputs.environment }}
+    secrets: inherit
