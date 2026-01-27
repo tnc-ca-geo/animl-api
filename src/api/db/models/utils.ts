@@ -97,6 +97,7 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
 }
 
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
+  console.log('using old buildLabelPipeline');
   const pipeline: PipelineStage[] = [];
 
   // map over objects & labels and filter for first validated label
@@ -257,6 +258,7 @@ export function buildPipeline(
   // match labels filter
   if (labels) {
     // pipeline.push(...buildLabelPipeline(labels));
+    console.log('using new buildLabelPipeline');
     const labelsFilter = labels.includes('none')
       ? {
           $match: {
