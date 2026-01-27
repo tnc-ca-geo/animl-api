@@ -7,10 +7,9 @@ import { InternalServerError } from '../api/errors.js';
 import { type Transformer, transform } from 'stream-transform';
 import { stringify } from 'csv-stringify';
 import { DateTime } from 'luxon';
-import { idMatch } from '../api/db/models/utils.js';
+import { idMatch, buildPipeline } from '../api/db/models/utils.js';
 import { ProjectModel } from '../api/db/models/Project.js';
 import Image, { type ImageSchema } from '../api/db/schemas/Image.js';
-import { buildPipeline } from '../api/db/models/utils.js';
 import { type Config } from '../config/config.js';
 import { type User } from '../api/auth/authorization.js';
 import type { DeploymentSchema, FiltersSchema, ProjectSchema } from '../api/db/schemas/Project.js';
@@ -422,10 +421,12 @@ export class AnnotationsExport {
       let catCounts: Record<string, any> = {};
 
       const deployment = this.getDeployment(img);
+      const imgDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
+      const validatedBy = this.getValidatedByForCSV(img);
       const flatImgRecord = {
         _id: img._id,
         dateAdded: DateTime.fromJSDate(img.dateAdded).setZone(this.timezone).toISO(),
-        dateTimeOriginal: DateTime.fromJSDate(img.dateTimeOriginal).setZone(this.timezone).toISO(),
+        dateTimeOriginal: imgDateTime.setZone(this.timezone).toISO(),
         cameraId: img.cameraId,
         projectId: img.projectId,
         make: img.make,
@@ -440,6 +441,7 @@ export class AnnotationsExport {
         }),
         ...(img.comments && { comments: this.flattenComments(img.comments) }),
         ...(img.tags && { tags: this.flattenTags(img.tags) }),
+        validatedBy: validatedBy,
       };
 
       this.categories!.forEach((cat) => (catCounts[cat] = null));
@@ -476,6 +478,27 @@ export class AnnotationsExport {
       }
     }
     return sanitizedFilters;
+  }
+
+  // Concatenate all users who validated the most representative label for
+  // each object in the image
+  getValidatedByForCSV(img: ImageSchema): string {
+    if (!img.reviewed) {
+      return "Not Reviewed";
+    }
+    const validatedBy = new Set<string>();
+    for (const obj of img.objects) {
+      const representativeLabel = findRepresentativeLabel(obj);
+      if (
+        representativeLabel && 
+        representativeLabel.validation &&
+        representativeLabel.validation.validated &&
+        representativeLabel.validation.userId
+      ) {
+        validatedBy.add(representativeLabel.validation.userId);
+      }
+    }
+    return [...validatedBy].join("; ");
   }
 
   getDeployment(img: ImageSchema): DeploymentSchema {
@@ -527,7 +550,7 @@ export class AnnotationsExport {
     file_name: string;
     original_file_name?: Maybe<string>;
     serving_bucket_key: string;
-    datetime: Date;
+    datetime: string | null;
     location: string;
     width?: number;
     height?: number;
@@ -543,12 +566,13 @@ export class AnnotationsExport {
       '-',
     )}.${img.fileTypeExtension}`;
     const servingPath = `original/${img._id}-original.${img.fileTypeExtension}`;
+    const adjustedDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
     return {
       id: img._id,
       file_name: destPath,
       original_file_name: img.originalFileName,
       serving_bucket_key: servingPath,
-      datetime: img.dateTimeOriginal,
+      datetime: adjustedDateTime.setZone(this.timezone).toISO(),
       location: deployment.name === 'default' ? `${img.cameraId}-default` : deployment.name,
       ...(img.imageWidth && { width: img.imageWidth }),
       ...(img.imageHeight && { height: img.imageHeight }),
@@ -567,6 +591,7 @@ export class AnnotationsExport {
     bbox: number[];
     confidence: number | null | undefined;
     validated: boolean;
+    validated_by: string;
   } | null {
     let anno = null;
     const representativeLabel = findRepresentativeLabel(object);
@@ -584,6 +609,7 @@ export class AnnotationsExport {
         bbox: this.relToAbs(object.bbox, img.imageWidth!, img.imageHeight!),
         confidence: representativeLabel.conf,
         validated: representativeLabel.validation?.validated || false,
+        validated_by: representativeLabel.validation?.userId || "Not Reviewed",
       };
     }
     return anno;

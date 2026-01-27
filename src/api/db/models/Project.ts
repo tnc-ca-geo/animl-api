@@ -460,7 +460,7 @@ export class ProjectModel {
 
             const filter: Record<any, any> = { projectId: projId, cameraId: camConfig._id };
             if (createdStart || createdEnd) {
-              filter.dateTimeOriginal = {
+              filter.dateTimeAdjusted = {
                 ...(createdStart && { $gte: createdStart }),
                 ...(createdEnd && { $lt: createdEnd }),
               };
@@ -478,6 +478,9 @@ export class ProjectModel {
                 );
                 const newDT = dtOriginal.setZone(dep.timezone, { keepLocalTime: true });
                 update.dateTimeOriginal = newDT.toJSDate();
+                const dtAdjusted = DateTime.fromJSDate(img.dateTimeAdjusted).setZone(img.timezone);
+                const newDTA = dtAdjusted.setZone(dep.timezone, { keepLocalTime: true });
+                update.dateTimeAdjusted = newDTA.toJSDate();
                 update.timezone = dep.timezone;
               }
 

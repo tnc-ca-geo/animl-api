@@ -21,3 +21,6 @@ backups
 
 # anaysis output
 analysis
+
+# Amazon Q files
+.amazonq*

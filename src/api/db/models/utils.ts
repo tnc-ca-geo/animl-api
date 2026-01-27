@@ -224,7 +224,7 @@ export function buildPipeline(
   if (createdStart || createdEnd) {
     pipeline.push({
       $match: {
-        dateTimeOriginal: {
+        dateTimeAdjusted: {
           ...(createdStart && { $gte: createdStart.toJSDate() }),
           ...(createdEnd && { $lt: createdEnd.toJSDate() }),
         },
@@ -448,6 +448,7 @@ export function createImageRecord(md: ImageMetadata) {
     fileTypeExtension: md.fileTypeExtension,
     dateAdded: DateTime.now(),
     dateTimeOriginal: md.dateTimeOriginal,
+    dateTimeAdjusted: md.dateTimeOriginal,
     timezone: md.timezone,
     cameraId: md.serialNumber,
     make: md.make,
@@ -625,6 +626,45 @@ export function mapImgToDep(
   return camConfig.deployments.length === 1
     ? camConfig.deployments[0]
     : findDeployment(img, camConfig, projTimeZone)!;
+}
+
+// Returns camera IDs that have deployments in multiple timezones
+export function getMultiTimezoneCameras(
+  cameraConfigs: CameraConfigSchema[],
+): Set<string> {
+  const multiTimezoneCameras = new Set<string>();
+  for (const camConfig of cameraConfigs) {
+    const timezones = new Set(camConfig.deployments.map((d) => d.timezone));
+    if (timezones.size > 1) {
+      multiTimezoneCameras.add(camConfig._id);
+    }
+  }
+  return multiTimezoneCameras;
+}
+
+// Find deployment for a given camera and timestamp, used for remapping after offset changes
+// The correct deployment is the one corresponding to the nearest startDate prior to the input Date
+export function findDeploymentForAdjustedTime(
+  dateTimeAdjusted: Date,
+  camConfig: CameraConfigSchema,
+): DeploymentSchema | undefined {
+  const defaultDep = camConfig.deployments.find((dep) => dep.name === 'default');
+
+  let mostRecentDep = null;
+  let shortestInterval = null;
+
+  // deployments should be sorted but let's not rely on it
+  for (const dep of camConfig.deployments) {
+    if (dep.name !== 'default' && dep.startDate) {
+      const timeDiff = dateTimeAdjusted.getTime() - dep.startDate.getTime();
+      if ((shortestInterval === null || shortestInterval > timeDiff) && timeDiff >= 0) {
+        mostRecentDep = dep;
+        shortestInterval = timeDiff;
+      }
+    }
+  }
+
+  return mostRecentDep || defaultDep;
 }
 
 export function sortDeps(

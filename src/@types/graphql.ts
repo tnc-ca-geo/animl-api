@@ -616,6 +616,7 @@ export type MlModel = {
   categories: Array<Category>;
   defaultConfThreshold?: Maybe<Scalars['Float']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  expectsCrops: Scalars['Boolean']['output'];
   version: Scalars['String']['output'];
 };
 
@@ -655,6 +656,8 @@ export type Mutation = {
   registerCamera?: Maybe<RegisterCameraPayload>;
   resendTempPassword?: Maybe<StandardPayload>;
   setTimestampOffset?: Maybe<StandardPayload>;
+  setTimestampOffsetBatchTask?: Maybe<Task>;
+  setTimestampOffsetByFilterTask?: Maybe<Task>;
   stopBatch?: Maybe<StandardPayload>;
   unregisterCamera?: Maybe<UnregisterCameraPayload>;
   updateAutomationRules?: Maybe<UpdateAutomationRulesPayload>;
@@ -840,6 +843,16 @@ export type MutationResendTempPasswordArgs = {
 
 export type MutationSetTimestampOffsetArgs = {
   input: SetTimestampOffsetInput;
+};
+
+
+export type MutationSetTimestampOffsetBatchTaskArgs = {
+  input: SetTimestampOffsetBatchTaskInput;
+};
+
+
+export type MutationSetTimestampOffsetByFilterTaskArgs = {
+  input: SetTimestampOffsetByFilterTaskInput;
 };
 
 
@@ -1198,6 +1211,16 @@ export type RegisterCameraPayload = {
 
 export type ResendTempPasswordInput = {
   username: Scalars['String']['input'];
+};
+
+export type SetTimestampOffsetBatchTaskInput = {
+  imageIds: Array<Scalars['ID']['input']>;
+  offsetMs: Scalars['Float']['input'];
+};
+
+export type SetTimestampOffsetByFilterTaskInput = {
+  filters: FiltersInput;
+  offsetMs: Scalars['Float']['input'];
 };
 
 export type SetTimestampOffsetInput = {

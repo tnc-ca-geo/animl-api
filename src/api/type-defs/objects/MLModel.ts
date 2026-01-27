@@ -12,5 +12,6 @@ export default /* GraphQL */ `
     version: String!
     defaultConfThreshold: Float
     categories: [Category!]!
+    expectsCrops: Boolean!
   }
 `;

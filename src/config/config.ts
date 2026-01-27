@@ -29,6 +29,7 @@ const localConfig = {
     'deploymentLong',
     'comments',
     'tags',
+    'validatedBy',
   ],
   INGESTION_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
   SERVING_BUCKET: `animl-images-serving-${process.env.STAGE}`,
@@ -56,6 +57,8 @@ const ssmNames = [
   `/ml/megadetector-v5a-batch-endpoint-${process.env.STAGE}`,
   `/ml/megadetector-v5b-realtime-endpoint-${process.env.STAGE}`,
   `/ml/megadetector-v5b-batch-endpoint-${process.env.STAGE}`,
+  `/ml/megadetector-v1000-0-0-redwood-realtime-endpoint-${process.env.STAGE}`, 
+  `/ml/megadetector-v1000-0-0-redwood-batch-endpoint-${process.env.STAGE}`, 
   `/ml/mirav2-realtime-endpoint-${process.env.STAGE}`,
   `/ml/mirav2-batch-endpoint-${process.env.STAGE}`,
   `/ml/nzdoc-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for nzdoc
@@ -67,6 +70,7 @@ const ssmNames = [
   `/ml/speciesnetv401a-batch-endpoint-${process.env.STAGE}`,
   `/ml/ircv2-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for ircv2
   `/ml/camera-trap-vehicle-classifier-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for camera-trap-vehicle-classifier
+  `/ml/alitav3-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for alitav3
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -146,6 +150,8 @@ export interface RemoteConfig {
   '/TASKS/TASK_QUEUE_URL': string;
   '/ML/MEGADETECTOR_V5B_BATCH_ENDPOINT': string;
   '/ML/MEGADETECTOR_V5B_REALTIME_ENDPOINT': string;
+  '/ML/MEGADETECTOR_V1000_0_0_REDWOOD_REALTIME_ENDPOINT': string;
+  '/ML/MEGADETECTOR_V1000_0_0_REDWOOD_BATCH_ENDPOINT': string;
   '/ML/MIRAV2_BATCH_ENDPOINT': string;
   '/ML/MIRAV2_REALTIME_ENDPOINT': string;
   '/ML/NZDOC_BATCH_ENDPOINT': string;
@@ -157,6 +163,7 @@ export interface RemoteConfig {
   '/ML/SPECIESNETV401A_BATCH_ENDPOINT': string;
   '/ML/IRCV2_BATCH_ENDPOINT': string;
   '/ML/CAMERA_TRAP_VEHICLE_CLASSIFIER_BATCH_ENDPOINT': string;
+  '/ML/ALITAV3_BATCH_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager

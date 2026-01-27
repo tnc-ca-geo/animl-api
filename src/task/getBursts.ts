@@ -70,7 +70,7 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
         deploymentId: dep._id,
       }
     });
-    depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
+    depPipeline.push({ $sort: { dateTimeAdjusted: 1 } });
 
     let burst: ImageSchema[] = [];
 
@@ -81,8 +81,8 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
       }
 
       const lastImg = burst[burst.length - 1];
-      const imgDateAdded = DateTime.fromJSDate(img.dateTimeOriginal);
-      const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeOriginal);
+      const imgDateAdded = DateTime.fromJSDate(img.dateTimeAdjusted);
+      const lastImgDateAdded = DateTime.fromJSDate(lastImg.dateTimeAdjusted);
       const diff = lastImgDateAdded.diff(imgDateAdded, 'seconds').toObject();
       const delta = Math.abs(diff.seconds || 0);
 

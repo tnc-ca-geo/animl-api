@@ -43,6 +43,7 @@ import {
   reviewerLabelRecord,
   findActiveProjReg,
   isImageReviewed,
+  findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
 import { ProjectModel } from './Project.js';
@@ -840,11 +841,14 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createInternalLabels - input: ', JSON.stringify(input));
-    let successfulOps: Array<{ op: string; info: { labelId: string } }> = [];
+    let successfulOps: Array<{
+      op: string;
+      info: { labelId: string; oldTaxonomy?: string | null };
+    }> = [];
     let projectId: string = '';
 
     try {
-      const image = await ImageModel.queryById(input.imageId, context)
+      const image = await ImageModel.queryById(input.imageId, context);
       // NOTE: this could probably be optimized to use a single bulkWrite operation
       // (see example in createLabels() below), but it's not a high priority since
       // but at most this will receive 10 labels at a time, so there's no risk of timeouts
@@ -862,7 +866,7 @@ export class ImageModel {
 
             // find image, create label record
             projectId = image.projectId;
-            // TODO: Pair with Natty on the shape of the label
+
             if (isLabelDupe(image, label)) throw new DuplicateLabelError();
 
             const project = await ProjectModel.queryById(projectId);
@@ -904,6 +908,7 @@ export class ImageModel {
                                 {
                                   _id: labelRecord.labelId,
                                   name: modelLabel.name,
+                                  taxonomy: modelLabel.taxonomy || null,
                                   color: modelLabel.color,
                                   ml: true,
                                 },
@@ -923,18 +928,34 @@ export class ImageModel {
               });
             } else {
               // If a label with the same `name` exists in the project, use the `project.label.labelId` instead
-              const [label] = project.labels.filter((l) => {
+              const [projLabel] = project.labels.filter((l) => {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               });
-              labelRecord.labelId = label._id;
+              labelRecord.labelId = projLabel._id;
 
-              // Ensure label.ml is set to true
-              if (!label.ml) {
-                label.ml = true;
+              // Ensure projLabel.ml is set to true
+              if (!projLabel.ml) {
+                projLabel.ml = true;
                 await project.save();
                 successfulOps.push({
                   op: 'label-ml-field-set-true',
                   info: { labelId: labelRecord.labelId },
+                });
+              }
+
+              // Ensure the `project.label.taxonomy` matches the MLModel's taxonomy
+              // Note: this is really only to seed older Project labels that were created
+              // before we stored taxonomy on them.
+              if (modelLabel.taxonomy && projLabel.taxonomy !== modelLabel.taxonomy) {
+                const oldTaxonomy = projLabel.taxonomy || null;
+                projLabel.taxonomy = modelLabel.taxonomy;
+                await project.save();
+                successfulOps.push({
+                  op: 'label-taxonomy-set',
+                  info: {
+                    labelId: labelRecord.labelId,
+                    oldTaxonomy,
+                  },
                 });
               }
             }
@@ -964,7 +985,6 @@ export class ImageModel {
           { retries: 2 },
         );
 
-        console.log('ImageModel.createInternalLabels - res: ', JSON.stringify(res));
         if (label.mlModel) {
           await handleEvent(
             {
@@ -1001,6 +1021,13 @@ export class ImageModel {
           label.ml = false;
           await proj.save();
         }
+        if (op.op === 'label-taxonomy-set') {
+          // find project label, reset taxonomy field
+          const proj = await ProjectModel.queryById(projectId);
+          const [label] = proj.labels.filter((l) => idMatch(l._id, op.info.labelId));
+          label.taxonomy = op.info.oldTaxonomy;
+          await proj.save();
+        }
       }
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1008,9 +1035,9 @@ export class ImageModel {
   }
 
   /*
-    * This endpoint is used only by the ML Handler to lock/unlock images on the frontend to
-    * prevent users from making changes to images while predictions are in progress.
-    */
+   * This endpoint is used only by the ML Handler to lock/unlock images on the frontend to
+   * prevent users from making changes to images while predictions are in progress.
+   */
   static async updatePredictionStatus(
     input: gql.UpdatePredictionStatusInput,
     context: Pick<Context, 'user'>,
@@ -1018,10 +1045,7 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      await Image.findOneAndUpdate(
-        { _id: input.imageId },
-        { awaitingPrediction: input.status }
-      );
+      await Image.findOneAndUpdate({ _id: input.imageId }, { awaitingPrediction: input.status });
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1486,6 +1510,68 @@ export class ImageModel {
   }
 
   /**
+   * Sets timestamp offsets for multiple images in batch
+   *
+   * @param {object} input - Contains imageIds array and offsetMs
+   * @param {object} context - User context
+   */
+  static async setTimestampOffsetBatch(
+    input: { imageIds: string[]; offsetMs: number },
+    context: Pick<Context, 'user'>,
+  ): Promise<BulkWriteResult> {
+    try {
+      const res = await retry(
+        async (bail, attempt) => {
+          if (attempt > 1) {
+            console.log(`Retrying setTimestampOffsetBatch operation! Try #: ${attempt}`);
+          }
+
+          const images = await Image.find({ _id: { $in: input.imageIds } });
+
+          const projectId = images[0]?.projectId;
+          const project = projectId ? await Project.findById(projectId) : null;
+          const configMap = new Map<string, CameraConfigSchema>(
+            project?.cameraConfigs.map((cc) => [cc._id, cc]) ?? [],
+          );
+
+          const operations = images.map((image) => {
+            const newDateTimeAdjusted = new Date(image.dateTimeOriginal.getTime() + input.offsetMs);
+            const update: Record<string, any> = { dateTimeAdjusted: newDateTimeAdjusted };
+
+            // Check for deployment remapping only if camera has >1 deployment
+            const camConfig = configMap.get(image.cameraId);
+
+            if (camConfig && camConfig.deployments.length > 1) {
+              const newDeployment = findDeploymentForAdjustedTime(newDateTimeAdjusted, camConfig);
+
+              if (
+                newDeployment &&
+                newDeployment._id!.toString() !== image.deploymentId.toString()
+              ) {
+                update.deploymentId = newDeployment._id;
+                update.timezone = newDeployment.timezone;
+              }
+            }
+
+            return {
+              updateOne: {
+                filter: { _id: image._id },
+                update: { $set: update },
+              },
+            };
+          });
+          return await Image.bulkWrite(operations);
+        },
+        { retries: 2 },
+      );
+      return res;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
    * Sets the timestamp offset for a single image
    *
    * @param {object} input - Contains imageId and offsetMs
@@ -1495,15 +1581,53 @@ export class ImageModel {
     input: { imageId: string; offsetMs: number },
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
+    const result = await ImageModel.setTimestampOffsetBatch(
+      { imageIds: [input.imageId], offsetMs: input.offsetMs },
+      context,
+    );
+    return { isOk: result.modifiedCount === 1 };
+  }
+
+  /**
+   * Set timestamp offset for an array of images by ID asynchronously
+   */
+  static async setTimestampOffsetBatchTask(
+    input: gql.SetTimestampOffsetBatchTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
-
-      await Image.updateOne(
-        { _id: input.imageId },
-        { $set: { dateTimeOffsetMs: input.offsetMs } }
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetBatch',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
       );
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
 
-      return { isOk: true };
+  /**
+   * Set timestamp offset for all images matching a filter
+   */
+  static async setTimestampOffsetByFilterTask(
+    input: gql.SetTimestampOffsetByFilterTaskInput,
+    context: Pick<Context, 'config' | 'user'>,
+  ): Promise<HydratedDocument<TaskSchema>> {
+    try {
+      return TaskModel.create(
+        {
+          type: 'SetTimestampOffsetByFilter',
+          projectId: context.user['curr_project'],
+          user: context.user['cognito:username'],
+          config: input,
+        },
+        context,
+      );
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
@@ -1615,6 +1739,20 @@ export default class AuthedImageModel extends BaseAuthedModel {
   @roleCheck(DELETE_IMAGES_ROLES)
   deleteImagesByFilterTask(...args: MethodParams<typeof ImageModel.deleteImagesByFilterTask>) {
     return ImageModel.deleteImagesByFilterTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetBatchTask(
+    ...args: MethodParams<typeof ImageModel.setTimestampOffsetBatchTask>
+  ) {
+    return ImageModel.setTimestampOffsetBatchTask(...args);
+  }
+
+  @roleCheck(WRITE_IMAGES_ROLES)
+  setTimestampOffsetByFilterTask(
+    ...args: MethodParams<typeof ImageModel.setTimestampOffsetByFilterTask>
+  ) {
+    return ImageModel.setTimestampOffsetByFilterTask(...args);
   }
 
   @roleCheck(WRITE_IMAGES_ROLES)

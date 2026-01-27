@@ -131,3 +131,4 @@ Like real-time images, we also perform inference on bulk-uploaded images using S
 
 - **animl-frontend** - _S3 Bucket_
   - A S3 bucket (18) for hosting static React-based frontend app
+  - Instructions on how to deploy animl-frontend [here](https://github.com/tnc-ca-geo/animl-frontend?tab=readme-ov-file#steps-to-deploy-new-instance-of-animl-frontend).
