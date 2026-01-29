@@ -156,7 +156,9 @@ const setupResultsStructure = (project, mlLabels) => {
   const data = {};
   cameraConfigs.forEach((cc) => {
     for (const dep of cc.deployments) {
-      // if (dep.name === 'default') continue; // skip default deployments
+      if (SKIP_DEFAULT_DEPLOYMENT && dep.name === 'default') {
+        continue; // skip default deployments
+      }
       for (const mlLabel of mlLabels) {
         const [mlLabelName, mlLabelId] = mlLabel.targetClass.split(':');
         data[`${dep._id}_${mlLabelName}`] = {
@@ -264,7 +266,7 @@ const writeToFile = async (stats, totals, analysisDir, projectId, mlModel, start
 const generateSequencesForDeployment = async (deployment, basePipeline, maxSequenceDelta) => {
   const depPipeline = structuredClone(basePipeline);
   depPipeline[0].$match.deploymentId = deployment._id;
-  depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
+  depPipeline.push({ $sort: { dateTimeAdjusted: 1 } });
 
   const sequences = [];
   let currentSequence = [];
@@ -276,8 +278,8 @@ const generateSequencesForDeployment = async (deployment, basePipeline, maxSeque
     }
 
     const lastImg = currentSequence[currentSequence.length - 1];
-    const imgDateTime = DateTime.fromJSDate(img.dateTimeOriginal);
-    const lastImgDateTime = DateTime.fromJSDate(lastImg.dateTimeOriginal);
+    const imgDateTime = DateTime.fromJSDate(img.dateTimeAdjusted);
+    const lastImgDateTime = DateTime.fromJSDate(lastImg.dateTimeAdjusted);
     const deltaSeconds = Math.abs(lastImgDateTime.diff(imgDateTime, 'seconds').seconds);
 
     if (deltaSeconds <= maxSequenceDelta) {
@@ -286,8 +288,8 @@ const generateSequencesForDeployment = async (deployment, basePipeline, maxSeque
       // Gap found - save current sequence and start new one
       sequences.push({
         images: [...currentSequence],
-        startTime: DateTime.fromJSDate(currentSequence[0].dateTimeOriginal),
-        endTime: DateTime.fromJSDate(currentSequence[currentSequence.length - 1].dateTimeOriginal),
+        startTime: DateTime.fromJSDate(currentSequence[0].dateTimeAdjusted),
+        endTime: DateTime.fromJSDate(currentSequence[currentSequence.length - 1].dateTimeAdjusted),
         imageCount: currentSequence.length
       });
       currentSequence = [img];
@@ -298,8 +300,8 @@ const generateSequencesForDeployment = async (deployment, basePipeline, maxSeque
   if (currentSequence.length > 0) {
     sequences.push({
       images: [...currentSequence],
-      startTime: DateTime.fromJSDate(currentSequence[0].dateTimeOriginal),
-      endTime: DateTime.fromJSDate(currentSequence[currentSequence.length - 1].dateTimeOriginal),
+      startTime: DateTime.fromJSDate(currentSequence[0].dateTimeAdjusted),
+      endTime: DateTime.fromJSDate(currentSequence[currentSequence.length - 1].dateTimeAdjusted),
       imageCount: currentSequence.length
     });
   }
@@ -430,11 +432,13 @@ const analyze = async (analysisConfig) => {
     const progress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     progress.start(imgCount, 0);
 
-    // Get deployments (excluding default)
+    // Get deployments
     const deployments = [];
     project.cameraConfigs.forEach((cc) => {
       for (const dep of cc.deployments) {
-        // if (dep.name === 'default') continue;
+        if (SKIP_DEFAULT_DEPLOYMENT && dep.name === 'default') {
+          continue;
+        }
         deployments.push(dep);
       }
     });
@@ -475,6 +479,6 @@ export { processSequence, isActual, isTruePositive, isFalsePositive };
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Remove TARGET_CLASSES from config to avoid confusion
   // eslint-disable-next-line no-unused-vars
-  const { TARGET_CLASSES, ...configWithoutTargetClasses } = CONFIG;
+  const { TARGET_CLASSES, SKIP_DEFAULT_DEPLOYMENT, ...configWithoutTargetClasses } = CONFIG;
   analyze(configWithoutTargetClasses);
 }
