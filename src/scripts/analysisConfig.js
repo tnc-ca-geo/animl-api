@@ -8,6 +8,7 @@ const analysisConfig = {
   START_DATE: '2023-4-28',
   END_DATE: '2024-5-29',
   ML_MODEL: 'mirav2', // first use of 'mirav2' was 2023-4-28
+  SKIP_DEFAULT_DEPLOYMENT: true,
   TARGET_CLASSES: [
     // class naming convention: '<label.name>:<label._id>'
     {
