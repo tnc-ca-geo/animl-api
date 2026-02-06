@@ -83,6 +83,19 @@ const enrichTaxonomicDescendentSets = (project, model, taxonomicDescendentSets) 
   return enrichedTaxonomicDescendentSets;
 };
 
+const adjustValidationClasses = (enrichedTaxonomicDescendentSets, validationClassAdjustments) => {
+  for (const validationClassAdjustment of validationClassAdjustments) {
+    const { predicted, additionalValidation = [], ignoredValidation = [] } = validationClassAdjustment;
+    const enrichedTargetClass = enrichedTaxonomicDescendentSets.find((tc) => tc.targetClass === predicted);
+    if (enrichedTargetClass) {
+      enrichedTargetClass.taxonomicDescendentClasses = [...enrichedTargetClass.taxonomicDescendentClasses, ...additionalValidation];
+      enrichedTargetClass.taxonomicDescendentClasses = enrichedTargetClass.taxonomicDescendentClasses.filter((tc) => !ignoredValidation.includes(tc));
+    }
+  }
+
+  return enrichedTaxonomicDescendentSets;
+};
+
 const writeConfigToFile = async (filename, analysisPath, config) => {
   const jsonFilename = path.join(analysisPath, `${filename}_config.json`);
 
@@ -151,12 +164,12 @@ const getCount = async (pipeline) => {
   return count;
 };
 
-const setupResultsStructure = (project, mlLabels) => {
+const setupResultsStructure = (project, mlLabels, skipDefaultDeployment) => {
   const cameraConfigs = project.cameraConfigs;
   const data = {};
   cameraConfigs.forEach((cc) => {
     for (const dep of cc.deployments) {
-      if (SKIP_DEFAULT_DEPLOYMENT && dep.name === 'default') {
+      if (skipDefaultDeployment && dep.name === 'default') {
         continue; // skip default deployments
       }
       for (const mlLabel of mlLabels) {
@@ -399,8 +412,20 @@ const processSequence = (sequence, deployment, data, mlLabels, mlModel) => {
   return data;
 };
 
+const ensureTaxonomyFieldExists = (model) => {
+  let taxonomyFieldExists = false;
+  for (const category of model.categories) {
+    if (category.taxonomy) {
+      taxonomyFieldExists = true;
+      break;
+    }
+  }
+
+  return taxonomyFieldExists;
+};
+
 const analyze = async (analysisConfig) => {
-  const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA } = analysisConfig;
+  const { ANALYSIS_DIR, PROJECT_ID, START_DATE, END_DATE, ML_MODEL, MAX_SEQUENCE_DELTA, SKIP_DEFAULT_DEPLOYMENT, VALIDATION_CLASSES_ADJUSTMENTS } = analysisConfig;
 
   const config = await getConfig();
   console.log('Connecting to db...');
@@ -417,12 +442,25 @@ const analyze = async (analysisConfig) => {
       _id: ML_MODEL
     });
 
+    console.log('Ensuring taxonomy field exists...');
+    if (!ensureTaxonomyFieldExists(model)) {
+      console.log('Taxonomy field was not found on any of this model\'s labels.');
+      throw new Error('The labels this model produces do not include a taxonomy field.  Please use analyzeMLSequenceLevel.js instead.');
+    }
+
     console.log('Getting model labels...');
     const taxonomicDescendentSets = buildTaxonomicDescendentSets(project, model);
-    const enrichedTaxonomicDescendentSets = enrichTaxonomicDescendentSets(project, model, taxonomicDescendentSets);
+    let enrichedTaxonomicDescendentSets = enrichTaxonomicDescendentSets(project, model, taxonomicDescendentSets, VALIDATION_CLASSES_ADJUSTMENTS || []);
+
+
+    if (VALIDATION_CLASSES_ADJUSTMENTS && VALIDATION_CLASSES_ADJUSTMENTS.length > 0) {
+      console.log('Adjusting validation classes based on user overrides...');
+      enrichedTaxonomicDescendentSets = adjustValidationClasses(enrichedTaxonomicDescendentSets, VALIDATION_CLASSES_ADJUSTMENTS);
+
+    }
 
     console.log('Setting up results structure...');
-    let data = setupResultsStructure(project, enrichedTaxonomicDescendentSets);
+    let data = setupResultsStructure(project, enrichedTaxonomicDescendentSets, SKIP_DEFAULT_DEPLOYMENT);
 
     const aggPipeline = buildBasePipeline(PROJECT_ID, START_DATE, END_DATE);
     console.log('Counting images...');
@@ -479,6 +517,6 @@ export { processSequence, isActual, isTruePositive, isFalsePositive };
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Remove TARGET_CLASSES from config to avoid confusion
   // eslint-disable-next-line no-unused-vars
-  const { TARGET_CLASSES, SKIP_DEFAULT_DEPLOYMENT, ...configWithoutTargetClasses } = CONFIG;
+  const { TARGET_CLASSES, ...configWithoutTargetClasses } = CONFIG;
   analyze(configWithoutTargetClasses);
 }
