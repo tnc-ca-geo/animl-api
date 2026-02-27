@@ -473,6 +473,36 @@ const alitav3: InferenceFunction = async (params) => {
   }
 };
 
+// NZI-ADS-v1: YOLOv8 classifier for New Zealand invasive species (17 classes)
+const nziadsv1: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: bbox,
+  };
+
+  const isBatch = image.batchId;
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/NZI_ADSV1_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`nzi-adsv1 predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`nzi-adsv1 ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
 const modelInterfaces = new Map<string, InferenceFunction>();
 modelInterfaces.set('megadetector_v5a', megadetector);
 modelInterfaces.set('megadetector_v5b', megadetector);
@@ -485,6 +515,7 @@ modelInterfaces.set('deepfaune-ne', deepfaunene);
 modelInterfaces.set('ircv2', ircv2);
 modelInterfaces.set('camera-trap-vehicle-classifier', cameraTrapVehicleClassifier);
 modelInterfaces.set('alitav3', alitav3);
+modelInterfaces.set('nzi-adsv1', nziadsv1);
 modelInterfaces.set('speciesnet-classifier', speciesnet);
 modelInterfaces.set('speciesnet-all', speciesnet);
 
