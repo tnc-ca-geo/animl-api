@@ -12,6 +12,13 @@ const _toSpeciesNetFormat = (bbox: number[]): number[] => {
   return [x1, y1, x2 - x1, y2 - y1];
 };
 
+// This is the same as _toSpeciesNetFormat, but replicating
+// it so that changes to speciesnet won't break nzi-ads
+const _toNziAdsV1Format = (bbox: number[]): number[] => {
+  const [y1, x1, y2, x2] = bbox;
+  return [x1, y1, x2 - x1, y2 - y1];
+};
+
 // Convert [x, y, width, height] to [y1, x1, y2, x2]
 const _toMegaDetectorFormat = (bbox: number[]): number[] => {
   const [x, y, width, height] = bbox;
@@ -478,9 +485,10 @@ const nziadsv1: InferenceFunction = async (params) => {
   const { modelSource, catConfig, image, label, config } = params;
   const imgBuffer = await _getImage(image, config);
   const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const nziAdsBbox: BBox = label.bbox ? _toNziAdsV1Format(label.bbox) : [0, 0, 1, 1];
   const payload = {
     image: imgBuffer.toString('base64'),
-    bbox: bbox,
+    bbox: nziAdsBbox,
   };
 
   const isBatch = image.batchId;
