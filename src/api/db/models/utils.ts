@@ -96,97 +96,6 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
   return pipeline;
 }
 
-export function buildLabelPipeline(labels: string[]): PipelineStage[] {
-  console.log('using old buildLabelPipeline');
-  const pipeline: PipelineStage[] = [];
-
-  // map over objects & labels and filter for first validated label
-  pipeline.push({
-    $set: {
-      objects: {
-        $map: {
-          input: '$objects',
-          as: 'obj',
-          in: {
-            $setField: {
-              field: 'firstValidLabel',
-              input: '$$obj',
-              value: {
-                $filter: {
-                  input: '$$obj.labels',
-                  as: 'label',
-                  cond: { $eq: ['$$label.validation.validated', true] },
-                  limit: 1,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const labelsFilter: { $or: Record<string, any>[] } = {
-    $or: [
-      // has an object that is locked,
-      // and its first validated label is included in labels filter
-      {
-        objects: {
-          $elemMatch: {
-            locked: true,
-            'firstValidLabel.labelId': { $in: labels },
-          },
-        },
-      },
-
-      // has an object is not locked, but it has label that is
-      // not-invalidated and included in filters
-      {
-        objects: {
-          $elemMatch: {
-            locked: false,
-            labels: {
-              $elemMatch: {
-                'validation.validated': { $not: { $eq: false } },
-                labelId: { $in: labels },
-              },
-            },
-          },
-        },
-      },
-    ],
-  };
-
-  // if labels includes "none", also return images with no objects
-  if (labels.includes('none')) {
-    const noObjectsFilter = {
-      $or: [
-        // return images w/ no objects,
-        { objects: { $size: 0 } },
-        // or images in which all labels of all objects have been invalidated
-        {
-          objects: {
-            $not: {
-              $elemMatch: {
-                labels: {
-                  $elemMatch: {
-                    $or: [{ validation: null }, { 'validation.validated': true }],
-                  },
-                },
-              },
-            },
-          },
-        },
-      ],
-    };
-    labelsFilter.$or.push(noObjectsFilter);
-  }
-
-  pipeline.push({ $match: labelsFilter });
-
-  return pipeline;
-}
-
 export function buildPipeline(
   {
     cameras,
@@ -257,9 +166,18 @@ export function buildPipeline(
 
   // match labels filter
   if (labels) {
-    // pipeline.push(...buildLabelPipeline(labels));
-    console.log('using new buildLabelPipeline');
-    const labelsFilter = { $match: { labelIds: { $in: labels } } };
+    const labelsFilter = labels.includes('none') || labels.includes('empty')
+      ? {
+          $match: {
+            $or: [
+              { queryableLabelIds: { $in: labels } },
+              {
+                $or: [{ queryableLabelIds: { $size: 0 } }, { queryableLabelIds: null }],
+              },
+            ],
+          },
+        }
+      : { $match: { queryableLabelIds: { $in: labels } } };
     pipeline.push(labelsFilter);
   }
 
@@ -719,13 +637,13 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
         }
       }
     }
-      else {
+    else {
       obj.labels.forEach((lbl) => {
         if (!lbl.validation || lbl.validation.validated) {
-          labelIds.add(lbl.labelId)};
-        });
-      }
-
+          labelIds.add(lbl.labelId)
+        };
+      });
+    }
   }
   return Array.from(labelIds);
 }
