@@ -721,7 +721,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -768,7 +768,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -804,7 +804,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1089,7 +1089,7 @@ export class ImageModel {
       console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
 
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
       console.log(
@@ -1141,7 +1141,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1316,7 +1316,7 @@ export class ImageModel {
       };
     }
 
-    await this.updateReviewStatus(imageIds);
+    await this.updateImageReviewStatusAndLabelIds(imageIds);
     return {
       isOk: true,
       movingToTask: false,
@@ -1363,7 +1363,7 @@ export class ImageModel {
     }
 
     await image.save();
-    await this.updateReviewStatus([image._id]);
+    await this.updateImageReviewStatusAndLabelIds([image._id]);
     return image;
   }
 
@@ -1393,7 +1393,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1615,11 +1615,12 @@ export class ImageModel {
 
   /**
    * A custom middleware-like method that is used to update the reviewed status of
-   * images that should only be ran by operations that would affect the reviewed status.
+   * images and their queryable label IDs. This method should only be run by operations that would
+   * affect the reviewed status or labels.
    *
    * @param {Array<string>} imageIds - An array of image IDs to update.
    */
-  static async updateReviewStatus(imageIds: string[]): Promise<BulkWriteResult> {
+  static async updateImageReviewStatusAndLabelIds(imageIds: string[]): Promise<BulkWriteResult> {
     try {
       const res = await retry(
         async (bail, attempt) => {
