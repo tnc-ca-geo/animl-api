@@ -33,6 +33,6 @@ export default /* GraphQL */ `
     tags: [ID!]
     url: SignedImageUrl
     awaitingPrediction: Boolean
-    labelIds: [String!]
+    queryableLabelIds: [String!]
   }
 `;

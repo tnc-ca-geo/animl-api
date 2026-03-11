@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import sharp from 'sharp';
 import Image from '../../.build/api/db/schemas/Image.js';
 import Project from '../../.build/api/db/schemas/Project.js';
-import { getLabelIds, isImageReviewed } from '../../.build/api/db/models/utils.js';
+import { getQueryableLabelIds, isImageReviewed } from '../../.build/api/db/models/utils.js';
 import { buildImgUrl } from '../../.build/api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
@@ -459,10 +459,10 @@ const operations = {
     },
   },
 
-  'add-labeldIds-to-images': {
-    getIds: async () => await Image.find({ labelIds: { $exists: false } }).select('_id'),
+  'add-queryable-label-ids-to-images': {
+    getIds: async () => await Image.find({ queryableLabelIds: { $exists: false } }).select('_id'),
     update: async () => {
-      console.log('Adding labelIds to all images...');
+      console.log('Adding queryableLabelIds to all images...');
 
       let skip = 0;
       const limit = 5000; // how many images to fetch at a time
@@ -471,7 +471,7 @@ const operations = {
       let doneCount = 0;
 
       while (skip < count) {
-        const documents = await Image.find({ labelIds: { $exists: false } })
+        const documents = await Image.find({ queryableLabelIds: { $exists: false } })
           .skip(skip)
           .limit(limit);
         const operations = [];
@@ -479,7 +479,9 @@ const operations = {
           operations.push({
             updateOne: {
               filter: { _id: image._id },
-              update: { $set: { labelIds: getLabelIds(image) } },
+              update: {
+                $set: { queryableLabelIds: getQueryableLabelIds(image) },
+              },
             },
           });
         }

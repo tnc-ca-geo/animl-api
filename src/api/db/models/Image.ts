@@ -43,7 +43,7 @@ import {
   reviewerLabelRecord,
   findActiveProjReg,
   isImageReviewed,
-  getLabelIds,
+  getQueryableLabelIds,
   findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
@@ -980,7 +980,7 @@ export class ImageModel {
             // set image as unreviewed due to new labels
             image.reviewed = false;
             image.awaitingPrediction = false;
-            image.labelIds = getLabelIds(image);
+            image.queryableLabelIds = getQueryableLabelIds(image);
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -1067,7 +1067,6 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createLabels - new label count: ', JSON.stringify(input.labels.length));
-    console.time('total-time');
 
     try {
       console.time('creating-labels');
@@ -1105,13 +1104,9 @@ export class ImageModel {
       );
 
       console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
-      console.timeEnd('creating-labels');
 
-      console.time('updating-review-status');
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
       await this.updateReviewStatus(imageIds);
-      console.timeEnd('updating-review-status');
-      console.timeEnd('total-time');
       return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
       console.log(
@@ -1339,7 +1334,6 @@ export class ImageModel {
     }
 
     await this.updateReviewStatus(imageIds);
-
     return {
       isOk: true,
       movingToTask: false,
@@ -1657,14 +1651,13 @@ export class ImageModel {
           const operations = [];
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
-            if (isReviewed !== image.reviewed) {
-              operations.push({
-                updateOne: {
-                  filter: { _id: image._id },
-                  update: { $set: { reviewed: isReviewed } },
-                },
-              });
-            }
+            const queryableLabelIds = getQueryableLabelIds(image);
+            operations.push({
+              updateOne: {
+                filter: { _id: image._id },
+                update: { $set: { reviewed: isReviewed, queryableLabelIds: queryableLabelIds } },
+              },
+            });
           }
           console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
           return await Image.bulkWrite(operations);

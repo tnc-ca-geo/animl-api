@@ -259,18 +259,7 @@ export function buildPipeline(
   if (labels) {
     // pipeline.push(...buildLabelPipeline(labels));
     console.log('using new buildLabelPipeline');
-    const labelsFilter = labels.includes('none')
-      ? {
-          $match: {
-            $or: [
-              { labelIds: { $in: labels } },
-              {
-                $or: [{ labelIds: { $size: 0 } }, { labelIds: null }],
-              },
-            ],
-          },
-        }
-      : { $match: { labelIds: { $in: labels } } };
+    const labelsFilter = { $match: { labelIds: { $in: labels } } };
     pipeline.push(labelsFilter);
   }
 
@@ -719,7 +708,7 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
-export function getLabelIds(image: ImageSchema): string[] {
+export function getQueryableLabelIds(image: ImageSchema): string[] {
   const labelIds: Set<string> = new Set();
   for (const obj of image.objects) {
     if (obj.locked) {

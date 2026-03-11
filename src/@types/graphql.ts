@@ -470,7 +470,6 @@ export type Image = {
   imageBytes?: Maybe<Scalars['Int']['output']>;
   imageHeight?: Maybe<Scalars['Int']['output']>;
   imageWidth?: Maybe<Scalars['Int']['output']>;
-  labelIds?: Maybe<Array<Scalars['String']['output']>>;
   location?: Maybe<Location>;
   make: Scalars['String']['output'];
   mimeType?: Maybe<Scalars['String']['output']>;
@@ -479,6 +478,7 @@ export type Image = {
   originalFileName?: Maybe<Scalars['String']['output']>;
   path?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
+  queryableLabelIds?: Maybe<Array<Scalars['String']['output']>>;
   reviewed?: Maybe<Scalars['Boolean']['output']>;
   tags?: Maybe<Array<Scalars['ID']['output']>>;
   timezone: Scalars['String']['output'];
