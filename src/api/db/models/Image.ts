@@ -33,7 +33,6 @@ import {
 } from '../../auth/roles.js';
 import {
   buildPipeline,
-  buildLabelPipeline,
   mapImgToDep,
   sanitizeMetadata,
   isLabelDupe,
@@ -76,23 +75,6 @@ export class ImageModel {
     }
     const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
-    const res = await Image.aggregate(pipeline);
-    return res[0] ? res[0].count : 0;
-  }
-
-  static async countImagesByLabel(
-    labels: string[],
-    context: Pick<Context, 'user'>,
-  ): Promise<number> {
-    if (labels.length === 0) {
-      return 0;
-    }
-    const pipeline = [
-      { $match: { projectId: context.user['curr_project'] } },
-      ...buildLabelPipeline(labels),
-      { $count: 'count' },
-    ];
-
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
