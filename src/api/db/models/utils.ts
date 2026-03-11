@@ -96,6 +96,24 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
   return pipeline;
 }
 
+export function buildLabelPipeline(labels: string[]): PipelineStage[] {
+  const pipeline: PipelineStage[] = [];
+  const labelsFilter = labels.includes('none') || labels.includes('empty')
+    ? {
+        $match: {
+          $or: [
+            { queryableLabelIds: { $in: labels } },
+            {
+              $or: [{ queryableLabelIds: { $size: 0 } }, { queryableLabelIds: null }],
+            },
+          ],
+        },
+      }
+      : { $match: { queryableLabelIds: { $in: labels } } };
+  pipeline.push(labelsFilter);
+  return pipeline;
+}
+
 export function buildPipeline(
   {
     cameras,
@@ -155,7 +173,7 @@ export function buildPipeline(
     });
   }
 
-  // match reviewedFilter
+  // match reviewed filter
   if (reviewed !== null && reviewed !== undefined) {
     pipeline.push({
       $match: {
@@ -166,19 +184,7 @@ export function buildPipeline(
 
   // match labels filter
   if (labels) {
-    const labelsFilter = labels.includes('none') || labels.includes('empty')
-      ? {
-          $match: {
-            $or: [
-              { queryableLabelIds: { $in: labels } },
-              {
-                $or: [{ queryableLabelIds: { $size: 0 } }, { queryableLabelIds: null }],
-              },
-            ],
-          },
-        }
-      : { $match: { queryableLabelIds: { $in: labels } } };
-    pipeline.push(labelsFilter);
+    pipeline.push(...buildLabelPipeline(labels));
   }
 
   // match tags filter
