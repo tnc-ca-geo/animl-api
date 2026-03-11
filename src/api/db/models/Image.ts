@@ -962,7 +962,6 @@ export class ImageModel {
             // set image as unreviewed due to new labels
             image.reviewed = false;
             image.awaitingPrediction = false;
-            console.log("ImageModel.createInternalLabels - image objects: ", JSON.stringify(image.objects));
             image.queryableLabelIds = getQueryableLabelIds(image);
             await image.save();
             return { image, newLabel: labelRecord };
