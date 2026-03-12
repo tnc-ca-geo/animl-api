@@ -8,12 +8,33 @@ def get_random_labels():
         "empty",
         "unknown",
         "1",
-        "bird",
         "2",
-        "rodent"]
-    num_to_select = random.randint(1,len(labels)-1)
-    labelIds = random.sample(labels, num_to_select)
-    return labelIds
+        "3",
+        "6072b3a0-a8fd-4ac3-9b07-ae20a61585a0",
+        "opossum",
+        "boar",
+        "rodent",
+        "dog",
+        "raptor",
+        "other",
+        "skunk",
+        "deer",
+        "bird",
+        "rabbit",
+        "coyote",
+        "fox",
+        "squirrel",
+        "raccoon",
+        "corvid",
+        "bobcat",
+        "weasel",
+        "cougar",
+        "human",
+        "cat"]
+
+    num_to_select = random.randint(1, len(labels)-1)
+    label_ids = random.sample(labels, num_to_select)
+    return label_ids
 
 def get_images():
     url = "http://localhost:3000/dev/external"
@@ -41,7 +62,7 @@ def get_images():
         "operationName": "GetImages"
     })
     headers = {
-        'x-selected-project': 'henrysproject',
+        'x-selected-project': 'jldp',
         'Content-Type': 'application/json',
         'Authorization': 'bearer '
     }
@@ -50,7 +71,7 @@ def get_images():
 
 
 def main():
-    num_requests = 1000
+    num_requests = 100
 
     total_time = 0
     for i in range(num_requests):
