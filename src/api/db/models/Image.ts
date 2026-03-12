@@ -1271,7 +1271,7 @@ export class ImageModel {
           ...unlockOperations,
           ...standardOperations,
         ];
-        outerAcc.imageIds = [...outerAcc.imageIds, ...img._id];
+        outerAcc.imageIds = [...outerAcc.imageIds, img._id];
 
         return outerAcc;
       },
@@ -1309,6 +1309,7 @@ export class ImageModel {
 
     const res = await Image.bulkWrite(operations);
     if (!res.isOk()) {
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return {
         isOk: false,
         movingToTask: false,
