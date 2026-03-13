@@ -622,6 +622,10 @@ export function isImageReviewed(image: ImageSchema) {
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
 }
 
+/**
+ * For a given image, gets the labels it can be queried by. This is used for filtering by label
+ * in the UI and is stored as a field on the image record to optimize query performance.
+ */
 export function getQueryableLabelIds(image: ImageSchema): string[] {
   if (!image.objects || image.objects.length === 0) {
     return ['none'];
@@ -629,6 +633,7 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
   const labelIds: Set<string> = new Set();
   for (const obj of image.objects) {
     if (obj.locked) {
+      // if an object is locked, only include its first validated label
       for (const lbl of obj.labels) {
         if (lbl.validation && lbl.validation.validated){
           labelIds.add(lbl.labelId);
@@ -637,6 +642,7 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
       }
     }
     else {
+      // if an object is not locked, include all of its non-unvalidated(validated and null/undefined validated) labels
       obj.labels.forEach((lbl) => {
         if (!lbl.validation || lbl.validation.validated) {
           labelIds.add(lbl.labelId)
