@@ -98,18 +98,7 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
 
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
-  const labelsFilter = labels.includes('none') || labels.includes('empty')
-    ? {
-        $match: {
-          $or: [
-            { queryableLabelIds: { $in: labels } },
-            {
-              $or: [{ queryableLabelIds: { $size: 0 } }, { queryableLabelIds: null }],
-            },
-          ],
-        },
-      }
-      : { $match: { queryableLabelIds: { $in: labels } } };
+  const labelsFilter = { $match: { queryableLabelIds: { $in: labels } } };
   pipeline.push(labelsFilter);
   return pipeline;
 }
@@ -650,6 +639,9 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
         };
       });
     }
+  }
+  if (labelIds.size === 0) {
+    labelIds.add('none');
   }
   return Array.from(labelIds);
 }
