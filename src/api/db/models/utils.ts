@@ -371,6 +371,7 @@ export function createImageRecord(md: ImageMetadata) {
     make: md.make,
     deploymentId: md.deploymentId,
     projectId: md.projectId,
+    queryableLabelIds: ['none'], // default to 'none' until labels are added
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.path && { path: md.path }),
@@ -622,6 +623,9 @@ export function isImageReviewed(image: ImageSchema) {
 }
 
 export function getQueryableLabelIds(image: ImageSchema): string[] {
+  if (!image.objects || image.objects.length === 0) {
+    return ['none'];
+  }
   const labelIds: Set<string> = new Set();
   for (const obj of image.objects) {
     if (obj.locked) {
@@ -640,9 +644,7 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
       });
     }
   }
-  if (labelIds.size === 0) {
-    labelIds.add('none');
-  }
+
   return Array.from(labelIds);
 }
 
