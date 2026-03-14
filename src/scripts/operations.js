@@ -460,7 +460,7 @@ const operations = {
   },
 
   'add-queryable-label-ids-to-images': {
-    getIds: async () => await Image.find({ queryableLabelIds: { $exists: false } }).select('_id'),
+    getIds: async () => await Image.find().select('_id'),
     update: async () => {
       console.log('Adding queryableLabelIds to all images...');
 
@@ -471,9 +471,7 @@ const operations = {
       let doneCount = 0;
 
       while (skip < count) {
-        const documents = await Image.find({ queryableLabelIds: { $exists: false } })
-          .skip(skip)
-          .limit(limit);
+        const documents = await Image.find().skip(skip).limit(limit);
         const operations = [];
         for (const image of documents) {
           operations.push({

@@ -1636,12 +1636,14 @@ export class ImageModel {
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
             const queryableLabelIds = getQueryableLabelIds(image);
-            operations.push({
-              updateOne: {
-                filter: { _id: image._id },
-                update: { $set: { reviewed: isReviewed, queryableLabelIds: queryableLabelIds } },
-              },
-            });
+            if (image.reviewed !== isReviewed || !_.isEqual(image.queryableLabelIds, queryableLabelIds)) {
+              operations.push({
+                updateOne: {
+                  filter: { _id: image._id },
+                  update: { $set: { reviewed: isReviewed, queryableLabelIds: queryableLabelIds } },
+                },
+              });
+            }
           }
           console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
           return await Image.bulkWrite(operations);

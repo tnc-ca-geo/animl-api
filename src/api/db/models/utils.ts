@@ -650,6 +650,9 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
       });
     }
   }
+  if (labelIds.size === 0) {
+    return ['none'];
+  }
 
   return Array.from(labelIds);
 }
