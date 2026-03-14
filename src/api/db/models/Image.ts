@@ -1636,7 +1636,7 @@ export class ImageModel {
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
             const queryableLabelIds = getQueryableLabelIds(image);
-            if (image.reviewed !== isReviewed || !_.isEqual(image.queryableLabelIds, queryableLabelIds)) {
+            if (image.reviewed !== isReviewed || !_.isEqual([...image.queryableLabelIds], queryableLabelIds)) {
               operations.push({
                 updateOne: {
                   filter: { _id: image._id },

@@ -635,7 +635,7 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
     if (obj.locked) {
       // if an object is locked, only include its first validated label
       for (const lbl of obj.labels) {
-        if (lbl.validation && lbl.validation.validated){
+        if (lbl.validation && lbl.validation.validated !== false){
           labelIds.add(lbl.labelId);
           break;
         }
