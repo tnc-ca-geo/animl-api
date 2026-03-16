@@ -33,7 +33,6 @@ import {
 } from '../../auth/roles.js';
 import {
   buildPipeline,
-  buildLabelPipeline,
   mapImgToDep,
   sanitizeMetadata,
   isLabelDupe,
@@ -43,6 +42,7 @@ import {
   reviewerLabelRecord,
   findActiveProjReg,
   isImageReviewed,
+  getQueryableLabelIds,
   findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
@@ -75,23 +75,6 @@ export class ImageModel {
     }
     const pipeline = buildPipeline(input.filters, context.user['curr_project']!);
     pipeline.push({ $count: 'count' });
-    const res = await Image.aggregate(pipeline);
-    return res[0] ? res[0].count : 0;
-  }
-
-  static async countImagesByLabel(
-    labels: string[],
-    context: Pick<Context, 'user'>,
-  ): Promise<number> {
-    if (labels.length === 0) {
-      return 0;
-    }
-    const pipeline = [
-      { $match: { projectId: context.user['curr_project'] } },
-      ...buildLabelPipeline(labels),
-      { $count: 'count' },
-    ];
-
     const res = await Image.aggregate(pipeline);
     return res[0] ? res[0].count : 0;
   }
@@ -738,7 +721,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -785,7 +768,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -821,7 +804,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.objects.map((object) => object.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -979,6 +962,7 @@ export class ImageModel {
             // set image as unreviewed due to new labels
             image.reviewed = false;
             image.awaitingPrediction = false;
+            image.queryableLabelIds = getQueryableLabelIds(image);
             await image.save();
             return { image, newLabel: labelRecord };
           },
@@ -1065,7 +1049,6 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.StandardPayload> {
     console.log('ImageModel.createLabels - new label count: ', JSON.stringify(input.labels.length));
-    console.time('total-time');
 
     try {
       console.time('creating-labels');
@@ -1103,13 +1086,9 @@ export class ImageModel {
       );
 
       console.log('ImageModel.createLabels - res: ', JSON.stringify(res.getRawResponse()));
-      console.timeEnd('creating-labels');
 
-      console.time('updating-review-status');
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
-      await this.updateReviewStatus(imageIds);
-      console.timeEnd('updating-review-status');
-      console.timeEnd('total-time');
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return { isOk: true }; // TODO: what should we return if the BulkWrite has errors?
     } catch (err) {
       console.log(
@@ -1161,7 +1140,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.updates.map((update) => update.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1292,7 +1271,7 @@ export class ImageModel {
           ...unlockOperations,
           ...standardOperations,
         ];
-        outerAcc.imageIds = [...outerAcc.imageIds, ...img._id];
+        outerAcc.imageIds = [...outerAcc.imageIds, img._id];
 
         return outerAcc;
       },
@@ -1330,14 +1309,14 @@ export class ImageModel {
 
     const res = await Image.bulkWrite(operations);
     if (!res.isOk()) {
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return {
         isOk: false,
         movingToTask: false,
       };
     }
 
-    await this.updateReviewStatus(imageIds);
-
+    await this.updateImageReviewStatusAndLabelIds(imageIds);
     return {
       isOk: true,
       movingToTask: false,
@@ -1384,7 +1363,7 @@ export class ImageModel {
     }
 
     await image.save();
-    await this.updateReviewStatus([image._id]);
+    await this.updateImageReviewStatusAndLabelIds([image._id]);
     return image;
   }
 
@@ -1414,7 +1393,7 @@ export class ImageModel {
         JSON.stringify(res.getRawResponse()),
       );
       const imageIds = [...new Set(input.labels.map((label) => label.imageId))];
-      await this.updateReviewStatus(imageIds);
+      await this.updateImageReviewStatusAndLabelIds(imageIds);
       return res.getRawResponse();
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1636,11 +1615,12 @@ export class ImageModel {
 
   /**
    * A custom middleware-like method that is used to update the reviewed status of
-   * images that should only be ran by operations that would affect the reviewed status.
+   * images and their queryable label IDs. This method should only be run by operations that would
+   * affect the reviewed status or labels.
    *
    * @param {Array<string>} imageIds - An array of image IDs to update.
    */
-  static async updateReviewStatus(imageIds: string[]): Promise<BulkWriteResult> {
+  static async updateImageReviewStatusAndLabelIds(imageIds: string[]): Promise<BulkWriteResult> {
     try {
       const res = await retry(
         async (bail, attempt) => {
@@ -1655,11 +1635,12 @@ export class ImageModel {
           const operations = [];
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
-            if (isReviewed !== image.reviewed) {
+            const queryableLabelIds = getQueryableLabelIds(image);
+            if (image.reviewed !== isReviewed || !_.isEqual([...image.queryableLabelIds], queryableLabelIds)) {
               operations.push({
                 updateOne: {
                   filter: { _id: image._id },
-                  update: { $set: { reviewed: isReviewed } },
+                  update: { $set: { reviewed: isReviewed, queryableLabelIds: queryableLabelIds } },
                 },
               });
             }
