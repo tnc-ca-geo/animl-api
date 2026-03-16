@@ -635,16 +635,16 @@ export function getQueryableLabelIds(image: ImageSchema): string[] {
     if (obj.locked) {
       // if an object is locked, only include its first validated label
       for (const lbl of obj.labels) {
-        if (lbl.validation && lbl.validation.validated !== false){
+        if (lbl.validation && lbl.validation.validated === true){
           labelIds.add(lbl.labelId);
           break;
         }
       }
     }
     else {
-      // if an object is not locked, include all of its non-unvalidated(validated and null/undefined validated) labels
+      // if an object is not locked, include all of its non-invalidated (validated and null/undefined validated) labels
       obj.labels.forEach((lbl) => {
-        if (!lbl.validation || lbl.validation.validated) {
+        if (!lbl.validation || lbl.validation.validated !== false) {
           labelIds.add(lbl.labelId)
         };
       });
