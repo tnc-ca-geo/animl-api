@@ -98,91 +98,8 @@ export function buildTagPipeline(tags: string[]): PipelineStage[] {
 
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
-
-  // map over objects & labels and filter for first validated label
-  pipeline.push({
-    $set: {
-      objects: {
-        $map: {
-          input: '$objects',
-          as: 'obj',
-          in: {
-            $setField: {
-              field: 'firstValidLabel',
-              input: '$$obj',
-              value: {
-                $filter: {
-                  input: '$$obj.labels',
-                  as: 'label',
-                  cond: { $eq: ['$$label.validation.validated', true] },
-                  limit: 1,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const labelsFilter: { $or: Record<string, any>[] } = {
-    $or: [
-      // has an object that is locked,
-      // and its first validated label is included in labels filter
-      {
-        objects: {
-          $elemMatch: {
-            locked: true,
-            'firstValidLabel.labelId': { $in: labels },
-          },
-        },
-      },
-
-      // has an object is not locked, but it has label that is
-      // not-invalidated and included in filters
-      {
-        objects: {
-          $elemMatch: {
-            locked: false,
-            labels: {
-              $elemMatch: {
-                'validation.validated': { $not: { $eq: false } },
-                labelId: { $in: labels },
-              },
-            },
-          },
-        },
-      },
-    ],
-  };
-
-  // if labels includes "none", also return images with no objects
-  if (labels.includes('none')) {
-    const noObjectsFilter = {
-      $or: [
-        // return images w/ no objects,
-        { objects: { $size: 0 } },
-        // or images in which all labels of all objects have been invalidated
-        {
-          objects: {
-            $not: {
-              $elemMatch: {
-                labels: {
-                  $elemMatch: {
-                    $or: [{ validation: null }, { 'validation.validated': true }],
-                  },
-                },
-              },
-            },
-          },
-        },
-      ],
-    };
-    labelsFilter.$or.push(noObjectsFilter);
-  }
-
-  pipeline.push({ $match: labelsFilter });
-
+  const labelsFilter = { $match: { queryableLabelIds: { $in: labels } } };
+  pipeline.push(labelsFilter);
   return pipeline;
 }
 
@@ -245,7 +162,7 @@ export function buildPipeline(
     });
   }
 
-  // match reviewedFilter
+  // match reviewed filter
   if (reviewed !== null && reviewed !== undefined) {
     pipeline.push({
       $match: {
@@ -454,6 +371,7 @@ export function createImageRecord(md: ImageMetadata) {
     make: md.make,
     deploymentId: md.deploymentId,
     projectId: md.projectId,
+    queryableLabelIds: ['none'], // default to 'none' until labels are added
     ...(md.model && { model: md.model }),
     ...(md.fileName && { originalFileName: md.fileName }),
     ...(md.path && { path: md.path }),
@@ -702,6 +620,41 @@ export function isImageReviewed(image: ImageSchema) {
     obj.labels.some((lbl) => !lbl.validation || lbl.validation.validated),
   );
   return hasObjs && !hasUnlockedObjs && !hasAllInvalidatedLabels;
+}
+
+/**
+ * For a given image, gets the labels it can be queried by. This is used for filtering by label
+ * in the UI and is stored as a field on the image record to optimize query performance.
+ */
+export function getQueryableLabelIds(image: ImageSchema): string[] {
+  if (!image.objects || image.objects.length === 0) {
+    return ['none'];
+  }
+  const labelIds: Set<string> = new Set();
+  for (const obj of image.objects) {
+    if (obj.locked) {
+      // if an object is locked, only include its first validated label
+      for (const lbl of obj.labels) {
+        if (lbl.validation && lbl.validation.validated === true){
+          labelIds.add(lbl.labelId);
+          break;
+        }
+      }
+    }
+    else {
+      // if an object is not locked, include all of its non-invalidated (validated and null/undefined validated) labels
+      obj.labels.forEach((lbl) => {
+        if (!lbl.validation || lbl.validation.validated !== false) {
+          labelIds.add(lbl.labelId)
+        };
+      });
+    }
+  }
+  if (labelIds.size === 0) {
+    return ['none'];
+  }
+
+  return Array.from(labelIds);
 }
 
 /**

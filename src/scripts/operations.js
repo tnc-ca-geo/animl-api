@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import sharp from 'sharp';
 import Image from '../../.build/api/db/schemas/Image.js';
 import Project from '../../.build/api/db/schemas/Project.js';
-import { isImageReviewed } from '../../.build/api/db/models/utils.js';
+import { getQueryableLabelIds, isImageReviewed } from '../../.build/api/db/models/utils.js';
 import { buildImgUrl } from '../../.build/api/db/models/utils.js';
 
 const ObjectId = Mongoose.Types.ObjectId;
@@ -425,8 +425,7 @@ const operations = {
   },
 
   'backfill-datetime-adjusted': {
-    getIds: async () =>
-      await Image.find({ dateTimeAdjusted: { $exists: false } }).select('_id'),
+    getIds: async () => await Image.find({ dateTimeAdjusted: { $exists: false } }).select('_id'),
     update: async () => {
       console.log('Backfilling dateTimeAdjusted field from dateTimeOriginal...');
 
@@ -454,6 +453,39 @@ const operations = {
         }
         await Image.bulkWrite(operations);
         doneCount += operations.length;
+        console.log('Done: ', doneCount);
+      }
+      return { nModified: doneCount };
+    },
+  },
+
+  'add-queryable-label-ids-to-images': {
+    getIds: async () => await Image.find().select('_id'),
+    update: async () => {
+      console.log('Adding queryableLabelIds to all images...');
+
+      let skip = 0;
+      const limit = 5000; // how many images to fetch at a time
+      const count = await Image.countDocuments();
+      console.log('Number of documents: ', count);
+      let doneCount = 0;
+
+      while (skip < count) {
+        const documents = await Image.find().skip(skip).limit(limit);
+        const operations = [];
+        for (const image of documents) {
+          operations.push({
+            updateOne: {
+              filter: { _id: image._id },
+              update: {
+                $set: { queryableLabelIds: getQueryableLabelIds(image) },
+              },
+            },
+          });
+        }
+        await Image.bulkWrite(operations);
+        skip += limit;
+        doneCount += documents.length;
         console.log('Done: ', doneCount);
       }
       return { nModified: doneCount };
