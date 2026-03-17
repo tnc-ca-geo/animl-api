@@ -4,6 +4,7 @@ service: animl-api
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-prune-plugin
   - serverless-offline
 
 custom:

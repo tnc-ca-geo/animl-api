@@ -73,6 +73,7 @@
         "serverless-dotenv-plugin": "^6.0.0",
         "serverless-offline": "^13.0.0",
         "serverless-plugin-typescript": "^2.1.5",
+        "serverless-prune-plugin": "^2.1.0",
         "sinon": "^17.0.0",
         "tape": "^5.5.3",
         "typescript": "^5.4.4",
