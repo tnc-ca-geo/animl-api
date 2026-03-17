@@ -8,6 +8,7 @@ const analysisConfig = {
   START_DATE: '2023-4-28',
   END_DATE: '2024-5-29',
   ML_MODEL: 'mirav2', // first use of 'mirav2' was 2023-4-28
+  SKIP_DEFAULT_DEPLOYMENT: true,
   TARGET_CLASSES: [
     // class naming convention: '<label.name>:<label._id>'
     {
@@ -29,6 +30,17 @@ const analysisConfig = {
       predicted: 'bird:bird',
       validation: ['bird:bird', 'scrub jay:731d97ef-aff7-4ffb-8f07-66a9f06dd686'],
     },
+  ],
+  VALIDATION_CLASSES_ADJUSTMENTS: [
+    // Some scripts automatically build the TARGET_CLASSES for a model's labels.
+    // This provides an escape hatch for adding additional validation classes
+    // or for ignoring certain validation classes.
+    // class naming convention: '<label.name>:<label._id>'
+    {
+      predicted: [],
+      additionalValidation: [],
+      ignoredValidation: [],
+    }
   ],
   // ML_MODEL: 'megadetector_v5a', // first use of 'megadetector_v5a' was 2023-07-29
   // TARGET_CLASSES: [
