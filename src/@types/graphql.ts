@@ -973,6 +973,29 @@ export type PageInfoWithCount = IPageInfo & {
   previous?: Maybe<Scalars['String']['output']>;
 };
 
+export type PlatformMetrics = {
+  __typename?: 'PlatformMetrics';
+  totalCameras: Scalars['Int']['output'];
+  totalImages: Scalars['Int']['output'];
+  totalImagesNotReviewed: Scalars['Int']['output'];
+  totalImagesReviewed: Scalars['Int']['output'];
+  totalProjects: Scalars['Int']['output'];
+  totalUsers: Scalars['Int']['output'];
+};
+
+export type PlatformStatsHistoryInput = {
+  end: Scalars['Date']['input'];
+  start: Scalars['Date']['input'];
+};
+
+export type PlatformStatsSnapshot = {
+  __typename?: 'PlatformStatsSnapshot';
+  _id: Scalars['ID']['output'];
+  platform: PlatformMetrics;
+  projects: Array<ProjectMetrics>;
+  snapshotDate: Scalars['Date']['output'];
+};
+
 export type Point = {
   __typename?: 'Point';
   coordinates: Array<Scalars['Float']['output']>;
@@ -1012,6 +1035,18 @@ export type ProjectLabelPayload = {
   labels?: Maybe<Array<ProjectLabel>>;
 };
 
+export type ProjectMetrics = {
+  __typename?: 'ProjectMetrics';
+  cameraCount: Scalars['Int']['output'];
+  imageCount: Scalars['Int']['output'];
+  imagesAddedSinceLastSnapshot: Scalars['Int']['output'];
+  imagesNotReviewed: Scalars['Int']['output'];
+  imagesReviewed: Scalars['Int']['output'];
+  projectId: Scalars['String']['output'];
+  projectName: Scalars['String']['output'];
+  userCount: Scalars['Int']['output'];
+};
+
 export type ProjectPayload = {
   __typename?: 'ProjectPayload';
   project?: Maybe<Project>;
@@ -1047,6 +1082,8 @@ export type Query = {
   imagesCount?: Maybe<ImagesCount>;
   labels?: Maybe<LabelList>;
   mlModels?: Maybe<Array<MlModel>>;
+  platformStats?: Maybe<PlatformStatsSnapshot>;
+  platformStatsHistory: Array<PlatformStatsSnapshot>;
   projects?: Maybe<Array<Project>>;
   stats?: Maybe<Task>;
   task?: Maybe<Task>;
@@ -1093,6 +1130,11 @@ export type QueryImagesCountArgs = {
 
 export type QueryMlModelsArgs = {
   input?: InputMaybe<QueryMlModelsInput>;
+};
+
+
+export type QueryPlatformStatsHistoryArgs = {
+  input: PlatformStatsHistoryInput;
 };
 
 

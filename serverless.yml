@@ -183,6 +183,16 @@ functions:
     memorySize: 3008
     timeout: 900
 
+  computeStats:
+    handler: src/dashboard/adminStats.computeStats
+    runtime: nodejs20.x
+    memorySize: 3008
+    timeout: 900
+    events:
+      - schedule:
+          rate: cron(0 0 ? * SUN *)
+          enabled: true
+
 resources:
   Resources:
     # Secrets Manager secret for API key

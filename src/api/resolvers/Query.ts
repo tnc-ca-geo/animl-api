@@ -152,4 +152,23 @@ export default {
   ): Promise<gql.Task> => {
     return context.models.Image.exportAnnotations(input, context);
   },
+
+  platformStats: async (
+    _: unknown,
+    _args: unknown,
+    context: Context,
+  ): Promise<gql.PlatformStatsSnapshot | null> => {
+    return context.models.PlatformStats.getLatest(context);
+  },
+
+  platformStatsHistory: async (
+    _: unknown,
+    { input }: gql.QueryPlatformStatsHistoryArgs,
+    context: Context,
+  ): Promise<gql.PlatformStatsSnapshot[]> => {
+    return context.models.PlatformStats.getHistory(
+      { start: input.start, end: input.end },
+      context,
+    );
+  },
 };
