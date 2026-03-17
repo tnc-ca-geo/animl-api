@@ -6,6 +6,7 @@ export default /* GraphQL */ `
     totalImagesNotReviewed: Int!
     totalUsers: Int!
     totalCameras: Int!
+    totalWirelessCameras: Int!
   }
 
   type ProjectMetrics {
@@ -15,6 +16,7 @@ export default /* GraphQL */ `
     imagesReviewed: Int!
     imagesNotReviewed: Int!
     cameraCount: Int!
+    wirelessCameraCount: Int!
     userCount: Int!
     imagesAddedSinceLastSnapshot: Int!
   }

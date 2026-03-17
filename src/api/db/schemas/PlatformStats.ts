@@ -9,6 +9,7 @@ const ProjectMetricsSchema = new Schema({
   imagesReviewed: { type: Number, required: true, default: 0 },
   imagesNotReviewed: { type: Number, required: true, default: 0 },
   cameraCount: { type: Number, required: true, default: 0 },
+  wirelessCameraCount: { type: Number, required: true, default: 0 },
   userCount: { type: Number, required: true, default: 0 },
   imagesAddedSinceLastSnapshot: { type: Number, required: true, default: 0 },
 });
@@ -20,6 +21,7 @@ const PlatformMetricsSchema = new Schema({
   totalImagesNotReviewed: { type: Number, required: true, default: 0 },
   totalUsers: { type: Number, required: true, default: 0 },
   totalCameras: { type: Number, required: true, default: 0 },
+  totalWirelessCameras: { type: Number, required: true, default: 0 },
 });
 
 const PlatformStatsSchema = new Schema({
