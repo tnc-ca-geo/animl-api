@@ -187,8 +187,8 @@ functions:
     memorySize: 3008
     timeout: 900
 
-  computeStats:
-    handler: src/dashboard/adminStats.computeStats
+  platformstats:
+    handler: src/dashboard/platformStats.computeStats
     runtime: nodejs20.x
     memorySize: 3008
     timeout: 900

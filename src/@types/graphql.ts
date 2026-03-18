@@ -982,6 +982,7 @@ export type PlatformMetrics = {
   totalImagesReviewed: Scalars['Int']['output'];
   totalProjects: Scalars['Int']['output'];
   totalUsers: Scalars['Int']['output'];
+  totalWirelessCameras: Scalars['Int']['output'];
 };
 
 export type PlatformStatsHistoryInput = {
@@ -1046,6 +1047,7 @@ export type ProjectMetrics = {
   projectId: Scalars['String']['output'];
   projectName: Scalars['String']['output'];
   userCount: Scalars['Int']['output'];
+  wirelessCameraCount: Scalars['Int']['output'];
 };
 
 export type ProjectPayload = {
