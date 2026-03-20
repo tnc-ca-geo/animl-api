@@ -27,6 +27,27 @@ function applyFilters(
   projectMeta: Map<string, ProjectMetadata>,
   filter?: gql.PlatformStatsFilterInput | null,
 ) {
+  // If either filter is an explicitly provided empty array, return empty results
+  if (
+    (filter?.types && filter.types.length === 0) ||
+    (filter?.stages && filter.stages.length === 0)
+  ) {
+    return {
+      _id: snapshot._id,
+      snapshotDate: snapshot.snapshotDate,
+      platform: {
+        totalProjects: 0,
+        totalImages: 0,
+        totalImagesReviewed: 0,
+        totalImagesNotReviewed: 0,
+        totalUsers: 0,
+        totalCameras: 0,
+        totalWirelessCameras: 0,
+      },
+      projects: [],
+    };
+  }
+
   // Augment projects with current type/stage from live Project docs
   const augmentedProjects = snapshot.projects.map((p) => ({
     ...('toObject' in p ? (p as any).toObject() : p),
