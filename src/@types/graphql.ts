@@ -18,11 +18,10 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
-export enum AggregationLevel {
-  Burst = 'burst',
-  ImageAndObject = 'imageAndObject',
-  IndependentDetection = 'independentDetection'
-}
+export type AggregationLevel =
+  | 'burst'
+  | 'imageAndObject'
+  | 'independentDetection';
 
 export type AutomationAction = {
   __typename?: 'AutomationAction';
@@ -218,9 +217,15 @@ export type CreateObjectsInput = {
 
 export type CreateProjectInput = {
   availableMLModels: Array<Scalars['String']['input']>;
+  country?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
+  location?: InputMaybe<LocationInput>;
   name: Scalars['String']['input'];
+  organization?: InputMaybe<Scalars['String']['input']>;
+  stage?: InputMaybe<ProjectStage>;
+  state_province?: InputMaybe<Scalars['String']['input']>;
   timezone: Scalars['String']['input'];
+  type?: InputMaybe<ProjectType>;
 };
 
 export type CreateProjectLabelInput = {
@@ -442,10 +447,9 @@ export type FiltersInput = {
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-export enum Format {
-  Coco = 'coco',
-  Csv = 'csv'
-}
+export type Format =
+  | 'coco'
+  | 'csv';
 
 export type IPageInfo = {
   hasNext?: Maybe<Scalars['Boolean']['output']>;
@@ -974,6 +978,40 @@ export type PageInfoWithCount = IPageInfo & {
   previous?: Maybe<Scalars['String']['output']>;
 };
 
+export type PlatformMetrics = {
+  __typename?: 'PlatformMetrics';
+  totalCameras: Scalars['Int']['output'];
+  totalImages: Scalars['Int']['output'];
+  totalImagesNotReviewed: Scalars['Int']['output'];
+  totalImagesReviewed: Scalars['Int']['output'];
+  totalProjects: Scalars['Int']['output'];
+  totalUsers: Scalars['Int']['output'];
+  totalWirelessCameras: Scalars['Int']['output'];
+};
+
+export type PlatformStatsFilterInput = {
+  stages?: InputMaybe<Array<ProjectStage>>;
+  types?: InputMaybe<Array<ProjectType>>;
+};
+
+export type PlatformStatsHistoryInput = {
+  end: Scalars['Date']['input'];
+  filter?: InputMaybe<PlatformStatsFilterInput>;
+  start: Scalars['Date']['input'];
+};
+
+export type PlatformStatsInput = {
+  filter?: InputMaybe<PlatformStatsFilterInput>;
+};
+
+export type PlatformStatsSnapshot = {
+  __typename?: 'PlatformStatsSnapshot';
+  _id: Scalars['ID']['output'];
+  platform: PlatformMetrics;
+  projects: Array<ProjectMetrics>;
+  snapshotDate: Scalars['Date']['output'];
+};
+
 export type Point = {
   __typename?: 'Point';
   coordinates: Array<Scalars['Float']['output']>;
@@ -991,11 +1029,17 @@ export type Project = {
   automationRules?: Maybe<Array<AutomationRule>>;
   availableMLModels?: Maybe<Array<Scalars['String']['output']>>;
   cameraConfigs?: Maybe<Array<CameraConfig>>;
+  country?: Maybe<Scalars['String']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
+  location?: Maybe<Location>;
   name: Scalars['String']['output'];
+  organization?: Maybe<Scalars['String']['output']>;
+  stage?: Maybe<ProjectStage>;
+  state_province?: Maybe<Scalars['String']['output']>;
   tags?: Maybe<Array<ProjectTag>>;
   timezone: Scalars['String']['output'];
+  type?: Maybe<ProjectType>;
   views: Array<View>;
 };
 
@@ -1013,6 +1057,21 @@ export type ProjectLabelPayload = {
   labels?: Maybe<Array<ProjectLabel>>;
 };
 
+export type ProjectMetrics = {
+  __typename?: 'ProjectMetrics';
+  cameraCount: Scalars['Int']['output'];
+  imageCount: Scalars['Int']['output'];
+  imagesAddedSinceLastSnapshot: Scalars['Int']['output'];
+  imagesNotReviewed: Scalars['Int']['output'];
+  imagesReviewed: Scalars['Int']['output'];
+  projectId: Scalars['String']['output'];
+  projectName: Scalars['String']['output'];
+  stage?: Maybe<ProjectStage>;
+  type?: Maybe<ProjectType>;
+  userCount: Scalars['Int']['output'];
+  wirelessCameraCount: Scalars['Int']['output'];
+};
+
 export type ProjectPayload = {
   __typename?: 'ProjectPayload';
   project?: Maybe<Project>;
@@ -1024,6 +1083,10 @@ export type ProjectRegistration = {
   active: Scalars['Boolean']['output'];
   projectId: Scalars['String']['output'];
 };
+
+export type ProjectStage =
+  | 'demo'
+  | 'production';
 
 export type ProjectTag = {
   __typename?: 'ProjectTag';
@@ -1037,6 +1100,10 @@ export type ProjectTagsPayload = {
   tags?: Maybe<Array<ProjectTag>>;
 };
 
+export type ProjectType =
+  | 'external'
+  | 'internal';
+
 export type Query = {
   __typename?: 'Query';
   batches?: Maybe<BatchesConnection>;
@@ -1048,6 +1115,8 @@ export type Query = {
   imagesCount?: Maybe<ImagesCount>;
   labels?: Maybe<LabelList>;
   mlModels?: Maybe<Array<MlModel>>;
+  platformStats?: Maybe<PlatformStatsSnapshot>;
+  platformStatsHistory: Array<PlatformStatsSnapshot>;
   projects?: Maybe<Array<Project>>;
   stats?: Maybe<Task>;
   task?: Maybe<Task>;
@@ -1094,6 +1163,16 @@ export type QueryImagesCountArgs = {
 
 export type QueryMlModelsArgs = {
   input?: InputMaybe<QueryMlModelsInput>;
+};
+
+
+export type QueryPlatformStatsArgs = {
+  input?: InputMaybe<PlatformStatsInput>;
+};
+
+
+export type QueryPlatformStatsHistoryArgs = {
+  input: PlatformStatsHistoryInput;
 };
 
 
@@ -1331,8 +1410,14 @@ export type UpdatePredictionStatusInput = {
 };
 
 export type UpdateProjectInput = {
+  country?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  location?: InputMaybe<LocationInput>;
   name?: InputMaybe<Scalars['String']['input']>;
+  organization?: InputMaybe<Scalars['String']['input']>;
+  stage?: InputMaybe<ProjectStage>;
+  state_province?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<ProjectType>;
 };
 
 export type UpdateProjectLabelInput = {
@@ -1375,11 +1460,10 @@ export type User = {
   username: Scalars['String']['output'];
 };
 
-export enum UserRole {
-  Manager = 'manager',
-  Member = 'member',
-  Observer = 'observer'
-}
+export type UserRole =
+  | 'manager'
+  | 'member'
+  | 'observer';
 
 export type UsersPayload = {
   __typename?: 'UsersPayload';
@@ -1422,7 +1506,6 @@ export type WirelessCamera = {
   projRegistrations: Array<ProjectRegistration>;
 };
 
-export enum FilterEnum {
-  Completed = 'COMPLETED',
-  Current = 'CURRENT'
-}
+export type FilterEnum =
+  | 'COMPLETED'
+  | 'CURRENT';

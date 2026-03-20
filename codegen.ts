@@ -17,6 +17,9 @@ const config: CodegenConfig = {
         },
       ],
       config: {
+        // Generate enums as TypeScript string union types instead of TS enums
+        // so Mongoose string-literal types are directly assignable
+        enumsAsTypes: true,
         // https://the-guild.dev/graphql/codegen/plugins/typescript/typescript-operations#scalars
         scalars: {
           ID: {

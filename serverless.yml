@@ -4,6 +4,7 @@ service: animl-api
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-prune-plugin
   - serverless-offline
 
 custom:
@@ -150,6 +151,7 @@ functions:
             arn: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/{{resolve:ssm:/application/cognito/userPoolId:1}}
     memorySize: 3008
     timeout: 30
+
   inference:
     handler: src/ml/handler.inference
     runtime: nodejs20.x
@@ -163,12 +165,14 @@ functions:
           batchSize: 1
           functionResponseType: ReportBatchItemFailures
     timeout: 120
+
   batchinference:
     handler: src/ml/handler.inference
     runtime: nodejs20.x
     reservedConcurrency: 8
     memorySize: 2048
     timeout: 120
+
   task:
     handler: src/task/handler.handler
     runtime: nodejs20.x
@@ -182,6 +186,16 @@ functions:
           batchSize: 1
     memorySize: 3008
     timeout: 900
+
+  platformstats:
+    handler: src/dashboard/platformStats.computeStats
+    runtime: nodejs20.x
+    memorySize: 3008
+    timeout: 900
+    events:
+      - schedule:
+          rate: cron(0 0 ? * SUN *)
+          enabled: true
 
 resources:
   Resources:

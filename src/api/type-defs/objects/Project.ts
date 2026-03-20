@@ -28,6 +28,16 @@ export default /* GraphQL */ `
     color: String!
   }
 
+  enum ProjectType {
+    internal
+    external
+  }
+
+  enum ProjectStage {
+    demo
+    production
+  }
+
   type Project {
     _id: String!
     name: String!
@@ -39,5 +49,11 @@ export default /* GraphQL */ `
     labels: [ProjectLabel!]
     tags: [ProjectTag!]
     availableMLModels: [String!]
+    type: ProjectType
+    stage: ProjectStage
+    organization: String
+    location: Location
+    country: String
+    state_province: String
   }
 `;

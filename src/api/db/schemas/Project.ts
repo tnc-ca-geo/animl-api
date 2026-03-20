@@ -113,6 +113,12 @@ const ProjectSchema = new Schema({
     required: true,
   },
   tags: { type: [ProjectTagSchema] },
+  type: { type: String, enum: ['internal', 'external'] },
+  stage: { type: String, enum: ['demo', 'production'] },
+  organization: { type: String },
+  location: { type: LocationSchema },
+  country: { type: String },
+  state_province: { type: String },
 });
 
 export default mongoose.model('Project', ProjectSchema);

@@ -9,6 +9,7 @@ import AuthedBatchModel from './db/models/Batch.js';
 import AuthedBatchErrorModel from './db/models/BatchError.js';
 import AuthedImageErrorModel from './db/models/ImageError.js';
 import AuthedTaskModel from './db/models/Task.js';
+import AuthedPlatformStatsModel from './db/models/PlatformStats.js';
 import Query from './resolvers/Query.js';
 import Mutation from './resolvers/Mutation.js';
 import Scalars from './resolvers/Scalars.js';
@@ -67,6 +68,7 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
       MLModel: new AuthedMLModelModel(user),
       Batch: new AuthedBatchModel(user),
       BatchError: new AuthedBatchErrorModel(user),
+      PlatformStats: new AuthedPlatformStatsModel(user),
     },
   };
 };
@@ -102,6 +104,7 @@ export interface Context extends APIGatewayEvent {
     Image: AuthedImageModel;
     ImageError: AuthedImageErrorModel;
     MLModel: AuthedMLModelModel;
+    PlatformStats: AuthedPlatformStatsModel;
     Project: AuthedProjectModel;
     Task: AuthedTaskModel;
     User: AuthedUserModel;

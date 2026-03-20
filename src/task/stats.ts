@@ -5,7 +5,7 @@ import _ from 'lodash';
 import { type TaskInput } from '../api/db/models/Task.js';
 import { type FiltersSchema } from '../api/db/schemas/Project.js';
 import { findRepresentativeLabel } from './utils.js';
-import { AggregationLevel } from '../@types/graphql.js';
+import type { AggregationLevel } from '../@types/graphql.js';
 import getBurstStats, { BurstsTask, GetBurstOutput } from './getBursts.js';
 import getIndependentDetectionStats, {
   GetIndependentDetectionsOutput,
@@ -19,7 +19,7 @@ type Task = TaskInput<{
 }>;
 type ImageAndObjectsTask = TaskInput<{
   filters: FiltersSchema;
-  aggregationLevel: AggregationLevel.ImageAndObject;
+  aggregationLevel: 'imageAndObject';
 }>;
 
 interface Reviewer {
@@ -159,11 +159,11 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
 
 export default async function <T extends Task>(task: T): Promise<Return<T>> {
   switch (task.config.aggregationLevel) {
-    case AggregationLevel.ImageAndObject:
+    case 'imageAndObject':
       return getImageAndObjectStats(task) as Promise<Return<T>>;
-    case AggregationLevel.Burst:
+    case 'burst':
       return getBurstStats(task) as Promise<Return<T>>;
-    case AggregationLevel.IndependentDetection:
+    case 'independentDetection':
       return getIndependentDetectionStats(task) as Promise<Return<T>>;
   }
 

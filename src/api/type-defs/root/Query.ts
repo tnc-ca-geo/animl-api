@@ -15,5 +15,7 @@ export default /* GraphQL */ `
     exportAnnotations(input: ExportInput!): Task
     exportErrors(input: ExportErrorsInput!): Task
     stats(input: QueryStatsInput!): Task
+    platformStats(input: PlatformStatsInput): PlatformStatsSnapshot
+    platformStatsHistory(input: PlatformStatsHistoryInput!): [PlatformStatsSnapshot!]!
   }
 `;
