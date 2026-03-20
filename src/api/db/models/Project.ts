@@ -88,6 +88,13 @@ export class ProjectModel {
       throw new AuthenticationError('Projects must be created by an authenticated user');
     }
 
+    // Admin-only fields can only be set by superusers
+    const adminFields = ['type', 'stage', 'organization', 'location', 'country', 'state_province'] as const;
+    const hasAdminFields = adminFields.some((f) => input[f] != null);
+    if (hasAdminFields && !context.user['is_superuser']) {
+      throw new ForbiddenError('Only superusers can set project type, stage, organization, location, country, and state_province');
+    }
+
     if (!input.availableMLModels.length)
       throw new DBValidationError('At least 1 MLModel must be enabled for a project');
     const models = (
@@ -152,6 +159,13 @@ export class ProjectModel {
     input: gql.UpdateProjectInput,
     context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ProjectSchema>> {
+    // Admin-only fields can only be set by superusers
+    const adminFields = ['type', 'stage', 'organization', 'location', 'country', 'state_province'] as const;
+    const hasAdminFields = adminFields.some((f) => input[f] != null);
+    if (hasAdminFields && !context.user['is_superuser']) {
+      throw new ForbiddenError('Only superusers can set project type, stage, organization, location, country, and state_province');
+    }
+
     try {
       const project = await this.queryById(context.user['curr_project']!);
 

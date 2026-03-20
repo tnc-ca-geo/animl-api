@@ -4,7 +4,7 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/schemas/Project.js';
 
-import { AggregationLevel } from "../@types/graphql.js";
+import type { AggregationLevel } from "../@types/graphql.js";
 import { TaskInput } from "../api/db/models/Task.js";
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import { findRepresentativeLabel } from './utils.js';
@@ -17,7 +17,7 @@ type Task = TaskInput<{
 }>
 export type IndependentDetectionsTask = TaskInput<{
   filters: FiltersSchema,
-  aggregationLevel: AggregationLevel.IndependentDetection,
+  aggregationLevel: 'independentDetection',
   independenceInterval: number
 }>;
 export interface GetIndependentDetectionsOutput {

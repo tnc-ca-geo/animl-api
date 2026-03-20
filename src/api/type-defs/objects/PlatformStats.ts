@@ -19,6 +19,8 @@ export default /* GraphQL */ `
     wirelessCameraCount: Int!
     userCount: Int!
     imagesAddedSinceLastSnapshot: Int!
+    type: ProjectType
+    stage: ProjectStage
   }
 
   type PlatformStatsSnapshot {

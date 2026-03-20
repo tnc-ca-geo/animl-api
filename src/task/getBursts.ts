@@ -6,14 +6,14 @@ import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import { findRepresentativeLabel } from './utils.js';
 import { TaskInput } from '../api/db/models/Task.js';
 import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/schemas/Project.js';
-import { AggregationLevel } from '../@types/graphql.js';
+import type { AggregationLevel } from '../@types/graphql.js';
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 
 
 const MAX_BURST_DELTA = 2;
 
 type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-export type BurstsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel.Burst }>;
+export type BurstsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: 'burst' }>;
 export interface GetBurstOutput {
   burstCount: number;
   burstLabelList: Record<string, number>;

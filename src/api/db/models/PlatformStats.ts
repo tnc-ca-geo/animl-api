@@ -1,8 +1,70 @@
 import { ForbiddenError, InternalServerError } from '../../errors.js';
 import PlatformStats, { PlatformStatsSchemaType } from '../schemas/PlatformStats.js';
+import Project from '../schemas/Project.js';
 import { BaseAuthedModel, MethodParams } from './utils.js';
 import { Context } from '../../handler.js';
-import { HydratedDocument } from 'mongoose';
+import type * as gql from '../../../@types/graphql.js';
+
+interface ProjectMetadata {
+  type?: string | null;
+  stage?: string | null;
+}
+
+/**
+ * Fetch a lightweight map of projectId -> { type, stage } from the live Project collection.
+ */
+async function getProjectMetadataMap(): Promise<Map<string, ProjectMetadata>> {
+  const projects = await Project.find({}, { _id: 1, type: 1, stage: 1 }).lean();
+  return new Map(projects.map((p) => [p._id, { type: p.type, stage: p.stage }]));
+}
+
+/**
+ * Apply type/stage filters to a snapshot's project list and recompute platform totals.
+ * Returns a new object (does not mutate the original).
+ */
+function applyFilters(
+  snapshot: PlatformStatsSchemaType,
+  projectMeta: Map<string, ProjectMetadata>,
+  filter?: gql.PlatformStatsFilterInput | null,
+) {
+  // Augment projects with current type/stage from live Project docs
+  const augmentedProjects = snapshot.projects.map((p) => ({
+    ...('toObject' in p ? (p as any).toObject() : p),
+    type: projectMeta.get(p.projectId)?.type ?? null,
+    stage: projectMeta.get(p.projectId)?.stage ?? null,
+  }));
+
+  // Apply filters if provided
+  let filteredProjects = augmentedProjects;
+  if (filter?.types?.length) {
+    filteredProjects = filteredProjects.filter(
+      (p) => p.type && filter.types!.includes(p.type as gql.ProjectType),
+    );
+  }
+  if (filter?.stages?.length) {
+    filteredProjects = filteredProjects.filter(
+      (p) => p.stage && filter.stages!.includes(p.stage as gql.ProjectStage),
+    );
+  }
+
+  // Recompute platform totals from filtered project subset
+  const platform = {
+    totalProjects: filteredProjects.length,
+    totalImages: filteredProjects.reduce((sum, p) => sum + p.imageCount, 0),
+    totalImagesReviewed: filteredProjects.reduce((sum, p) => sum + p.imagesReviewed, 0),
+    totalImagesNotReviewed: filteredProjects.reduce((sum, p) => sum + p.imagesNotReviewed, 0),
+    totalUsers: filteredProjects.reduce((sum, p) => sum + p.userCount, 0),
+    totalCameras: filteredProjects.reduce((sum, p) => sum + p.cameraCount, 0),
+    totalWirelessCameras: filteredProjects.reduce((sum, p) => sum + p.wirelessCameraCount, 0),
+  };
+
+  return {
+    _id: snapshot._id,
+    snapshotDate: snapshot.snapshotDate,
+    platform,
+    projects: filteredProjects,
+  };
+}
 
 /**
  * PlatformStats stores weekly snapshots of platform-wide and per-project metrics.
@@ -11,42 +73,47 @@ import { HydratedDocument } from 'mongoose';
  */
 export class PlatformStatsModel {
   /**
-   * Get the most recent platform stats snapshot
+   * Get the most recent platform stats snapshot, optionally filtered by project type/stage.
    */
   static async getLatest(
+    input: Maybe<gql.PlatformStatsInput> | undefined,
     context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<PlatformStatsSchemaType> | null> {
+  ) {
     if (!context.user['is_superuser']) {
       throw new ForbiddenError('Only superusers can access platform stats');
     }
 
     try {
-      return await PlatformStats.findOne().sort({ snapshotDate: -1 }).exec();
+      const snapshot = await PlatformStats.findOne().sort({ snapshotDate: -1 }).lean();
+      if (!snapshot) return null;
+
+      const projectMeta = await getProjectMetadataMap();
+      return applyFilters(snapshot, projectMeta, input?.filter);
     } catch (err) {
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }
   }
 
   /**
-   * Get platform stats snapshots within a date range (for time-series charts)
+   * Get platform stats snapshots within a date range, optionally filtered by project type/stage.
    */
-  static async getHistory(
-    input: { start: Date; end: Date },
-    context: Pick<Context, 'user'>,
-  ): Promise<HydratedDocument<PlatformStatsSchemaType>[]> {
+  static async getHistory(input: gql.PlatformStatsHistoryInput, context: Pick<Context, 'user'>) {
     if (!context.user['is_superuser']) {
       throw new ForbiddenError('Only superusers can access platform stats');
     }
 
     try {
-      return await PlatformStats.find({
+      const snapshots = await PlatformStats.find({
         snapshotDate: {
           $gte: input.start,
           $lte: input.end,
         },
       })
         .sort({ snapshotDate: 1 })
-        .exec();
+        .lean();
+
+      const projectMeta = await getProjectMetadataMap();
+      return snapshots.map((s) => applyFilters(s, projectMeta, input.filter));
     } catch (err) {
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
     }

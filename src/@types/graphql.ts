@@ -18,11 +18,10 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
 };
 
-export enum AggregationLevel {
-  Burst = 'burst',
-  ImageAndObject = 'imageAndObject',
-  IndependentDetection = 'independentDetection'
-}
+export type AggregationLevel =
+  | 'burst'
+  | 'imageAndObject'
+  | 'independentDetection';
 
 export type AutomationAction = {
   __typename?: 'AutomationAction';
@@ -218,9 +217,15 @@ export type CreateObjectsInput = {
 
 export type CreateProjectInput = {
   availableMLModels: Array<Scalars['String']['input']>;
+  country?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
+  location?: InputMaybe<LocationInput>;
   name: Scalars['String']['input'];
+  organization?: InputMaybe<Scalars['String']['input']>;
+  stage?: InputMaybe<ProjectStage>;
+  state_province?: InputMaybe<Scalars['String']['input']>;
   timezone: Scalars['String']['input'];
+  type?: InputMaybe<ProjectType>;
 };
 
 export type CreateProjectLabelInput = {
@@ -442,10 +447,9 @@ export type FiltersInput = {
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-export enum Format {
-  Coco = 'coco',
-  Csv = 'csv'
-}
+export type Format =
+  | 'coco'
+  | 'csv';
 
 export type IPageInfo = {
   hasNext?: Maybe<Scalars['Boolean']['output']>;
@@ -985,9 +989,19 @@ export type PlatformMetrics = {
   totalWirelessCameras: Scalars['Int']['output'];
 };
 
+export type PlatformStatsFilterInput = {
+  stages?: InputMaybe<Array<ProjectStage>>;
+  types?: InputMaybe<Array<ProjectType>>;
+};
+
 export type PlatformStatsHistoryInput = {
   end: Scalars['Date']['input'];
+  filter?: InputMaybe<PlatformStatsFilterInput>;
   start: Scalars['Date']['input'];
+};
+
+export type PlatformStatsInput = {
+  filter?: InputMaybe<PlatformStatsFilterInput>;
 };
 
 export type PlatformStatsSnapshot = {
@@ -1015,11 +1029,17 @@ export type Project = {
   automationRules?: Maybe<Array<AutomationRule>>;
   availableMLModels?: Maybe<Array<Scalars['String']['output']>>;
   cameraConfigs?: Maybe<Array<CameraConfig>>;
+  country?: Maybe<Scalars['String']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
+  location?: Maybe<Location>;
   name: Scalars['String']['output'];
+  organization?: Maybe<Scalars['String']['output']>;
+  stage?: Maybe<ProjectStage>;
+  state_province?: Maybe<Scalars['String']['output']>;
   tags?: Maybe<Array<ProjectTag>>;
   timezone: Scalars['String']['output'];
+  type?: Maybe<ProjectType>;
   views: Array<View>;
 };
 
@@ -1046,6 +1066,8 @@ export type ProjectMetrics = {
   imagesReviewed: Scalars['Int']['output'];
   projectId: Scalars['String']['output'];
   projectName: Scalars['String']['output'];
+  stage?: Maybe<ProjectStage>;
+  type?: Maybe<ProjectType>;
   userCount: Scalars['Int']['output'];
   wirelessCameraCount: Scalars['Int']['output'];
 };
@@ -1062,6 +1084,10 @@ export type ProjectRegistration = {
   projectId: Scalars['String']['output'];
 };
 
+export type ProjectStage =
+  | 'demo'
+  | 'production';
+
 export type ProjectTag = {
   __typename?: 'ProjectTag';
   _id: Scalars['ID']['output'];
@@ -1073,6 +1099,10 @@ export type ProjectTagsPayload = {
   __typename?: 'ProjectTagsPayload';
   tags?: Maybe<Array<ProjectTag>>;
 };
+
+export type ProjectType =
+  | 'external'
+  | 'internal';
 
 export type Query = {
   __typename?: 'Query';
@@ -1133,6 +1163,11 @@ export type QueryImagesCountArgs = {
 
 export type QueryMlModelsArgs = {
   input?: InputMaybe<QueryMlModelsInput>;
+};
+
+
+export type QueryPlatformStatsArgs = {
+  input?: InputMaybe<PlatformStatsInput>;
 };
 
 
@@ -1375,8 +1410,14 @@ export type UpdatePredictionStatusInput = {
 };
 
 export type UpdateProjectInput = {
+  country?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  location?: InputMaybe<LocationInput>;
   name?: InputMaybe<Scalars['String']['input']>;
+  organization?: InputMaybe<Scalars['String']['input']>;
+  stage?: InputMaybe<ProjectStage>;
+  state_province?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<ProjectType>;
 };
 
 export type UpdateProjectLabelInput = {
@@ -1419,11 +1460,10 @@ export type User = {
   username: Scalars['String']['output'];
 };
 
-export enum UserRole {
-  Manager = 'manager',
-  Member = 'member',
-  Observer = 'observer'
-}
+export type UserRole =
+  | 'manager'
+  | 'member'
+  | 'observer';
 
 export type UsersPayload = {
   __typename?: 'UsersPayload';
@@ -1466,7 +1506,6 @@ export type WirelessCamera = {
   projRegistrations: Array<ProjectRegistration>;
 };
 
-export enum FilterEnum {
-  Completed = 'COMPLETED',
-  Current = 'CURRENT'
-}
+export type FilterEnum =
+  | 'COMPLETED'
+  | 'CURRENT';

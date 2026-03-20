@@ -155,10 +155,10 @@ export default {
 
   platformStats: async (
     _: unknown,
-    _args: unknown,
+    { input }: gql.QueryPlatformStatsArgs,
     context: Context,
   ): Promise<gql.PlatformStatsSnapshot | null> => {
-    return context.models.PlatformStats.getLatest(context);
+    return context.models.PlatformStats.getLatest(input, context);
   },
 
   platformStatsHistory: async (
@@ -166,9 +166,6 @@ export default {
     { input }: gql.QueryPlatformStatsHistoryArgs,
     context: Context,
   ): Promise<gql.PlatformStatsSnapshot[]> => {
-    return context.models.PlatformStats.getHistory(
-      { start: input.start, end: input.end },
-      context,
-    );
+    return context.models.PlatformStats.getHistory(input, context);
   },
 };

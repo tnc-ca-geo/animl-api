@@ -1,7 +1,5 @@
 export default /* GraphQL */ `
-  input PlatformStatsHistoryInput {
-    start: Date!
-    end: Date!
+  input PlatformStatsInput {
     filter: PlatformStatsFilterInput
   }
 `;
