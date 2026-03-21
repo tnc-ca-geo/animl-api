@@ -21,9 +21,6 @@
         "create-project": "AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/createProject.js",
         "create-project-dev": "STAGE=dev npm run create-project",
         "create-project-prod": "STAGE=prod npm run create-project",
-        "seed-project-fields": "tsc && AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedProjectFields.js",
-        "seed-project-fields-dev": "STAGE=dev npm run seed-project-fields",
-        "seed-project-fields-prod": "STAGE=prod npm run seed-project-fields",
         "test": "tape test/**.test.js",
         "lint": "eslint src/ test/",
         "codegen": "graphql-codegen --config codegen.ts"
