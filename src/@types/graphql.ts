@@ -1064,6 +1064,7 @@ export type ProjectMetrics = {
   imagesAddedSinceLastSnapshot: Scalars['Int']['output'];
   imagesNotReviewed: Scalars['Int']['output'];
   imagesReviewed: Scalars['Int']['output'];
+  location?: Maybe<Location>;
   projectId: Scalars['String']['output'];
   projectName: Scalars['String']['output'];
   stage?: Maybe<ProjectStage>;

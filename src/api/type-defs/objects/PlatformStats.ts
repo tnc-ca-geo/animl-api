@@ -12,6 +12,7 @@ export default /* GraphQL */ `
   type ProjectMetrics {
     projectId: String!
     projectName: String!
+    location: Location
     imageCount: Int!
     imagesReviewed: Int!
     imagesNotReviewed: Int!

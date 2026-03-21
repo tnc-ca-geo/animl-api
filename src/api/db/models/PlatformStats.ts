@@ -8,14 +8,17 @@ import type * as gql from '../../../@types/graphql.js';
 interface ProjectMetadata {
   type?: string | null;
   stage?: string | null;
+  location?: gql.Location | null;
 }
 
 /**
  * Fetch a lightweight map of projectId -> { type, stage } from the live Project collection.
  */
 async function getProjectMetadataMap(): Promise<Map<string, ProjectMetadata>> {
-  const projects = await Project.find({}, { _id: 1, type: 1, stage: 1 }).lean();
-  return new Map(projects.map((p) => [p._id, { type: p.type, stage: p.stage }]));
+  const projects = await Project.find({}, { _id: 1, type: 1, stage: 1, location: 1 }).lean();
+  return new Map(
+    projects.map((p) => [p._id, { type: p.type, stage: p.stage, location: p.location }]),
+  );
 }
 
 /**
@@ -49,10 +52,12 @@ function applyFilters(
   }
 
   // Augment projects with current type/stage from live Project docs
+  // and location metadata
   const augmentedProjects = snapshot.projects.map((p) => ({
     ...('toObject' in p ? (p as any).toObject() : p),
     type: projectMeta.get(p.projectId)?.type ?? null,
     stage: projectMeta.get(p.projectId)?.stage ?? null,
+    location: projectMeta.get(p.projectId)?.location ?? null,
   }));
 
   // Apply filters if provided
