@@ -1030,6 +1030,7 @@ export type Project = {
   availableMLModels?: Maybe<Array<Scalars['String']['output']>>;
   cameraConfigs?: Maybe<Array<CameraConfig>>;
   country?: Maybe<Scalars['String']['output']>;
+  created: Scalars['Date']['output'];
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
   location?: Maybe<Location>;

@@ -55,5 +55,6 @@ export default /* GraphQL */ `
     location: Location
     country: String
     state_province: String
+    created: Date!
   }
 `;

@@ -44,7 +44,7 @@ async function createLogFile(collecton, _ids, operation) {
 
 async function updateDocuments() {
   // TODO: accept op as param
-  const op = 'COPY-OPERATION-NAME-HERE';
+  const op = 'backfill-project-created'; //'COPY-OPERATION-NAME-HERE';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
