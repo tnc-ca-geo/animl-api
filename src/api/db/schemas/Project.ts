@@ -119,6 +119,7 @@ const ProjectSchema = new Schema({
   location: { type: LocationSchema },
   country: { type: String },
   state_province: { type: String },
+  created: { type: Date, required: true, default: Date.now },
 });
 
 export default mongoose.model('Project', ProjectSchema);

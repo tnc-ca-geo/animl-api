@@ -1030,6 +1030,7 @@ export type Project = {
   availableMLModels?: Maybe<Array<Scalars['String']['output']>>;
   cameraConfigs?: Maybe<Array<CameraConfig>>;
   country?: Maybe<Scalars['String']['output']>;
+  created: Scalars['Date']['output'];
   description?: Maybe<Scalars['String']['output']>;
   labels?: Maybe<Array<ProjectLabel>>;
   location?: Maybe<Location>;
@@ -1411,6 +1412,7 @@ export type UpdatePredictionStatusInput = {
 };
 
 export type UpdateProjectInput = {
+  availableMLModels?: InputMaybe<Array<Scalars['String']['input']>>;
   country?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<LocationInput>;
@@ -1418,6 +1420,7 @@ export type UpdateProjectInput = {
   organization?: InputMaybe<Scalars['String']['input']>;
   stage?: InputMaybe<ProjectStage>;
   state_province?: InputMaybe<Scalars['String']['input']>;
+  timezone?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<ProjectType>;
 };
 

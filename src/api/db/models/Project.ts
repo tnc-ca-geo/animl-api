@@ -155,7 +155,36 @@ export class ProjectModel {
     try {
       const project = await this.queryById(context.user['curr_project']!);
 
-      Object.assign(project, input);
+      // prevent editing of default Project
+      if (project._id === 'default_project') {
+        throw new ForbiddenError('The default project cannot be edited');
+      }
+
+      // timezone and availableMLModels are superuser-only fields
+      if ((input.timezone || input.availableMLModels) && !context.user['is_superuser']) {
+        throw new ForbiddenError('Only superusers can update timezone or availableMLModels');
+      }
+
+      // Merge availableMLModels (union only — models can be added but not removed)
+      if (input.availableMLModels) {
+        const newModels = input.availableMLModels.filter(
+          (m) => !project.availableMLModels.includes(m),
+        );
+        if (newModels.length) {
+          const validModels = (await MLModelModel.getMLModels({ _ids: newModels })).map(
+            (model) => model._id,
+          );
+          for (const m of newModels) {
+            if (!validModels.includes(m))
+              throw new DBValidationError(`${m} is not a valid model identifier`);
+          }
+          project.availableMLModels.push(...newModels);
+        }
+        const { availableMLModels: _, ...rest } = input;
+        Object.assign(project, rest);
+      } else {
+        Object.assign(project, input);
+      }
 
       await project.save();
 

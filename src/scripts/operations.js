@@ -80,7 +80,8 @@ const operations = {
         }
         return res;
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -113,7 +114,8 @@ const operations = {
         }
         return res;
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -142,7 +144,8 @@ const operations = {
         }
         return res;
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -185,7 +188,8 @@ const operations = {
         }
         return res;
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -219,7 +223,8 @@ const operations = {
         }
         return res;
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -260,13 +265,15 @@ const operations = {
           operations.push(op);
         }
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
 
       try {
         return await Image.bulkWrite(operations);
       } catch (err) {
-        console.log(err);
+        console.error(err);
+        throw err;
       }
     },
   },
@@ -489,6 +496,39 @@ const operations = {
         console.log('Done: ', doneCount);
       }
       return { nModified: doneCount };
+    },
+  },
+
+  'backfill-project-created': {
+    getIds: async () => await Project.find({ created: { $exists: false } }).select('_id'),
+    update: async () => {
+      console.log('Backfilling created field on all projects...');
+      const projects = await Project.find({ created: { $exists: false } });
+      try {
+        const res = { nModified: 0 };
+        for (const proj of projects) {
+          let created;
+          const defaultView = proj.views.find((v) => v.name === 'All images');
+          if (defaultView && defaultView._id) {
+            created = defaultView._id.getTimestamp();
+            console.log(
+              `Project ${proj._id}: derived created date ${created} from "All images" view ObjectId`,
+            );
+          } else {
+            created = new Date();
+            console.warn(
+              `Project ${proj._id}: no "All images" view found, falling back to current date`,
+            );
+          }
+          proj.created = created;
+          await proj.save();
+          res.nModified++;
+        }
+        return res;
+      } catch (err) {
+        console.error(err);
+        throw err;
+      }
     },
   },
 };
