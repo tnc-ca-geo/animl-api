@@ -121,6 +121,8 @@ provider:
                 - - 'arn:aws:s3:::'
                   - 'animl-images-serving-${self:provider.stage}/*'
 
+  logs:
+    restApi: true
   apiGateway:
     apiKeys:
       - name: animlApiKeyInternal-${self:provider.stage}
