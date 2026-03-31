@@ -74,12 +74,28 @@ function applyFilters(
   }
 
   // Recompute platform totals from filtered project subset
+  // Deduplicate totalUsers across projects (users can belong to multiple projects)
+  let totalUsers: number;
+  const hasUsernames = filteredProjects.some((p) => p.usernames?.length);
+  if (hasUsernames) {
+    const allUsers = new Set<string>();
+    for (const p of filteredProjects) {
+      for (const u of p.usernames || []) {
+        allUsers.add(u);
+      }
+    }
+    totalUsers = allUsers.size;
+  } else {
+    // Fallback for old snapshots that don't have usernames stored
+    totalUsers = filteredProjects.reduce((sum, p) => sum + p.userCount, 0);
+  }
+
   const platform = {
     totalProjects: filteredProjects.length,
     totalImages: filteredProjects.reduce((sum, p) => sum + p.imageCount, 0),
     totalImagesReviewed: filteredProjects.reduce((sum, p) => sum + p.imagesReviewed, 0),
     totalImagesNotReviewed: filteredProjects.reduce((sum, p) => sum + p.imagesNotReviewed, 0),
-    totalUsers: filteredProjects.reduce((sum, p) => sum + p.userCount, 0),
+    totalUsers,
     totalCameras: filteredProjects.reduce((sum, p) => sum + p.cameraCount, 0),
     totalWirelessCameras: filteredProjects.reduce((sum, p) => sum + p.wirelessCameraCount, 0),
   };

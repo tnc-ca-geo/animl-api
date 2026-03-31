@@ -66,13 +66,13 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
- * Count unique users for a single project across all Cognito role groups.
+ * Collect unique usernames for a single project across all Cognito role groups.
  */
-async function getUserCountForProject(
+async function getUsernamesForProject(
   cognito: Cognito.CognitoIdentityProviderClient,
   projectId: string,
   userPoolId: string,
-): Promise<number> {
+): Promise<string[]> {
   const uniqueUsers = new Set<string>();
 
   for (const role of ['manager', 'observer', 'member']) {
@@ -104,33 +104,33 @@ async function getUserCountForProject(
     }
   }
 
-  return uniqueUsers.size;
+  return [...uniqueUsers];
 }
 
 /**
- * Count unique users across all Cognito groups for each project.
+ * Collect unique usernames across all Cognito groups for each project.
  * Processes projects in small concurrent batches to avoid Cognito rate limits.
- * Returns a map of projectId -> unique user count.
+ * Returns a map of projectId -> array of unique usernames.
  */
-async function getUserCountsByProject(
+async function getUsernamesByProject(
   projectIds: string[],
   config: Config,
-): Promise<Map<string, number>> {
+): Promise<Map<string, string[]>> {
   const cognito = new Cognito.CognitoIdentityProviderClient({
     region: process.env.REGION,
   });
   const userPoolId = config['/APPLICATION/COGNITO/USERPOOLID'];
-  const counts = new Map<string, number>();
+  const usernamesMap = new Map<string, string[]>();
 
   // Process projects in batches to avoid Cognito rate limits (~25 RPS)
   for (let i = 0; i < projectIds.length; i += COGNITO_PROJECT_CONCURRENCY) {
     const batch = projectIds.slice(i, i + COGNITO_PROJECT_CONCURRENCY);
     const results = await Promise.all(
-      batch.map((projectId) => getUserCountForProject(cognito, projectId, userPoolId)),
+      batch.map((projectId) => getUsernamesForProject(cognito, projectId, userPoolId)),
     );
 
     for (let j = 0; j < batch.length; j++) {
-      counts.set(batch[j], results[j]);
+      usernamesMap.set(batch[j], results[j]);
     }
 
     // Small delay between batches to avoid sustained pressure on Cognito
@@ -139,7 +139,7 @@ async function getUserCountsByProject(
     }
   }
 
-  return counts;
+  return usernamesMap;
 }
 
 /**
@@ -196,7 +196,7 @@ export async function computeStats(): Promise<void> {
     //    - total user count (Cognito)
     //    - per-project user counts (Cognito)
     //    - previous snapshot (for computing deltas)
-    const [imageStatsByProject, wirelessCameraAgg, totalUsers, userCountsByProject, lastSnapshot] =
+    const [imageStatsByProject, wirelessCameraAgg, totalUsers, usernamesByProject, lastSnapshot] =
       await Promise.all([
         Image.aggregate<ProjectImageStats>([
           {
@@ -218,7 +218,7 @@ export async function computeStats(): Promise<void> {
           { $group: { _id: '$projRegistrations.projectId', count: { $sum: 1 } } },
         ]),
         getTotalUserCount(config),
-        getUserCountsByProject(projectIds, config),
+        getUsernamesByProject(projectIds, config),
         PlatformStats.findOne().sort({ snapshotDate: -1 }).lean(),
       ]);
 
@@ -244,7 +244,7 @@ export async function computeStats(): Promise<void> {
       };
       const cameraCount = project.cameraConfigs?.length || 0;
       const wirelessCameraCount = wirelessCameraCountByProject.get(project._id) || 0;
-      const userCount = userCountsByProject.get(project._id) || 0;
+      const usernames = usernamesByProject.get(project._id) || [];
       const previousImageCount = lastProjectImageCounts.get(project._id) || 0;
       const imagesAddedSinceLastSnapshot = Math.max(0, imgStats.imageCount - previousImageCount);
 
@@ -256,7 +256,8 @@ export async function computeStats(): Promise<void> {
         imagesNotReviewed: imgStats.imagesNotReviewed,
         cameraCount,
         wirelessCameraCount,
-        userCount,
+        userCount: usernames.length,
+        usernames,
         imagesAddedSinceLastSnapshot,
       };
     });

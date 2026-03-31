@@ -11,6 +11,7 @@ const ProjectMetricsSchema = new Schema({
   cameraCount: { type: Number, required: true, default: 0 },
   wirelessCameraCount: { type: Number, required: true, default: 0 },
   userCount: { type: Number, required: true, default: 0 },
+  usernames: { type: [String], default: [] },
   imagesAddedSinceLastSnapshot: { type: Number, required: true, default: 0 },
 });
 
