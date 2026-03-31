@@ -9,15 +9,31 @@ interface ProjectMetadata {
   type?: string | null;
   stage?: string | null;
   location?: gql.Location | null;
+  organization?: string | null;
+  description?: string | null;
 }
 
 /**
- * Fetch a lightweight map of projectId -> { type, stage } from the live Project collection.
+ * Fetch a lightweight map of projectId -> { type, stage, organization, description } from the live Project collection.
  */
 async function getProjectMetadataMap(): Promise<Map<string, ProjectMetadata>> {
-  const projects = await Project.find({}, { _id: 1, type: 1, stage: 1, location: 1 }).lean();
+  const projects = await Project.find(
+    {},
+    { _id: 1, type: 1, stage: 1, location: 1, organization: 1, description: 1 },
+  ).lean();
+  console.log(`getProjectMetadataMap: fetched metadata for ${projects.length} projects`);
+  console.log(`getProjectMetadataMap: sample metadata: ${JSON.stringify(projects.slice(0, 5))}`);
   return new Map(
-    projects.map((p) => [p._id, { type: p.type, stage: p.stage, location: p.location }]),
+    projects.map((p) => [
+      p._id,
+      {
+        type: p.type,
+        stage: p.stage,
+        location: p.location,
+        organization: p.organization,
+        description: p.description,
+      },
+    ]),
   );
 }
 
@@ -58,6 +74,8 @@ function applyFilters(
     type: projectMeta.get(p.projectId)?.type ?? null,
     stage: projectMeta.get(p.projectId)?.stage ?? null,
     location: projectMeta.get(p.projectId)?.location ?? null,
+    organization: projectMeta.get(p.projectId)?.organization ?? null,
+    description: projectMeta.get(p.projectId)?.description ?? null,
   }));
 
   // Apply filters if provided
@@ -130,6 +148,10 @@ export class PlatformStatsModel {
       if (!snapshot) return null;
 
       const projectMeta = await getProjectMetadataMap();
+      console.log(`getLatest: fetched project metadata for ${projectMeta.size} projects`);
+      console.log(
+        `getLatest: sample project metadata: ${JSON.stringify(Array.from(projectMeta.entries()).slice(0, 5))}`,
+      );
       return applyFilters(snapshot, projectMeta, input?.filter);
     } catch (err) {
       throw new InternalServerError(err instanceof Error ? err.message : String(err));
