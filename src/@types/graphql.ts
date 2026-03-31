@@ -1061,11 +1061,13 @@ export type ProjectLabelPayload = {
 export type ProjectMetrics = {
   __typename?: 'ProjectMetrics';
   cameraCount: Scalars['Int']['output'];
+  description?: Maybe<Scalars['String']['output']>;
   imageCount: Scalars['Int']['output'];
   imagesAddedSinceLastSnapshot: Scalars['Int']['output'];
   imagesNotReviewed: Scalars['Int']['output'];
   imagesReviewed: Scalars['Int']['output'];
   location?: Maybe<Location>;
+  organization?: Maybe<Scalars['String']['output']>;
   projectId: Scalars['String']['output'];
   projectName: Scalars['String']['output'];
   stage?: Maybe<ProjectStage>;
