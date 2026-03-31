@@ -143,35 +143,6 @@ async function getUsernamesByProject(
 }
 
 /**
- * Count the total number of unique users across ALL projects.
- */
-async function getTotalUserCount(config: Config): Promise<number> {
-  const cognito = new Cognito.CognitoIdentityProviderClient({
-    region: process.env.REGION,
-  });
-  const userPoolId = config['/APPLICATION/COGNITO/USERPOOLID'];
-  const uniqueUsers = new Set<string>();
-
-  let paginationToken: string | undefined;
-  do {
-    const res: Cognito.ListUsersCommandOutput = await cognitoSendWithRetry(
-      cognito,
-      new Cognito.ListUsersCommand({
-        Limit: 60,
-        UserPoolId: userPoolId,
-        PaginationToken: paginationToken,
-      }),
-    );
-    for (const user of res.Users || []) {
-      if (user.Username) uniqueUsers.add(user.Username);
-    }
-    paginationToken = res.PaginationToken;
-  } while (paginationToken);
-
-  return uniqueUsers.size;
-}
-
-/**
  * Scheduled Lambda handler that computes platform-wide and per-project metrics
  * and stores a snapshot in the PlatformStats collection.
  *
@@ -193,10 +164,9 @@ export async function computeStats(): Promise<void> {
     // 2. Run independent queries in parallel:
     //    - image stats aggregation
     //    - wireless camera counts aggregation
-    //    - total user count (Cognito)
-    //    - per-project user counts (Cognito)
+    //    - per-project usernames (Cognito)
     //    - previous snapshot (for computing deltas)
-    const [imageStatsByProject, wirelessCameraAgg, totalUsers, usernamesByProject, lastSnapshot] =
+    const [imageStatsByProject, wirelessCameraAgg, usernamesByProject, lastSnapshot] =
       await Promise.all([
         Image.aggregate<ProjectImageStats>([
           {
@@ -217,7 +187,6 @@ export async function computeStats(): Promise<void> {
           { $match: { 'projRegistrations.active': true } },
           { $group: { _id: '$projRegistrations.projectId', count: { $sum: 1 } } },
         ]),
-        getTotalUserCount(config),
         getUsernamesByProject(projectIds, config),
         PlatformStats.findOne().sort({ snapshotDate: -1 }).lean(),
       ]);
@@ -268,6 +237,15 @@ export async function computeStats(): Promise<void> {
     const totalImagesNotReviewed = projectMetrics.reduce((sum, p) => sum + p.imagesNotReviewed, 0);
     const totalCameras = projectMetrics.reduce((sum, p) => sum + p.cameraCount, 0);
     const totalWirelessCameras = projectMetrics.reduce((sum, p) => sum + p.wirelessCameraCount, 0);
+
+    // Deduplicate users across all projects for the platform-level total
+    const allUsers = new Set<string>();
+    for (const usernames of usernamesByProject.values()) {
+      for (const u of usernames) {
+        allUsers.add(u);
+      }
+    }
+    const totalUsers = allUsers.size;
 
     // 6. Insert the snapshot
     const snapshot = new PlatformStats({
