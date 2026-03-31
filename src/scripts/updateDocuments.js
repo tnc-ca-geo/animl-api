@@ -44,7 +44,7 @@ async function createLogFile(collecton, _ids, operation) {
 
 async function updateDocuments() {
   // TODO: accept op as param
-  const op = 'backfill-project-created'; //'COPY-OPERATION-NAME-HERE';
+  const op = 'COPY-OPERATION-NAME-HERE';
   const config = await getConfig();
   const dbClient = await connectToDatabase(config);
 
@@ -68,7 +68,7 @@ async function updateDocuments() {
       if (res.nModified === matchCount) {
         await createLogFile('images', matchingImageIds, op);
       } else {
-        const msg = `There was a discrepency between the number of matching documents
+        const msg = `There was a discrepancy between the number of matching documents
           and the number of modified documents: ${matchCount} vs ${res.nModified}`;
         throw new InternalServerError(msg);
       }
