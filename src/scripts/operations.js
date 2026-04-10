@@ -60,8 +60,8 @@ async function getAffectedImageIds() {
     Image.aggregate([...pipelineCaseB, { $project: { _id: 1, projectId: 1 } }]),
   ]);
 
-  const caseAIds = new Set(caseAResults.map((img) => img._id));
-  const caseBIds = new Set(caseBResults.map((img) => img._id));
+  // const caseAIds = new Set(caseAResults.map((img) => img._id));
+  // const caseBIds = new Set(caseBResults.map((img) => img._id));
 
   // Deduplicate and tag each image with which case(s) it matches
   const allIds = new Map();
