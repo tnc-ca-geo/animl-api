@@ -201,6 +201,16 @@ functions:
 
 resources:
   Resources:
+    # API Gateway Log Group
+    # Defined explicitly so CloudFormation manages the lifecycle.
+    # Imported via resource-import since API Gateway auto-creates it.
+    ApiGatewayLogGroup:
+      Type: AWS::Logs::LogGroup
+      DeletionPolicy: Retain
+      Properties:
+        LogGroupName: /aws/api-gateway/animl-api-${self:provider.stage}
+        RetentionInDays: 30
+
     # Secrets Manager secret for API key
     apiKey:
       Type: AWS::SecretsManager::Secret
