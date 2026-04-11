@@ -16,6 +16,7 @@ export type BurstsTask = TaskInput<{ filters: FiltersSchema; aggregationLevel: '
 export interface GetBurstOutput {
   burstCount: number;
   burstLevelStats: Record<string, number>;
+  burstLevelStatsByDeployment: Record<string, Record<string, number>>;
 }
 
 export default async function getBurstStats(task: Task): Promise<GetBurstOutput> {
@@ -33,6 +34,7 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
 
   let burstCount = 0;
   const burstLevelStats: Record<string, number> = {};
+  const burstLevelStatsByDeployment: Record<string, Record<string, number>> = {};
 
   const processBurst = (burst: ImageSchema[]) => {
     burstCount++;
@@ -59,9 +61,12 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
         ? burstLevelStats[label] + 1
         : 1;
     }
+
+    return burstLabels;
   };
 
   for (const dep of deployments) {
+    const depId = String(dep._id);
     const depPipeline = structuredClone(pipeline);
     depPipeline.push({
       $match: {
@@ -90,17 +95,28 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
         burst.push(img);
       } else {
         // found a gap,
-        processBurst(burst);
+        const labels = processBurst(burst);
+        if (!burstLevelStatsByDeployment[depId]) burstLevelStatsByDeployment[depId] = {};
+        for (const label of labels) {
+          burstLevelStatsByDeployment[depId][label] =
+            (burstLevelStatsByDeployment[depId][label] || 0) + 1;
+        }
         burst = [img];
       }
     }
     if (burst.length > 0) {
-      processBurst(burst);
+      const labels = processBurst(burst);
+      if (!burstLevelStatsByDeployment[depId]) burstLevelStatsByDeployment[depId] = {};
+      for (const label of labels) {
+        burstLevelStatsByDeployment[depId][label] =
+          (burstLevelStatsByDeployment[depId][label] || 0) + 1;
+      }
     }
   }
 
   return {
     burstCount,
     burstLevelStats,
+    burstLevelStatsByDeployment,
   };
 }

@@ -22,6 +22,7 @@ export type IndependentDetectionsTask = TaskInput<{
 export interface GetIndependentDetectionsOutput {
   detectionsCount: number;
   detectionsLevelStats: Record<string, number>;
+  detectionsLevelStatsByDeployment: Record<string, Record<string, number>>;
 }
 
 type DetectionsTracker = {
@@ -48,8 +49,10 @@ export default async function getIndependentDetectionStats(
   );
 
   const detectionsLevelStats: Record<string, number> = {};
+  const detectionsLevelStatsByDeployment: Record<string, Record<string, number>> = {};
 
   for (const dep of deployments) {
+    const depId = String(dep._id);
     const depPipeline = structuredClone(pipeline);
     depPipeline.push({
       $match: {
@@ -98,6 +101,11 @@ export default async function getIndependentDetectionStats(
       } else {
         detectionsLevelStats[label] = count;
       }
+
+      // bucket by deployment
+      if (!detectionsLevelStatsByDeployment[depId]) detectionsLevelStatsByDeployment[depId] = {};
+      detectionsLevelStatsByDeployment[depId][label] =
+        (detectionsLevelStatsByDeployment[depId][label] || 0) + count;
     }
   }
 
@@ -109,5 +117,6 @@ export default async function getIndependentDetectionStats(
   return {
     detectionsCount,
     detectionsLevelStats,
+    detectionsLevelStatsByDeployment,
   };
 }
