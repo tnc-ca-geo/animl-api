@@ -9,14 +9,14 @@ import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/s
 import type { AggregationLevel } from '../@types/graphql.js';
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 
-
 const MAX_BURST_DELTA = 2;
 
-type Task = TaskInput<{ filters: FiltersSchema, aggregationLevel: AggregationLevel }>
-export type BurstsTask = TaskInput<{ filters: FiltersSchema, aggregationLevel: 'burst' }>;
+type Task = TaskInput<{ filters: FiltersSchema; aggregationLevel: AggregationLevel }>;
+export type BurstsTask = TaskInput<{ filters: FiltersSchema; aggregationLevel: 'burst' }>;
 export interface GetBurstOutput {
   burstCount: number;
-  burstLabelList: Record<string, number>;
+  burstLevelStats: Record<string, number>;
+  burstLevelStatsByDeployment: Record<string, Record<string, number>>;
 }
 
 export default async function getBurstStats(task: Task): Promise<GetBurstOutput> {
@@ -26,17 +26,15 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
 
   const cameraConfigs = project.cameraConfigs;
   const deployments: Array<DeploymentSchema> = cameraConfigs.reduce(
-    (
-      deps: Array<DeploymentSchema>,
-      config: CameraConfigSchema
-    ) => {
+    (deps: Array<DeploymentSchema>, config: CameraConfigSchema) => {
       return [...deps, ...config.deployments];
     },
-    []
+    [],
   );
 
   let burstCount = 0;
-  const burstLabelList: Record<string, number> = {};
+  const burstLevelStats: Record<string, number> = {};
+  const burstLevelStatsByDeployment: Record<string, Record<string, number>> = {};
 
   const processBurst = (burst: ImageSchema[]) => {
     burstCount++;
@@ -47,7 +45,9 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
-          const projLabel = project.labels.find((lbl) => idMatch(lbl._id, representativeLabel.labelId));
+          const projLabel = project.labels.find((lbl) =>
+            idMatch(lbl._id, representativeLabel.labelId),
+          );
           const labelName = projLabel?.name || 'ERROR FINDING LABEL';
           if (!burstLabels.includes(labelName)) {
             burstLabels.push(labelName);
@@ -57,18 +57,21 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
     }
 
     for (const label of burstLabels) {
-      burstLabelList[label] = Object.prototype.hasOwnProperty.call(burstLabelList, label)
-        ? burstLabelList[label] + 1
+      burstLevelStats[label] = Object.prototype.hasOwnProperty.call(burstLevelStats, label)
+        ? burstLevelStats[label] + 1
         : 1;
     }
+
+    return burstLabels;
   };
 
   for (const dep of deployments) {
+    const depId = String(dep._id);
     const depPipeline = structuredClone(pipeline);
     depPipeline.push({
-      $match:{
+      $match: {
         deploymentId: dep._id,
-      }
+      },
     });
     depPipeline.push({ $sort: { dateTimeAdjusted: 1 } });
 
@@ -92,17 +95,28 @@ export default async function getBurstStats(task: Task): Promise<GetBurstOutput>
         burst.push(img);
       } else {
         // found a gap,
-        processBurst(burst);
+        const labels = processBurst(burst);
+        if (!burstLevelStatsByDeployment[depId]) burstLevelStatsByDeployment[depId] = {};
+        for (const label of labels) {
+          burstLevelStatsByDeployment[depId][label] =
+            (burstLevelStatsByDeployment[depId][label] || 0) + 1;
+        }
         burst = [img];
       }
     }
     if (burst.length > 0) {
-      processBurst(burst);
+      const labels = processBurst(burst);
+      if (!burstLevelStatsByDeployment[depId]) burstLevelStatsByDeployment[depId] = {};
+      for (const label of labels) {
+        burstLevelStatsByDeployment[depId][label] =
+          (burstLevelStatsByDeployment[depId][label] || 0) + 1;
+      }
     }
   }
 
   return {
     burstCount,
-    burstLabelList
+    burstLevelStats,
+    burstLevelStatsByDeployment,
   };
 }
