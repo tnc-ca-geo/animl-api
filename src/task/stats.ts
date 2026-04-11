@@ -39,18 +39,18 @@ interface GetStatsOutput {
   objectReviewCount: ReviewCount;
   imageReviewerList: Reviewer[];
   objectReviewerList: Reviewer[];
-  objectLabelList: Record<string, number>;
-  imageLabelList: Record<string, number>;
+  objectLevelStats: Record<string, number>;
+  imageLevelStats: Record<string, number>;
   multiReviewerCount: number;
 }
 
 type Return<T extends Task> = T extends ImageAndObjectsTask
   ? GetStatsOutput
   : T extends BurstsTask
-  ? GetBurstOutput
-  : T extends IndependentDetectionsTask
-  ? GetIndependentDetectionsOutput
-  : GetStatsOutput;
+    ? GetBurstOutput
+    : T extends IndependentDetectionsTask
+      ? GetIndependentDetectionsOutput
+      : GetStatsOutput;
 
 async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
@@ -62,8 +62,8 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
   let objectsNotReviewed = 0;
   const imageReviewerList: Array<Reviewer> = [];
   const objectReviewerList: Array<Reviewer> = [];
-  const objectLabelList: Record<string, number> = {};
-  const imageLabelList: Record<string, number> = {};
+  const objectLevelStats: Record<string, number> = {};
+  const imageLevelStats: Record<string, number> = {};
   // NOTE: just curious how many images get touched
   // by more than one reviewer. can remove later
   let multiReviewerCount = 0;
@@ -123,11 +123,11 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
           idMatch(lbl._id, representativeLabel.labelId),
         );
         const labelName = projLabel?.name || 'ERROR FINDING LABEL';
-        objectLabelList[labelName] = Object.prototype.hasOwnProperty.call(
-          objectLabelList,
+        objectLevelStats[labelName] = Object.prototype.hasOwnProperty.call(
+          objectLevelStats,
           labelName,
         )
-          ? objectLabelList[labelName] + 1
+          ? objectLevelStats[labelName] + 1
           : 1;
 
         if (!imageLabels.includes(labelName)) {
@@ -138,8 +138,8 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
 
     // Build image label list
     for (const label of imageLabels) {
-      imageLabelList[label] = Object.prototype.hasOwnProperty.call(imageLabelList, label)
-        ? imageLabelList[label] + 1
+      imageLevelStats[label] = Object.prototype.hasOwnProperty.call(imageLevelStats, label)
+        ? imageLevelStats[label] + 1
         : 1;
     }
   }
@@ -147,10 +147,10 @@ async function getImageAndObjectStats(task: Task): Promise<GetStatsOutput> {
   return {
     imageCount,
     imageReviewCount: { reviewed: imagesReviewed, notReviewed: imagesNotReviewed }, // TODO: Rename to imageReviewCount
-    imageLabelList,
+    imageLevelStats,
     objectCount,
     objectReviewCount: { reviewed: objectsReviewed, notReviewed: objectsNotReviewed },
-    objectLabelList,
+    objectLevelStats,
     imageReviewerList,
     objectReviewerList,
     multiReviewerCount,

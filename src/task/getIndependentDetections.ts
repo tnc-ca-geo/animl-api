@@ -4,35 +4,36 @@ import { ProjectModel } from '../api/db/models/Project.js';
 import { buildPipeline, idMatch } from '../api/db/models/utils.js';
 import { CameraConfigSchema, DeploymentSchema, FiltersSchema } from '../api/db/schemas/Project.js';
 
-import type { AggregationLevel } from "../@types/graphql.js";
-import { TaskInput } from "../api/db/models/Task.js";
+import type { AggregationLevel } from '../@types/graphql.js';
+import { TaskInput } from '../api/db/models/Task.js';
 import Image, { ImageSchema } from '../api/db/schemas/Image.js';
 import { findRepresentativeLabel } from './utils.js';
 
-
 type Task = TaskInput<{
-  filters: FiltersSchema,
-  aggregationLevel: AggregationLevel,
-  independenceInterval: number,
-}>
+  filters: FiltersSchema;
+  aggregationLevel: AggregationLevel;
+  independenceInterval: number;
+}>;
 export type IndependentDetectionsTask = TaskInput<{
-  filters: FiltersSchema,
-  aggregationLevel: 'independentDetection',
-  independenceInterval: number
+  filters: FiltersSchema;
+  aggregationLevel: 'independentDetection';
+  independenceInterval: number;
 }>;
 export interface GetIndependentDetectionsOutput {
   detectionsCount: number;
-  detectionsLabelList: Record<string, number>;
+  detectionsLevelStats: Record<string, number>;
 }
 
 type DetectionsTracker = {
   [key: string]: {
     lastSeen: DateTime;
     count: number;
-  }
-}
+  };
+};
 
-export default async function getIndependentDetectionStats(task: Task): Promise<GetIndependentDetectionsOutput> {
+export default async function getIndependentDetectionStats(
+  task: Task,
+): Promise<GetIndependentDetectionsOutput> {
   const context = { user: { is_superuser: true, curr_project: task.projectId } };
   const project = await ProjectModel.queryById(context.user['curr_project']);
   const pipeline = buildPipeline(task.config.filters, context.user['curr_project']);
@@ -40,23 +41,20 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
 
   const cameraConfigs = project.cameraConfigs;
   const deployments: Array<DeploymentSchema> = cameraConfigs.reduce(
-    (
-      deps: Array<DeploymentSchema>,
-      config: CameraConfigSchema
-    ) => {
+    (deps: Array<DeploymentSchema>, config: CameraConfigSchema) => {
       return [...deps, ...config.deployments];
     },
-    []
+    [],
   );
 
-  const detectionsLabelList: Record<string, number> = {};
+  const detectionsLevelStats: Record<string, number> = {};
 
   for (const dep of deployments) {
     const depPipeline = structuredClone(pipeline);
     depPipeline.push({
-      $match:{
+      $match: {
         deploymentId: dep._id,
-      }
+      },
     });
     depPipeline.push({ $sort: { dateTimeOriginal: 1 } });
 
@@ -67,7 +65,9 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
       for (const obj of img.objects) {
         const representativeLabel = findRepresentativeLabel(obj);
         if (representativeLabel) {
-          const projLabel = project.labels.find((lbl) => idMatch(lbl._id, representativeLabel.labelId));
+          const projLabel = project.labels.find((lbl) =>
+            idMatch(lbl._id, representativeLabel.labelId),
+          );
           const labelName = projLabel?.name || 'ERROR FINDING LABEL';
 
           if (Object.prototype.hasOwnProperty.call(detections, labelName)) {
@@ -77,14 +77,14 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
             if (delta > MAX_SEQUENCE_DELTA) {
               detections[labelName] = {
                 lastSeen: imgDateCreated,
-                count: detections[labelName].count + 1
-              }
+                count: detections[labelName].count + 1,
+              };
             }
           } else {
             detections[labelName] = {
               lastSeen: imgDateCreated,
-              count: 1
-            }
+              count: 1,
+            };
           }
         }
       }
@@ -93,18 +93,21 @@ export default async function getIndependentDetectionStats(task: Task): Promise<
     for (const label of Object.keys(detections)) {
       const { count } = detections[label];
 
-      if (Object.prototype.hasOwnProperty.call(detectionsLabelList, label)) {
-        detectionsLabelList[label] = count + detectionsLabelList[label];
+      if (Object.prototype.hasOwnProperty.call(detectionsLevelStats, label)) {
+        detectionsLevelStats[label] = count + detectionsLevelStats[label];
       } else {
-        detectionsLabelList[label] = count;
+        detectionsLevelStats[label] = count;
       }
     }
   }
 
-  const detectionsCount = Object.values(detectionsLabelList).reduce((sum, value) => sum + value, 0);
+  const detectionsCount = Object.values(detectionsLevelStats).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
 
   return {
     detectionsCount,
-    detectionsLabelList
-  }
+    detectionsLevelStats,
+  };
 }

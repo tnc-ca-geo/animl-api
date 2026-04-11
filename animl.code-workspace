@@ -1,0 +1,32 @@
+{
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "../../animl-frontend",
+    },
+    {
+      "path": "../../exif-api",
+    },
+    {
+      "path": "../../animl-ingest-api",
+    },
+    {
+      "path": "../../animl-ml",
+    },
+    {
+      "path": "../../animl-ingest",
+    },
+    {
+      "path": "../../animl-email-relay",
+    },
+    {
+      "path": "../../animl-base",
+    },
+    {
+      "path": "../../animl-analytics",
+    },
+  ],
+  "settings": {},
+}
