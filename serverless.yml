@@ -6,6 +6,7 @@ plugins:
   - serverless-plugin-typescript
   - serverless-prune-plugin
   - serverless-offline
+
 custom:
   serverlessPluginTypescript:
     tsConfigFileLocation: './tsconfig.json'
