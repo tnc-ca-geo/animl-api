@@ -24,3 +24,6 @@ analysis
 
 # Amazon Q files
 .amazonq*
+
+# IDE files
+*.code-workspace
