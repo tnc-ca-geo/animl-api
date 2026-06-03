@@ -15,11 +15,15 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
     // We cache the promise instead of the connection itself to prevent race
     // conditions where connect is called more than once.
     const uri = config['/DB/MONGO_DB_URL'];
+    const connStart = Date.now();
     client = await mongoose.connect(uri, {
       bufferCommands: false,
       // TODO: double check auto indexing is off in prod environment
       autoIndex: process.env.STAGE !== 'prod',
     });
+    console.log(`Connected to MongoDB in ${Date.now() - connStart}ms`);
+  } else {
+    console.log('Using cached MongoDB connection');
   }
 
   try {
