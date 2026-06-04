@@ -21,7 +21,7 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
       // TODO: double check auto indexing is off in prod environment
       autoIndex: process.env.STAGE !== 'prod',
     });
-    console.log(`Connected to MongoDB in ${Date.now() - connStart}ms`);
+    console.log(`Connected to MongoDB in ${Date.now() - connStart} ms`);
   } else {
     console.log('Using cached MongoDB connection');
   }
