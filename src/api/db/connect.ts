@@ -22,7 +22,7 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
       autoIndex: process.env.STAGE !== 'prod',
       maxPoolSize: 200,
       minPoolSize: 10,
-      socketTimeoutMS: 30000,
+      maxIdleTimeMS: 60000,
     });
     console.log(`Connected to MongoDB in ${Date.now() - connStart} ms`);
   } else {
