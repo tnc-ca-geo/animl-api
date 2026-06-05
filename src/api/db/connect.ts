@@ -20,6 +20,9 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
       bufferCommands: false,
       // TODO: double check auto indexing is off in prod environment
       autoIndex: process.env.STAGE !== 'prod',
+      maxPoolSize: 200,
+      minPoolSize: 10,
+      socketTimeoutMS: 30000,
     });
     console.log(`Connected to MongoDB in ${Date.now() - connStart} ms`);
   } else {
