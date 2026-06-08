@@ -20,11 +20,12 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
       bufferCommands: false,
       // TODO: double check auto indexing is off in prod environment
       autoIndex: process.env.STAGE !== 'prod',
-      maxPoolSize: 200,
-      minPoolSize: 10,
+      maxPoolSize: 1,
       maxIdleTimeMS: 60000,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
     });
-    console.log(`Connected to MongoDB in ${Date.now() - connStart} ms`);
+    console.log(`Connected to MongoDB in ${Date.now() - connStart} ms test`);
   } else {
     console.log('Using cached MongoDB connection');
   }
