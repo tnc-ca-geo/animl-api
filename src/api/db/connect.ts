@@ -25,7 +25,7 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
     });
-    console.log(`Connected to MongoDB in ${Date.now() - connStart} ms test`);
+    console.log(`Connected to MongoDB in ${Date.now() - connStart} ms`);
   } else {
     console.log('Using cached MongoDB connection');
   }
