@@ -18,10 +18,11 @@ async function connectToDatabase(config: Config): Promise<mongoose.Mongoose> {
     const connStart = Date.now();
     client = await mongoose.connect(uri, {
       bufferCommands: false,
-      // TODO: double check auto indexing is off in prod environment
       autoIndex: process.env.STAGE !== 'prod',
       maxPoolSize: 1,
       maxIdleTimeMS: 60000,
+      // configs below are to prevent hanging connections, which can cause a thundering
+      // herd problem as MongoDB connection slow down and pile up
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
     });
