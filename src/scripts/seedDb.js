@@ -33,6 +33,7 @@ const defaultMLModelsConfig = [
         color: '#F76B15',
       },
     ],
+    expectsCrops: false
   },
   {
     _id: 'megadetector_v5b',
@@ -61,6 +62,7 @@ const defaultMLModelsConfig = [
         color: '#F76B15',
       },
     ],
+    expectsCrops: false
   },
   {
     _id: 'mirav2',
@@ -94,6 +96,7 @@ const defaultMLModelsConfig = [
         color: '#E54D2E',
       },
     ],
+    expectsCrops: true
   },
   {
     _id: 'nzdoc',
@@ -154,6 +157,7 @@ const defaultMLModelsConfig = [
       { _id: 'weka', name: 'weka', color: '#E54D2E' },
       { _id: 'yellowhammer', name: 'yellowhammer', color: '#E5484D' },
     ],
+    expectsCrops: true
   },
 ];
 
