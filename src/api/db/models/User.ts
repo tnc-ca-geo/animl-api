@@ -289,15 +289,21 @@ export class UserModel {
   /**
    * Upsert a single preference for the current user. Generic over preference
    * name/value so new preferences don't require touching the mutation. The
-   * `ALLOWED_PREFERENCES` allow-list is the source of truth for which names
-   * are valid — must be kept in sync with `UserPreferencesSchema` fields.
+   * `PREFERENCE_VALIDATORS` map is the source of truth for which names are
+   * valid and what shape their values must have — must be kept in sync with
+   * `UserPreferencesSchema` fields.
    */
   static async updatePreferences(
     input: gql.UpdateUserPreferencesInput,
     context: Pick<Context, 'user'>,
   ): Promise<gql.UserPreferences> {
-    if (!ALLOWED_PREFERENCES.has(input.name)) {
+    const validator = PREFERENCE_VALIDATORS[input.name];
+    if (!validator) {
       throw new PreferenceValidationError(`Unknown preference name: ${input.name}`);
+    }
+    const err = validator(input.value);
+    if (err) {
+      throw new PreferenceValidationError(`Invalid value for preference "${input.name}": ${err}`);
     }
     try {
       const username = context.user['cognito:username'];
@@ -320,12 +326,31 @@ export class UserModel {
   }
 }
 
+const DEPLOYMENT_SORT_ORDERS: ReadonlySet<string> = new Set(['dateAdded', 'alphabetical']);
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
 /**
- * Runtime allow-list of preference names accepted by `updatePreferences`.
- * Mirrors the fields on `UserPreferencesSchema` — extend both together when
- * adding a new preference.
+ * Per-preference value validators. A validator returns `null` when the value
+ * is acceptable, or a short error message describing why it isn't. Keys must
+ * match the field names on `UserPreferencesSchema` — extend both together
+ * when adding a new preference.
  */
-const ALLOWED_PREFERENCES = new Set(['deploymentsSortOrder']);
+const PREFERENCE_VALIDATORS: Record<string, (value: unknown) => string | null> = {
+  deploymentsSortOrder: (value) => {
+    if (!isPlainObject(value)) return 'expected an object keyed by projectId';
+    for (const [projectId, sortOrder] of Object.entries(value)) {
+      if (typeof projectId !== 'string' || projectId.length === 0) {
+        return 'projectId keys must be non-empty strings';
+      }
+      if (typeof sortOrder !== 'string' || !DEPLOYMENT_SORT_ORDERS.has(sortOrder)) {
+        return `unrecognized sort order "${String(sortOrder)}" for project "${projectId}"`;
+      }
+    }
+    return null;
+  },
+};
 
 /**
  * Convert the Mongoose `preferences` sub-document (with Map fields) into the
