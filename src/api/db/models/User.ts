@@ -1,12 +1,13 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
-import GraphQLError, { InternalServerError } from '../../errors.js';
+import GraphQLError, { InternalServerError, PreferenceValidationError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
+import User from '../schemas/User.js';
 import * as gql from '../../../@types/graphql.js';
 
 /**
- * Users are managed in AWS Cognito but as the APIs are designed to be similiar
+ * Users are managed in AWS Cognito but as the APIs are designed to be similar
  * to those of DB objects, the model is defined here
  */
 export class UserModel {
@@ -261,6 +262,116 @@ export class UserModel {
       throw new InternalServerError(err as string);
     }
   }
+
+  /**
+   * Get the current authenticated user's MongoDB document. Returns a default-shaped
+   * payload (empty preferences) when no User document exists yet — preferences
+   * are lazily persisted on first update.
+   */
+  static async getCurrent(
+    _input: Record<string, never>,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.CurrentUser> {
+    try {
+      const username = context.user['cognito:username'];
+      const doc = await User.findOne({ username });
+      return {
+        username,
+        updated: doc?.updated ?? null,
+        preferences: serializePreferences(doc?.preferences),
+      };
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  /**
+   * Upsert a single preference for the current user. Generic over preference
+   * name/value so new preferences don't require touching the mutation. The
+   * `PREFERENCE_VALIDATORS` map is the source of truth for which names are
+   * valid and what shape their values must have — must be kept in sync with
+   * `UserPreferencesSchema` fields.
+   */
+  static async updatePreferences(
+    input: gql.UpdateUserPreferencesInput,
+    context: Pick<Context, 'user'>,
+  ): Promise<gql.UserPreferences> {
+    const validator = PREFERENCE_VALIDATORS[input.name];
+    if (!validator) {
+      throw new PreferenceValidationError(`Unknown preference name: ${input.name}`);
+    }
+    const err = validator(input.value);
+    if (err) {
+      throw new PreferenceValidationError(`Invalid value for preference "${input.name}": ${err}`);
+    }
+    try {
+      const username = context.user['cognito:username'];
+      const updated = await User.findOneAndUpdate(
+        { username },
+        {
+          $set: {
+            [`preferences.${input.name}`]: input.value,
+            updated: new Date(),
+          },
+          $setOnInsert: { username },
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true },
+      );
+      return serializePreferences(updated?.preferences);
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+}
+
+const DEPLOYMENT_SORT_ORDERS: ReadonlySet<string> = new Set(['dateAdded', 'alphabetical']);
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Per-preference value validators. A validator returns `null` when the value
+ * is acceptable, or a short error message describing why it isn't. Keys must
+ * match the field names on `UserPreferencesSchema` — extend both together
+ * when adding a new preference.
+ */
+const PREFERENCE_VALIDATORS: Record<string, (value: unknown) => string | null> = {
+  deploymentsSortOrder: (value) => {
+    if (!isPlainObject(value)) return 'expected an object keyed by projectId';
+    for (const [projectId, sortOrder] of Object.entries(value)) {
+      if (typeof projectId !== 'string' || projectId.length === 0) {
+        return 'projectId keys must be non-empty strings';
+      }
+      if (typeof sortOrder !== 'string' || !DEPLOYMENT_SORT_ORDERS.has(sortOrder)) {
+        return `unrecognized sort order "${String(sortOrder)}" for project "${projectId}"`;
+      }
+    }
+    return null;
+  },
+};
+
+/**
+ * Convert the Mongoose `preferences` sub-document (with Map fields) into the
+ * list-shaped GraphQL payload.
+ */
+function serializePreferences(
+  preferences:
+    | {
+        deploymentsSortOrder?: Map<string, string> | Record<string, string> | null;
+      }
+    | null
+    | undefined,
+): gql.UserPreferences {
+  const raw = preferences?.deploymentsSortOrder;
+  const entries = raw instanceof Map ? Array.from(raw.entries()) : raw ? Object.entries(raw) : [];
+  return {
+    deploymentsSortOrder: entries.map(([projectId, sortOrder]) => ({
+      projectId,
+      sortOrder: sortOrder as gql.DeploymentSortOrder,
+    })),
+  };
 }
 
 export default class AuthedUserModel extends BaseAuthedModel {
@@ -287,6 +398,14 @@ export default class AuthedUserModel extends BaseAuthedModel {
   @roleCheck(MANAGE_USERS_ROLES)
   resendTempPassword(...args: MethodParams<typeof UserModel.resendTempPassword>) {
     return UserModel.resendTempPassword(...args);
+  }
+
+  getCurrentUser(...args: MethodParams<typeof UserModel.getCurrent>) {
+    return UserModel.getCurrent(...args);
+  }
+
+  updateUserPreferences(...args: MethodParams<typeof UserModel.updatePreferences>) {
+    return UserModel.updatePreferences(...args);
   }
 }
 
