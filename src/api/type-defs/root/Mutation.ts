@@ -15,6 +15,7 @@ export default /* GraphQL */ `
     createUser(input: CreateUserInput!): StandardPayload
     updateUser(input: UpdateUserInput!): StandardPayload
     resendTempPassword(input: ResendTempPasswordInput!): StandardPayload
+    updateUserPreferences(input: UpdateUserPreferencesInput!): UserPreferences!
 
     createUpload(input: CreateUploadInput!): CreateUploadPayload
     closeUpload(input: CloseUploadInput!): StandardPayload

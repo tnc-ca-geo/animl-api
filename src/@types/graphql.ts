@@ -276,6 +276,13 @@ export type CreateViewPayload = {
   view?: Maybe<View>;
 };
 
+export type CurrentUser = {
+  __typename?: 'CurrentUser';
+  preferences: UserPreferences;
+  updated?: Maybe<Scalars['Date']['output']>;
+  username: Scalars['String']['output'];
+};
+
 export type DeleteCameraInput = {
   cameraId: Scalars['ID']['input'];
 };
@@ -384,6 +391,10 @@ export type DeploymentInput = {
   startDate: Scalars['Date']['input'];
   timezone: Scalars['String']['input'];
 };
+
+export type DeploymentSortOrder =
+  | 'alphabetical'
+  | 'dateAdded';
 
 export type ExportError = {
   __typename?: 'ExportError';
@@ -677,6 +688,7 @@ export type Mutation = {
   updateProjectLabel?: Maybe<ProjectLabelPayload>;
   updateProjectTag?: Maybe<ProjectTagsPayload>;
   updateUser?: Maybe<StandardPayload>;
+  updateUserPreferences: UserPreferences;
   updateView?: Maybe<UpdateViewPayload>;
 };
 
@@ -931,6 +943,11 @@ export type MutationUpdateUserArgs = {
 };
 
 
+export type MutationUpdateUserPreferencesArgs = {
+  input: UpdateUserPreferencesInput;
+};
+
+
 export type MutationUpdateViewArgs = {
   input: UpdateViewInput;
 };
@@ -1088,6 +1105,12 @@ export type ProjectRegistration = {
   projectId: Scalars['String']['output'];
 };
 
+export type ProjectSortPreference = {
+  __typename?: 'ProjectSortPreference';
+  projectId: Scalars['String']['output'];
+  sortOrder: DeploymentSortOrder;
+};
+
 export type ProjectStage =
   | 'demo'
   | 'production';
@@ -1118,6 +1141,7 @@ export type Query = {
   images?: Maybe<ImagesConnection>;
   imagesCount?: Maybe<ImagesCount>;
   labels?: Maybe<LabelList>;
+  me: CurrentUser;
   mlModels?: Maybe<Array<MlModel>>;
   platformStats?: Maybe<PlatformStatsSnapshot>;
   platformStatsHistory: Array<PlatformStatsSnapshot>;
@@ -1445,6 +1469,11 @@ export type UpdateUserInput = {
   username: Scalars['String']['input'];
 };
 
+export type UpdateUserPreferencesInput = {
+  name: Scalars['String']['input'];
+  value: Scalars['JSONObject']['input'];
+};
+
 export type UpdateViewInput = {
   diffs: ViewDiffsInput;
   viewId: Scalars['ID']['input'];
@@ -1464,6 +1493,11 @@ export type User = {
   status?: Maybe<Scalars['String']['output']>;
   updated?: Maybe<Scalars['Date']['output']>;
   username: Scalars['String']['output'];
+};
+
+export type UserPreferences = {
+  __typename?: 'UserPreferences';
+  deploymentsSortOrder: Array<ProjectSortPreference>;
 };
 
 export type UserRole =

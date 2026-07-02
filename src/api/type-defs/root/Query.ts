@@ -1,5 +1,6 @@
 export default /* GraphQL */ `
   type Query {
+    me: CurrentUser!
     users(input: QueryUsersInput): UsersPayload
     tasks(input: QueryTasksInput): TasksPayload
     task(input: QueryTaskInput!): Task

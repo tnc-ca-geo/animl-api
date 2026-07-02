@@ -10,6 +10,10 @@ export default {
     return context.models.Project.getProjects(input, context);
   },
 
+  me: async (_: unknown, __: unknown, context: Context): Promise<gql.CurrentUser> => {
+    return context.models.User.getCurrentUser({}, context);
+  },
+
   users: async (
     _: unknown,
     { input }: gql.QueryUsersArgs,
