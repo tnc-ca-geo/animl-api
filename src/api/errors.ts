@@ -148,3 +148,14 @@ export class TimestampOffsetValidationError extends GraphQLError {
     });
   }
 }
+
+export class PreferenceValidationError extends GraphQLError {
+  constructor(message = 'PreferenceValidationError', properties = {}) {
+    super(message, {
+      extensions: {
+        code: 'PREFERENCE_VALIDATION_ERROR',
+        ...properties,
+      },
+    });
+  }
+}

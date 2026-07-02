@@ -1,5 +1,5 @@
 import Cognito from '@aws-sdk/client-cognito-identity-provider';
-import GraphQLError, { InternalServerError } from '../../errors.js';
+import GraphQLError, { InternalServerError, PreferenceValidationError } from '../../errors.js';
 import { MANAGE_USERS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
 import { Context } from '../../handler.js';
@@ -297,7 +297,7 @@ export class UserModel {
     context: Pick<Context, 'user'>,
   ): Promise<gql.UserPreferences> {
     if (!ALLOWED_PREFERENCES.has(input.name)) {
-      throw new GraphQLError(`Unknown preference name: ${input.name}`);
+      throw new PreferenceValidationError(`Unknown preference name: ${input.name}`);
     }
     try {
       const username = context.user['cognito:username'];
