@@ -73,6 +73,8 @@ const ssmNames = [
   `/ml/alitav3-batch-endpoint-${process.env.STAGE}`, // NOTE: currently only supporting batch endpoint for alitav3
   `/ml/nzi-adsv1-realtime-endpoint-${process.env.STAGE}`,
   `/ml/nzi-adsv1-batch-endpoint-${process.env.STAGE}`,
+  `/ml/hwi-adsv1-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/hwi-adsv1-batch-endpoint-${process.env.STAGE}`,
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -168,6 +170,8 @@ export interface RemoteConfig {
   '/ML/ALITAV3_BATCH_ENDPOINT': string;
   '/ML/NZI_ADSV1_REALTIME_ENDPOINT': string;
   '/ML/NZI_ADSV1_BATCH_ENDPOINT': string;
+  '/ML/HWI_ADSV1_REALTIME_ENDPOINT': string;
+  '/ML/HWI_ADSV1_BATCH_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager

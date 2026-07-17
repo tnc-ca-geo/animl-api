@@ -524,6 +524,39 @@ modelInterfaces.set('ircv2', ircv2);
 modelInterfaces.set('camera-trap-vehicle-classifier', cameraTrapVehicleClassifier);
 modelInterfaces.set('alitav3', alitav3);
 modelInterfaces.set('nzi-adsv1', nziadsv1);
+
+// HWI-ADS-v1: SpeciesNet FXClassifier for Hawaiian wildlife (15 classes)
+const hwiadsv1: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, label, config } = params;
+  const imgBuffer = await _getImage(image, config);
+  const bbox: BBox = label.bbox ? label.bbox : [0, 0, 1, 1];
+  const hwiBbox: BBox = label.bbox ? _toNziAdsV1Format(label.bbox) : [0, 0, 1, 1];
+  const payload = {
+    image: imgBuffer.toString('base64'),
+    bbox: hwiBbox,
+  };
+
+  const isBatch = image.batchId;
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/HWI_ADSV1_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`hwi-adsv1 predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`hwi-adsv1 ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
+modelInterfaces.set('hwi-adsv1', hwiadsv1);
 modelInterfaces.set('speciesnet-classifier', speciesnet);
 modelInterfaces.set('speciesnet-all', speciesnet);
 
