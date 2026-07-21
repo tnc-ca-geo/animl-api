@@ -47,6 +47,12 @@ Resources:
       UsernameConfiguration:
         CaseSensitive: false
 
+  AnimlSuperuserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: "Animl super user for admins"
+      GroupName: "animl_superuser"
+      UserPoolId: !Ref UserPool
 
   UserPoolClientPublic:
   # Created provide application access to user pool
