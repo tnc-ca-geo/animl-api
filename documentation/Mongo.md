@@ -1,6 +1,6 @@
 ### Setting up MongoDB
 
-1. Create MongoDB Atlas Account, can be accessed via AWS console
+1. Subscribe to the `MongoDB Atlas (pay-as-you-go)` service in your AWS console, and register an account by following the instructions.
 
 2. Create an organization and link it to your AWS account for billing, and can also link it via the AWS console.
 
@@ -21,8 +21,7 @@ readWrite@animl-dev
 dbAdmin@animl-dev
 ```
 
-5. Enable ip address access to your DB int he settings. To test you can enable a specific ip such as yours to
-test the connecticity, but to fully deploy an animl instance, you will need to enable all ips (this is what we currently do,
+5. Enable IP address access to your DB in the "Database & Network Access" settings. To test the connectivity you can enable your specific IP address, but to fully deploy an animl instance, you will need to enable all IPs  by adding `0.0.0.0/0` to your `IP Access List` (this is what we currently do,
 but we can relook at this in the future).
 
 6. For this DB you can now write the connection string to AWS Systems Manager Parameter Store with this name `/db/mongo-db-url-dev`. We also recommend adding these url parameters to the connection string `retryWrites=true&w=majority`. Ex:
