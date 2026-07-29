@@ -1,8 +1,8 @@
 ### Setting up MongoDB
 
-1. Subscribe to the `MongoDB Atlas (pay-as-you-go)` service in your AWS console, and register an account by following the instructions.
+1. Subscribe to the `MongoDB Atlas (pay-as-you-go)` service in the AWS console via the AWS Marketplace, and register an account by following the instructions.
 
-2. Create an organization and link it to your AWS account for billing, and can also link it via the AWS console.
+2. Create an organization and link it to your AWS account for billing. You can also be redirected to linking them via the AWS Marketplace.
 
 3. Create a new cluster instance to be used for record storage. At this point you will need to choose the cluster
 plan depending on how heavy usage you are expecting.
