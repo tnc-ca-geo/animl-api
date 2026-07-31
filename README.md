@@ -47,6 +47,12 @@ The name of the profile must be "animl" (because it's referenced in the
 serverless.yml file). Good instructions
 [here](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/).
 
+If you are using aws-vault to manage your AWS credentials, you will need to wrap the deploy command
+and comment out the profile in the `serverless.yml`:
+```
+aws-vault exec animl-profile --no-session -- npm run deploy-dev
+```
+
 ### Make a project direcory, clone this repo, and install dependencies
 
 ```
@@ -76,13 +82,16 @@ npm install --os=linux --cpu=x64 sharp
 ```
 
 ### Deploying a New Animl-API Stack
+Animl-api serves as a crucial component of the Animl stack as a whole,
+but if you wish to read more about deploying the entire Animl stack, please read more [here](./documentation/NewStack.md).
+
 
 #### Animl-API Dependencies
 
 1. A MongoDB cluster instance must exist to manage all the resources needed to run this
 API. Once this has been created, a SSM parameter named `/db/mongo-db-url-[env]` must
 be created with the MongoDB connection string as its value. To learn more about of how
-to setup your MongoDB instance reference the documentation [here](documentation/Mongo.md).
+to setup your MongoDB instance reference the documentation [here](./documentation/Mongo.md).
 After setting up your Mongo instance, you will need to seed your DB which can be found [here](#seeding-db)
 
 2. We currently depend on this CloudFormation Template Stack that is managed by
@@ -94,7 +103,7 @@ aws cloudformation deploy --template-file UserPool.yml  --stack-name animl-user-
 ```
 
 This deployment will also add the necessary SSM parameter that the API will reference.
-Be sure to create versions for all envs you plan on deploying.
+Be sure to create versions for all environments you plan on deploying by changing the name and stack name for the userpool.
 
 3. In order for animl-api to function, it requires [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest)
 to be deployed as well, but it requires animl-api to be deployed first due to the api key being required.
