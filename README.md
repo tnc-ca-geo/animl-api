@@ -43,12 +43,12 @@ The instructions below assume you have the following tools globally installed:
 
 ### Create "animl" AWS config profile
 
-The name of the profile must be "animl" (because it's referenced in the
-serverless.yml file). Good instructions
-[here](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/).
+We are currently using the Serverless profile feature to manage AWS Credentials and the name of the profile must be "animl" (because it's referenced in the
+serverless.yml file). Instructions here on how to setup your AWS profile
+[here](https://www.serverless.com/framework/docs/providers/aws/guide/credentials#using-local-credentials-manuallegacy-alternative).
 
-If you are using aws-vault to manage your AWS credentials, you will need to wrap the deploy command
-and comment out the profile in the `serverless.yml`:
+If you want to use another way to manage your credentials, you may do so by commeting out the profile in the [serverless.yml](./serverless.yml). For example you can use AWS-Vault like so:
+
 ```
 aws-vault exec animl-profile --no-session -- npm run deploy-dev
 ```
