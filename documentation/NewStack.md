@@ -49,8 +49,9 @@ to Auth. To deploy this stack you need to run this command with the proper permi
     ```
 
 4. In order for animl-api to function, it requires [animl-ingest](https://github.com/tnc-ca-geo/animl-ingest#dev-deployment)
-    to be deployed as well, but it requires animl-api to be deployed first due to the api key being a requirement. As with animl-api,
-    if your AWS credentials are stored as a profile, it should be as simple as running:
+to be deployed as well, but it requires animl-api to be deployed first due to the
+api key being a requirement. As with animl-api, if your AWS credentials are stored
+as a profile, it should be as simple as running:
 
     ```
     serverless deploy --stage dev

@@ -97,26 +97,36 @@ After setting up your Mongo instance, you will need to seed your DB which can be
 2. We currently depend on this CloudFormation Template Stack that is managed by
 [UserPool.yml](UserPool.yml) that creates and manages all of the resources related
 to Auth. To deploy this stack you need to run this command with the proper permissions enabled:
+    ```
+    aws cloudformation deploy --template-file UserPool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
+    ```
 
-```
-aws cloudformation deploy --template-file UserPool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
-```
+    This deployment will also add the necessary SSM parameter that the API will reference.
+    Be sure to create versions for all environments you plan on deploying by changing the name and stack name for the userpool.
 
-This deployment will also add the necessary SSM parameter that the API will reference.
-Be sure to create versions for all environments you plan on deploying by changing the name and stack name for the userpool.
+3. Now you can deploy animl-api.
 
-3. In order for animl-api to function, it requires [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest)
+    Note: The first time running serverless will require you to login to the serverless console and be granted
+    a seat from the TNC organization.
+
+    To deploy the Cloudformation development stack, run:
+
+    ```
+    npm run deploy-dev
+    ```
+
+4. In order for animl-api to function, it requires [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest)
 to be deployed as well, but it requires animl-api to be deployed first due to the api key being required.
 
-4. In order for animl-ingest to work, we need to deploy our [exif-api](https://github.com/tnc-ca-geo/exif-api)
+5. In order for animl-ingest to work, we need to deploy our [exif-api](https://github.com/tnc-ca-geo/exif-api)
 to extract data from the images. After this service has been deployed, animl-api can be minimally tested by putting
 an image in the image ingestion S3 bucket. This should trigger the image to be ingested and processed without any
 ML inference, but an image record should be created in the MongoDB instance.
 
 ### Seeding db
 
-You'll need to create the DB in MongoDB Atlas, but once you have, a script for
-seeding the DB with default records can be found at
+You'll need to create the DB in MongoDB Atlas, read [here](./documentation/Mongo.md) to learn more.
+Once you have a MongoDB Cluster setup, a script for seeding the DB with default records can be found at
 `animl-api/src/scripts/seedDB.js`. If the DB hasn't been seeded yet,
 you can do so by running the following command from the root directory:
 
@@ -126,20 +136,12 @@ npm run seed-db-dev
 npm run seed-db-prod
 ```
 
-### Local testing and dev deployment
+### Local testing
 
-- To test the Lambda locally with serverless-offline, run:
+Animl-api can also be tested locally with serverless-offline, if all other dependencies listed in [Animl-API Dependencies](#animl-api-dependencies) are deployed, by running:
 
 ```
 npm run start
-```
-
-Note: The first time running serverless will require you to login to the serverless console and be granted a seat from the TNC organization.
-
-- To deploy the Cloudformation development stack, run:
-
-```
-npm run deploy-dev
 ```
 
 ### Working with TypeScript
@@ -148,16 +150,16 @@ As of version 3.0.0, this repo is written in TypeScript. There are a few things 
 
 1. Types for DB records are generated using Mongoose's `inferSchemaType` utility and exported from their respective schema definition files. e.g.:
 
-```javascript
-// From src/api/db/schemas/Image.ts
-export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
-```
+    ```javascript
+    // From src/api/db/schemas/Image.ts
+    export type ImageSchema = mongoose.InferSchemaType<typeof ImageSchema>;
+    ```
 
 2. We generate types for inputs and outputs to/from the GraphQL layer using `graphql-codegen`, which generates types from our GraphQL `type-defs`. However, if you change any of the GraphQL `type-defs`, you'll need to re-run the codegen manually by running:
 
-```bash
-npm run codegen
-```
+    ```bash
+    npm run codegen
+    ```
 
 The generated types can be found in `src/@types/graphql.ts`
 
