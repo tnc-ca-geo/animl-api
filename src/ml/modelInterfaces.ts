@@ -560,6 +560,43 @@ modelInterfaces.set('hwi-adsv1', hwiadsv1);
 modelInterfaces.set('speciesnet-classifier', speciesnet);
 modelInterfaces.set('speciesnet-all', speciesnet);
 
+// Small Animal Classifier: EVA-02 Large (ONNX) for downward-facing small-animal cameras (29 classes)
+// This model operates on full frames — no MegaDetector bbox crop.
+const smallAnimalClassifier: InferenceFunction = async (params) => {
+  const { modelSource, catConfig, image, config } = params;
+  const imgBuffer = await _getImage(image, config);
+
+  // This model operates on full frames (no MegaDetector crop).
+  // We attach a [0, 0, 1, 1] bbox (entire frame) to all predictions
+  // so they fit the standard detection schema.
+  const bbox: BBox = [0, 0, 1, 1];
+
+  const payload = {
+    image: imgBuffer.toString('base64'),
+  };
+
+  const isBatch = image.batchId;
+
+  try {
+    const smr = new SM.SageMakerRuntimeClient({ region: process.env.REGION });
+    const command = new SM.InvokeEndpointCommand({
+      Body: JSON.stringify(payload),
+      EndpointName: config[`/ML/SMALL_ANIMAL_CLASSIFIER_${isBatch ? 'BATCH' : 'REALTIME'}_ENDPOINT`],
+    });
+
+    const res = await smr.send(command);
+    const body = Buffer.from(res.Body).toString('utf8');
+    const predictions = JSON.parse(body);
+    console.log(`small-animal-classifier predictions for image ${image._id}: ${body}`);
+    return _filterClassifierPredictions(predictions, bbox, catConfig, modelSource);
+  } catch (err) {
+    console.log(`small-animal-classifier ERROR on image ${image._id}: ${err}`);
+    throw new Error(err as string);
+  }
+};
+
+modelInterfaces.set('small-animal-classifier', smallAnimalClassifier);
+
 export { modelInterfaces };
 
 export type Detection = Pick<

@@ -75,6 +75,8 @@ const ssmNames = [
   `/ml/nzi-adsv1-batch-endpoint-${process.env.STAGE}`,
   `/ml/hwi-adsv1-realtime-endpoint-${process.env.STAGE}`,
   `/ml/hwi-adsv1-batch-endpoint-${process.env.STAGE}`,
+  `/ml/small-animal-classifier-realtime-endpoint-${process.env.STAGE}`,
+  `/ml/small-animal-classifier-batch-endpoint-${process.env.STAGE}`,
 ];
 
 function formatSSMParams<T>(ssmParams: SSM.GetParametersCommandOutput): T {
@@ -172,6 +174,8 @@ export interface RemoteConfig {
   '/ML/NZI_ADSV1_BATCH_ENDPOINT': string;
   '/ML/HWI_ADSV1_REALTIME_ENDPOINT': string;
   '/ML/HWI_ADSV1_BATCH_ENDPOINT': string;
+  '/ML/SMALL_ANIMAL_CLASSIFIER_REALTIME_ENDPOINT': string;
+  '/ML/SMALL_ANIMAL_CLASSIFIER_BATCH_ENDPOINT': string;
 }
 
 // Values retrieved from AWS Secrets Manager
