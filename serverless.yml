@@ -298,6 +298,16 @@ resources:
           BlockPublicPolicy: true
           IgnorePublicAcls: true
           RestrictPublicBuckets: true
+        # Delete incomplete MPUs after 7 days; expire exports after 30 days
+        LifecycleConfiguration:
+          Rules:
+            - Id: abort-incomplete-multipart-uploads
+              Status: Enabled
+              AbortIncompleteMultipartUpload:
+                DaysAfterInitiation: 7
+            - Id: expire-exports
+              Status: Enabled
+              ExpirationInDays: 30
 
     # SSM Param - exported data bucket
     SSMParameterAnimlexporteddata:
