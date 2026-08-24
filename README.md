@@ -86,23 +86,27 @@ Animl-api serves as a crucial component of the Animl stack as a whole,
 but if you wish to read more about deploying the entire Animl stack, please read more [here](./documentation/NewStack.md).
 
 
-#### Animl-API Dependencies
+#### Deploying Animal-API and Animl-API Dependencies
 
-1. A MongoDB cluster instance must exist to manage all the resources needed to run this
-API. Once this has been created, a SSM parameter named `/db/mongo-db-url-[env]` must
-be created with the MongoDB connection string as its value. To learn more about of how
-to setup your MongoDB instance reference the documentation [here](./documentation/Mongo.md).
-After setting up your Mongo instance, you will need to seed your DB which can be found [here](#seeding-db)
+1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./documentation/Mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
 
-2. We currently depend on this CloudFormation Template Stack that is managed by
-[UserPool.yml](UserPool.yml) that creates and manages all of the resources related
-to Auth. To deploy this stack you need to run this command with the proper permissions enabled:
     ```
-    aws cloudformation deploy --template-file UserPool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
+    mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
+    ```
+
+    After setting up your Mongo instance and adding the connection string to parameter store, you will need to seed your DB which can be found [here](#seeding-db)
+
+2. In the next step, we need to create a User pool in AWS Cognito. The whole setup
+is managed by an AWS  Cloudformation template ```userpool.yml``` that creates and
+manages all of the resources related to Auth. To deploy this stack you need to
+run this command with the proper permissions enabled:
+
+    ```
+    aws cloudformation deploy --template-file userpool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
     ```
 
     This deployment will also add the necessary SSM parameter that the API will reference.
-    Be sure to create versions for all environments you plan on deploying by changing the name and stack name for the userpool.
+    Be sure to create versions for all envs you plan on deploying.
 
 3. Now you can deploy animl-api.
 

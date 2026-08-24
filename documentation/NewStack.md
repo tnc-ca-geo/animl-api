@@ -1,9 +1,17 @@
 # Deploying a New Animl Stack
 
-For a comprehensive overview of the Animl architecture and how its services are integrated, see the [architecture documentation](README.md).
+This document outlines the steps needed to deploy an instance of the entire [animl.camera](https://animl.camera) stack to AWS. For a comprehensive overview of the Animl architecture and how its services are integrated, see the [architecture documentation](README.md).
 
-In order to create a new instance of the entire Animl stack, we need to deploy things in a certain order to make sure
-everything is working properly.
+In order to create a new instance of the entire Animl stack, we need to deploy
+each resource in a certain order to ensure everything is working properly:
+
+1. MongoDB
+2. Cognito UserPool
+3. animl-aPI
+4. animl-ingest
+5. exif-API
+6. animl-frontend
+7. animl-ml
 
 ## Prerequisites
 
@@ -12,8 +20,7 @@ everything is working properly.
 - [Serverless Framework](https://www.serverless.com/framework/docs/getting-started/)
 - [AWS CLI](https://aws.amazon.com/cli/) configured with an `animl` profile
 - [Docker](https://docs.docker.com/engine/install/)
-- A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) subscription (via AWS Marketplace)
-- Access to the following repositories:
+- Access to the following repositories (all of them are public repositories):
   - [animl-api](https://github.com/tnc-ca-geo/animl-api)
   - [animl-ingest](https://github.com/tnc-ca-geo/animl-ingest)
   - [animl-frontend](https://github.com/tnc-ca-geo/animl-frontend)
@@ -22,27 +29,33 @@ everything is working properly.
 
 ## Deployment Steps
 
-1. A MongoDB cluster instance must exist to manage all the resources needed to run this
-API. Once this has been created, a SSM parameter named `/db/mongo-db-url-[env]` must
-be created with the MongoDB connection string as its value. To learn more about of how
-to setup your MongoDB instance reference the documentation [here](Mongo.md).
-After setting up your Mongo instance, you will need to seed your DB which can be found [here](../README.md#seeding-db)
-
-2. We currently depend on this CloudFormation Template Stack that is managed by
-[UserPool.yml](../UserPool.yml) that creates and manages all of the resources related
-to Auth. To deploy this stack you need to run this command with the proper permissions enabled:
+1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./Mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
 
     ```
-    aws cloudformation deploy --template-file UserPool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
+    mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
+    ```
+
+    After setting up your Mongo instance and adding the connection string to parameter store, you will need to seed your DB which can be found [here](../README.md#seeding-db)
+
+2. In the next step, we need to create a User pool in AWS Cognito. The whole setup
+is managed by an AWS  Cloudformation template ```userpool.yml``` that creates and
+manages all of the resources related to Auth. To deploy this stack you need to
+run this command with the proper permissions enabled:
+
+    ```
+    aws cloudformation deploy --template-file userpool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
     ```
 
     This deployment will also add the necessary SSM parameter that the API will reference.
     Be sure to create versions for all envs you plan on deploying.
 
-3. Now we can deploy animl-api by following the instructions [here](../README.md#local-testing-and-dev-deployment).
-    But when deploying a new animl-api isntance, you will have to comment out all SSM params prefixed by `ml/` in the
-    [config.ts](../src/config/config.ts). Even with these changes, animl-api will not be functional until after animl-ingest has been deployed.
-    If your AWS credentials are stored as a profile, it should be as simple as running:
+3. At this point, we are ready to install the Animl API (https://github.com/tnc-ca-geo/animl-api).
+The Animl API is the centerpiece of the application it stores incoming data, triggers
+image inference, and serves the data to the frontend. But when deploying a new animl-api
+instance, you will have to comment out all SSM params prefixed by `ml/` in the
+[config.ts](../src/config/config.ts). Even with these changes, animl-api will not
+be functional until after animl-ingest has been deployed. If your AWS credentials
+are stored as a profile, it should be as simple as running:
 
     ```
     npm run deploy-dev
