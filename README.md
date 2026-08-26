@@ -142,7 +142,7 @@ npm run seed-db-prod
 
 ### Local testing
 
-Animl-api can also be tested locally with serverless-offline, if all other dependencies listed in [Animl-API Dependencies](#animl-api-dependencies) are deployed, by running:
+Animl-api can also be tested locally with serverless-offline, if all other dependencies listed in [Animl-API Dependencies](#deploying-animal-api-and-animl-api-dependencies) are deployed, by running:
 
 ```
 npm run start

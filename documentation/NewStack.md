@@ -29,7 +29,7 @@ each resource in a certain order to ensure everything is working properly:
 
 ## Deployment Steps
 
-1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./Mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
+1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./Mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-dev` where `dev` should match the deployment stage determined when deploying animl-api. The connection string should have the form:
 
     ```
     mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority

@@ -36,21 +36,30 @@ cluster to, and we curretly only support AWS deployments to the `us-west-2` regi
     dbAdmin@animl-dev
     ```
 
-    After this custom role is created, go to these settings here `Security` -> `Database & Network Access`
-    -> `Database Users` to create a unique DB User for animl-api to access the database. Attach the custom role you created to this new user and note down this new user's name and password for the next step.
 
-    **Please note that a `DB User` is distinct from a Mongo DB Atlas user, although the first DB User automatically created is named after your MongoDB Atlas username.**
+7. After this custom role is created, go to these settings here `Security` -> `Database & Network Access`
+-> `Database Users` to create a unique DB User for animl-api to access the database with password as the Authentication Method. Attach the custom role you created to this new user and note down this new user's name and password for the next step.
 
-7. For this DB you can now write the connection string of the newly created `DB User` to AWS Systems Manager Parameter Store with this name `/db/mongo-db-url-dev`. To access the connection string, click on the `Connect` button from the cluster overview page, and choose the `Compass` option. Then replace the `db_username` and `db_password` with the credentials from the DB User created in the previous step. We also recommend adding these url parameters to the connection string `retryWrites=true&w=majority`. Ex:
+    ![Project Screenshot](images/mongo-auth-method.png)
+
+    **Please note that a `DB User` is distinct from a Mongo DB Atlas user, although the first DB User automatically created is named after your MongoDB Atlas username. A `DB User` is a set of credentials to access a database in your cluster, whereas the latter is to access your MongoDB Atlas account which can have access to multiple organizations or clusters.**
+
+8. You can now write the connection string of the newly created `DB User` to AWS Systems Manager Parameter Store with this name `/db/mongo-db-url-dev`. The connection string is a url directed at your MongoDB cluster that will allow animl-api to query and write to the appropriate database. To access the connection string, click on the `Connect` button from the cluster overview page, and choose the `Compass` option. When you click `I have MongoDB Compass installed`, the second step should have your connection string. Then replace the `db_username` and `db_password` with the credentials from the DB User created in the previous step. It should look something like this:
 
     ```
-    mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
+    mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/
     ```
 
-8. Enable IP address access to your DB in your projects settings via `Security` -> `Database & Network Access` -> `IP Access List`. To test the connectivity you can enable your specific IP address, but to fully deploy an animl instance, you will need to enable all IPs  by adding `0.0.0.0/0` to your `IP Access List` (this is what we currently do,
+    Then you should also add the database name provided in the custom role to the connection string to direct animl-api to the specific database, `animl-dev` in our example. We also recommend adding these url parameters to the connection string `retryWrites=true&w=majority`. So the full connection string should look like this:
+
+    ```
+    mongodb+srv://developer:********@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
+    ```
+
+9. Enable IP address access to your DB in your projects settings via `Security` -> `Database & Network Access` -> `IP Access List`. To test the connectivity you can enable your specific IP address, but to fully deploy an animl instance, you will need to enable all IPs  by adding `0.0.0.0/0` to your `IP Access List` (this is what we currently do,
 but we can relook at this in the future).
 
-9. At this point you can now test the DB and its connectivity by seeding the DB via [seedDb.js](../src/scripts/seedDb.js) script,
+10. At this point you can now test the DB and its connectivity by seeding the DB via [seedDb.js](../src/scripts/seedDb.js) script,
 which can be run by the instructions [here](../README.md#seeding-db). In order to do this, we need to edit the
 [config.js](../src/config/config.ts) and comment out all the SSM Parameters that are not the MongoDB conenction string.
 This script will help create some example projects and the records for some example ML Models.
