@@ -203,9 +203,10 @@ export class UserModel {
               );
 
               usersList.push(...(res.Users || []));
-            } while (res.NextToken);
-
-            return usersList.map((user) => ({ ...user, role }));
+              nextToken = res.NextToken;
+            } while (nextToken);
+            const users = usersList.map((user) => ({ ...user, role }))
+            return users;
           }),
         )
       )
