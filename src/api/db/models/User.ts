@@ -190,20 +190,23 @@ export class UserModel {
         await Promise.all(
           (['manager', 'observer', 'member'] as gql.UserRole[]).map(async (role) => {
             const usersList = [];
+            let nextToken: string | undefined;
             let res: Cognito.ListUsersInGroupCommandOutput;
             do {
               res = await cognito.send(
                 new Cognito.ListUsersInGroupCommand({
                   Limit: 60,
+                  NextToken: nextToken,
                   UserPoolId: context.config['/APPLICATION/COGNITO/USERPOOLID'],
                   GroupName: `animl/${context.user['curr_project']}/project_${role}`,
                 }),
               );
 
               usersList.push(...(res.Users || []));
-            } while (res.NextToken);
-
-            return usersList.map((user) => ({ ...user, role }));
+              nextToken = res.NextToken;
+            } while (nextToken);
+            const users = usersList.map((user) => ({ ...user, role }))
+            return users;
           }),
         )
       )
