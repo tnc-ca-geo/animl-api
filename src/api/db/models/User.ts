@@ -221,7 +221,6 @@ export class UserModel {
         }))
         .filter((user) => !input?.filter || user.username.includes(input.filter));
 
-      console.log("done getting users.length: ", users.length);
       const roles = new Map<string, CognitoUser>();
       for (const { role, username, ...user } of users) {
         if (roles.has(username)) {
