@@ -144,6 +144,16 @@ function FVLValidatesPrediction(obj, tClass) {
 
 // main function
 async function analyze() {
+// --- Confidence Threshold Simulation Addition ---
+// Set this value to mimic different MegaDetector confidence thresholds (0 to 1)
+const CONFIDENCE_THRESHOLD = 0.8; // Change as needed for experiments
+
+// Helper to get simulated confidence for a label (replace with real value if available)
+function getSimulatedConfidence(label) {
+  // If your label has a real confidence property, use it here (e.g., label.confidence)
+  // For simulation, assign a random confidence between 0.3 and 1.0
+  return label.confidence !== undefined ? label.confidence : (Math.random() * 0.7 + 0.3);
+}
   console.log(
     `Analyzing ${ML_MODEL} performance in ${PROJECT_ID} Project between ${START_DATE} and ${END_DATE}...`,
   );
@@ -185,7 +195,11 @@ async function analyze() {
       fs.mkdirSync(analysisPath, { recursive: true });
     }
 
-    const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_object-level_${dt}`;
+  // --- Confidence Threshold Simulation Addition ---
+  // Add threshold to output file name for clarity
+  // Format threshold string to only include digits after the decimal point (e.g., 0.9 -> C-9, 0.85 -> C-85)
+  const threshStr = `C-${String(CONFIDENCE_THRESHOLD).split('.')[1] || '0'}`;
+  const root = `${PROJECT_ID}_${ML_MODEL}_${START_DATE}--${END_DATE}_object-level_${threshStr}_${dt}`;
     await writeConfigToFile(root, analysisPath, analysisConfig);
 
     const csvFilename = path.join(analysisPath, `${root}.csv`);
@@ -218,37 +232,40 @@ async function analyze() {
           }
 
           // TRUE POSITIVE - object must be:
-          if (
-            obj.locked &&
-            obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-            ) &&
-            FVLValidatesPrediction(obj, tClass)
-          ) {
-            data[key].truePositives++;
-          }
+            const mlLabelsAboveThreshold = obj.labels.filter(
+              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && getSimulatedConfidence(l) >= CONFIDENCE_THRESHOLD
+            );
+            if (
+              obj.locked &&
+              mlLabelsAboveThreshold.some(
+                (l) => l.labelId === tClass.predicted_id,
+              ) &&
+              FVLValidatesPrediction(obj, tClass)
+            ) {
+              data[key].truePositives++;
+            }
 
           // FALSE POSITIVE - object must be:
-          if (
-            obj.locked &&
-            obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-            ) &&
-            !FVLValidatesPrediction(obj, tClass)
-          ) {
-            data[key].falsePositives++;
-          }
+            if (
+              obj.locked &&
+              mlLabelsAboveThreshold.some(
+                (l) => l.labelId === tClass.predicted_id,
+              ) &&
+              !FVLValidatesPrediction(obj, tClass)
+            ) {
+              data[key].falsePositives++;
+            }
 
           // FALSE NEGATIVE - object must be:
-          if (
-            obj.locked &&
-            FVLValidatesPrediction(obj, tClass) &&
-            !obj.labels.some(
-              (l) => l.type === 'ml' && l.mlModel === ML_MODEL && l.labelId === tClass.predicted_id,
-            )
-          ) {
-            data[key].falseNegatives++;
-          }
+            if (
+              obj.locked &&
+              FVLValidatesPrediction(obj, tClass) &&
+              !mlLabelsAboveThreshold.some(
+                (l) => l.labelId === tClass.predicted_id,
+              )
+            ) {
+              data[key].falseNegatives++;
+            }
         }
       }
       progress.increment();
