@@ -26,17 +26,8 @@ stage you must also choose which cloud provider and region you wish to deploy yo
 cluster to, and we curretly only support AWS deployments to the `us-west-2` region.
 
 6. Creation of the cluster will automatically create an admin `DB User` with a role already assigned. Please don't use this DB User for connecting the application to the database. Rather create a new `DB User` with a custom role. Start by creating a custom role with these permissions(assuming your database is named animl-dev) which you can access via your projects settings by following this path `Security` -> `Database & Network Access` -> `Custom Role`:
-    ```
-    enableProfiler @animl-dev(all collections)
-    dropDatabase @animl-dev(all collections)
-    renameCollectionSameDB @animl-dev(all collections)
-    dbStats @animl-dev(all collections)
-    listCollections @animl-dev(all collections)
-    read@animl-dev
-    readWrite@animl-dev
-    dbAdmin@animl-dev
-    ```
 
+    ![Custom Role Permissions](images/mongo-custom-role-perms.png)
 
 7. After this custom role is created, go to these settings here `Security` -> `Database & Network Access`
 -> `Database Users` to create a unique DB User for animl-api to access the database with password as the Authentication Method. Attach the custom role you created to this new user and note down this new user's name and password for the next step.
@@ -61,6 +52,5 @@ cluster to, and we curretly only support AWS deployments to the `us-west-2` regi
 but we can relook at this in the future).
 
 10. At this point you can now test the DB and its connectivity by seeding the DB via [seedDb.js](../src/scripts/seedDb.js) script,
-which can be run by the instructions [here](../README.md#seeding-db). In order to do this, we need to edit the
-[config.js](../src/config/config.ts) and comment out all the SSM Parameters that are not the MongoDB conenction string.
-This script will help create some example projects and the records for some example ML Models.
+which can be run by the instructions [here](../README.md#seeding-db). This script
+will help create some example projects and the records for some example ML Models.
