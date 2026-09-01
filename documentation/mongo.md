@@ -6,7 +6,8 @@ Search for `MongoDb Atlas` and create a subscription according to your preferenc
 After creating a subscription, a link `Setup your account` will take you to the
 vendor's website (https://account.mongodb.com/).
 
-2. Follow the `Don't have a MongoDB account yet?` [Sign up](https://account.mongodb.com/account/register) to complete linking your AWS account to MongoDB, and you have to confirm your account via email.
+2. Follow the `Don't have a MongoDB account yet?` [Sign up](https://account.mongodb.com/account/register)
+to complete linking your AWS account to MongoDB, and you have to confirm your account via email.
 
 3. Create an organization within the MongoDB Atlas service by viewing your `Organizations`
 and clicking `Create New Organizaion` and choosing the `MongoDB Atlas` cloud service.

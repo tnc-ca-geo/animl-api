@@ -88,7 +88,7 @@ but if you wish to read more about deploying the entire Animl stack, please read
 
 #### Deploying Animal-API and Animl-API Dependencies
 
-1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./documentation/Mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
+1. The project requires a MongoDB cluster, and if you need to create one see [mongo.md](./documentation/mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
 
     ```
     mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
@@ -129,7 +129,7 @@ ML inference, but an image record should be created in the MongoDB instance.
 
 ### Seeding db
 
-You'll need to create the DB in MongoDB Atlas, read [here](./documentation/Mongo.md) to learn more.
+You'll need to create the DB in MongoDB Atlas, read [here](./documentation/mongo.md) to learn more.
 Once you have a MongoDB Cluster setup, a script for seeding the DB with default records can be found at
 `animl-api/src/scripts/seedDB.js`. If the DB hasn't been seeded yet,
 you can do so by running the following command from the root directory:

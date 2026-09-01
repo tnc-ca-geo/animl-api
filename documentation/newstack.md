@@ -29,7 +29,7 @@ each resource in a certain order to ensure everything is working properly:
 
 ## Deployment Steps
 
-1. The project requires a MongoDB cluster, and if you need to create one see [Mongo.md](./Mongo.md).
+1. The project requires a MongoDB cluster, and if you need to create one see [mongo.md](./mongo.md).
 After you create a MongoDb cluster, you need to create an SSM parameter in AWS
 System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/)
 holding the connection string (URL). The key needs to be `/db/mongo-db-url-dev`
