@@ -69,15 +69,9 @@ provider:
             - 's3:GetObject'
             - 's3:ListBucket'
           Resource:
-            - Fn::Join:
-                - ''
-                - - 'arn:aws:s3:::'
-                  - 'animl-images-ingestion-${self:provider.stage}'
-            - Fn::Join:
-                - ''
-                - - 'arn:aws:s3:::'
-                  - 'animl-images-ingestion-${self:provider.stage}'
-                  - '/*'
+            # this bucket lives with the animl-ingest stack, so we need to reference it by name rather than by Ref
+            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}-${AWS::AccountId}'
+            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}-${AWS::AccountId}/*'
         - Effect: 'Allow'
           Action:
             - 'cognito-idp:ListGroups'
@@ -112,14 +106,9 @@ provider:
             - 's3:GetObject'
             - 's3:DeleteObject'
           Resource:
-            - Fn::Join:
-                - ''
-                - - 'arn:aws:s3:::'
-                  - 'animl-images-serving-${self:provider.stage}'
-            - Fn::Join:
-                - ''
-                - - 'arn:aws:s3:::'
-                  - 'animl-images-serving-${self:provider.stage}/*'
+            # this bucket lives with the animl-ingest stack, so we need to reference it by name rather than by Ref and assumes its on the same account as this stack
+            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}-${AWS::AccountId}'
+            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}-${AWS::AccountId}/*'
 
   logs:
     restApi: true
@@ -292,7 +281,7 @@ resources:
     S3BucketAnimlexporteddata:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
+        BucketName: !Sub animl-exported-data-${opt:stage, self:provider.stage, 'dev'}-${AWS::AccountId}
         PublicAccessBlockConfiguration:
           BlockPublicAcls: true
           BlockPublicPolicy: true
@@ -316,7 +305,7 @@ resources:
         Description: Animl exported data bucket name
         Name: /exports/exported-data-bucket-${opt:stage, self:provider.stage, 'dev'}
         Type: String
-        Value: animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
+        Value: !Sub animl-exported-data-${opt:stage, self:provider.stage, 'dev'}-${AWS::AccountId}
 
     # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
     # contain secret keys so need to be created manually in the AWS console

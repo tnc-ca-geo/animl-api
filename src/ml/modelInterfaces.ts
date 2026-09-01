@@ -26,7 +26,7 @@ const _toMegaDetectorFormat = (bbox: number[]): number[] => {
 };
 
 const _getImage = async (image: ImageSchema, config: ModelInterfaceParams['config']) => {
-  const bucket = config.SERVING_BUCKET;
+  const bucket = config['/IMAGES/SERVING_BUCKET'];
   const key = buildImgKey(image);
 
   const s3 = new S3.S3Client();
@@ -77,7 +77,7 @@ const megadetector: InferenceFunction = async (params) => {
   const Body = await _getImage(image, config);
 
   const isBatch = image.batchId;
-  let version = 'V5B'; 
+  let version = 'V5B';
   switch (modelSource.version) {
     case 'v1000.0.0-redwood':
       version = 'V1000_0_0_REDWOOD';
