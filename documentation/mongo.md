@@ -50,6 +50,8 @@ cluster to, and we curretly only support AWS deployments to the `us-west-2` regi
     mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
     ```
 
+    Please store the complete connection string in the paramater store of the AWS account that you will use for the ```animl-api``` deployment. The parameter names will be be ```/db/mongo-db-url-dev``` for development instances or  ```/db/mongo-db-url-dev``` for production instances. From the AWS console you will find it by going to the System Manager in the services menu and find the Parameter store in the side menu. Choose create parameter and create a standard string parameter without encryption.
+
 
 3. Enable IP address access to your DB in your projects settings via `Security` -> `Database & Network Access` -> `IP Access List`. To test the connectivity you can enable your specific IP address, but to fully deploy an animl instance, you will need to enable all IPs  by adding `0.0.0.0/0` to your `IP Access List` (this is what we currently do,
 but we can relook at this in the future).
@@ -60,8 +62,8 @@ but we can relook at this in the future).
     # or, do seed the production db:
     npm run seed-db-prod
     ```
-    Make sure that the correct credentials are stored in an AWS_PROFILE called ```animl``` on your machine. Unfortunately, the use of that profile is currently hard-wired.
+    Make sure that the credentials for the account where we stored the connection string are available in an AWS_PROFILE called ```animl``` on your machine. Unfortunately, the use of that profile is currently hard-wired in ```serverless.yml```.
 
-    This script will create the database as well as some example projects and the records for some example ML Models.
+    The script will create the database as well as some example project entries and the metadata records for some example ML Models.
 
-    For more instructions [here](../README.md#seeding-db). .
+    For more instructions on database seeding see [here](../README.md#seeding-db).
