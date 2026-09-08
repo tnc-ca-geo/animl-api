@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import { InternalServerError } from '../../.build/api/errors.js';
-import { getConfig } from '../../.build/config/config.js';
 import { connectToDatabase } from '../../.build/api/db/connect.js';
 import Project from '../../.build/api/db/schemas/Project.js';
 import MLModel from '../../.build/api/db/schemas/MLModel.js';
+import { getSeedConfig } from './seedConfig.js';
 
 const defaultMLModelsConfig = [
   {
@@ -272,9 +272,9 @@ async function createDefaultProjects({ defaultProjectsConfig }) {
 }
 
 async function seedDB() {
-  const config = await getConfig();
-  const dbClient = await connectToDatabase(config);
-  console.log('Seeding Db with config: ', config);
+  const seedConfig = await getSeedConfig();
+  const dbClient = await connectToDatabase(seedConfig);
+  console.log('Seeding Db with config: ', seedConfig);
 
   try {
     // create default project records
