@@ -13,6 +13,10 @@ each resource in a certain order to ensure everything is working properly:
 6. animl-frontend
 7. animl-ml
 
+The entire stack also requires the deployment stage to be the same across the different services,
+and we recommend using `dev` for testing purposes as there are prebuilt commands in place to help with the deployment process.
+If you wish to change the deployment stage, it will require some changes to the steps below.
+
 ## Prerequisites
 
 - An AWS account with admin permissions
@@ -55,7 +59,10 @@ run this command with the proper permissions enabled:
     This deployment will also add the necessary SSM parameter that the API will reference.
     Be sure to create versions for all envs you plan on deploying.
 
-3. At this point, we are ready to install the Animl API (https://github.com/tnc-ca-geo/animl-api).
+3. At this point, you will need to have installed Docker and Serverless. You will
+also need to login to Serverless, see more
+[here](https://www.serverless.com/framework/docs/getting-started#signing-in).
+Now we are ready to install the Animl API (https://github.com/tnc-ca-geo/animl-api).
 The Animl API is the centerpiece of the application as it stores incoming data, triggers
 image inference, and serves the data to the frontend. But when deploying a new animl-api
 instance, you will have to comment out all SSM params prefixed by `ml/` in the
@@ -88,6 +95,9 @@ the new API Gateway url and `AWS_AUTH_CONFIG` with the new Cognito configs in th
 [config.js](https://github.com/tnc-ca-geo/animl-frontend/blob/main/src/config.js).
 After that is done, the instructions to deploy a new frontend with its own URL
 can be found [here](https://github.com/tnc-ca-geo/animl-frontend?tab=readme-ov-file#steps-to-deploy-new-instance-of-animl-frontend).
+If you do not need a custom URL, this can be done by editting the
+[serverless.yml](https://github.com/tnc-ca-geo/animl-frontend/blob/main/serverless.yml)
+by commenting out the `Aliases` and `ViewerCertificate` parameters.
 
 7. To fully utilize the functionality of Animl, we need to deploy ML models to
 run inference on incoming images. The instructions for models we have deployed
