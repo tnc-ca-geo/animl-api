@@ -1,6 +1,8 @@
 # Deploying a New Animl Stack
 
-This document outlines the steps needed to deploy an instance of the entire [animl.camera](https://animl.camera) stack to AWS. For a comprehensive overview of the Animl architecture and how its services are integrated, see the [architecture documentation](README.md).
+This document outlines the steps needed to deploy an instance of the entire
+[animl.camera](https://animl.camera) stack to AWS. For a comprehensive overview
+of the Animl architecture and how its services are integrated, see the [architecture documentation](README.md).
 
 In order to create a new instance of the entire Animl stack, we need to deploy
 each resource in a certain order to ensure everything is working properly:
@@ -13,9 +15,10 @@ each resource in a certain order to ensure everything is working properly:
 6. animl-frontend
 7. animl-ml
 
-The entire stack also requires the deployment stage to be the same across the different services,
-and we recommend using `dev` for testing purposes as there are prebuilt commands in place to help with the deployment process.
-If you wish to change the deployment stage, it will require some changes to the steps below.
+The entire stack also requires the deployment stage to be the same across the different
+services and within the same AWS account, and we recommend using `dev` for testing purposes
+as there are prebuilt commands in place to help with the deployment process. If you wish to
+change the deployment stage, it will require some changes to the steps below.
 
 ## Prerequisites
 
@@ -84,10 +87,10 @@ as a profile, it should be as simple as running:
     ```
 
 5. In order for animl-ingest to work, we need to deploy our [exif-api](https://github.com/tnc-ca-geo/exif-api#deploy-cloudformation-template-manually)
-to extract data from the images. After this service has been deployed, animl-api can be minimally tested by putting
-an image in the image ingestion S3 bucket. This should trigger the image to be
-ingested and processed without any ML inference, but an image record should be
-created in the MongoDB instance.
+to extract data from the images. After this service has been deployed, animl-api can be
+minimally tested by putting an image in the image ingestion S3 bucket. This should
+trigger the image to be ingested and processed without any ML inference, but an
+image record should be created in the MongoDB instance.
 
 6. Next, we need to deploy animl-frontend, which will also allow us to more easily
 test the entire system. Before deploying though, we need to update `API_URLS` with
