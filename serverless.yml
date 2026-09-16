@@ -70,8 +70,8 @@ provider:
             - 's3:ListBucket'
           Resource:
             # this bucket lives with the animl-ingest stack, so we need to reference it by name rather than by Ref
-            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}-${AWS::AccountId}'
-            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}-${AWS::AccountId}/*'
+            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}'
+            - !Sub 'arn:aws:s3:::animl-images-ingestion-${self:provider.stage}/*'
         - Effect: 'Allow'
           Action:
             - 'cognito-idp:ListGroups'
@@ -107,8 +107,8 @@ provider:
             - 's3:DeleteObject'
           Resource:
             # this bucket lives with the animl-ingest stack, so we need to reference it by name rather than by Ref and assumes its on the same account as this stack
-            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}-${AWS::AccountId}'
-            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}-${AWS::AccountId}/*'
+            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}'
+            - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}/*'
 
   logs:
     restApi: true
@@ -281,7 +281,7 @@ resources:
     S3BucketAnimlexporteddata:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: !Sub animl-exported-data-${opt:stage, self:provider.stage, 'dev'}-${AWS::AccountId}
+        BucketName: !Sub animl-exported-data-${opt:stage, self:provider.stage, 'dev'}
         PublicAccessBlockConfiguration:
           BlockPublicAcls: true
           BlockPublicPolicy: true
@@ -305,7 +305,7 @@ resources:
         Description: Animl exported data bucket name
         Name: /exports/exported-data-bucket-${opt:stage, self:provider.stage, 'dev'}
         Type: String
-        Value: !Sub animl-exported-data-${opt:stage, self:provider.stage, 'dev'}-${AWS::AccountId}
+        Value: !Ref S3BucketAnimlexporteddata
 
     # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
     # contain secret keys so need to be created manually in the AWS console
