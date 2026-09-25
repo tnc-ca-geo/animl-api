@@ -15,11 +15,11 @@ these Core services in a certain order to ensure everything is working properly:
 6. animl-frontend
 7. animl-ml
 
-The entire stack also requires the deployment stage name to be the same across the different
-services and within the same AWS account, and we recommend using `dev` for testing purposes
-as there are prebuilt commands in place to help with the deployment process.
 
-> [!NOTE] If you wish to change the deployment stage name, it will require some changes to the steps below.
+> [!IMPORTANT] The entire stack also requires the deployment stage name to be the same across the different
+services and within the same AWS account, and we recommend using `dev` for testing purposes
+as there are prebuilt commands in place to help with the deployment process. If you wish to change the
+deployment stage name, it will require some changes to the steps below.
 
 ## Prerequisites
 
