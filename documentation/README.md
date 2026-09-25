@@ -2,7 +2,7 @@
 
 The following documentation describes the data flow and relationships between Animl microservices. Some of the services are managed in separate [repositories](#repositories-and-resources), and this README provides a comprehensive overview of how they are integrated.
 
-![Animl architecture diagram](/documentation/animl-achitecture-diagram-v1.0.1.png)
+![Animl architecture diagram](/documentation/images/animl-architecture-diagram-v1.0.1.png)
 
 ## Data flow
 
