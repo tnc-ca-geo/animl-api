@@ -86,29 +86,9 @@ Animl-api serves as a crucial component of the Animl stack as a whole,
 but if you wish to read more about deploying the entire Animl stack, please read more [here](./documentation/NewStack.md).
 
 
-#### Deploying Animal-API and Animl-API Dependencies
+#### Deploying and Updating Animl-API
 
-1. The project requires a MongoDB cluster, and if you need to create one see [mongo.md](./documentation/mongo.md). After you create a MongoDb cluster, you need to create an SSM parameter in AWS System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/) holding the connection string (URL). The key needs to be `/db/mongo-db-url-{deployment-stage}` where the deployment stage should match the deployment stage determined when deploying animl-api. The connection string should have the form:
-
-    ```
-    mongodb+srv://<db_username>:<db_password>@cluster0.********.mongodb.net/animl-dev?retryWrites=true&w=majority
-    ```
-
-    After setting up your Mongo instance and adding the connection string to parameter store, you will need to seed your DB which can be found [here](#seeding-db)
-
-2. In the next step, we need to create a User pool in AWS Cognito. The whole setup
-is managed by an AWS  Cloudformation template ```userpool.yml``` that creates and
-manages all of the resources related to Auth. To deploy this stack you need to
-run this command with the proper permissions enabled:
-
-    ```
-    aws cloudformation deploy --template-file userpool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
-    ```
-
-    This deployment will also add the necessary SSM parameter that the API will reference.
-    Be sure to create versions for all envs you plan on deploying.
-
-3. Now you can deploy animl-api.
+You can run this command to deploy and update animl-api.
 
     Note: The first time running serverless will require you to login to the serverless console and be granted
     a seat from the TNC organization.
@@ -119,15 +99,7 @@ run this command with the proper permissions enabled:
     npm run deploy-dev
     ```
 
-4. In order for animl-api to function, it requires [animl-ingest](http://github.com/tnc-ca-geo/animl-ingest)
-to be deployed as well, but it requires animl-api to be deployed first due to the api key being required.
-
-5. In order for animl-ingest to work, we need to deploy our [exif-api](https://github.com/tnc-ca-geo/exif-api)
-to extract data from the images. After this service has been deployed, animl-api can be minimally tested by putting
-an image in the image ingestion S3 bucket. This should trigger the image to be ingested and processed without any
-ML inference, but an image record should be created in the MongoDB instance.
-
-### Seeding db
+### Seeding DB
 
 You'll need to create the DB in MongoDB Atlas, read [here](./documentation/mongo.md) to learn more.
 Once you have a MongoDB Cluster setup, a script for seeding the DB with default records can be found at

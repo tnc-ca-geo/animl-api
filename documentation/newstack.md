@@ -1,24 +1,25 @@
 # Deploying a New Animl Stack
 
 This document outlines the steps needed to deploy an instance of the entire
-[animl.camera](https://animl.camera) stack to AWS. For a comprehensive overview
+[https://animl.camera](https://animl.camera) stack to AWS. For a comprehensive overview
 of the Animl architecture and how its services are integrated, see the [architecture documentation](README.md).
 
 In order to create a new instance of the entire Animl stack, we need to deploy
-each resource in a certain order to ensure everything is working properly:
+these Core services in a certain order to ensure everything is working properly:
 
 1. MongoDB
 2. Cognito UserPool
-3. animl-API
+3. animl-api
 4. animl-ingest
-5. exif-API
+5. exif-api
 6. animl-frontend
 7. animl-ml
 
-The entire stack also requires the deployment stage to be the same across the different
+The entire stack also requires the deployment stage name to be the same across the different
 services and within the same AWS account, and we recommend using `dev` for testing purposes
-as there are prebuilt commands in place to help with the deployment process. If you wish to
-change the deployment stage, it will require some changes to the steps below.
+as there are prebuilt commands in place to help with the deployment process.
+
+> [!NOTE] If you wish to change the deployment stage name, it will require some changes to the steps below.
 
 ## Prerequisites
 
@@ -34,13 +35,13 @@ change the deployment stage, it will require some changes to the steps below.
   - [exif-api](https://github.com/tnc-ca-geo/exif-api)
   - [animl-ml](https://github.com/tnc-ca-geo/animl-ml) (for ML model deployment)
 
-## Deployment Steps
+## Core Service Deployment Steps
 
 1. The project requires a MongoDB cluster, and if you need to create one see [mongo.md](./mongo.md).
 After you create a MongoDb cluster, you need to create an SSM parameter in AWS
 System Managers parameter store (https://us-west-2.console.aws.amazon.com/systems-manager/parameters/)
 holding the connection string (URL). The key needs to be `/db/mongo-db-url-dev`
-where `dev` should match the deployment stage determined when deploying animl-api.
+where `dev` should match the deployment stage name determined when deploying animl-api.
 The connection string should have the form:
 
     ```
@@ -71,7 +72,8 @@ image inference, and serves the data to the frontend. But when deploying a new a
 instance, you will have to comment out all SSM params prefixed by `ml/` in the
 [config.ts](../src/config/config.ts). Even with these changes, animl-api will not
 be functional until after animl-ingest has been deployed. If your AWS credentials
-are stored as a profile, it should be as simple as running:
+are stored as a profile, it should be as simple as navigating to the root directory of
+animl-api and running:
 
     ```
     npm run deploy-dev
@@ -80,7 +82,8 @@ are stored as a profile, it should be as simple as running:
 4. In order for animl-api to function, it requires [animl-ingest](https://github.com/tnc-ca-geo/animl-ingest#dev-deployment)
 to be deployed as well, but it requires animl-api to be deployed first due to the
 api key being a requirement. As with animl-api, if your AWS credentials are stored
-as a profile, it should be as simple as running:
+as a profile, it should be as simple as navigating to the root directory of
+animl-ingest and running:
 
     ```
     serverless deploy --stage dev
@@ -102,7 +105,10 @@ If you do not need a custom URL, this can be done by editting the
 [serverless.yml](https://github.com/tnc-ca-geo/animl-frontend/blob/main/serverless.yml)
 by commenting out the `Aliases` and `ViewerCertificate` parameters.
 
-7. To fully utilize the functionality of Animl, we need to deploy ML models to
+
+## Deployment Steps for ML Inferences
+
+To fully utilize the functionality of Animl, we need to deploy ML models to
 run inference on incoming images. The instructions for models we have deployed
 before can be found [here](https://github.com/tnc-ca-geo/animl-ml#deploying-a-new-model).
 After deploying the model, you will have to update the stack at various points in order to utilize it:
@@ -110,3 +116,5 @@ After deploying the model, you will have to update the stack at various points i
     - add the new SSM parameter to the `ssmNames` in config.ts in the animl-api project and redeploy it
     - create a record for the new ML Model in the `mlmodels` collection in MongoDB
     - add the new ML Model to `availableMlModels` for each project you wish to use the model in MongoDB
+
+## Deployment Steps for Supplmentary Services
