@@ -71,3 +71,7 @@ but we can relook at this in the future).
     The script will create the database as well as some example project entries and the metadata records for some example ML Models.
 
     For more instructions on database seeding see [here](../README.md#seeding-db).
+
+12. Now you need to manually create the indexes in MongoDB by navigating to the `Data Explorer` and connecting to your cluster. Go to the DB we created, then the `images` collection, and finally the `Indexes` tab. From here you should be able to create these indexes as shown here:
+
+    ![Project Screenshot](images/mongo-indexes.png)

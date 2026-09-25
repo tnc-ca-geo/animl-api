@@ -4,6 +4,8 @@ The following documentation describes the data flow and relationships between An
 
 ![Animl architecture diagram](/documentation/images/animl-architecture-diagram-v1.0.1.png)
 
+For detailed instructions on how to deploy the entire stack of Animl microservices to a new AWS account, please see [here](./newstack.md)
+
 ## Data flow
 
 Camera trap images can enter Animl in two ways: integrated wireless camera traps can generate new images and push them in real-time into Animl's data processing pipeline ("Data source No. 1", on the left-hand side of the diagram), or users can upload zip files of images directly from their desktops via the frontend UI (Data source No. 2, on the right).
