@@ -106,7 +106,7 @@ If you do not need a custom URL, this can be done by editting the
 by commenting out the `Aliases` and `ViewerCertificate` parameters.
 
 
-## Deployment Steps for ML Inferences
+## Deployment Steps for ML Services
 
 To fully utilize the functionality of Animl, we need to deploy ML models to
 run inference on incoming images. The instructions for models we have deployed
@@ -117,4 +117,5 @@ After deploying the model, you will have to update the stack at various points i
     - create a record for the new ML Model in the `mlmodels` collection in MongoDB
     - add the new ML Model to `availableMlModels` for each project you wish to use the model in MongoDB
 
-## Deployment Steps for Supplmentary Services
+## Cellular Camera Integration Services
+

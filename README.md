@@ -86,7 +86,7 @@ Animl-api serves as a crucial component of the Animl stack as a whole,
 but if you wish to read more about deploying the entire Animl stack, please read more [here](./documentation/NewStack.md).
 
 
-#### Deploying and Updating Animl-API
+#### Deploying and Updating an existing Animl-API
 
 You can run this command to deploy and update animl-api.
 

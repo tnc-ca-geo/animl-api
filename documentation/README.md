@@ -4,7 +4,7 @@ The following documentation describes the data flow and relationships between An
 
 ![Animl architecture diagram](/documentation/images/animl-architecture-diagram-v1.0.1.png)
 
-For detailed instructions on how to deploy the entire stack of Animl microservices to a new AWS account, please see [here](./newstack.md)
+For detailed instructions on how to deploy the entire stack of Animl microservices to a new AWS account, please see the [new stack deployment documentation](./newstack.md)
 
 ## Data flow
 
