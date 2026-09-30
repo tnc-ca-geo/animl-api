@@ -1,3 +1,34 @@
+/**
+ * exportProjectsForMap.js
+ *
+ * Regenerates the "Projects for map" CSV (used to build the public map of
+ * Animl projects) by reconciling an input CSV against the current state of
+ * `external` Projects in the database.
+ *
+ * For each row in the input CSV whose ProjectId still exists in the DB, the
+ * Name, Organization, Description, Stage, Created, Latitude, and Longitude
+ * fields are overwritten with the current DB values. `Label` is a CSV-only
+ * field (it does not exist in the DB) and is always passed through unchanged.
+ * Rows whose ProjectId no longer exists in the DB are dropped, and any DB
+ * projects not already present in the input CSV are appended as new rows
+ * (with an empty `Label`).
+ *
+ * Usage (from the animl-api root, after building):
+ *   npm run build
+ *   aws-vault exec animl -- env STAGE=prod REGION=us-west-2 \
+ *     node src/scripts/exportProjectsForMap.js <path-to-input-csv>
+ *
+ * Example:
+ *   aws-vault exec animl -- env STAGE=prod REGION=us-west-2 \
+ *     node src/scripts/exportProjectsForMap.js ./backups/Animl-projects-for-map.csv
+ *
+ * <path-to-input-csv> should be the CSV output from the previous run of this
+ * script (or the initial seed CSV), and is resolved relative to the repo
+ * root. The output is written to:
+ *   backups/Animl-projects-for-map_DB-export_<yyyy-LL-dd>.csv
+ * and should be used as the input CSV the next time this script is run.
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'csv-parse/sync';
@@ -14,11 +45,30 @@ const COLUMNS = [
   'Shape *',
   'ProjectId',
   'Name',
+  'Organization',
+  'Description',
   'Stage',
+  'Created',
   'Latitude',
   'Longitude',
   'Label',
 ];
+
+// Fields sourced from the DB record; Label is intentionally excluded (CSV-only field).
+function dbFieldsForProject(dbProject) {
+  const coords = dbProject.location?.geometry?.coordinates;
+  return {
+    Name: dbProject.name,
+    Organization: dbProject.organization ?? '',
+    Description: dbProject.description ?? '',
+    Stage: dbProject.stage ?? '',
+    Created: dbProject.created
+      ? DateTime.fromJSDate(new Date(dbProject.created)).setZone('utc').toFormat('yyyy-LL-dd')
+      : '',
+    Latitude: coords ? coords[1] : '',
+    Longitude: coords ? coords[0] : '',
+  };
+}
 
 async function populateProjectsForMap() {
   const inputPath = process.argv[2];
@@ -33,7 +83,7 @@ async function populateProjectsForMap() {
     process.exit(1);
   }
 
-  const stage = process.env.STAGE || 'dev';
+  const stage = process.env.STAGE || 'prod';
   if (stage !== 'prod') {
     console.warn(`WARNING: STAGE is "${stage}", not "prod". Connecting to the ${stage} database.`);
   }
@@ -46,8 +96,8 @@ async function populateProjectsForMap() {
     const csvText = fs.readFileSync(resolvedInputPath, 'utf8');
     const inputRows = parse(csvText, { columns: true, skip_empty_lines: true });
 
-    // Fetch all external projects from DB
-    const dbProjects = await Project.find({ type: { $ne: 'internal' } }).lean();
+    // Fetch all `type === "external"` projects from DB
+    const dbProjects = await Project.find({ type: 'external' }).lean();
     const dbProjectMap = new Map(dbProjects.map((p) => [p._id, p]));
 
     const outputRows = [];
@@ -68,15 +118,19 @@ async function populateProjectsForMap() {
 
       seenProjectIds.add(projectId);
 
-      const currentStage = row['Stage'];
-      const dbStage = dbProject.stage ?? '';
+      const dbFields = dbFieldsForProject(dbProject);
+      const changedFields = Object.keys(dbFields).filter(
+        (field) => String(row[field] ?? '') !== String(dbFields[field] ?? ''),
+      );
 
-      if (currentStage !== dbStage) {
-        console.log(
-          `  Updating stage for "${row['Name']}" (${projectId}): "${currentStage}" → "${dbStage}"`,
-        );
+      if (changedFields.length > 0) {
+        for (const field of changedFields) {
+          console.log(
+            `  Updating ${field} for "${row['Name']}" (${projectId}): "${row[field]}" → "${dbFields[field]}"`,
+          );
+        }
         updated++;
-        outputRows.push({ ...row, Stage: dbStage });
+        outputRows.push({ ...row, ...dbFields });
       } else {
         outputRows.push({ ...row });
       }
@@ -94,10 +148,6 @@ async function populateProjectsForMap() {
     for (const dbProject of dbProjects) {
       if (seenProjectIds.has(dbProject._id)) continue;
 
-      const coords = dbProject.location?.geometry?.coordinates;
-      const longitude = coords ? coords[0] : '';
-      const latitude = coords ? coords[1] : '';
-
       maxObjectId++;
       added++;
       console.log(`  Adding: "${dbProject.name}" (${dbProject._id})`);
@@ -106,24 +156,21 @@ async function populateProjectsForMap() {
         'OBJECTID *': maxObjectId,
         'Shape *': 'Point',
         ProjectId: dbProject._id,
-        Name: dbProject.name,
-        Stage: dbProject.stage ?? '',
-        Latitude: latitude,
-        Longitude: longitude,
-        Label: dbProject.name,
+        ...dbFieldsForProject(dbProject),
+        Label: '',
       });
     }
 
     // Write output CSV
     const date = DateTime.now().setZone('utc').toFormat('yyyy-LL-dd');
     const backupsRoot = path.join(appRoot.path, backupConfig.BACKUP_DIR);
-    const outputFileName = `Animl-projects-for-map-${date}.csv`;
+    const outputFileName = `Animl-projects-for-map_DB-export_${date}.csv`;
     const outputPath = path.join(backupsRoot, outputFileName);
 
     const csvOutput = stringify(outputRows, { header: true, columns: COLUMNS });
     fs.writeFileSync(outputPath, csvOutput, 'utf8');
 
-    console.log(`\nDone.`);
+    console.log('\nDone.');
     console.log(`  Updated: ${updated}`);
     console.log(`  Removed: ${removed}`);
     console.log(`  Added:   ${added}`);
