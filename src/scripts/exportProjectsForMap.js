@@ -118,6 +118,11 @@ async function populateProjectsForMap() {
 
       seenProjectIds.add(projectId);
 
+      // ESRI exports empty strings as the literal text "<Null>"
+      if (row['Label'] === '<Null>') {
+        row['Label'] = '';
+      }
+
       const dbFields = dbFieldsForProject(dbProject);
       const changedFields = Object.keys(dbFields).filter(
         (field) => String(row[field] ?? '') !== String(dbFields[field] ?? ''),
