@@ -69,7 +69,7 @@
         "cli-progress": "^3.12.0",
         "eslint": "^8.19.0",
         "eslint-plugin-node": "^11.1.0",
-        "serverless": "^3.20.0",
+        "serverless": "^3.40.0",
         "serverless-dotenv-plugin": "^6.0.0",
         "serverless-offline": "^13.0.0",
         "serverless-plugin-typescript": "^2.1.5",

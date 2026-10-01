@@ -1051,7 +1051,6 @@ export class ImageModel {
     console.log('ImageModel.createLabels - new label count: ', JSON.stringify(input.labels.length));
 
     try {
-      console.time('creating-labels');
       const project = await ProjectModel.queryById(context.user['curr_project']);
 
       const images = await Image.find({
