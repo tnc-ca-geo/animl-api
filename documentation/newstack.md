@@ -60,6 +60,11 @@ run this command with the proper permissions enabled:
     aws cloudformation deploy --template-file userpool.yml  --stack-name animl-user-pool --parameter-overrides Name=animl-dev UsePreauth=false --capabilities CAPABILITY_NAMED_IAM
     ```
 
+    After the User pool has been created, you will need to manually change the invitation
+    message template. You can do this by by navigating to the AWS console and going to
+    `Amazon Cognito -> User pools -> animl-user_pool -> Branding -> Message templates
+    -> Edit invitation message`. From there you should paste the contents of
+    [invitation-message.html](./invitation-message.html) into the `Email message` field.
     This deployment will also add the necessary SSM parameter that the API will reference.
     Be sure to create versions for all envs you plan on deploying.
 
@@ -118,4 +123,4 @@ After deploying the model, you will have to update the stack at various points i
     - add the new ML Model to `availableMlModels` for each project you wish to use the model in MongoDB
 
 ## Cellular Camera Integration Services
-
+Documentation coming soon...
