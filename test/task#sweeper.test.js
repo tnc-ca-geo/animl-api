@@ -6,24 +6,70 @@ import { sweepStaleTasks } from '../.build/task/sweeper.js';
 
 const MINUTE = 60 * 1000;
 
-// Captures the filter/update passed to Task.updateMany
-const stubUpdateMany = (modifiedCount = 0) => {
+// Captures the filter/update passed to Task.updateMany. `staleCount` drives the pre-check that
+// lets the sweeper bail before constructing an error.
+const stubSweep = (staleCount = 1) => {
   const calls = [];
+  Sinon.stub(TaskSchema, 'countDocuments').callsFake(async () => staleCount);
   Sinon.stub(TaskSchema, 'updateMany').callsFake(async (filter, update) => {
     calls.push({ filter, update });
-    return { modifiedCount };
+    return { modifiedCount: staleCount };
   });
   return calls;
 };
 
 const branchFor = (filter, status) => filter.$or.find((b) => b.status === status);
 
+tape('Task sweeper: does not update anything when no tasks are stale', async (t) => {
+  try {
+    Sinon.restore();
+    MockConfig(t);
+
+    const calls = stubSweep(0);
+    await sweepStaleTasks();
+
+    t.equal(calls.length, 0, 'Should skip the write entirely when there is nothing to sweep');
+  } catch (err) {
+    t.error(err);
+  }
+
+  Sinon.restore();
+  t.end();
+});
+
+tape('Task sweeper: counts and updates using the same filter', async (t) => {
+  try {
+    Sinon.restore();
+    MockConfig(t);
+
+    let countFilter = null;
+    Sinon.stub(TaskSchema, 'countDocuments').callsFake(async (filter) => {
+      countFilter = filter;
+      return 1;
+    });
+    const calls = [];
+    Sinon.stub(TaskSchema, 'updateMany').callsFake(async (filter, update) => {
+      calls.push({ filter, update });
+      return { modifiedCount: 1 };
+    });
+
+    await sweepStaleTasks();
+
+    t.deepEquals(countFilter, calls[0].filter, 'A drifting filter would sweep the wrong tasks');
+  } catch (err) {
+    t.error(err);
+  }
+
+  Sinon.restore();
+  t.end();
+});
+
 tape('Task sweeper: only targets SUBMITTED and RUNNING tasks', async (t) => {
   try {
     Sinon.restore();
     MockConfig(t);
 
-    const calls = stubUpdateMany();
+    const calls = stubSweep();
     await sweepStaleTasks();
 
     t.equal(calls.length, 1, 'Should issue a single updateMany');
@@ -43,7 +89,7 @@ tape('Task sweeper: uses a 20 minute cutoff for RUNNING tasks', async (t) => {
     Sinon.restore();
     MockConfig(t);
 
-    const calls = stubUpdateMany();
+    const calls = stubSweep();
     const before = Date.now();
     await sweepStaleTasks();
     const after = Date.now();
@@ -67,7 +113,7 @@ tape('Task sweeper: uses a wider 60 minute cutoff for SUBMITTED tasks', async (t
     Sinon.restore();
     MockConfig(t);
 
-    const calls = stubUpdateMany();
+    const calls = stubSweep();
     const before = Date.now();
     await sweepStaleTasks();
     const after = Date.now();
@@ -92,7 +138,7 @@ tape(
       Sinon.restore();
       MockConfig(t);
 
-      const calls = stubUpdateMany();
+      const calls = stubSweep();
       await sweepStaleTasks();
 
       for (const status of ['RUNNING', 'SUBMITTED']) {
@@ -126,7 +172,7 @@ tape('Task sweeper: marks stale tasks FAIL with an error and a fresh heartbeat',
     Sinon.restore();
     MockConfig(t);
 
-    const calls = stubUpdateMany(3);
+    const calls = stubSweep(3);
     await sweepStaleTasks();
 
     const { $set } = calls[0].update;

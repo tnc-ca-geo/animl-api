@@ -7,7 +7,7 @@ import { CreateDeployment, UpdateDeployment, DeleteDeployment } from './deployme
 import { DeleteCamera, UpdateSerialNumber } from './camera.js';
 import ImageErrorExport from './image-errors.js';
 import AnnotationsExport from './annotations.js';
-import { parseMessage } from './utils.js';
+import { parseConfig } from './utils.js';
 import { type TaskInput } from '../api/db/models/Task.js';
 import GraphQLError, { InternalServerError } from '../api/errors.js';
 import { type User } from '../api/auth/authorization.js';
@@ -88,7 +88,7 @@ async function processRecord(record: SQSRecord, config: Config) {
     user: taskDoc.user,
     projectId: taskDoc.projectId,
     type: taskDoc.type,
-    config: parseMessage(taskDoc.toObject().config ?? {}),
+    config: parseConfig(taskDoc.toObject().config ?? {}),
   };
 
   try {

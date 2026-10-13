@@ -1,67 +1,35 @@
-import _ from 'lodash';
 import { DateTime } from 'luxon';
 import { LabelSchema, ObjectSchema } from '../api/db/schemas/shared/index.js';
 
-const flattenObj = (ob: Record<any, any>): Record<string, string> => {
-  const result: Record<string, string> = {};
-  for (const i in ob) {
-    if (typeof ob[i] === 'object' && !Array.isArray(ob[i])) {
-      const temp = flattenObj(ob[i]);
-      for (const j in temp) {
-        result[i + '.' + j] = temp[j];
-      }
-    } else {
-      result[i] = ob[i];
-    }
+const DATE_TIME_TAG = '__DateTime__';
+
+function tagDates(value: any): any {
+  if (DateTime.isDateTime(value)) return { [DATE_TIME_TAG]: value.toISO() };
+  if (value instanceof Date) return { [DATE_TIME_TAG]: value.toISOString() };
+  if (Array.isArray(value)) return value.map(tagDates);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, tagDates(v)]));
   }
-  return result;
-};
+  return value;
+}
 
-const isValidISOString = (str: string): boolean => {
-  const date = DateTime.fromISO(str);
-  return date.isValid;
-};
+function reviveDates(value: any): any {
+  if (Array.isArray(value)) return value.map(reviveDates);
+  if (value && typeof value === 'object') {
+    if (typeof value[DATE_TIME_TAG] === 'string') return DateTime.fromISO(value[DATE_TIME_TAG]);
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, reviveDates(v)]));
+  }
+  return value;
+}
 
-// Parse SQS message and replace ISO date strings with DateTime objects
-// This is necessary because dates are serialized as ISO strings in SQS messages
-// and must be converted to DateTime objects before being used in the app
+// Dates are tagged on the way out so parseConfig() can revive exactly these values. Sniffing for
+// ISO-looking strings instead would convert any numeric config value (camera serial numbers, for
+// one) into a date, since Luxon accepts partial ISO strings like "24" and "1234".
 // https://github.com/tnc-ca-geo/animl-api/issues/166
-export const parseMessage = <T extends Record<string, any>>(msg: T): T => {
-  const msgCopy = _.cloneDeep(msg);
-  const flatMsg = flattenObj(msg);
+// https://github.com/tnc-ca-geo/animl-api/issues/459
+export const serializeConfig = <T>(config: T): T => tagDates(config ?? null);
 
-  Object.entries(flatMsg).forEach(([key, value]) => {
-    if (value !== null && typeof value == 'string' && isValidISOString(value)) {
-      let pointer = msgCopy;
-      const keys = key.split('.');
-      const lastKey = keys.pop();
-      for (const k of keys) {
-        pointer = pointer[k];
-      }
-      (pointer[lastKey!] as any) = DateTime.fromISO(value);
-    }
-
-    if (Array.isArray(value)) {
-      value.forEach((item, i) => {
-        if (isValidISOString(item)) {
-          let pointer = msgCopy;
-          const keys = key.split('.');
-          const lastKey = keys.pop();
-          for (const k of keys) {
-            pointer = pointer[k];
-          }
-          pointer[lastKey!][i] = DateTime.fromISO(item);
-        }
-      });
-    }
-  });
-  return msgCopy;
-};
-
-// Inverse of parseMessage(). Luxon DateTimes serialize to ISO strings via toJSON(), which keeps
-// Task.config round-trippable through Mongo's Mixed type (BSON would otherwise store a DateTime's
-// internals as a nested document).
-export const serializeConfig = <T>(config: T): T => JSON.parse(JSON.stringify(config ?? null));
+export const parseConfig = <T>(config: T): T => reviveDates(config);
 
 function findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
   // label has validation and is validated true
