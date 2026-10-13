@@ -186,8 +186,19 @@ functions:
               - taskQueue
               - Arn
           batchSize: 1
+          functionResponseType: ReportBatchItemFailures
     memorySize: 3008
     timeout: 900
+
+  tasksweeper:
+    handler: src/task/sweeper.sweepStaleTasks
+    runtime: nodejs20.x
+    memorySize: 512
+    timeout: 60
+    events:
+      - schedule:
+          rate: rate(10 minutes)
+          enabled: true
 
   platformstats:
     handler: src/dashboard/platformStats.computeStats
@@ -246,7 +257,9 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: taskQueue-${self:provider.stage}
-        VisibilityTimeout: 900
+        # Must exceed the task function timeout (900s) or a message can become visible again
+        # while it is still being processed.
+        VisibilityTimeout: 1020
         RedrivePolicy:
           deadLetterTargetArn:
             'Fn::GetAtt':
