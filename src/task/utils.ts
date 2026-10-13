@@ -58,6 +58,11 @@ export const parseMessage = <T extends Record<string, any>>(msg: T): T => {
   return msgCopy;
 };
 
+// Inverse of parseMessage(). Luxon DateTimes serialize to ISO strings via toJSON(), which keeps
+// Task.config round-trippable through Mongo's Mixed type (BSON would otherwise store a DateTime's
+// internals as a nested document).
+export const serializeConfig = <T>(config: T): T => JSON.parse(JSON.stringify(config ?? null));
+
 function findFirstValidLabel(obj: ObjectSchema): LabelSchema | null {
   // label has validation and is validated true
   return obj.labels.find((label) => label.validation && label.validation.validated) || null;

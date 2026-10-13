@@ -4,6 +4,7 @@ import MongoPaging, { AggregationOutput } from 'mongo-cursor-pagination';
 import Task, { TaskSchema } from '../schemas/Task.js';
 import { READ_TASKS_ROLES } from '../../auth/roles.js';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
+import { serializeConfig } from '../../../task/utils.js';
 import { Context } from '../../handler.js';
 import * as gql from '../../../@types/graphql.js';
 import { HydratedDocument, Types } from 'mongoose';
@@ -65,18 +66,20 @@ export class TaskModel {
       user: input.user,
       projectId: input.projectId,
       type: input.type,
+      config: serializeConfig(input.config),
     });
     console.log('TaskModel.create task: ', task);
     const sqs = new SQS.SQSClient({ region: process.env.AWS_DEFAULT_REGION });
 
     await task.save();
 
+    // Only a pointer - the handler reads config off the Task doc so we don't hit SQS's 256KB cap.
     await sqs.send(
       new SQS.SendMessageCommand({
         QueueUrl: context.config['/TASKS/TASK_QUEUE_URL'],
         MessageBody: JSON.stringify({
-          config: input.config,
-          ...task.toJSON(),
+          _id: task._id.toString(),
+          projectId: task.projectId,
         }),
       }),
     );
