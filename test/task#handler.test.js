@@ -220,36 +220,39 @@ tape('Task handler: reports a batch item failure when the task cannot be loaded'
   t.end();
 });
 
-tape(
-  'Task handler: falls back to the message body for tasks enqueued before config was persisted',
-  async (t) => {
-    try {
-      Sinon.restore();
-      MockConfig(t);
-
-      const legacyConfig = { cameraId: 'legacy-a', newSerialNumber: 'legacy-b' };
-      stubTask(t, makeTaskDoc({ config: undefined }));
-      let receivedConfig = null;
-      Sinon.stub(CameraModel, 'updateSerialNumber').callsFake(async (config) => {
-        receivedConfig = config;
-        return { isOk: true };
-      });
-
-      await handler({
-        Records: [makeRecord({ _id: 'task1', projectId: 'project', config: legacyConfig })],
-      });
-
-      t.deepEquals(receivedConfig, legacyConfig, 'Should use the config from the SQS body');
-    } catch (err) {
-      t.error(err);
-    }
-
+tape('Task handler: ignores config in the SQS message body', async (t) => {
+  try {
     Sinon.restore();
-    t.end();
-  },
-);
+    MockConfig(t);
 
-tape('Task handler: prefers the persisted config over the message body', async (t) => {
+    // The queue is drained before deploys, so the body is only ever a pointer to the Task
+    stubTask(t, makeTaskDoc({ config: undefined }));
+    let receivedConfig = null;
+    Sinon.stub(CameraModel, 'updateSerialNumber').callsFake(async (config) => {
+      receivedConfig = config;
+      return { isOk: true };
+    });
+
+    await handler({
+      Records: [
+        makeRecord({
+          _id: 'task1',
+          projectId: 'project',
+          config: { cameraId: 'from-body', newSerialNumber: 'from-body' },
+        }),
+      ],
+    });
+
+    t.deepEquals(receivedConfig, {}, 'Should never read config from the message body');
+  } catch (err) {
+    t.error(err);
+  }
+
+  Sinon.restore();
+  t.end();
+});
+
+tape('Task handler: reads config from the Task document', async (t) => {
   try {
     Sinon.restore();
     MockConfig(t);

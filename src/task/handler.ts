@@ -83,14 +83,12 @@ async function processRecord(record: SQSRecord, config: Config) {
 
   await TaskModel.update({ _id: body._id, status: 'RUNNING', heartbeat: new Date() }, { user });
 
-  // Fall back to the message body for Tasks enqueued before config was persisted on the doc.
-  // TODO: can probably remove this & make sure there are no Tasks in flight before deploying changes to the config structure
   const task: TaskInput<any> & { _id: string } = {
     _id: taskDoc._id.toString(),
     user: taskDoc.user,
     projectId: taskDoc.projectId,
     type: taskDoc.type,
-    config: parseMessage(taskDoc.toObject().config ?? body.config ?? {}),
+    config: parseMessage(taskDoc.toObject().config ?? {}),
   };
 
   try {
