@@ -45,9 +45,6 @@ const TaskSchema = new Schema({
 
 TaskSchema.plugin(MongoPaging.mongoosePlugin);
 
-TaskSchema.index({ status: 1, heartbeat: 1 });
-TaskSchema.index({ updated: 1 }); // consider adding TTL index ({ expireAfterSeconds: 60 * 60 * 24 * 90 })
-
 export default mongoose.model('Task', TaskSchema);
 
 export type TaskSchema = mongoose.InferSchemaType<typeof TaskSchema>;
