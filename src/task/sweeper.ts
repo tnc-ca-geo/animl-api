@@ -32,24 +32,30 @@ export async function sweepStaleTasks(): Promise<void> {
   await connectToDatabase(config);
 
   const now = new Date();
-  const res = await Task.updateMany(
-    {
-      $or: [
-        staleFilter('RUNNING', RUNNING_TASK_TIMEOUT_MINUTES),
-        staleFilter('SUBMITTED', SUBMITTED_TASK_TIMEOUT_MINUTES),
-      ],
-    },
-    {
-      $set: {
-        status: 'FAIL',
-        updated: now,
-        heartbeat: now,
-        output: {
-          error: new InternalServerError('Task stopped responding and was marked as failed'),
-        },
+  const filter = {
+    $or: [
+      staleFilter('RUNNING', RUNNING_TASK_TIMEOUT_MINUTES),
+      staleFilter('SUBMITTED', SUBMITTED_TASK_TIMEOUT_MINUTES),
+    ],
+  };
+
+  // Bail before constructing the error (which logs on instantiation) if there's nothing to sweep.
+  const staleCount = await Task.countDocuments(filter);
+  if (staleCount === 0) {
+    console.log('sweepStaleTasks: failed 0 stale task(s)');
+    return;
+  }
+
+  const res = await Task.updateMany(filter, {
+    $set: {
+      status: 'FAIL',
+      updated: now,
+      heartbeat: now,
+      output: {
+        error: new InternalServerError('Task stopped responding and was marked as failed'),
       },
     },
-  );
+  });
 
   console.log(`sweepStaleTasks: failed ${res.modifiedCount} stale task(s)`);
 }

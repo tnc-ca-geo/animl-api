@@ -89,7 +89,7 @@ tape('TaskModel.create: sends only a pointer in the SQS message body', async (t)
   t.end();
 });
 
-tape('TaskModel.create: serializes DateTimes in config to ISO strings', async (t) => {
+tape('TaskModel.create: tags DateTimes in config', async (t) => {
   try {
     Sinon.restore();
     MockConfig(t);
@@ -105,12 +105,12 @@ tape('TaskModel.create: serializes DateTimes in config to ISO strings', async (t
     );
 
     t.equal(
-      typeof task.config.filters.createdStart,
+      typeof task.config.filters.createdStart.__DateTime__,
       'string',
       'A Luxon DateTime would otherwise be stored as a nested BSON document',
     );
     t.equal(
-      DateTime.fromISO(task.config.filters.createdStart).toMillis(),
+      DateTime.fromISO(task.config.filters.createdStart.__DateTime__).toMillis(),
       DateTime.fromISO(iso).toMillis(),
     );
   } catch (err) {

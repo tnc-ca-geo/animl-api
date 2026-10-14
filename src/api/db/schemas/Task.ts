@@ -33,7 +33,7 @@ const TaskSchema = new Schema({
     default: 'SUBMITTED',
   },
   // Task-type-specific payload. Persisted (rather than only sent in the SQS message) so it isn't
-  // subject to SQS's 256KB body limit. Dates are stored as ISO strings; see parseMessage().
+  // subject to SQS's 256KB body limit. Dates are stored tagged; see serializeConfig().
   config: { type: Object },
   created: { type: Date, default: Date.now, required: true },
   updated: { type: Date, default: Date.now, required: true },
