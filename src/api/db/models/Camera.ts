@@ -346,7 +346,7 @@ export class CameraModel {
       const res = await Images.updateMany(filter, { cameraId: newId });
 
       console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
-      if (res.matchedCount !== affectedImgIds.length || res.matchedCount !== res.modifiedCount) {
+      if (res.matchedCount !== res.modifiedCount) {
         throw new GraphQLError('Not all images were updated successfully');
       }
       successfulOps.push({
