@@ -502,25 +502,18 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const query = !context.user['is_superuser']
-        ? { _id: input.imageId, projectId: context.user['curr_project']! }
-        : { _id: input.imageId };
+      const image = await ImageModel.queryById(input.imageId, context);
 
-      // $push creates the comments array if the field doesn't exist yet
-      const image = await Image.findOneAndUpdate(
-        query,
-        {
-          $push: {
-            comments: {
-              _id: new ObjectId(),
-              author: context.user['cognito:username'],
-              comment: input.comment,
-            },
-          },
-        },
-        { new: true, projection: { comments: 1 } },
-      );
-      if (!image) throw new NotFoundError('Image not found');
+      if (!image.comments) {
+        image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
+      }
+
+      image.comments.push({
+        _id: new ObjectId(),
+        author: context.user['cognito:username'],
+        comment: input.comment,
+      });
+      await image.save();
 
       return { comments: image.comments };
     } catch (err) {
@@ -1628,7 +1621,7 @@ export class ImageModel {
    */
   static async updateImageReviewStatusAndLabelIds(imageIds: string[]): Promise<BulkWriteResult> {
     try {
-      const res = await retry(
+      const { res, changedCount } = await retry(
         async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateReviewStatus operation! Try #: ${attempt}`);
@@ -1639,10 +1632,16 @@ export class ImageModel {
           });
 
           const operations = [];
+          let reviewedChangedCount = 0;
+          let labelIdsChangedCount = 0;
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
             const queryableLabelIds = getQueryableLabelIds(image);
-            if (image.reviewed !== isReviewed || !_.isEqual([...image.queryableLabelIds], queryableLabelIds)) {
+            const reviewedChanged = image.reviewed !== isReviewed;
+            const labelIdsChanged = !_.isEqual([...image.queryableLabelIds], queryableLabelIds);
+            if (reviewedChanged || labelIdsChanged) {
+              if (reviewedChanged) reviewedChangedCount++;
+              if (labelIdsChanged) labelIdsChangedCount++;
               operations.push({
                 updateOne: {
                   filter: { _id: image._id },
@@ -1651,30 +1650,39 @@ export class ImageModel {
               });
             }
           }
-          console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
-          return await ImageModel.executeBulkWrite(operations);
+
+          // NOTE: summarized rather than dumping the full operations array, which
+          // grows unbounded with batch size (observed >150KB on a single line).
+          // `changed: 0` is the no-op case and is logged in the same shape so the
+          // no-op rate can be derived from one query.
+          console.log(
+            'ImageModel.updateReviewStatus - summary: ',
+            JSON.stringify({
+              requested: imageIds.length,
+              found: images.length,
+              changed: operations.length,
+              reviewedChanged: reviewedChangedCount,
+              labelIdsChanged: labelIdsChangedCount,
+            }),
+          );
+
+          // NOTE: Mongoose short-circuits empty operation arrays and returns a
+          // default (ok: 1, all counts 0) BulkWriteResult without hitting the DB,
+          // so there's no need to guard against operations.length === 0 here.
+          return { res: await Image.bulkWrite(operations), changedCount: operations.length };
         },
         { retries: 2 },
       );
-      if (res.ok) {
+
+      // a short-circuited no-op returns a default result carrying no information,
+      // so only report counts when we actually wrote
+      if (changedCount > 0 && res.ok) {
         console.log(
           'ImageModel.updateReviewStatus - Image.bulkWrite() res: ',
-          JSON.stringify(res.getRawResponse()),
+          JSON.stringify({ matched: res.matchedCount, modified: res.modifiedCount }),
         );
       }
       return res;
-    } catch (err) {
-      if (err instanceof GraphQLError) throw err;
-      throw new InternalServerError(err as string);
-    }
-  }
-
-  static async executeBulkWrite(operations: any[]): Promise<BulkWriteResult> {
-    try {
-      if (operations.length === 0) {
-        return { ok: 1, getRawResponse: () => ({}) } as BulkWriteResult;
-      }
-      return await Image.bulkWrite(operations);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
