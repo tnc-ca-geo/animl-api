@@ -338,14 +338,15 @@ export class CameraModel {
         throw new GraphQLError(`You can't update wireless cameras' serial numbers`);
       }
 
-      // Step 1: update serial number on all images
+      // Step 1: update serial number on all images in the current project
       // TODO: do we want to wrap this all in a retry?
-      const affectedImgIds = (await Images.find({ cameraId }, '_id')).map((img) =>
-        img._id.toString(),
-      );
-      const res = await Images.updateMany({ cameraId }, { cameraId: newId });
+      const projectId = context.user['curr_project'];
+      const filter = { cameraId, projectId };
+      const affectedImgIds = (await Images.find(filter, '_id')).map((img) => img._id.toString());
+      const res = await Images.updateMany(filter, { cameraId: newId });
+
       console.log('CameraModel.updateSerialNumber() Images.updateMany - res: ', res);
-      if (res.matchedCount !== res.modifiedCount) {
+      if (res.matchedCount !== affectedImgIds.length || res.matchedCount !== res.modifiedCount) {
         throw new GraphQLError('Not all images were updated successfully');
       }
       successfulOps.push({
@@ -355,7 +356,7 @@ export class CameraModel {
       console.log('CameraModel.updateSerialNumber() - updated all images');
 
       // Step 2: check if we're merging a source camera into a target camera
-      const project = await ProjectModel.queryById(context.user['curr_project']);
+      const project = await ProjectModel.queryById(projectId);
       const sourceCamConfig = project.cameraConfigs.find((cc) => idMatch(cc._id, cameraId));
       const isMerge = project.cameraConfigs.some((cc) => idMatch(cc._id, newId));
 

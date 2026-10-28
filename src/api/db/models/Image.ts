@@ -390,7 +390,7 @@ export class ImageModel {
               'Image.createImage() - an error occurred, so reversing successful cam-created operation',
             );
             // delete newly created wireless camera record
-            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
+            await WirelessCamera.deleteOne({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter(
@@ -502,18 +502,25 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      const query = !context.user['is_superuser']
+        ? { _id: input.imageId, projectId: context.user['curr_project']! }
+        : { _id: input.imageId };
 
-      if (!image.comments) {
-        image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
-      }
-
-      image.comments.push({
-        _id: new ObjectId(),
-        author: context.user['cognito:username'],
-        comment: input.comment,
-      });
-      await image.save();
+      // $push creates the comments array if the field doesn't exist yet
+      const image = await Image.findOneAndUpdate(
+        query,
+        {
+          $push: {
+            comments: {
+              _id: new ObjectId(),
+              author: context.user['cognito:username'],
+              comment: input.comment,
+            },
+          },
+        },
+        { new: true, projection: { comments: 1 } },
+      );
+      if (!image) throw new NotFoundError('Image not found');
 
       return { comments: image.comments };
     } catch (err) {
@@ -872,7 +879,7 @@ export class ImageModel {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               })
             ) {
-              await Project.findOneAndUpdate(
+              await Project.updateOne(
                 {
                   _id: projectId,
                 },
@@ -1029,7 +1036,7 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      await Image.findOneAndUpdate({ _id: input.imageId }, { awaitingPrediction: input.status });
+      await Image.updateOne({ _id: input.imageId }, { awaitingPrediction: input.status });
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1645,7 +1652,7 @@ export class ImageModel {
             }
           }
           console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
-          return await Image.bulkWrite(operations);
+          return await ImageModel.executeBulkWrite(operations);
         },
         { retries: 2 },
       );
@@ -1656,6 +1663,18 @@ export class ImageModel {
         );
       }
       return res;
+    } catch (err) {
+      if (err instanceof GraphQLError) throw err;
+      throw new InternalServerError(err as string);
+    }
+  }
+
+  static async executeBulkWrite(operations: any[]): Promise<BulkWriteResult> {
+    try {
+      if (operations.length === 0) {
+        return { ok: 1, getRawResponse: () => ({}) } as BulkWriteResult;
+      }
+      return await Image.bulkWrite(operations);
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
       throw new InternalServerError(err as string);
