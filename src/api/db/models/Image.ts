@@ -1638,7 +1638,7 @@ export class ImageModel {
             const isReviewed = isImageReviewed(image);
             const queryableLabelIds = getQueryableLabelIds(image);
             const reviewedChanged = image.reviewed !== isReviewed;
-            const labelIdsChanged = !_.isEqual([...image.queryableLabelIds], queryableLabelIds);
+            const labelIdsChanged = !_.isEqual([...(image.queryableLabelIds ?? [])], queryableLabelIds);
             if (reviewedChanged || labelIdsChanged) {
               if (reviewedChanged) reviewedChangedCount++;
               if (labelIdsChanged) labelIdsChangedCount++;
