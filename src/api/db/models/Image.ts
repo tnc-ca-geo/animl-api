@@ -46,6 +46,11 @@ import {
   findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
+import {
+  COMMENTS_PROJECTION,
+  commentMutationError,
+  commentScope,
+} from './commentUtils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
@@ -79,13 +84,23 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
+  /**
+   * Scopes an image lookup to the user's current project, unless they're a superuser.
+   */
+  static scopeFilter(
+    _id: string,
+    context: Pick<Context, 'user'>,
+  ): mongoose.FilterQuery<ImageSchema> {
+    return !context.user['is_superuser']
+      ? { _id, projectId: context.user['curr_project']! }
+      : { _id };
+  }
+
   static async queryById(
     _id: string,
     context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageSchema>> {
-    const query = !context.user['is_superuser']
-      ? { _id, projectId: context.user['curr_project']! }
-      : { _id };
+    const query = ImageModel.scopeFilter(_id, context);
     try {
       const image = await Image.findOne(query);
       if (!image) throw new NotFoundError('Image not found');
@@ -450,20 +465,14 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      const imageFilter = ImageModel.scopeFilter(input.imageId, context);
 
-      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
-      if (!comment) throw new NotFoundError('Comment not found on image');
-
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ForbiddenError('Can only delete your own comments');
-      }
-
-      image.comments = image.comments.filter(
-        (c) => !idMatch(c._id!, input.id),
-      ) as mongoose.Types.DocumentArray<ImageCommentSchema>;
-
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        { ...imageFilter, ...commentScope(input, context) },
+        { $pull: { comments: { _id: input.id } } },
+        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+      );
+      if (!image) return commentMutationError(imageFilter, input, 'delete');
 
       return { comments: image.comments };
     } catch (err) {
@@ -477,18 +486,14 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      const imageFilter = ImageModel.scopeFilter(input.imageId, context);
 
-      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
-      if (!comment) throw new NotFoundError('Comment not found on image');
-
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ForbiddenError('Can only edit your own comments');
-      }
-
-      comment.comment = input.comment;
-
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        { ...imageFilter, ...commentScope(input, context) },
+        { $set: { 'comments.$.comment': input.comment } },
+        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+      );
+      if (!image) return commentMutationError(imageFilter, input, 'edit');
 
       return { comments: image.comments };
     } catch (err) {
@@ -502,18 +507,20 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
-
-      if (!image.comments) {
-        image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
-      }
-
-      image.comments.push({
-        _id: new ObjectId(),
-        author: context.user['cognito:username'],
-        comment: input.comment,
-      });
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        ImageModel.scopeFilter(input.imageId, context),
+        {
+          $push: {
+            comments: {
+              _id: new ObjectId(),
+              author: context.user['cognito:username'],
+              comment: input.comment,
+            },
+          },
+        },
+        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+      );
+      if (!image) throw new NotFoundError('Image not found');
 
       return { comments: image.comments };
     } catch (err) {
