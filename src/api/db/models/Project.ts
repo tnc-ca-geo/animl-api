@@ -786,13 +786,15 @@ export class ProjectModel {
         {
           $pull: {
             tags: { _id: input._id },
-            'views.$[].filters.tags': input._id,
+            'views.$[view].filters.tags': input._id,
           },
         },
         {
           returnDocument: 'after',
           runValidators: true,
-          projection: { tags: 1 }
+          projection: { tags: 1 },
+          // only target views whose tag filters are non-empty arrays
+          arrayFilters: [{ 'view.filters.tags.0': { $exists: true } }],
         },
       );
       if (!updated) throw new NotFoundError('Project not found');
