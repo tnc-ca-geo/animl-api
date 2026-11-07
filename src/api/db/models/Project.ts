@@ -582,6 +582,7 @@ export class ProjectModel {
         // positional projection, which mongo doesn't allow alongside returnDocument: 'after')
         {
           returnDocument: 'after',
+          runValidators: true,
           projection: { cameraConfigs: { $elemMatch: { _id: cameraId } } },
         },
       );
