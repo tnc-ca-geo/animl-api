@@ -491,7 +491,11 @@ export class ImageModel {
       const image = await Image.findOneAndUpdate(
         { ...imageFilter, ...commentScope(input, context) },
         { $set: { 'comments.$.comment': input.comment } },
-        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: COMMENTS_PROJECTION
+        },
       );
       if (!image) return commentMutationError(imageFilter, input, 'edit');
 
@@ -518,7 +522,11 @@ export class ImageModel {
             },
           },
         },
-        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: COMMENTS_PROJECTION
+        },
       );
       if (!image) throw new NotFoundError('Image not found');
 

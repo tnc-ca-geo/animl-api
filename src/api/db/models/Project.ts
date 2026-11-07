@@ -731,7 +731,11 @@ export class ProjectModel {
       const project = await Project.findOneAndUpdate(
         { _id, 'tags.name': { $not: new RegExp(`^${_.escapeRegExp(input.name)}$`, 'i') } },
         { $push: { tags: { ...input, _id: new ObjectId() } } },
-        { returnDocument: 'after', projection: { tags: 1 } },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: { tags: 1 }
+        },
       );
 
       // nothing matched, so either the project is gone or the name is already taken
@@ -785,7 +789,11 @@ export class ProjectModel {
             'views.$[].filters.tags': input._id,
           },
         },
-        { returnDocument: 'after', projection: { tags: 1 } },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: { tags: 1 }
+        },
       );
       if (!updated) throw new NotFoundError('Project not found');
 
@@ -809,7 +817,11 @@ export class ProjectModel {
       const project = await Project.findOneAndUpdate(
         { _id, 'tags._id': input._id },
         { $set: { 'tags.$.name': input.name, 'tags.$.color': input.color } },
-        { returnDocument: 'after', projection: { tags: 1 } },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: { tags: 1 }
+        },
       );
 
       // nothing matched, so either the project is gone or the tag is
