@@ -333,7 +333,7 @@ export class CameraModel {
 
     try {
       // check if it's a wireless camera
-      const wirelessCamera = await WirelessCamera.findOne({ _id: cameraId });
+      const wirelessCamera = await WirelessCamera.findOne({ _id: { $eq: cameraId } });
       if (wirelessCamera) {
         throw new GraphQLError(`You can't update wireless cameras' serial numbers`);
       }
@@ -341,7 +341,7 @@ export class CameraModel {
       // Step 1: update serial number on all images in the current project
       // TODO: do we want to wrap this all in a retry?
       const projectId = context.user['curr_project'];
-      const filter = { cameraId, projectId };
+      const filter = { cameraId: { $eq: cameraId }, projectId: { $eq: projectId } };
       const affectedImgIds = (await Images.find(filter, '_id')).map((img) => img._id.toString());
       const res = await Images.updateMany(filter, { cameraId: newId });
 
