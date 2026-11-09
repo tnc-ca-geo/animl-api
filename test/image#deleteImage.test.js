@@ -25,7 +25,7 @@ tape('Image: DeleteImage', async (t) => {
     });
 
     Sinon.stub(ImageSchema, 'findOne').callsFake((command) => {
-      t.deepEquals(command, { _id: 'project:123', projectId: 'project' });
+      t.deepEquals(command, { _id: { $eq: 'project:123' }, projectId: { $eq: 'project' } });
       mocks.push('Image::FindOne');
       return { _id: 'project:123' };
     });
@@ -93,7 +93,7 @@ tape('Image: DeleteImage - Failure', async (t) => {
     MockConfig(t);
 
     Sinon.stub(ImageSchema, 'findOne').callsFake((command) => {
-      t.deepEquals(command, { _id: 'project:123', projectId: 'project' });
+      t.deepEquals(command, { _id: { $eq: 'project:123' }, projectId: { $eq: 'project' } });
       mocks.push('Image::FindOne');
       return { _id: 'project:123' };
     });

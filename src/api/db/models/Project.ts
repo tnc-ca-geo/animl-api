@@ -567,12 +567,8 @@ export class ProjectModel {
         throw new NotFoundError('Project not found');
       }
 
-      // NOTE: using a single atomic update (rather than a read-modify-write) to preserve
-      // atomicity of the operation and avoid race conditions during bulk upload image
-      // ingestion. $sort keeps deployments in chronological order the same way sortDeps()
-      // does - the default deployment has no startDate, so it sorts first.
       const project = await Project.findOneAndUpdate(
-        { _id: projId, 'cameraConfigs._id': cameraId },
+        { _id: { $eq: projId }, 'cameraConfigs._id': cameraId },
         {
           $push: {
             'cameraConfigs.$.deployments': { $each: [deployment], $sort: { startDate: 1 } },
@@ -589,7 +585,9 @@ export class ProjectModel {
 
       // nothing matched, so either the project is gone or the camera config is
       if (!project) {
-        await ProjectModel.queryById(projId);
+        if (!(await Project.exists({ _id: { $eq: projId } }))) {
+          throw new NotFoundError('Project not found');
+        }
         throw new NotFoundError('Camera config not found');
       }
 
@@ -723,24 +721,26 @@ export class ProjectModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
     try {
-      const _id = context.user['curr_project']!;
+      const projectId = context.user['curr_project']!;
 
-      // NOTE: using a single atomic update (rather than a read-modify-write) so that the
-      // duplicate-name check and the insert can't race with a concurrent tag creation.
-      // The filter only matches if no existing tag has the same (case-insensitive) name.
       const project = await Project.findOneAndUpdate(
-        { _id, 'tags.name': { $not: new RegExp(`^${_.escapeRegExp(input.name)}$`, 'i') } },
+        {
+          _id: { $eq: projectId },
+          'tags.name': { $not: new RegExp(`^${_.escapeRegExp(input.name)}$`, 'i') },
+        },
         { $push: { tags: { ...input, _id: new ObjectId() } } },
         {
           returnDocument: 'after',
           runValidators: true,
-          projection: { tags: 1 }
+          projection: { tags: 1 },
         },
       );
 
       // nothing matched, so either the project is gone or the name is already taken
       if (!project) {
-        await ProjectModel.queryById(_id);
+        if (!(await Project.exists({ _id: { $eq: projectId } }))) {
+          throw new NotFoundError('Project not found');
+        }
         throw new DBValidationError(
           'A tag with that name already exists, avoid creating tags with duplicate names',
         );
@@ -759,13 +759,14 @@ export class ProjectModel {
   ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
     try {
       // only the tags are needed for the pre-flight checks below
-      const project = await Project.findOne({ _id: context.user['curr_project'] }, { tags: 1 });
+      const project = await Project.findOne(
+        { _id: { $eq: context.user['curr_project'] } },
+        { tags: 1 },
+      );
       if (!project) throw new NotFoundError('Project not found');
 
       const tag = project.tags?.find((t) => t._id.toString() === input._id.toString());
-      if (!tag) {
-        throw new DeleteTagError('Tag not found on project');
-      }
+      if (!tag) throw new DeleteTagError('Tag not found on project');
 
       const toRemoveCount = await ImageModel.countProjectTag({ tagId: input._id }, context);
 
@@ -782,7 +783,7 @@ export class ProjectModel {
       // and strip it from every view's filters at once, so concurrent project edits
       // (new views, deployments, etc.) can't be clobbered
       const updated = await Project.findOneAndUpdate(
-        { _id: context.user['curr_project'] },
+        { _id: { $eq: context.user['curr_project'] } },
         {
           $pull: {
             tags: { _id: input._id },
@@ -811,24 +812,23 @@ export class ProjectModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ tags: mongoose.Types.DocumentArray<ProjectTagSchema> }> {
     try {
-      const _id = context.user['curr_project']!;
+      const projectId = context.user['curr_project']!;
 
-      // NOTE: using a single atomic update (rather than a read-modify-write) so concurrent
-      // project edits can't be clobbered. The positional operator targets the tag
-      // matched by the filter.
       const project = await Project.findOneAndUpdate(
-        { _id, 'tags._id': input._id },
+        { _id: { $eq: projectId }, 'tags._id': input._id },
         { $set: { 'tags.$.name': input.name, 'tags.$.color': input.color } },
         {
           returnDocument: 'after',
           runValidators: true,
-          projection: { tags: 1 }
+          projection: { tags: 1 },
         },
       );
 
       // nothing matched, so either the project is gone or the tag is
       if (!project) {
-        await ProjectModel.queryById(_id);
+        if (!(await Project.exists({ _id: { $eq: projectId } }))) {
+          throw new NotFoundError('Project not found');
+        }
         throw new NotFoundError('Tag not found on project');
       }
 

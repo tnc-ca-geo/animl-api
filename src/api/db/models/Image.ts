@@ -91,9 +91,10 @@ export class ImageModel {
     _id: string,
     context: Pick<Context, 'user'>,
   ): mongoose.FilterQuery<ImageSchema> {
+    // $eq so non-string values (e.g. from the x-selected-project header) can't act as operators
     return !context.user['is_superuser']
-      ? { _id, projectId: context.user['curr_project']! }
-      : { _id };
+      ? { _id: { $eq: _id }, projectId: { $eq: context.user['curr_project']! } }
+      : { _id: { $eq: _id } };
   }
 
   static async queryById(
