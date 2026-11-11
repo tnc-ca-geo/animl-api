@@ -46,6 +46,11 @@ import {
   findDeploymentForAdjustedTime,
 } from './utils.js';
 import { idMatch } from './utils.js';
+import {
+  COMMENTS_PROJECTION,
+  commentMutationError,
+  commentScope,
+} from './commentUtils.js';
 import { ProjectModel } from './Project.js';
 import retry from 'async-retry';
 import { BaseAuthedModel, MethodParams, roleCheck } from './utils.js';
@@ -79,13 +84,24 @@ export class ImageModel {
     return res[0] ? res[0].count : 0;
   }
 
+  /**
+   * Scopes an image lookup to the user's current project, unless they're a superuser.
+   */
+  static scopeFilter(
+    _id: string,
+    context: Pick<Context, 'user'>,
+  ): mongoose.FilterQuery<ImageSchema> {
+    // $eq so non-string values (e.g. from the x-selected-project header) can't act as operators
+    return !context.user['is_superuser']
+      ? { _id: { $eq: _id }, projectId: { $eq: context.user['curr_project']! } }
+      : { _id: { $eq: _id } };
+  }
+
   static async queryById(
     _id: string,
     context: Pick<Context, 'user'>,
   ): Promise<HydratedDocument<ImageSchema>> {
-    const query = !context.user['is_superuser']
-      ? { _id, projectId: context.user['curr_project']! }
-      : { _id };
+    const query = ImageModel.scopeFilter(_id, context);
     try {
       const image = await Image.findOne(query);
       if (!image) throw new NotFoundError('Image not found');
@@ -390,7 +406,7 @@ export class ImageModel {
               'Image.createImage() - an error occurred, so reversing successful cam-created operation',
             );
             // delete newly created wireless camera record
-            await WirelessCamera.findOneAndDelete({ _id: op.info.cameraId });
+            await WirelessCamera.deleteOne({ _id: op.info.cameraId });
             // find project, remove newly created cameraConfig record
             const [proj] = await ProjectModel.getProjects({ _ids: [projectId] }, context);
             proj.cameraConfigs = proj.cameraConfigs.filter(
@@ -450,20 +466,14 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      const imageFilter = ImageModel.scopeFilter(input.imageId, context);
 
-      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
-      if (!comment) throw new NotFoundError('Comment not found on image');
-
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ForbiddenError('Can only delete your own comments');
-      }
-
-      image.comments = image.comments.filter(
-        (c) => !idMatch(c._id!, input.id),
-      ) as mongoose.Types.DocumentArray<ImageCommentSchema>;
-
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        { ...imageFilter, ...commentScope(input, context) },
+        { $pull: { comments: { _id: input.id } } },
+        { returnDocument: 'after', projection: COMMENTS_PROJECTION },
+      );
+      if (!image) return commentMutationError(imageFilter, input, 'delete');
 
       return { comments: image.comments };
     } catch (err) {
@@ -477,18 +487,18 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
+      const imageFilter = ImageModel.scopeFilter(input.imageId, context);
 
-      const comment = image.comments?.filter((c) => idMatch(c._id!, input.id))[0];
-      if (!comment) throw new NotFoundError('Comment not found on image');
-
-      if (comment.author !== context.user['cognito:username'] && !context.user['is_superuser']) {
-        throw new ForbiddenError('Can only edit your own comments');
-      }
-
-      comment.comment = input.comment;
-
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        { ...imageFilter, ...commentScope(input, context) },
+        { $set: { 'comments.$.comment': input.comment } },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: COMMENTS_PROJECTION
+        },
+      );
+      if (!image) return commentMutationError(imageFilter, input, 'edit');
 
       return { comments: image.comments };
     } catch (err) {
@@ -502,18 +512,24 @@ export class ImageModel {
     context: Pick<Context, 'user'>,
   ): Promise<{ comments: mongoose.Types.DocumentArray<ImageCommentSchema> }> {
     try {
-      const image = await ImageModel.queryById(input.imageId, context);
-
-      if (!image.comments) {
-        image.comments = [] as any as mongoose.Types.DocumentArray<ImageCommentSchema>;
-      }
-
-      image.comments.push({
-        _id: new ObjectId(),
-        author: context.user['cognito:username'],
-        comment: input.comment,
-      });
-      await image.save();
+      const image = await Image.findOneAndUpdate(
+        ImageModel.scopeFilter(input.imageId, context),
+        {
+          $push: {
+            comments: {
+              _id: new ObjectId(),
+              author: context.user['cognito:username'],
+              comment: input.comment,
+            },
+          },
+        },
+        {
+          returnDocument: 'after',
+          runValidators: true,
+          projection: COMMENTS_PROJECTION
+        },
+      );
+      if (!image) throw new NotFoundError('Image not found');
 
       return { comments: image.comments };
     } catch (err) {
@@ -872,7 +888,7 @@ export class ImageModel {
                 return l.name.toLowerCase() === modelLabel.name.toLowerCase();
               })
             ) {
-              await Project.findOneAndUpdate(
+              await Project.updateOne(
                 {
                   _id: projectId,
                 },
@@ -1029,7 +1045,7 @@ export class ImageModel {
     console.log('ImageModel.updatePredictionStatus - input: ', JSON.stringify(input));
 
     try {
-      await Image.findOneAndUpdate({ _id: input.imageId }, { awaitingPrediction: input.status });
+      await Image.updateOne({ _id: input.imageId }, { awaitingPrediction: input.status });
       return { isOk: true };
     } catch (err) {
       if (err instanceof GraphQLError) throw err;
@@ -1621,7 +1637,7 @@ export class ImageModel {
    */
   static async updateImageReviewStatusAndLabelIds(imageIds: string[]): Promise<BulkWriteResult> {
     try {
-      const res = await retry(
+      const { res, changedCount } = await retry(
         async (bail, attempt) => {
           if (attempt > 1) {
             console.log(`Retrying updateReviewStatus operation! Try #: ${attempt}`);
@@ -1632,10 +1648,16 @@ export class ImageModel {
           });
 
           const operations = [];
+          let reviewedChangedCount = 0;
+          let labelIdsChangedCount = 0;
           for (const image of images) {
             const isReviewed = isImageReviewed(image);
             const queryableLabelIds = getQueryableLabelIds(image);
-            if (image.reviewed !== isReviewed || !_.isEqual([...image.queryableLabelIds], queryableLabelIds)) {
+            const reviewedChanged = image.reviewed !== isReviewed;
+            const labelIdsChanged = !_.isEqual([...(image.queryableLabelIds ?? [])], queryableLabelIds);
+            if (reviewedChanged || labelIdsChanged) {
+              if (reviewedChanged) reviewedChangedCount++;
+              if (labelIdsChanged) labelIdsChangedCount++;
               operations.push({
                 updateOne: {
                   filter: { _id: image._id },
@@ -1644,15 +1666,36 @@ export class ImageModel {
               });
             }
           }
-          console.log('ImageModel.updateReviewStatus - operations: ', JSON.stringify(operations));
-          return await Image.bulkWrite(operations);
+
+          // NOTE: summarized rather than dumping the full operations array, which
+          // grows unbounded with batch size (observed >150KB on a single line).
+          // `changed: 0` is the no-op case and is logged in the same shape so the
+          // no-op rate can be derived from one query.
+          console.log(
+            'ImageModel.updateReviewStatus - summary: ',
+            JSON.stringify({
+              requested: imageIds.length,
+              found: images.length,
+              changed: operations.length,
+              reviewedChanged: reviewedChangedCount,
+              labelIdsChanged: labelIdsChangedCount,
+            }),
+          );
+
+          // NOTE: Mongoose short-circuits empty operation arrays and returns a
+          // default (ok: 1, all counts 0) BulkWriteResult without hitting the DB,
+          // so there's no need to guard against operations.length === 0 here.
+          return { res: await Image.bulkWrite(operations), changedCount: operations.length };
         },
         { retries: 2 },
       );
-      if (res.ok) {
+
+      // a short-circuited no-op returns a default result carrying no information,
+      // so only report counts when we actually wrote
+      if (changedCount > 0 && res.ok) {
         console.log(
           'ImageModel.updateReviewStatus - Image.bulkWrite() res: ',
-          JSON.stringify(res.getRawResponse()),
+          JSON.stringify({ matched: res.matchedCount, modified: res.modifiedCount }),
         );
       }
       return res;
