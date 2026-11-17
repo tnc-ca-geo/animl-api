@@ -1,0 +1,38 @@
+# A reusable workflow that deploys the contents of a repository to a target environment.
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#creating-a-reusable-workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    name: 🚀
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --no-save
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOYMENT_ROLE_ARN }}
+          role-session-name: ${{ github.actor }}
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
+
+      - name: Deploy
+        run: npm run deploy-${{ inputs.environment }}
