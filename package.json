@@ -7,8 +7,9 @@
     "scripts": {
         "start": "npm run build && AWS_PROFILE=animl serverless offline --noAuth",
         "build": "rm -rf .build && tsc",
-        "deploy-dev": "sls deploy --stage dev",
-        "deploy-prod": "sls deploy --stage prod",
+        "deploy-dev": "bash scripts/with-lambda-sharp.sh sls deploy --stage dev",
+        "deploy-prod": "bash scripts/with-lambda-sharp.sh sls deploy --stage prod",
+        "package-dev": "bash scripts/with-lambda-sharp.sh sls package --stage dev",
         "seed-db": "tsc && AWS_PROFILE=animl REGION=us-west-2 node ./src/scripts/seedDb.js",
         "seed-db-dev": "STAGE=dev npm run seed-db",
         "seed-db-prod": "STAGE=prod npm run seed-db",
