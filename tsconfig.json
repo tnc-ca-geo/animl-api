@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-20-tsconfigjson
+  "extends": "@tsconfig/node22/tsconfig.json", // https://github.com/tsconfig/bases?tab=readme-ov-file#node-22-tsconfigjson
   "compilerOptions": {
     "strict": true,
     "preserveConstEnums": true,
@@ -8,7 +8,5 @@
     "outDir": "./.build",
     "experimentalDecorators": true
   },
-  "include": [
-    "./src/**/*"
-  ]
+  "include": ["./src/**/*"]
 }

@@ -64,22 +64,7 @@ npm install
 ```
 
 > [!IMPORTANT]
-> Sharp, one of the dependencies that's essential for opening image files and performing inference, may have issues once deployed to Lambda. See [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda) for more info on deploying Sharp to Lambda, but in short, unless your `node_modules/@img` directory has the following binaries, the inference Lambda will throw errors indicating it can't open Sharp:
-
-```
-sharp-darwin-arm64
-sharp-libvips-darwin-arm64
-sharp-libvips-linux-x64
-sharp-libvips-linuxmusl-x64
-sharp-linux-x64
-sharp-linuxmusl-x64
-```
-
-Running the following may help install the additional necessary binaries if they are not present, but it seems a bit inconsistent:
-
-```
-npm install --os=linux --cpu=x64 sharp
-```
+> Sharp, one of the dependencies that's essential for opening image files and performing inference, ships platform-specific native binaries (see [this GitHub Issue](https://github.com/lovell/sharp/issues/4001) and their [documentation](https://sharp.pixelplumbing.com/install#aws-lambda)). `npm install` only installs binaries for your local machine, but Lambda needs `@img/sharp-linux-x64` and `@img/sharp-libvips-linux-x64`, and npm can't install both platforms at once. Always deploy via `npm run deploy-dev` / `npm run deploy-prod` (not `sls deploy` directly): these wrap the deploy in `scripts/with-lambda-sharp.sh`, which temporarily swaps in the Linux binaries, fails if they're missing, and restores your local binaries afterwards. Use `npm run package-dev` to inspect the package without deploying.
 
 ### Deploying a New Animl-API Stack
 Animl-api serves as a crucial component of the Animl stack as a whole,

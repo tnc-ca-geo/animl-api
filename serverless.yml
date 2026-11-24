@@ -120,7 +120,7 @@ provider:
 functions:
   graphql:
     handler: src/api/handler.server
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     events:
       - http:
           path: /
@@ -145,7 +145,7 @@ functions:
 
   inference:
     handler: src/ml/handler.inference
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     reservedConcurrency: 20
     events:
       - sqs:
@@ -159,14 +159,14 @@ functions:
 
   batchinference:
     handler: src/ml/handler.inference
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     reservedConcurrency: 8
     memorySize: 2048
     timeout: 120
 
   task:
     handler: src/task/handler.handler
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     reservedConcurrency: 10
     events:
       - sqs:
@@ -181,7 +181,7 @@ functions:
 
   tasksweeper:
     handler: src/task/sweeper.sweepStaleTasks
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     memorySize: 512
     timeout: 60
     events:
@@ -191,7 +191,7 @@ functions:
 
   platformstats:
     handler: src/dashboard/platformStats.computeStats
-    runtime: nodejs20.x
+    runtime: nodejs22.x
     memorySize: 3008
     timeout: 900
     events:
