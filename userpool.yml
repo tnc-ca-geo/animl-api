@@ -1,0 +1,212 @@
+Parameters:
+  # Email:
+  #   Type: String
+  #   Description: "Email to send/recieve cognito related emails, should be setup in us-east-1"
+  Name:
+    Type: String
+    Description: "Environment Name"
+  UsePreauth:
+    Type: String
+    Description: "Triggers whether or not to use the Preauth Lambda made in setup.yaml"
+    AllowedValues: [true, false]
+    Default: false
+
+Conditions:
+  Preauth: !Equals [!Ref UsePreauth, true]
+
+Resources:
+
+  UserPool:
+  # Created upon user selection
+    Type: AWS::Cognito::UserPool
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: !Sub '${Name}-user_pool'
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+
+      Schema:
+
+        -
+          Name: email
+          Required: true
+          Mutable: true
+
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+      LambdaConfig:
+        PreAuthentication: !If
+        - Preauth
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:CognitoPreauth
+        - !Ref AWS::NoValue
+      UsernameConfiguration:
+        CaseSensitive: false
+
+  AnimlSuperuserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: "Animl super user for admins"
+      GroupName: "animl_superuser"
+      UserPoolId: !Ref UserPool
+
+  UserPoolClientPublic:
+  # Created provide application access to user pool
+  # Depends on UserPool for ID reference
+    Type: "AWS::Cognito::UserPoolClient"
+    Properties:
+      ClientName: !Sub '${Name}-app_client_public'
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 30
+      UserPoolId: !Ref UserPool
+
+  UserPoolClientPrivate:
+  # Necessary for Amplify at the moment, not sure what other use it has
+    Type: "AWS::Cognito::UserPoolClient"
+    Properties:
+      ClientName: !Sub '${Name}-app_client_private'
+      PreventUserExistenceErrors: ENABLED
+      GenerateSecret: true
+      RefreshTokenValidity: 30
+      UserPoolId: !Ref UserPool
+
+  PreauthPermission:
+    Type: AWS::Lambda::Permission
+    Condition: Preauth
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:CognitoPreauth
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
+
+  IdentityPool:
+  # Always created
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub '${Name}-identity_pool'
+
+      CognitoIdentityProviders:
+        - ClientId:  !Ref UserPoolClientPrivate
+          ProviderName: !Sub
+            - cognito-idp.${region}.amazonaws.com/${client}
+            - { region: !Ref "AWS::Region",  client: !Ref UserPool}
+        - ClientId:  !Ref UserPoolClientPublic
+          ProviderName: !Sub
+            - cognito-idp.${region}.amazonaws.com/${client}
+            - { region: !Ref "AWS::Region",  client: !Ref UserPool}
+
+      AllowUnauthenticatedIdentities: false
+
+  AuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Name}-authRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated: cognito-identity.amazonaws.com
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+            ForAnyValue:StringLike:
+              cognito-identity.amazonaws.com:amr: authenticated
+      ManagedPolicyArns:
+       - arn:aws:iam::aws:policy/AWSIoTConfigAccess
+       - arn:aws:iam::aws:policy/AWSIoTDataAccess
+      Policies:
+        - PolicyName: QuicksightAuthPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - quicksight:RegisterUser
+                  - quicksight:GetSessionEmbedURL
+                  - quicksight:GetDashboardEmbedUrl
+                  - sts:AssumeRole
+                Resource: "*"
+
+  UnauthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Name}-unauthRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated: cognito-identity.amazonaws.com
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+            ForAnyValue:StringLike:
+              cognito-identity.amazonaws.com:amr: unauthenticated
+
+  IdentityPoolRoleMap:
+  # Created to map Auth and Unauth roles to the identity pool
+  # Depends on Identity Pool for ID ref
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+          unauthenticated: !GetAtt UnauthRole.Arn
+          authenticated: !GetAtt AuthRole.Arn
+      # RoleMappings:
+      #   'app_client_1':
+      #     IdentityProvider: !Sub 'cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}:${UserPoolClientPublic}'
+      #     AmbiguousRoleResolution: Deny
+      #     Type: Token
+      #   'app_client_2':
+      #     IdentityProvider: !Sub 'cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}:${UserPoolClientPrivate}'
+      #     AmbiguousRoleResolution: Deny
+      #     Type: Token
+
+  #   DependsOn: IdentityPool
+
+  IdentityPoolIdParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Cognito Identity Pool Id
+      Name: /application/cognito/identityPoolId
+      Type: String
+      Value: !Ref 'IdentityPool'
+
+  UserPoolIdParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Cognito User Pool Id
+      Name: /application/cognito/userPoolId
+      Type: String
+      Value: !Ref 'UserPool'
+
+  UserPoolClientPublicParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Cognito Client Id
+      Name: /application/cognito/clientId
+      Type: String
+      Value: !Ref 'UserPoolClientPublic'
+
+  AuthUserParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Authenticated User
+      Name: /application/cognito/authUser
+      Type: String
+      Value: !GetAtt AuthRole.Arn
+
+  UnauthUserParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Unauthenticated User
+      Name: /application/cognito/unAuthUser
+      Type: String
+      Value: !GetAtt UnauthRole.Arn

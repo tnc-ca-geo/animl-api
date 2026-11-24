@@ -31,8 +31,6 @@ const localConfig = {
     'tags',
     'validatedBy',
   ],
-  INGESTION_BUCKET: `animl-images-ingestion-${process.env.STAGE}`,
-  SERVING_BUCKET: `animl-images-serving-${process.env.STAGE}`,
 };
 
 /*
@@ -50,6 +48,8 @@ const ssmNames = [
   `/images/url-${process.env.STAGE}`,
   `/images/cloudfront-distribution-privatekey-${process.env.STAGE}`,
   `/images/cloudfront-public-key-id-${process.env.STAGE}`,
+  `/images/ingestion-bucket-${process.env.STAGE}`,
+  `/images/serving-bucket-${process.env.STAGE}`,
   `/ml/inference-queue-url-${process.env.STAGE}`,
   `/exports/exported-data-bucket-${process.env.STAGE}`,
   `/tasks/task-queue-url-${process.env.STAGE}`,
@@ -150,6 +150,8 @@ export interface RemoteConfig {
   '/IMAGES/URL': string;
   '/IMAGES/CLOUDFRONT_DISTRIBUTION_PRIVATEKEY': string;
   '/IMAGES/CLOUDFRONT_PUBLIC_KEY_ID': string;
+  '/IMAGES/INGESTION_BUCKET': string;
+  '/IMAGES/SERVING_BUCKET': string;
   '/ML/INFERENCE_QUEUE_URL': string;
   '/ML/MEGADETECTOR_V5A_BATCH_ENDPOINT': string;
   '/ML/MEGADETECTOR_V5A_REALTIME_ENDPOINT': string;

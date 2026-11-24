@@ -84,18 +84,6 @@ export class Duration {
   }
 }
 
-export function buildTagPipeline(tags: string[]): PipelineStage[] {
-  const pipeline: PipelineStage[] = [];
-
-  pipeline.push({
-    $match: {
-      tags: { $in: tags },
-    },
-  });
-
-  return pipeline;
-}
-
 export function buildLabelPipeline(labels: string[]): PipelineStage[] {
   const pipeline: PipelineStage[] = [];
   const labelsFilter = { $match: { queryableLabelIds: { $in: labels } } };
