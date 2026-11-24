@@ -75,7 +75,6 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
 
 const apolloserver = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
-  status400ForVariableCoercionErrors: true,
   typeDefs,
   resolvers,
   csrfPrevention: true,
