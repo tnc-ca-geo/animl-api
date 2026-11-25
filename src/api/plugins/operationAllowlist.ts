@@ -32,14 +32,22 @@ export function hashDocument(document: DocumentNode): string {
   return createHash('sha256').update(print(document)).digest('hex');
 }
 
+// Throws on a malformed manifest so callers keep the last good allowlist instead of an empty one
 export function buildAllowedHashes(manifest: OperationManifest): Set<string> {
+  const operations = manifest?.operations;
+  if (typeof operations !== 'object' || operations === null || Array.isArray(operations)) {
+    throw new Error('operation allowlist: manifest has no operations object');
+  }
   const allowed = new Set<string>();
-  for (const [key, { document }] of Object.entries(manifest.operations ?? {})) {
+  for (const [key, entry] of Object.entries(operations)) {
     try {
-      allowed.add(hashDocument(parse(document)));
+      allowed.add(hashDocument(parse(entry.document)));
     } catch (err) {
       console.error(`operation allowlist: skipping unparseable manifest entry ${key}`, err);
     }
+  }
+  if (Object.keys(operations).length > 0 && allowed.size === 0) {
+    throw new Error('operation allowlist: no manifest entries could be parsed');
   }
   return allowed;
 }

@@ -73,6 +73,42 @@ tape('OperationAllowlist: skips unparseable manifest entries', (t) => {
   t.end();
 });
 
+tape('OperationAllowlist: rejects malformed manifests but accepts an empty one', (t) => {
+  silenceConsole(t);
+  for (const bad of [{ version: 1 }, { operations: null }, { operations: [] }, null]) {
+    t.throws(() => buildAllowedHashes(bad), /operations/, JSON.stringify(bad));
+  }
+  t.throws(
+    () => buildAllowedHashes({ operations: { a: { document: 'query {' }, b: null } }),
+    /could be parsed/,
+    'all entries unparseable',
+  );
+  t.equal(buildAllowedHashes({ operations: {} }).size, 0, 'explicitly empty is allowed');
+  t.end();
+});
+
+tape('OperationAllowlist: malformed refresh keeps last good manifest and retries sooner', async (t) => {
+  silenceConsole(t);
+  let clock = 0;
+  let calls = 0;
+  const responses = [async () => manifest, async () => ({ version: 1 }), async () => manifest];
+  const plugin = operationAllowlistPlugin({
+    mode: 'enforce',
+    ttlMs: 1000,
+    retryMs: 100,
+    now: () => clock,
+    loadManifest: () => responses[calls++](),
+  });
+
+  t.equal(await run(plugin, KNOWN), 'allowed');
+  clock = 1500;
+  t.equal(await run(plugin, KNOWN), 'allowed', 'malformed manifest does not replace last good copy');
+  t.equal(calls, 2);
+  clock = 1650;
+  t.equal(await run(plugin, KNOWN), 'allowed');
+  t.equal(calls, 3, 'retries after retryMs rather than the full TTL');
+});
+
 tape('OperationAllowlist: enforce allows known and rejects unknown operations', async (t) => {
   silenceConsole(t);
   const plugin = operationAllowlistPlugin({ mode: 'enforce', loadManifest: async () => manifest });
