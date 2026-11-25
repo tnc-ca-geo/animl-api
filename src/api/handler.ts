@@ -20,6 +20,7 @@ import { connectToDatabase } from './db/connect.js';
 import { User, getUserInfo } from './auth/authorization.js';
 import { APIGatewayEvent } from 'aws-lambda';
 import { AuthenticationError } from './errors.js';
+import { operationAllowlistPlugin, parseMode, s3ManifestLoader } from './plugins/operationAllowlist.js';
 
 const resolvers = {
   Query,
@@ -75,10 +76,17 @@ const context = async ({ event, context }: ContextInput): Promise<Context> => {
 
 const apolloserver = new ApolloServer({
   includeStacktraceInErrorResponses: process.env.STAGE === 'dev',
+  introspection: process.env.STAGE === 'dev',
   typeDefs,
   resolvers,
   csrfPrevention: true,
   cache: 'bounded',
+  plugins: [
+    operationAllowlistPlugin({
+      mode: parseMode(process.env.OPERATION_ALLOWLIST_MODE),
+      loadManifest: s3ManifestLoader(process.env.OPERATION_ALLOWLIST_BUCKET!),
+    }),
+  ],
 });
 
 export const server = startServerAndCreateLambdaHandler(

@@ -97,6 +97,14 @@ npm run seed-db-dev
 npm run seed-db-prod
 ```
 
+### GraphQL operation allowlist
+
+Requests to `/external` (and `/`) are checked against an allowlist of the GraphQL operations the frontend actually sends. `animl-frontend` deploys upload the manifest to the `animl-operation-allowlist-[stage]` bucket, so deploy animl-api first when standing up a new stack. The `src/api/plugins/operationAllowlist.ts` plugin enforces it, and `/internal` is exempt. The mode is set by the `operationAllowlistMode` param in `serverless.yml`:
+
+- `off`: no checks
+- `log`: unknown operations are allowed but logged as `operation_not_allowlisted`
+- `enforce`: unknown operations are rejected with a 403
+
 ### Local testing
 
 Animl-api can also be tested locally with serverless-offline, if all other dependencies listed in [Animl-API Dependencies](#deploying-animal-api-and-animl-api-dependencies) are deployed, by running:
