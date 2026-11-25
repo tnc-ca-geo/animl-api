@@ -11,6 +11,11 @@ custom:
   serverlessPluginTypescript:
     tsConfigFileLocation: './tsconfig.json'
 
+params:
+  default:
+    # off | log | enforce
+    operationAllowlistMode: log
+
 package:
   patterns:
     - '!backups/**'
@@ -109,6 +114,11 @@ provider:
             # this bucket lives with the animl-ingest stack, so we need to reference it by name rather than by Ref and assumes its on the same account as this stack
             - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}'
             - !Sub 'arn:aws:s3:::animl-images-serving-${self:provider.stage}/*'
+        - Effect: 'Allow'
+          Action:
+            - 's3:GetObject'
+          Resource:
+            - !Sub '${S3BucketOperationAllowlist.Arn}/*'
 
   logs:
     restApi: true
@@ -121,6 +131,9 @@ functions:
   graphql:
     handler: src/api/handler.server
     runtime: nodejs22.x
+    environment:
+      OPERATION_ALLOWLIST_MODE: ${param:operationAllowlistMode}
+      OPERATION_ALLOWLIST_BUCKET: !Ref S3BucketOperationAllowlist
     events:
       - http:
           path: /
@@ -319,6 +332,25 @@ resources:
         Name: /exports/exported-data-bucket-${opt:stage, self:provider.stage, 'dev'}
         Type: String
         Value: !Ref S3BucketAnimlexporteddata
+
+    # GraphQL operation allowlist; manifest is uploaded by animl-frontend deploys
+    S3BucketOperationAllowlist:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: animl-operation-allowlist-${self:provider.stage}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        VersioningConfiguration:
+          Status: Enabled
+        LifecycleConfiguration:
+          Rules:
+            - Id: expire-old-manifest-versions
+              Status: Enabled
+              NoncurrentVersionExpiration:
+                NoncurrentDays: 90
 
     # NOTE: SSM Params /ml/megadetector-api-key and /db/mongo-db-url
     # contain secret keys so need to be created manually in the AWS console
