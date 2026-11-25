@@ -183,3 +183,33 @@ tape(
     t.equal(calls, 3);
   },
 );
+
+tape('OperationAllowlist: unknown operation triggers a throttled refresh before the TTL', async (t) => {
+  silenceConsole(t);
+  let clock = 0;
+  let calls = 0;
+  const responses = [async () => ({ version: 1, operations: {} }), async () => manifest];
+  const plugin = operationAllowlistPlugin({
+    mode: 'enforce',
+    ttlMs: 60_000,
+    missRefreshMs: 1000,
+    now: () => clock,
+    loadManifest: () => responses[Math.min(calls++, responses.length - 1)](),
+  });
+
+  await expectForbidden(t, run(plugin, KNOWN));
+  t.equal(calls, 1, 'no immediate second load right after the initial load');
+
+  clock = 500;
+  await expectForbidden(t, run(plugin, KNOWN), 'miss refresh is throttled');
+  t.equal(calls, 1);
+
+  clock = 1500;
+  t.equal(await run(plugin, KNOWN), 'allowed', 'miss picks up newly deployed operation');
+  t.equal(calls, 2);
+
+  clock = 1600;
+  t.equal(await run(plugin, KNOWN), 'allowed');
+  await expectForbidden(t, run(plugin, UNKNOWN));
+  t.equal(calls, 2, 'known operations and throttled misses do not reload');
+});

@@ -17,6 +17,7 @@ interface AllowlistOptions {
   loadManifest: () => Promise<OperationManifest>;
   ttlMs?: number;
   retryMs?: number;
+  missRefreshMs?: number;
   now?: () => number;
 }
 
@@ -56,13 +57,16 @@ export function operationAllowlistPlugin({
   loadManifest,
   ttlMs = 5 * 60 * 1000,
   retryMs = 30 * 1000,
+  missRefreshMs = 30 * 1000,
   now = Date.now,
 }: AllowlistOptions): ApolloServerPlugin<Context> {
   let allowed: Set<string> | null = null;
   let nextRefreshAt = 0;
+  let lastAttemptAt = -Infinity;
   let inflight: Promise<void> | null = null;
 
   const refresh = async () => {
+    lastAttemptAt = now();
     try {
       allowed = buildAllowedHashes(await loadManifest());
       nextRefreshAt = now() + ttlMs;
@@ -75,8 +79,10 @@ export function operationAllowlistPlugin({
     }
   };
 
-  const getAllowed = async () => {
-    if (now() >= nextRefreshAt) {
+  // onMiss: a frontend deploy may have added operations since the cached copy was loaded
+  const getAllowed = async (onMiss = false) => {
+    const due = now() >= nextRefreshAt || (onMiss && now() >= lastAttemptAt + missRefreshMs);
+    if (due) {
       inflight ??= refresh();
       await inflight;
     }
@@ -92,7 +98,9 @@ export function operationAllowlistPlugin({
           if (EXEMPT_RESOURCES.has(contextValue.resource)) return;
 
           const hash = hashDocument(document);
-          const allowedHashes = await getAllowed();
+          let allowedHashes = await getAllowed();
+          if (allowedHashes?.has(hash)) return;
+          allowedHashes = await getAllowed(true);
           if (allowedHashes?.has(hash)) return;
 
           console.warn(
